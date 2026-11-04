@@ -7,7 +7,7 @@ import {financialOperation} from '../finance/service';
 import {requireServices,checkLimits,recordUsage} from '../marketplace/engine';
 import {record} from '../platform/payments';
 import {emit} from '../operations/events';
-import {productInput,warehouseInput,locationInput,movementInput,incomingInput} from './contracts';
+import {stockCountInput,stockCountTarget,productInput,warehouseInput,locationInput,movementInput,incomingInput} from './contracts';
 import {sumMinor} from '../finance/money';
 import {quantityMilli} from './quantity';
 function decode(row:any){return {...JSON.parse(row.data),id:row.id,org_id:row.org_id,environment:row.environment,sku:row.sku,name:row.name,status:row.status,version:row.version,created_at:row.created_at,updated_at:row.updated_at};}
@@ -71,3 +71,22 @@ export async function editWarehouse(a:Access,id:string,input:unknown,key:string)
  if(await dbGet("SELECT id FROM ac_stock_reservations WHERE org_id=? AND environment=? AND warehouse_id=? AND status='held' LIMIT 1",[a.org,a.environment,id])||await dbGet("SELECT id FROM ac_stock_incoming WHERE org_id=? AND environment=? AND warehouse_id=? AND status='planned' LIMIT 1",[a.org,a.environment,id]))fail(409,'Resolve reservations and incoming plans before archiving');}
  await dbRun('UPDATE ac_warehouses SET code=?,name=?,status=?,data=?,updated_at=? WHERE id=? AND org_id=? AND environment=?',[d.warehouse.code,d.warehouse.name,d.warehouse.status,JSON.stringify(d.warehouse),now(),id,a.org,a.environment]);await audit(a.org,a.actor,'warehouse.updated',id);return warehouse(a,id);
  });}
+
+/** A count observes one location; it never overwrites or deletes physical history. */
+export async function stockCountSnapshot(a:Access,input:unknown){
+ const target=stockCountTarget.parse(input);await requireServices(a,['inventory']);
+ const p=await stockTarget(a,target.product_id,target.warehouse_id,target.location_id),w=await warehouse(a,target.warehouse_id),balance=await locationBalance(a,p.id,w.id,target.location_id);
+ return {...target,product_name:p.name,unit:p.unit,...balance,revision:hash(JSON.stringify({target,product_version:p.version,warehouse_revision:w.revision,balance})),observed_at:now()};
+}
+export async function postStockCount(a:Access,input:unknown,key:string){
+ const d=stockCountInput.parse(input);
+ return financialOperation(a,'stock.count',key,d,async()=>{
+  const target={product_id:d.product_id,warehouse_id:d.warehouse_id,location_id:d.location_id},snapshot=await stockCountSnapshot(a,target);
+  if(snapshot.revision!==d.expected_revision)fail(409,'Stock changed after the count snapshot; reload and review the count');
+  if(['unit','box'].includes(snapshot.unit)&&d.counted_quantity_milli%1000)fail(400,'This product unit requires a whole quantity');
+  const delta=d.counted_quantity_milli-snapshot.on_hand_milli;
+  const movement=delta===0?null:await postMovement(a,{...target,kind:'adjustment',quantity_milli:delta,reason:'Stock count: '+d.reason,...(d.approval_id?{approval_id:d.approval_id}:{})},'count:'+hash(key));
+  const id=randomUUID();await audit(a.org,a.actor,'stock.count_posted',id);
+  return {id,...target,observed_quantity_milli:snapshot.on_hand_milli,counted_quantity_milli:d.counted_quantity_milli,delta_milli:delta,movement_id:movement?.id||null,reason:d.reason,actor:a.actor,posted_at:now(),physical_history_preserved:true};
+ });
+}

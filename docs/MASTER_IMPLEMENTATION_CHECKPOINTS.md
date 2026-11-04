@@ -7,9 +7,9 @@ The full owner specification is retained in MASTER_IMPLEMENTATION_PROGRAM.md. Ex
 | Checkpoint | Status | Evidence / next requirement |
 | --- | --- | --- |
 | A: inventory and diagnosis | Findings established; deployed backend environment still inferred from public endpoint plus existing configured branch | Managed Neon SDK/server verifier; read-only actual identity/schema audit; observed temporary edge429 and later successful config200 |
-| B: auth recovery | In progress | Bounded public discovery retries and account retry action; four regression cases and full44frontend checks pass; local synthetic browser sign-in succeeds. Deployment and founder-controlled sign-in/refresh/logout/recovery qualification pending |
-| C: stabilization | Held behind B | Search portal/focus/stacking, every-service error-state audit, request-status classification |
-| D/E: Wave1 maturity | Planned; not represented as implemented | Record detail/lifecycle, CRM team/lead-conversion/Kanban, product catalog/stocktake, quotation revisions/sharing, report segmentation, workflow operations |
+| B: auth recovery | Accepted for the evaluation release | Founder login/refresh and controlled verification/reset/login confirmed; managed identity persisted; no credential rewrite. See chronological evidence below. |
+| C: stabilization | Shared failures repaired; read acceptance passed | Search geometry/focus and request status classification verified;46service/workspace read checks,37successful/7inactive/2no-safe-read. Independent writes/providers remain separately qualified. |
+| D/E: Wave1 maturity | In progress, independently tested checkpoints | CRM details/conversion/board committed; single-location stock counts under final qualification. Remaining teams, quotations, reporting, workflows and other master requirements retained. |
 | F/G: Wave2 | Planned; not implemented | Work, Accounting, People, Procurement, Documents, BusinessID share existing services and authorization |
 | H: cross-app qualification | Planned | Complete synthetic twelve-app business scenario plus negative/concurrent/replay tests |
 | I: release | Stage1 repair first; staged releases thereafter | Existing Cloudflare/Render/approved Neon development, backup/readback and backend-before-frontend for backend changes |
@@ -72,3 +72,5 @@ After the owner manually deployed Render, hosted checks at 2026-11-04T10:36:59Z 
 
 
 Wave1 maturity is now in progress after founder/controlled-mailbox acceptance and recovered hosted service reads. CRM conversion, detail editing, loaded-record filtering and keyboard-accessible opportunity board are implemented locally; see WAVE_1_MATURITY_REPORT.md for exact scope and test evidence. This is an incremental checkpoint, not full Wave1/Wave2 completion. The sandbox Render dashboard confirms0b3ed3c Live. GitHub has an active Git Operations/Actions incident matching repeated internal push failures; no force push, history rewrite or branch-protection weakening was attempted.
+
+GitHub publication recovered: a normal fast-forward push accepted reports951e4dd/862aa3b and CRMcheckpointf7cb36d on main after the provider incident. No force push or repository security change was needed.

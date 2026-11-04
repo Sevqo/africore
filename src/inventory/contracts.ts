@@ -5,3 +5,6 @@ export const warehouseInput=z.object({code:z.string().trim().min(1).max(40),name
 export const locationInput=z.object({code:z.string().trim().min(1).max(40),name:z.string().trim().min(1).max(120)}).strict();
 export const movementInput=z.object({product_id:z.string().uuid(),warehouse_id:z.string().uuid(),location_id:z.string().uuid().nullable().default(null),kind:z.enum(['receipt','adjustment','return','transfer']),quantity_milli:z.number().int().min(-1e12).max(1e12).refine(n=>n!==0),reason:z.string().trim().min(8).max(1000),source_id:z.string().uuid().optional(),destination_warehouse_id:z.string().uuid().optional(),approval_id:z.string().uuid().optional()}).strict();
 export const incomingInput=z.object({product_id:z.string().uuid(),warehouse_id:z.string().uuid(),quantity_milli:z.number().int().positive().max(1e12),due_on:z.string().date(),reason:z.string().trim().min(8).max(1000)}).strict();
+
+export const stockCountTarget=z.object({product_id:z.string().uuid(),warehouse_id:z.string().uuid(),location_id:z.string().uuid().nullable().default(null)}).strict();
+export const stockCountInput=stockCountTarget.extend({expected_revision:z.string().regex(/^[a-f0-9]{64}$/),counted_quantity_milli:z.number().int().min(0).max(1e12),reason:z.string().trim().min(8).max(980),approval_id:z.string().uuid().optional()}).strict();

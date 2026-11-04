@@ -5,7 +5,7 @@ import {z} from 'zod';
 import {access,route,fail,audit} from '../platform/auth';
 import {dbAll,dbGet,dbRun,dbTransaction} from '../db/adapter';
 import {now} from '../platform/crypto';
-import {products,product,createProduct,editProduct,warehouses,createWarehouse,editWarehouse,createLocation,postMovement,inventoryOverview,planIncoming,resolveIncoming} from '../inventory/service';
+import {stockCountSnapshot,postStockCount,products,product,createProduct,editProduct,warehouses,createWarehouse,editWarehouse,createLocation,postMovement,inventoryOverview,planIncoming,resolveIncoming} from '../inventory/service';
 import {convertCrmLead,crmOverview,crmEntries,createCrmEntry,editCrmEntry,customerProfile,setCustomerProfile,crmCustomerActivity} from './crm';
 import {createQuote,quote,editQuote,quoteAction,orderDraft,editOrderDraft} from './sales';
 import {businessPolicyFor,setBusinessPolicy} from './business-policy';
@@ -35,6 +35,8 @@ business.get('/organizations/:org/products',route(async(req,res)=>{const a=await
 business.get('/organizations/:org/products/:id',route(async(req,res)=>res.json(await product(await access(req),String(req.params.id)))));
 business.post('/organizations/:org/products',route(async(req,res)=>res.status(201).json(await createProduct(await access(req,'operations'),req.body,key(req)))));
 business.patch('/organizations/:org/products/:id',route(async(req,res)=>res.json(await editProduct(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
+business.get('/organizations/:org/inventory/stock-counts/preview',route(async(req,res)=>res.json(await stockCountSnapshot(await access(req),req.query))));
+business.post('/organizations/:org/inventory/stock-counts',route(async(req,res)=>res.json(await postStockCount(await access(req,'operations'),req.body,key(req)))));
 business.get('/organizations/:org/inventory',route(async(req,res)=>res.json(await inventoryOverview(await access(req)))));
 business.get('/organizations/:org/inventory/warehouses',route(async(req,res)=>res.json(await warehouses(await access(req)))));
 business.patch('/organizations/:org/inventory/warehouses/:id',route(async(req,res)=>res.json(await editWarehouse(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
