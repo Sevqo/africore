@@ -14,10 +14,11 @@ import {serviceCatalog} from '../../../src/marketplace/catalog';
 export function AccountApp() {
   const path=usePathname();
   const [account, setAccount] = useState<any>(null),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),[retry,setRetry]=useState(0);
   useEffect(() => {
     if (isDemo()) return;
     let live = true;
+    setError("");
     api("/api/auth/account")
       .then((a) => {
         if (live) setAccount(a);
@@ -28,7 +29,7 @@ export function AccountApp() {
     return () => {
       live = false;
     };
-  }, []);
+  }, [retry]);
   useEffect(()=>{const changed=()=>{setAccount(null);setError('Your session or workspace permissions changed. Sign in to resolve current access.');};window.addEventListener('africore:access-changed',changed);return()=>window.removeEventListener('africore:access-changed',changed);},[]);
   useEffect(()=>{
     if(!account||!['/app','/auth/callback'].includes(path))return;
@@ -44,7 +45,8 @@ export function AccountApp() {
         <Logo />
         <h1>Workspace unavailable</h1>
         <Alert error={error} />
-        <a className="button" href={"/login"+location.search}>
+        <button className="button" onClick={()=>setRetry(value=>value+1)}>Retry loading account</button>
+        <a className="secondary-button" href={"/login"+location.search}>
           Sign in
         </a>
       </main>

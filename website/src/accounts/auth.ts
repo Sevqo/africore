@@ -1,11 +1,10 @@
+import {loadAuthConfiguration} from './auth-configuration';
 import {singleFlight} from './single-flight';
 import { sessionIdentity } from './session-identity';
 import { setQueryIdentity, clearPrivateQueries } from '../lib/query-cache';
 import { isDemo, exitDemo } from "../demo/transport";
 export const managedClient=singleFlight(async () => {
-    const res = await fetch("/api/auth/config", { credentials: "same-origin",signal:AbortSignal.timeout(15000) });
-    if (!res.ok) throw new Error("Authentication service unavailable");
-    const config = await res.json();
+    const config = await loadAuthConfiguration();
     if (config.provider === "legacy") return null;
     if (config.provider !== "neon" || typeof config.auth_url !== "string") throw new Error("Authentication is not configured correctly. Contact support.");
     if (!window.isSecureContext) throw new Error("Secure sign-in requires HTTPS on this address. Use the trusted local HTTPS setup or localhost on your computer.");
