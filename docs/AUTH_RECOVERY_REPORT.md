@@ -31,3 +31,12 @@ Installed-SDK regression reproduced that signup without a new session can leave 
 A later captured429 conclusively included x-render-routing:hibernate-rate-limited. The gateway now maps only that explicit Render router response to JSON503 backend_starting with Retry-After20; genuine application429s retain their status and retry policy. Public managed-provider discovery is served at the edge from the explicit public binding, requiring the same trusted Neon origin, so it has no dependency on sleeping Node. Protected account reads still reach the authenticated backend, with bounded retry/cancellation and at most one minute of explicit startup backoff. Credential/business writes are never automatically retried. Free-hosting sleep is not eliminated or hidden and no paid plan changed.
 
 Local frontend/content/SDK regressions:56passed; gateway tests7passed; type/lint passes115frontend modules. Source/release CI and final hosted follow-up are recorded at deployment.
+
+
+## Stabilization release — 4 November 2026
+
+Source 0b3ed3c8eb910d139125baed936b2c24d5361cba is confirmed on main. GitHub Actions 41814387346 completed successfully. Cloudflare version 611659ea-172e-43a9-8acc-12c86d2c148a is live. Home, login and app HTML reference the release bundle; main and Accounts asset SHA-256 match the local build. Managed provider discovery returns200 with the expected trusted endpoint. The isolated sandbox browser renders the deployed sign-in form. No backend deployment, migration or identity rewrite was performed.
+
+Final hosted acceptance is BLOCKED by upstream availability: gateway account GET returns503 backend_unavailable, while direct Render requests return429 HTML with cf-mitigated:challenge. A managed synthetic account audit also failed503 after four reads with three20-second startup intervals. These results do not qualify current protected-endpoint behavior or service workflows. No challenge bypass, unlimited polling, paid upgrade or external-browser control was attempted. The owner was asked for Render service status/latest error lines because no Render credential is available in this session. Earlier founder and controlled verification/reset acceptance remains valid history, but CheckpointC is not complete. Wave1 maturity and Wave2 expansion remain pending behind stabilization.
+
+Release evidence: evidence/auth-recovery/stabilization-deployed.json and deployed-login.png.

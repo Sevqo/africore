@@ -1,0 +1,40 @@
+{
+  "at": "2026-11-04T10:34:17.049Z",
+  "checks": [
+    {
+      "path": "/login",
+      "status": 200,
+      "buildMatches": true
+    },
+    {
+      "path": "/app",
+      "status": 200,
+      "buildMatches": true
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "buildMatches": true
+    },
+    {
+      "path": "/assets/index-C34nUtis.js",
+      "status": 200,
+      "sha256": "33ee8508d5dd902c3733cccf73d0c9a0dfde7e8aa851cf92a290cb9abe6ef440"
+    },
+    {
+      "path": "/assets/Accounts-hla4kflk.js",
+      "status": 200,
+      "sha256": "1fe40047f49b1bcf86420a2bedc64bccb7886bf3b0e9e98489ea39d58c2fe7a1"
+    }
+  ],
+  "configuredProvider": "neon",
+  "configuredEndpointMatches": true,
+  "sourceCommit": "0b3ed3c8eb910d139125baed936b2c24d5361cba",
+  "cloudflareVersion": "611659ea-172e-43a9-8acc-12c86d2c148a",
+  "ciRun": 41814387346,
+  "anonymousAccount": 503,
+  "directBackend": 429,
+  "directChallenge": "challenge",
+  "protectedBoundaryQualified": false,
+  "founderLogin": "previously confirmed by owner; no credential replay during release check"
+}
