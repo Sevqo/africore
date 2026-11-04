@@ -6,7 +6,7 @@ import {access,route,fail,audit} from '../platform/auth';
 import {dbAll,dbGet,dbRun,dbTransaction} from '../db/adapter';
 import {now} from '../platform/crypto';
 import {products,product,createProduct,editProduct,warehouses,createWarehouse,editWarehouse,createLocation,postMovement,inventoryOverview,planIncoming,resolveIncoming} from '../inventory/service';
-import {crmOverview,crmEntries,createCrmEntry,editCrmEntry,customerProfile,setCustomerProfile,crmCustomerActivity} from './crm';
+import {convertCrmLead,crmOverview,crmEntries,createCrmEntry,editCrmEntry,customerProfile,setCustomerProfile,crmCustomerActivity} from './crm';
 import {createQuote,quote,editQuote,quoteAction,orderDraft,editOrderDraft} from './sales';
 import {businessPolicyFor,setBusinessPolicy} from './business-policy';
 import {requestApproval,previewAutomation,notificationPreferences} from './automation';
@@ -51,6 +51,7 @@ business.get('/organizations/:org/crm',route(async(req,res)=>res.json(await crmO
 business.get('/organizations/:org/crm/entries',route(async(req,res)=>{const a=await access(req),kind=z.enum(['lead','opportunity','follow_up','interaction']).optional().parse(req.query.kind);res.json({data:await crmEntries(a,kind),limit:200});}));
 business.post('/organizations/:org/crm/entries',route(async(req,res)=>res.status(201).json(await createCrmEntry(await access(req,'operations'),req.body,key(req)))));
 business.patch('/organizations/:org/crm/entries/:id',route(async(req,res)=>res.json(await editCrmEntry(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
+business.post('/organizations/:org/crm/entries/:id/convert',route(async(req,res)=>res.json(await convertCrmLead(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
 business.get('/organizations/:org/crm/customers/:id',route(async(req,res)=>res.json(await customerProfile(await access(req),String(req.params.id)))));
 business.put('/organizations/:org/crm/customers/:id',route(async(req,res)=>res.json(await setCustomerProfile(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
 business.get('/organizations/:org/crm/customers/:id/activity',route(async(req,res)=>res.json(await crmCustomerActivity(await access(req),String(req.params.id)))));

@@ -1,0 +1,23 @@
+# Wave 1 maturity — implementation checkpoints
+
+The master program remains authoritative. This report records incremental work and is not acceptance of all six mature apps or Wave2. Existing live installations and canonical customer/order/invoice/payment/stock histories remain in place.
+
+## CRM lifecycle checkpoint
+
+An explicit lead conversion endpoint changes an open active lead to a qualified opportunity in place. Customer ID, entry ID, creation time, owner, notes, value, currency and existing links persist. Ordinary editing still cannot change customer identity or record kind. Conversion uses current membership/operations authority, Business eligibility, CRM entitlement, current linked-customer validation, expected version and the existing organization transaction/idempotency store. It records one audit action and creates no extra customer or billable CRM record. Completed or cancelled leads and won/lost leads cannot convert. No schema migration is required.
+
+Record detail editing exposes title, stage/status, owner, due time, notes, amount and currency. Search/status filters explicitly cover the loaded bounded record list. The opportunity board groups those records by stage, supports keyboard-accessible stage changes, opens the same detail editor and labels prospective amounts rather than recognized revenue. Read-only members have disabled mutation forms; server checks remain authoritative. Details receive focus when opened. Existing customer activity and direct-service access are retained.
+
+## Research and qualification
+
+Odoo's official20.0 CRM README describes pipeline boards, activities and connected opportunity records: https://github.com/odoo/odoo/blob/20.0/addons/crm/README.md . The hosted20.0 conversion documentation timed out; no claim is made to have read it. The AfriCore implementation is original and uses existing records and primitives. No email automation, external messages or copied artwork/source is introduced.
+
+Local synthetic browser testing confirmed edit persistence, conversion retaining the notes/customer/value, refreshed opportunity visibility and stage changes through the board. At390px the board stacks into one column; at1440px detail fields use two columns and receive focus. Requested/measured viewport and clipping checks are recorded with evidence. Screenshots contain synthetic records only. Physical mobile/browser-assistive-technology certification is not inferred.
+
+## Remaining program work
+
+CRM still needs full sales-team/work-queue reporting and richer activities. Finance, Inventory, Sales, Analytics and Automations retain the deeper master requirements; this checkpoint does not certify them complete. Wave2 Work, Accounting, People, Procurement, Documents and BusinessID remain pending after Wave1 qualification. Posted financial history, immutable issued documents, explicit currency/minor-unit arithmetic, exact inventory units, approval boundaries and provider gates must be preserved throughout.
+
+Validation: full SQLite299discovered/298passed/one PostgreSQL-only skip; full local PostgreSQL299/299passed. After adding the final concurrency/archive assertions, affected cross-app tests23/23passed on each engine. Frontend56/56, lint117modules, workspace267and legacy59contract operations, development3checks and gateway7checks passed. Chain result is recorded after completion. No hosted ordinary tests or schema migration were used.
+
+The isolated local chain/credential/authorization/anchoring/independent-verification gate passed. Final board geometry checked320/375/390/430/768/1024/1440/1920requested widths;768measured769on this host. No document horizontal overflow was observed. Final responsive data and desktop/mobile screenshots are under evidence/wave1-maturity.

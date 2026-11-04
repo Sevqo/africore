@@ -215,3 +215,31 @@ test('new resource creation is metered once and remains replayable at product, C
  try{const key=randomUUID(),first=await api(path(entry.route),'POST',entry.body,cookie,key);assert.equal(first.status,201,JSON.stringify(first.data));const replay=await api(path(entry.route),'POST',entry.body,cookie,key);assert.equal(replay.status,201,JSON.stringify(replay.data));assert.equal(replay.data.id,first.data.id);assert.equal(await count(),before+1);assert.equal((await api(path(entry.route),'POST',entry.body)).status,429);assert.equal(await count(),before+1);}finally{await api(path('/usage/limits/'+entry.service),'PUT',{monthly_budget_minor:null,quantity_limit:null,hard_stop:false,thresholds:[80,100]});}
  }
 });
+
+
+test('lead conversion retains shared identity and terms, rejects stale or closed records and replays without duplicates',async()=>{
+ const created=await api(path('/crm/entries'),'POST',{kind:'lead',customer_id:customerId,title:'Synthetic conversion lead',notes:'Preserve these notes',assigned_to:actor,amount_minor:120000,currency:'KES'});assert.equal(created.status,201);
+ const id=created.data.id,body={expected_version:1},key=randomUUID();
+ assert.equal((await api(path('/crm/entries/'+id+'/convert'),'POST',{expected_version:2})).status,409);
+ const result=await api(path('/crm/entries/'+id+'/convert'),'POST',body,cookie,key);assert.equal(result.status,200,JSON.stringify(result.data));
+ assert.equal(result.data.id,id);assert.equal(result.data.customer_id,customerId);assert.equal(result.data.kind,'opportunity');assert.equal(result.data.stage,'qualified');assert.equal(result.data.version,2);assert.equal(result.data.notes,'Preserve these notes');assert.equal(result.data.amount_minor,120000);assert.equal(result.data.assigned_to,actor);
+ assert.deepEqual((await api(path('/crm/entries/'+id+'/convert'),'POST',body,cookie,key)).data,result.data);
+ assert.equal((await api(path('/crm/entries/'+id+'/convert'),'POST',{expected_version:2})).status,409);
+ assert.equal(Number((await dbGet('SELECT COUNT(*) AS n FROM ac_crm_entries WHERE id=?',[id])).n),1);
+ assert.equal(Number((await dbGet("SELECT COUNT(*) AS n FROM ac_audit WHERE resource_id=? AND action='crm.lead_converted'",[id])).n),1);
+ const outsider=await api('/api/auth/signup','POST',{email:randomUUID()+'@example.test',password:'Synthetic-conversion-outsider-2026!'});await api('/api/auth/verify','POST',{token:outsider.data.verification_token},outsider.cookie);
+ assert.equal((await api(path('/crm/entries/'+id+'/convert'),'POST',{expected_version:2},outsider.cookie)).status,403);
+ const outsiderId=(await api('/api/auth/account','GET',undefined,outsider.cookie)).data.user.id;await dbRun("INSERT INTO ac_memberships(org_id,user_id,role) VALUES (?,?,'viewer')",[org,outsiderId]);
+ assert.equal((await api(path('/crm/entries/'+id+'/convert'),'POST',{expected_version:2},outsider.cookie)).status,403);
+ const closed=await api(path('/crm/entries'),'POST',{kind:'lead',customer_id:customerId,title:'Closed conversion lead',status:'cancelled'});assert.equal((await api(path('/crm/entries/'+closed.data.id+'/convert'),'POST',{expected_version:1})).status,409);
+ await dbRun("UPDATE ac_service_entitlements SET status='disabled' WHERE org_id=? AND service_id='crm'",[org]);assert.equal((await api(path('/crm/entries/'+id+'/convert'),'POST',body,cookie,key)).status,402);await dbRun("UPDATE ac_service_entitlements SET status='active' WHERE org_id=? AND service_id='crm'",[org]);
+});
+
+
+test('competing lead conversions commit once and archived customers cannot enter the opportunity pipeline',async()=>{
+ const created=await api(path('/crm/entries'),'POST',{kind:'lead',customer_id:customerId,title:'Concurrent conversion fixture'});assert.equal(created.status,201);
+ const converted=await Promise.all([1,2].map(()=>api(path('/crm/entries/'+created.data.id+'/convert'),'POST',{expected_version:1})));assert.deepEqual(converted.map(r=>r.status).sort(),[200,409]);
+ const lead=await api(path('/crm/entries'),'POST',{kind:'lead',customer_id:customerId,title:'Archived contact conversion fixture'});assert.equal(lead.status,201);
+ assert.equal((await api(path('/records/customers/'+customerId),'PATCH',{status:'archived'})).status,200);
+ try{assert.equal((await api(path('/crm/entries/'+lead.data.id+'/convert'),'POST',{expected_version:1})).status,409);assert.equal((await dbGet('SELECT kind FROM ac_crm_entries WHERE id=?',[lead.data.id])).kind,'lead');}finally{await api(path('/records/customers/'+customerId),'PATCH',{status:'active'});}
+});
