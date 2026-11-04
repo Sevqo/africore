@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-04T10:34:17.049Z",
+  "at": "2026-11-04T10:36:59.084Z",
   "checks": [
     {
       "path": "/login",
@@ -32,9 +32,9 @@
   "sourceCommit": "0b3ed3c8eb910d139125baed936b2c24d5361cba",
   "cloudflareVersion": "611659ea-172e-43a9-8acc-12c86d2c148a",
   "ciRun": 41814387346,
-  "anonymousAccount": 503,
-  "directBackend": 429,
-  "directChallenge": "challenge",
-  "protectedBoundaryQualified": false,
+  "anonymousAccount": 401,
+  "directBackend": 403,
+  "directChallenge": null,
+  "protectedBoundaryQualified": true,
   "founderLogin": "previously confirmed by owner; no credential replay during release check"
 }
