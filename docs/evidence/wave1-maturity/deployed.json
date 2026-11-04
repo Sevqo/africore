@@ -1,0 +1,50 @@
+{
+  "at": "2026-11-04T11:23:46.540Z",
+  "checks": [
+    {
+      "path": "/login",
+      "status": 200,
+      "buildMatches": true
+    },
+    {
+      "path": "/app",
+      "status": 200,
+      "buildMatches": true
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "buildMatches": true
+    },
+    {
+      "path": "/assets/index-D1IneJQW.js",
+      "status": 200,
+      "sha256": "2f5eecd20501dcef407508fd50a2f0a1ebceabe61638787a113ff744e5b9b302"
+    },
+    {
+      "path": "/assets/Accounts-CJDn-Rh4.js",
+      "status": 200,
+      "sha256": "1a0e1bb2e056e079209e5e28b8c7ffe577bf37f865c9a5e0dec85ff19f8dcfc9"
+    },
+    {
+      "path": "/assets/BusinessApp-BtXO45Ge.css",
+      "status": 200,
+      "sha256": "21e6c2b6a467522f9ae13d9ee34b6decd3fc488ab7e8111bb1b2d9c604218aee"
+    },
+    {
+      "path": "/assets/BusinessApp-Csd8sb_9.js",
+      "status": 200,
+      "sha256": "f48db253f65cf134787176566adca29b0a6c12dc56ac881294fcb380601d4930"
+    }
+  ],
+  "configuredProvider": "neon",
+  "configuredEndpointMatches": true,
+  "sourceCommit": "e3c3b58ff07b68513d774c66d7ecb53647e4d345",
+  "cloudflareVersion": "e949e416-9802-47ab-81e2-2640f3189815",
+  "ciRun": 41819879120,
+  "anonymousAccount": 401,
+  "directBackend": 403,
+  "directChallenge": null,
+  "protectedBoundaryQualified": true,
+  "founderLogin": "previously confirmed by owner; no credential replay during release check"
+}

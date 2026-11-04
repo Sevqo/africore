@@ -1,0 +1,384 @@
+{
+  "readOnly": true,
+  "noActivationOrFinancialWrites": true,
+  "checks": [
+    {
+      "kind": "personal",
+      "service": "customers",
+      "path": "/customers/export",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": false
+    },
+    {
+      "kind": "personal",
+      "service": "invoicing",
+      "path": "/customers/export",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": false
+    },
+    {
+      "kind": "personal",
+      "service": "income",
+      "path": "/personal-income",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "personal",
+      "service": "expenses",
+      "path": "/expenses",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "personal",
+      "service": "cash_flow",
+      "path": "/expenses",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "personal",
+      "service": "payments",
+      "path": "/payment-events",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "personal",
+      "service": "assistant",
+      "path": "/assistant/usage",
+      "catalogStatus": "available",
+      "status": 402,
+      "json": true,
+      "error": "request_rejected"
+    },
+    {
+      "kind": "business",
+      "service": "crm",
+      "path": "/crm",
+      "catalogStatus": "available",
+      "status": 402,
+      "json": true,
+      "error": "request_rejected"
+    },
+    {
+      "kind": "business",
+      "service": "products",
+      "path": "/products",
+      "catalogStatus": "available",
+      "status": 402,
+      "json": true,
+      "error": "request_rejected"
+    },
+    {
+      "kind": "business",
+      "service": "inventory",
+      "path": "/inventory",
+      "catalogStatus": "available",
+      "status": 402,
+      "json": true,
+      "error": "request_rejected"
+    },
+    {
+      "kind": "business",
+      "service": "sales",
+      "path": "/sales/quotations",
+      "catalogStatus": "available",
+      "status": 402,
+      "json": true,
+      "error": "request_rejected"
+    },
+    {
+      "kind": "business",
+      "service": "customers",
+      "path": "/customers/export",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": false
+    },
+    {
+      "kind": "business",
+      "service": "orders",
+      "path": "/records/orders",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "business",
+      "service": "invoicing",
+      "path": "/customers/export",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": false
+    },
+    {
+      "kind": "business",
+      "service": "expenses",
+      "path": "/expenses",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "business",
+      "service": "cash_flow",
+      "path": "/expenses",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "business",
+      "service": "payments",
+      "path": "/payments",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "business",
+      "service": "reconciliation",
+      "path": "/reconciliation",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "business",
+      "service": "intelligence",
+      "path": "/intelligence",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "business",
+      "service": "forecasting",
+      "path": "/forecasts/evaluations",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "business",
+      "service": "assistant",
+      "path": "/assistant/usage",
+      "catalogStatus": "requires_setup",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "business",
+      "service": "automations",
+      "path": "/automations",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "business",
+      "service": "data",
+      "path": "/data/quality",
+      "catalogStatus": "available",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "business",
+      "service": "connect",
+      "path": "/connectors",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "business",
+      "service": "passport",
+      "path": "/trust/grants",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "business",
+      "service": "verification",
+      "path": "/trust/passport",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "business",
+      "service": "credentials",
+      "path": "/trust/issuers",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "business",
+      "service": "trust_network",
+      "path": "/trust/passport",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "business",
+      "service": "blockchain",
+      "path": "/trust/passport",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "business",
+      "service": "fulfillment",
+      "path": "/shipments",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "business",
+      "service": "protected_payments",
+      "path": "/disputes",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "business",
+      "service": "developer_api",
+      "path": "/credentials",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "business",
+      "service": "webhooks",
+      "path": "/webhooks",
+      "catalogStatus": "requires_setup",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "business",
+      "service": "verification_api",
+      "catalogStatus": "active",
+      "readProbe": "no-safe-collection-GET",
+      "writeWorkflowNotExecuted": true
+    },
+    {
+      "kind": "developer",
+      "service": "products",
+      "path": "/products",
+      "catalogStatus": "available",
+      "status": 402,
+      "json": true,
+      "error": "request_rejected"
+    },
+    {
+      "kind": "developer",
+      "service": "customers",
+      "path": "/customers/export",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": false
+    },
+    {
+      "kind": "developer",
+      "service": "orders",
+      "path": "/records/orders",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "developer",
+      "service": "invoicing",
+      "path": "/customers/export",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": false
+    },
+    {
+      "kind": "developer",
+      "service": "payments",
+      "path": "/payment-events",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "developer",
+      "service": "reconciliation",
+      "path": "/reconciliation",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "developer",
+      "service": "assistant",
+      "path": "/assistant/usage",
+      "catalogStatus": "available",
+      "status": 402,
+      "json": true,
+      "error": "request_rejected"
+    },
+    {
+      "kind": "developer",
+      "service": "data",
+      "path": "/data/quality",
+      "catalogStatus": "available",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "developer",
+      "service": "connect",
+      "path": "/data/quality",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "developer",
+      "service": "developer_api",
+      "path": "/credentials",
+      "catalogStatus": "active",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "developer",
+      "service": "webhooks",
+      "path": "/webhooks",
+      "catalogStatus": "requires_setup",
+      "status": 200,
+      "json": true
+    },
+    {
+      "kind": "developer",
+      "service": "verification_api",
+      "catalogStatus": "active",
+      "readProbe": "no-safe-collection-GET",
+      "writeWorkflowNotExecuted": true
+    }
+  ],
+  "unexpectedFailures": [],
+  "limitations": [
+    "Read surfaces may be shared by several services; this does not qualify independent write or external-provider workflows.",
+    "Services without a safe collection GET remain explicitly unprobed."
+  ]
+}

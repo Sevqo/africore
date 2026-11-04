@@ -1,0 +1,7 @@
+{
+  "readOnly": true,
+  "noServiceActivation": true,
+  "noFinancialWrites": true,
+  "newCountRouteStatus": 402,
+  "expectedInactiveService": true
+}

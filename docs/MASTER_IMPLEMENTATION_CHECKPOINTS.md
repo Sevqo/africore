@@ -74,3 +74,10 @@ After the owner manually deployed Render, hosted checks at 2026-11-04T10:36:59Z 
 Wave1 maturity is now in progress after founder/controlled-mailbox acceptance and recovered hosted service reads. CRM conversion, detail editing, loaded-record filtering and keyboard-accessible opportunity board are implemented locally; see WAVE_1_MATURITY_REPORT.md for exact scope and test evidence. This is an incremental checkpoint, not full Wave1/Wave2 completion. The sandbox Render dashboard confirms0b3ed3c Live. GitHub has an active Git Operations/Actions incident matching repeated internal push failures; no force push, history rewrite or branch-protection weakening was attempted.
 
 GitHub publication recovered: a normal fast-forward push accepted reports951e4dd/862aa3b and CRMcheckpointf7cb36d on main after the provider incident. No force push or repository security change was needed.
+
+
+## Deployed checkpoint — 4 November 2026
+
+CRMsourcef7cb36d and Inventorysourcee3c3b58ff07b68513d774c66d7ecb53647e4d345 are on main. GitHubCI41819879120 passed allfive jobs. Render deploymentdep-dblha4gae00c73c8j6o0 was triggered and verified Live from the isolated sandbox dashboard; no external-browser control or paid changes occurred. Cloudflare versione949e416-9802-47ab-81e2-2640f3189815 followed the backend. Main/Accounts/BusinessAppJS/CSS hashes match the local tested assets. Managed public configuration matches, anonymous account401 and direct backend403 pass. Existing managed read-only audit:46checks,37successful/7inactive/2without safe collection GET, no unexpected failures. The new count preview route preserves inactive Inventory402 in the controlled managed workspace. Hosted business writes were not used as an ordinary test fixture.
+
+Evidence: evidence/wave1-maturity/deployed.json, hosted-service-reads.json, hosted-count-route.json, responsive measurements and synthetic screenshots. Full Wave1 maturity and all Wave2 applications remain outstanding as specified; these two deployed checkpoints do not certify the entire program. No new migration, identity/data rewrite, provider activation or production Neon branch change was performed.
