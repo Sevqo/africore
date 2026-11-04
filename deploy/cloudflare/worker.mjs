@@ -37,6 +37,12 @@ export async function handle(request, env, upstreamFetch = fetch) {
     const publicRoot=/^\/api\/(?:auth(?:\/|$)|openapi\.json$|v1\/(?:organizations(?:\/|$)|workspaces(?:\/|$)|invitations\/accept$|checkout\/|callbacks\/|buyer\/|trust\/|\.well-known\/))/.test(path);
     if (/%|\\|\/\//.test(path)||(!publicRoot&&!['/v1/health','/v1/readiness'].includes(path)))return secured(Response.json({error:'not_found'},{status:404}),{privateResponse:true});
     if (path.split('/').some(part=>part.toLowerCase()==='internal'))return secured(Response.json({error:'not_found'},{status:404}),{privateResponse:true});
+    if(path==='/api/auth/config'&&request.method==='GET'&&env.NEON_AUTH_BASE_URL){
+      try{const base=new URL(env.NEON_AUTH_BASE_URL),configured=origin(env.NEON_AUTH_ORIGIN);
+        if(base.origin!==configured.origin||base.protocol!=='https:'||!base.hostname.includes('.neonauth.')||!/\.(?:neon\.tech|neon\.build)$/.test(base.hostname)||base.username||base.password||base.search||base.hash||!base.pathname.endsWith('/auth'))return unavailable();
+        return secured(Response.json({provider:'neon',auth_url:base.href.replace(/\/$/,'')}),{privateResponse:true});
+      }catch{return unavailable();}
+    }
     if (!env.BACKEND_ORIGIN || !env.AFRICORE_GATEWAY_SECRET || env.AFRICORE_GATEWAY_SECRET.length < 32) return unavailable();
     try {
       const upstream = origin(env.BACKEND_ORIGIN);
@@ -52,6 +58,9 @@ export async function handle(request, env, upstreamFetch = fetch) {
       const response = await upstreamFetch(new Request(upstream, { method: request.method, headers,
         body: ['GET','HEAD'].includes(request.method) ? undefined : request.body,
         redirect: 'manual', signal: AbortSignal.timeout(90000), duplex: 'half' }), { cf: { cacheTtl: 0, cacheEverything: false } });
+      // Render's wake-up router emits a plain 429 before Express can answer.
+      // It is infrastructure availability, not an application abuse-limit decision.
+      if(response.status===429&&response.headers.get('x-render-routing')==='hibernate-rate-limited')return secured(Response.json({error:'backend_starting',message:'The service is starting. Please retry shortly.'},{status:503,headers:{'Retry-After':'20'}}),{privateResponse:true});
       // Never turn a sleeping backend's HTML loading page into an API success.
       if ((response.headers.get('Content-Type') || '').includes('text/html')) return unavailable();
       if (response.status >= 300 && response.status < 400) return unavailable();

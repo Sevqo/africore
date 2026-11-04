@@ -34,9 +34,9 @@ export async function identityHeaders(): Promise<Record<string, string>> {
   identityFlight=pending;
   try{return await pending;}finally{if(identityFlight===pending)identityFlight=undefined;}
 }
+export function invalidateIdentity(){identityEpoch++;identityFlight=undefined;clearPrivateQueries();}
 export async function managedSignOut(all = false) {
-  identityEpoch++;identityFlight=undefined;
-  clearPrivateQueries();
+  invalidateIdentity();
   if (isDemo()) {
     exitDemo();
     return;

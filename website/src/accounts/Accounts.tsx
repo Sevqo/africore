@@ -1,3 +1,4 @@
+import {retryAccountRead} from './account-read';
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { BusinessApp } from "../BusinessApp";
 import { api } from "../lib/api-client";
@@ -19,7 +20,8 @@ export function AccountApp() {
     if (isDemo()) return;
     let live = true;
     setError("");
-    api("/api/auth/account")
+    const controller=new AbortController();
+    retryAccountRead(()=>api("/api/auth/account"),{signal:controller.signal})
       .then((a) => {
         if (live) setAccount(a);
       })
@@ -28,6 +30,7 @@ export function AccountApp() {
       });
     return () => {
       live = false;
+      controller.abort();
     };
   }, [retry]);
   useEffect(()=>{const changed=()=>{setAccount(null);setError('Your session or workspace permissions changed. Sign in to resolve current access.');};window.addEventListener('africore:access-changed',changed);return()=>window.removeEventListener('africore:access-changed',changed);},[]);

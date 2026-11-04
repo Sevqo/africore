@@ -1,0 +1,114 @@
+[
+  {
+    "dialog": {
+      "height": 233.26516723632812,
+      "width": 296.58123779296875,
+      "x": 14.989981651306152,
+      "y": 367.6239929199219
+    },
+    "height": 1000,
+    "horizontalOverflow": false,
+    "insideViewport": true,
+    "overlayCoversSidebar": true,
+    "portalToBody": true,
+    "width": 320
+  },
+  {
+    "dialog": {
+      "height": 218.25013732910156,
+      "width": 351.0811462402344,
+      "x": 14.989981651306152,
+      "y": 375.125244140625
+    },
+    "height": 1000,
+    "horizontalOverflow": false,
+    "insideViewport": true,
+    "overlayCoversSidebar": true,
+    "portalToBody": true,
+    "width": 375
+  },
+  {
+    "dialog": {
+      "height": 218.25013732910156,
+      "width": 366.30908203125,
+      "x": 14.989981651306152,
+      "y": 375.125244140625
+    },
+    "height": 1000,
+    "horizontalOverflow": false,
+    "insideViewport": true,
+    "overlayCoversSidebar": true,
+    "portalToBody": true,
+    "width": 390
+  },
+  {
+    "dialog": {
+      "height": 218.25013732910156,
+      "width": 406.3825378417969,
+      "x": 14.989981651306152,
+      "y": 375.125244140625
+    },
+    "height": 1000,
+    "horizontalOverflow": false,
+    "insideViewport": true,
+    "overlayCoversSidebar": true,
+    "portalToBody": true,
+    "width": 430
+  },
+  {
+    "dialog": {
+      "height": 201.1688232421875,
+      "width": 719.9949951171875,
+      "x": 24.307064056396484,
+      "y": 391.27984619140625
+    },
+    "height": 1000,
+    "horizontalOverflow": false,
+    "insideViewport": true,
+    "overlayCoversSidebar": true,
+    "portalToBody": true,
+    "width": 769
+  },
+  {
+    "dialog": {
+      "height": 201.1688232421875,
+      "width": 719.9949951171875,
+      "x": 152.1414337158203,
+      "y": 391.27984619140625
+    },
+    "height": 1000,
+    "horizontalOverflow": false,
+    "insideViewport": true,
+    "overlayCoversSidebar": true,
+    "portalToBody": true,
+    "width": 1024
+  },
+  {
+    "dialog": {
+      "height": 201.1688232421875,
+      "width": 719.9949951171875,
+      "x": 360.12274169921875,
+      "y": 391.27984619140625
+    },
+    "height": 1000,
+    "horizontalOverflow": false,
+    "insideViewport": true,
+    "overlayCoversSidebar": true,
+    "portalToBody": true,
+    "width": 1440
+  },
+  {
+    "dialog": {
+      "height": 201.1688232421875,
+      "width": 719.9949951171875,
+      "x": 600.162841796875,
+      "y": 391.27984619140625
+    },
+    "height": 1000,
+    "horizontalOverflow": false,
+    "insideViewport": true,
+    "overlayCoversSidebar": true,
+    "portalToBody": true,
+    "width": 1920
+  }
+]

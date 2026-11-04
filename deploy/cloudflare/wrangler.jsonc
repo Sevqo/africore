@@ -7,6 +7,7 @@
   "preview_urls": false,
   "vars": {
     "BACKEND_ORIGIN": "https://africore-api.onrender.com",
+    "NEON_AUTH_BASE_URL": "https://ep-square-mountain-b4ht9gb5.neonauth.c-6.us-east-2.aws.neon.tech/neondb/auth",
     "NEON_AUTH_ORIGIN": "https://ep-square-mountain-b4ht9gb5.neonauth.c-6.us-east-2.aws.neon.tech"
   },
   "assets": {

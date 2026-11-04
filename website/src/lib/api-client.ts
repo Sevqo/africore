@@ -1,3 +1,4 @@
+import {readApiResponse} from './api-response';
 import { transport, isDemo } from '../demo/transport';
 import { identityHeaders } from '../accounts/auth';
 import { createAuthenticatedTransport } from './authenticated-transport';
@@ -24,20 +25,11 @@ export async function api(
     },
     body: ['GET','HEAD'].includes(method) ? undefined : JSON.stringify(body ?? {}),
   });
-  const data = await r.json().catch(() => {
-    throw new Error(
-      'Unable to reach AfriCore. Please try again shortly.',
-    );
-  });
-  if (!r.ok) {
+  let data;
+  try {data=await readApiResponse(r);} catch(error) {
     if (r.status===401&&!headers.Authorization&&!headers.authorization) {clearPrivateQueries();window.dispatchEvent(new CustomEvent('africore:access-changed'));}
     if(r.status===403)invalidateWorkspace(path,environment);
-    throw new Error(
-      data.message ||
-        data.issues?.map((i: { message: string }) => i.message).join(', ') ||
-        data.error ||
-        'Request failed',
-    );
+    throw error;
   }
   if(method!=='GET')invalidateWorkspace(path,environment);
   if(path==='/api/auth/account'&&!identity.Authorization&&data.user?.id)setQueryIdentity('legacy:'+data.user.id);

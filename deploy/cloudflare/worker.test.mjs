@@ -29,3 +29,14 @@ test('direct workspace refresh uses static fallback with auth CSP; internal path
   assert.equal((await handle(new Request('https://africore.example/app',{method:'POST'}),env)).status,405);
   assert.equal((await handle(new Request('http://africore.example/login'),env)).status,308);
 });
+
+test('Render hibernation throttling becomes a bounded startup failure while genuine application 429s remain unchanged',async()=>{
+ const response=await handle(new Request('https://africore.example/api/auth/config'),env,async()=>new Response('Too Many Requests\n',{status:429,headers:{'Content-Type':'text/plain','x-render-routing':'hibernate-rate-limited'}}));assert.equal(response.status,503);assert.equal(response.headers.get('Retry-After'),'20');assert.equal(response.headers.get('Cache-Control'),'no-store');assert.equal(response.headers.get('X-Frame-Options'),'DENY');assert.equal((await response.json()).error,'backend_starting');
+ const limited=await handle(new Request('https://africore.example/api/auth/config'),env,async()=>Response.json({error:'rate_limited'},{status:429,headers:{'Retry-After':'4'}}));assert.equal(limited.status,429);assert.equal(limited.headers.get('Retry-After'),'4');assert.equal((await limited.json()).error,'rate_limited');
+});
+
+test('public managed-provider discovery remains available during backend sleep and requires matching trusted origin',async()=>{
+ const auth='https://ep-fixture.neonauth.c-6.us-east-2.aws.neon.tech/neondb/auth',configured={...env,NEON_AUTH_BASE_URL:auth,NEON_AUTH_ORIGIN:new URL(auth).origin};let calls=0;const sleeping=async()=>{calls++;return new Response('Too Many Requests',{status:429,headers:{'x-render-routing':'hibernate-rate-limited'}});};const r=await handle(new Request('https://africore.example/api/auth/config'),configured,sleeping);assert.equal(r.status,200);assert.deepEqual(await r.json(),{provider:'neon',auth_url:auth});assert.equal(r.headers.get('Cache-Control'),'no-store');assert.equal(calls,0);
+ for(const base of ['https://attacker.example/auth',auth+'?secret=unexpected','http://ep-fixture.neonauth.c-6.us-east-2.aws.neon.tech/auth']){const denied=await handle(new Request('https://africore.example/api/auth/config'),{...configured,NEON_AUTH_BASE_URL:base},sleeping);assert.equal(denied.status,503);}assert.equal(calls,0);
+ const account=await handle(new Request('https://africore.example/api/auth/account'),configured,sleeping);assert.equal(account.status,503);assert.equal((await account.json()).error,'backend_starting');assert.equal(calls,1);
+});

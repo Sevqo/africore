@@ -1,5 +1,7 @@
+import {needsEmailVerification} from './auth-errors';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { managedClient } from './auth';
+import { managedClient,invalidateIdentity } from './auth';
+import {submittedSession} from './submitted-session';
 import { exitDemo } from '../demo/transport';
 import { api } from '../lib/api-client';
 import { Logo } from '../components/Logo';
@@ -32,8 +34,10 @@ export function AuthPage({ mode,kind }: { mode: string;kind?:string }) {
     setResult(null);
     const d = Object.fromEntries(new FormData(e.currentTarget));
     if (['signup','reset'].includes(mode)) {const issue=passwordIssue(String(d.password||''));if(issue){setError(issue);setBusy(false);return;}}
+    let usingManaged=false;
     try {
       const client=await managedClient();
+      usingManaged=Boolean(client);
       let r:AuthResult;
       if(client) {
         const email=String(d.email||''),password=String(d.password||'');
@@ -44,19 +48,21 @@ export function AuthPage({ mode,kind }: { mode: string;kind?:string }) {
           mode==='reset'?await client.resetPassword({newPassword:password,token:String(d.token)}):
           await client.emailOtp.verifyEmail({email,otp:String(d.token)});
         if(result.error) {
-          if (mode==='signin' && result.error.code==='EMAIL_NOT_VERIFIED') setResult({email,managed:true,needsVerification:true,message:'Verify your email to finish signing in.'});
+          if (mode==='signin' && needsEmailVerification(result.error)) setResult({email,managed:true,needsVerification:true,message:'Verify your email to finish signing in.'});
           throw new Error(result.error.message||'Authentication request failed');
         }
+        if(['signup','signin','verify'].includes(mode))invalidateIdentity();
         r={email,managed:true,message:mode==='signup'?'Account created. Verify your email if requested, then continue.':mode==='recover'?'If the account exists, a recovery email was sent.':'Authentication updated.'};
+        if(mode==='signin'&&!await submittedSession(client,email))throw new Error('The signed-in account could not be confirmed. Please retry sign-in.');
         if(mode==='signup') {
-          const session=await client.getSession();
-          if(session.data?.user?.emailVerified){navigate('/app'+intentQuery);return;}
+          const session=await submittedSession(client,email);
+          if(session?.emailVerified){navigate('/app'+intentQuery);return;}
           r.needsVerification=true;
           r.message='Check your email for the verification code, then verify your account.';
         }
         if(mode==='verify') {
           r.verified=true;
-          if((await client.getSession()).data?.user?.emailVerified){navigate('/app'+intentQuery);return;}
+          if((await submittedSession(client,email))?.emailVerified){navigate('/app'+intentQuery);return;}
         }
       } else r = await api('/api/auth/' + mode, 'POST', d);
       if(mode==='reset'){r.reset=true;}
@@ -64,6 +70,7 @@ export function AuthPage({ mode,kind }: { mode: string;kind?:string }) {
       setResult(r);
       if (mode === 'signin') navigate('/app'+intentQuery);
     } catch (e) {
+      if(usingManaged&&mode==='signin'&&needsEmailVerification(e))setResult({email:String(d.email||''),managed:true,needsVerification:true,message:'Verify your email to finish signing in.'});
       setError((e as Error).message);
     } finally {
       setBusy(false);

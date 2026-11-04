@@ -1,0 +1,35 @@
+{
+  "at": "2026-11-04T05:40:47.538Z",
+  "checks": [
+    {
+      "path": "/login",
+      "status": 200,
+      "buildMatches": true
+    },
+    {
+      "path": "/app",
+      "status": 200,
+      "buildMatches": true
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "buildMatches": true
+    },
+    {
+      "path": "/assets/index-D1-VhPkt.js",
+      "status": 200,
+      "sha256": "6aa92e4059964d5d4ca1aa50a3983be30d243d439fae4dd1c0a0f8b8c2730ff7"
+    },
+    {
+      "path": "/assets/Accounts-BZC3U8_J.js",
+      "status": 200,
+      "sha256": "be4c8bba9779823ad01040cd1ebe07ca9cdb04b9c60e5a629c88b09e6802ba26"
+    }
+  ],
+  "configuredProvider": "neon",
+  "configuredEndpointMatches": true,
+  "anonymousAccount": 401,
+  "directBackend": 403,
+  "founderLogin": "requires-user-verification"
+}
