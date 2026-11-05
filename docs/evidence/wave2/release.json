@@ -1,0 +1,104 @@
+{
+  "source_commit": "228b16cb52e8e0f0d84d2089fa35e2af5cdc3462",
+  "ci": {
+    "run": 42066979385,
+    "url": "https://github.com/Sevqo/afriscore/actions/runs/42066979385",
+    "jobs": 5,
+    "conclusion": "success"
+  },
+  "render": {
+    "deployment": "dep-dbmb543bc2fs738qlvg0",
+    "status": "live",
+    "health": 200,
+    "readiness": 200
+  },
+  "cloudflare": {
+    "version": "e5ce8dee-103e-4a4f-bb7b-a0697f4ef598",
+    "url": "https://africore-web.cypriankiprop41.workers.dev"
+  },
+  "migration": {
+    "branch": "br-jolly-lake-b4ff04st",
+    "encryptedReadbackVerified": true,
+    "originalPublicRowsRetained": true,
+    "inventory": {
+      "tables": 102,
+      "rows": 1283
+    },
+    "migration": "016-procurement",
+    "migrationApplied": true,
+    "fullRestoreTested": false
+  },
+  "verification": {
+    "at": "2026-11-05T16:48:38.358Z",
+    "checks": [
+      {
+        "path": "/login",
+        "status": 200,
+        "buildMatches": true
+      },
+      {
+        "path": "/app",
+        "status": 200,
+        "buildMatches": true
+      },
+      {
+        "path": "/",
+        "status": 200,
+        "buildMatches": true
+      },
+      {
+        "path": "/assets/index-BuXo_jId.js",
+        "status": 200,
+        "sha256": "83def6c7766eda577731bf8596645818e0920f3bc6857344c4b5617640e0d14a"
+      },
+      {
+        "path": "/assets/Accounts-BqTsxk7w.js",
+        "status": 200,
+        "sha256": "7ad51599be4800a9acb3a9226027c8edeb7be7b74e732500efb099e46b8e995a"
+      },
+      {
+        "path": "/assets/BusinessApp-CPmrtRhl.js",
+        "status": 200,
+        "sha256": "96afbdf382d701b7451a51c0b1fb3b1a77cdadc14280b632f4485f541900c0cf"
+      },
+      {
+        "path": "/assets/BusinessApp-DmcBZzQj.css",
+        "status": 200,
+        "sha256": "2c17f36395b45ed8d1f23af755ad150daeb043758917ba1e8d3c5465cb33578f"
+      }
+    ],
+    "configuredProvider": "neon",
+    "configuredEndpointMatches": true,
+    "anonymousAccount": 401,
+    "directBackend": 403,
+    "founderLogin": "Owner completed managed sign-in; hosted Business workspace and twelve-app catalog verified"
+  },
+  "tests": {
+    "postgres": {
+      "passed": 384,
+      "failed": 0
+    },
+    "sqlite": {
+      "passed": 383,
+      "skipped": 1,
+      "failed": 0
+    },
+    "website": 59,
+    "gateway": 7,
+    "development": 3,
+    "workspace_contracts": 379,
+    "legacy_contracts": 59,
+    "chain": "passed",
+    "lint": "passed",
+    "types": "passed"
+  },
+  "authenticated_hosted_acceptance": {
+    "owner_confirmed_sign_in": true,
+    "business_workspace_opened": true,
+    "app_catalog_count": 12,
+    "refresh_preserved_session": true,
+    "horizontal_overflow": false,
+    "real_data_written_by_agent": false,
+    "screenshot": "Kept private in ignored local QA artifacts; committed screenshots use fictional local records"
+  }
+}

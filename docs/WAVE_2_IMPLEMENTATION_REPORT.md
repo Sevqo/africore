@@ -57,7 +57,7 @@ Browser evidence uses a fictional local workspace and the isolated in-app browse
 
 The guarded maintenance command is node scripts/financial-development-migration.cjs --erp --apply. It accepts only the approved development project/branch/host, creates an AES-GCM encrypted backup, verifies decryption/digest, applies additive commands transactionally and compares every original public row on its original columns. On 5 November, migrations 012–016 applied successfully; all 1,283 original rows across 102 original public tables were retained unchanged. The new received quantity column is derived from retained incoming history. No production branch, identities, memberships, keys or original financial records were rewritten. A full restore rehearsal was not performed.
 
-Source push, CI and hosted backend/frontend deployment results will be appended after execution. Hosted startup remains read-only schema verification. Backend must be live with the new schema before the Cloudflare frontend is published. Existing user service selections/installations are not silently expanded; Apps provides explicit reviewed installation of the new applications.
+Source push, CI and hosted deployment results are recorded below. Hosted startup remains read-only schema verification. Backend must be live with the new schema before the Cloudflare frontend is published. Existing user service selections/installations are not silently expanded; Apps provides explicit reviewed installation of the new applications.
 
 ## Availability limits and remaining work
 
@@ -69,3 +69,11 @@ Source push, CI and hosted backend/frontend deployment results will be appended 
 - Managed MFA/passkeys remain dependent on genuine provider support; no auth migration is authorized. Free Render sleep remains possible. Physical-device and external provider/issuer qualification remain external readiness work.
 
 Later master-roadmap requirements remain recorded and are not represented as delivered by this evaluation release.
+
+## Hosted release — 5 November 2026
+
+Application source [228b16c](https://github.com/Sevqo/afriscore/commit/228b16cb52e8e0f0d84d2089fa35e2af5cdc3462) is pushed to main with the requested Git author email. All five jobs in [CI run42066979385](https://github.com/Sevqo/afriscore/actions/runs/42066979385) passed. Render deployment dep-dbmb543bc2fs738qlvg0 is Live; the hosted Docker build and startup passed, and health/readiness return200. Cloudflare version e5ce8dee-103e-4a4f-bb7b-a0697f4ef598 was published after backend readiness. Hosted login/app/home HTML and entry, Accounts, BusinessApp JS/CSS hashes match the tested build. Managed auth configuration matches the existing provider; anonymous account access returns401 and direct protected backend access403.
+
+The owner completed managed sign-in in the isolated browser. The hosted Business workspace opened, all twelve app cards loaded with their actual installation states, and a full page refresh retained the managed session and the twelve-app catalog. Measured width738 with document width723 had no horizontal overflow. The agent did not write real workspace records or auto-install new apps. Detailed mutation workflows used fictional local records; this hosted read-through does not assert every real-world workflow or provider integration has been exercised. The hosted screenshot remains in ignored local artifacts; committed screenshots contain fictional records only. Open a Business workspace, choose Apps, then review/install the desired new app. The public homepage is not the authenticated app directory.
+
+Structured deployment evidence: evidence/wave2/release.json. App directory screenshot: evidence/wave2/twelve-apps-desktop.png. Render proof: evidence/wave2/render-live.png. The remaining limitations above are explicit; the full future master plan is preserved.
