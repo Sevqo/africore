@@ -1,0 +1,6 @@
+import {PassportWorkspace} from '../trust/PassportWorkspace';
+const sections:Record<string,string>={dashboard:'Overview',profile:'Business Identity',verification:'Verification Requests',passport:'Overview',credentials:'Credentials',evidence:'Trust Evidence',sharing:'Shared Access',relationships:'Business Network',history:'Activity History',settings:'Privacy & Security'};
+/** An app over the existing holder, evidence, credential and consent services. */
+export function BusinessIDWorkspace({scope,role,services,section='dashboard'}:{scope:string;role:string;services:any[];section?:string}){
+ const [org,environment]=scope.split('\0');return <div className="apps-workspace"><section className="panel"><h2>Business identity and controlled sharing</h2><p>The Business Passport, evidence, credentials and sharing records below are the existing shared trust records. Self-reported details, recorded evidence, issuer authority and credential integrity retain separate states. An app installation does not make a business independently verified.</p></section><PassportWorkspace holderOnly key={scope} org={org} environment={environment} role={role} serviceIds={services.filter(s=>s.status==='active').map(s=>s.id)} initialTab={sections[section]||'Overview'}/></div>;
+}

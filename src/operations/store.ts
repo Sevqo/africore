@@ -15,6 +15,11 @@ export const kinds = [
   'connectors',
   'risk_reviews',
   'notification_preferences',
+  'crm_configuration',
+  'crm_entry_revision',
+  'quotation_revision',
+  'sales_pricelist',
+  'sales_template',
 ] as const;
 export type Kind = (typeof kinds)[number];
 export interface DomainObject {
@@ -133,19 +138,4 @@ export async function legacy(a: Access, kind: string) {
     )
   ).map((r) => ({ ...JSON.parse(r.data), id: r.id, created_at: r.created_at }));
 }
-export function safeCSV(rows: unknown[][]) {
-  return rows
-    .map((row) =>
-      row
-        .map(
-          (v) =>
-            '"' +
-            String(v ?? '')
-              .replace(/^[=+@\-\t\r]/, "'")
-              .replace(/"/g, '""') +
-            '"',
-        )
-        .join(','),
-    )
-    .join('\r\n');
-}
+export {safeCSV} from '../common/csv-export';

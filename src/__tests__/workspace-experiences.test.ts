@@ -5,6 +5,7 @@ import { configureTestEnv,productFixtureBody } from "./helpers";
 configureTestEnv("workspace-experiences");
 import { migrate, closeDb, dbGet, dbRun } from "../db";
 import { createApp } from "../app";
+import {serviceCatalog} from "../marketplace/catalog";
 import { migrateWorkspaceExperiences } from "../platform/workspace-schema";
 let server: ReturnType<ReturnType<typeof createApp>["listen"]>, base: string;
 before(async () => {
@@ -416,4 +417,9 @@ test("Developer onboarding needs no company, scoped keys work only in their sand
     u.cookie,
   );
   assert.equal(invalid.status, 400);
+});
+
+
+test('Business onboarding accepts the current eligible catalog while selections stay bounded and unique',async()=>{
+ const u=await identity(),services=serviceCatalog.filter(s=>s.kinds.includes('business')&&s.availability!=='unavailable').map(s=>s.id);const created=await req('/api/auth/workspaces','POST',{...setup('business'),services},u.cookie);assert.equal(created.status,201,JSON.stringify(created.data));const duplicate=await req('/api/auth/workspaces','POST',{...setup('business'),services:['invoicing','invoicing']},u.cookie);assert.equal(duplicate.status,400);const oversized=await req('/api/auth/workspaces','POST',{...setup('business'),services:Array.from({length:101},(_,i)=>'service_'+i)},u.cookie);assert.equal(oversized.status,400);
 });

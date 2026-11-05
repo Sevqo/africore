@@ -23,3 +23,8 @@ test('cancelling obsolete workspace reads aborts only their pending requests',as
  assert.equal(oldSignal.aborted,true);assert.deepEqual(cache.peek('current'),{safe:true});
  cache.invalidate(key=>key==='current');assert.equal(cache.peek('current'),undefined);
 });
+
+
+test('private approvals, personnel, project records and file bytes always recheck the server',()=>{
+ for(const path of ['/approvals','/approvals?offset=50','/business/approvals','/documents','/documents/file-id/content','/documents/file-id/content?version_id=old','/document-requests','/document-attachments?source_kind=employee&source_id=private','/people/employees','/people/employees/employee-id/compensation','/work/projects/project-id','/accounting/entries'])assert.equal(cacheable('/api/v1/organizations/org-a'+path),false,path);
+});

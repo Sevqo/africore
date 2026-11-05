@@ -77,11 +77,15 @@ export function PassportWorkspace({
   environment,
   role,
   serviceIds,
+  initialTab='Overview',
+  holderOnly=false,
 }: {
   org: string;
   environment: string;
   role: string;
   serviceIds?:string[];
+  initialTab?:string;
+  holderOnly?:boolean;
 }) {
   const [tab, setTab] = useState('Overview'),
     [data, setData] = useState<any>(null),
@@ -111,6 +115,7 @@ export function PassportWorkspace({
   }
   const enabled=(id:string)=>isDemo()||!serviceIds||serviceIds.includes(id);
   const serviceScope=serviceIds?.join(',')||'';
+  useEffect(()=>{const required=({'Business Identity':'verification',Credentials:'credentials','Business Network':'trust_network'} as Record<string,string>)[initialTab];setTab(tabs.includes(initialTab)&&(!required||enabled(required))?initialTab:'Overview');},[initialTab,org,environment,serviceScope]);
   useEffect(() => {
     load().catch((e) => setError(e.message));
   }, [org, environment,serviceScope]);
@@ -178,7 +183,7 @@ export function PassportWorkspace({
         </p>
       )}
       <nav className="passport-tabs" aria-label="Business Passport sections">
-        {tabs.filter(t=>{const required=({'Business Identity':'verification',Credentials:'credentials','Issuer Desk':'credentials','Business Network':'trust_network'} as Record<string,string>)[t];return !required||enabled(required);}).map((t) => (
+        {tabs.filter(t=>{if(holderOnly&&['Issuer Desk','Trust Operations'].includes(t))return false;const required=({'Business Identity':'verification',Credentials:'credentials','Issuer Desk':'credentials','Business Network':'trust_network'} as Record<string,string>)[t];return !required||enabled(required);}).map((t) => (
           <button
             key={t}
             aria-current={tab === t ? 'page' : undefined}

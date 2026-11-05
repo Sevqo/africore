@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import path from "path";
 import { AsyncLocalStorage } from "node:async_hooks";
+import { randomUUID } from 'node:crypto';
 import { Pool, PoolClient, types as pgTypes } from "pg";
 
 /**
@@ -249,6 +250,15 @@ export async function dbExec(sql: string): Promise<void> {
     return;
   }
   await pgQuery(sql, []);
+}
+
+/** Isolate a recoverable workflow action without committing its enclosing transaction. */
+export async function dbSavepoint<T>(fn:()=>Promise<T>):Promise<T>{
+  if(!inTransaction())return dbTransaction(()=>dbSavepoint(fn));
+  const name='operation_'+randomUUID().replace(/-/g,'');
+  await dbExec('SAVEPOINT '+name);
+  try{const value=await fn();await dbExec('RELEASE SAVEPOINT '+name);return value;}
+  catch(error){await dbExec('ROLLBACK TO SAVEPOINT '+name);await dbExec('RELEASE SAVEPOINT '+name);throw error;}
 }
 
 /** Closes the pool / SQLite handle. Used by graceful shutdown and tests.

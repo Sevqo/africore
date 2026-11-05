@@ -1,3 +1,4 @@
+import {serviceSelectionInput} from '../common/service-selection';
 import {requestInput} from '../finance/contracts';
 import {financialOperation,canonical} from '../finance/service';
 import {documentBalance} from '../finance/ledger';
@@ -83,7 +84,7 @@ const profileSchema = z.object({
   registration_number: z.string().max(80).optional(),
   tax_id: z.string().max(80).optional(),
   features: z.array(z.string().max(50)).max(20).default([]),
-  services:z.array(z.string().regex(/^[a-z][a-z0-9_]{1,60}$/)).max(30).default([]),
+  services:serviceSelectionInput,
 });
 platform.get(
   '/organizations',

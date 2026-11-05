@@ -26,8 +26,8 @@ function currentKeyId(){const id=process.env.AFRICORE_ENCRYPTION_KEY_ID||'primar
 function keys(){const raw=process.env.AFRICORE_ENCRYPTION_KEY;if((!raw||raw.length<32)&&process.env.NODE_ENV==='production')throw new Error('AFRICORE_ENCRYPTION_KEY is required');const old:Record<string,string>=JSON.parse(process.env.AFRICORE_ENCRYPTION_PREVIOUS_KEYS||'{}');return {...old,[currentKeyId()]:raw||'local-only-africore-key-do-not-use-in-production'};}
 function key(raw:string){return createHash('sha256').update(raw).digest();}
 export const encryptionContext=(...parts:string[])=>JSON.stringify(['africore-aead-v2',...parts]);
-export function seal(value:string,context='application'){
- const version=process.env.AFRICORE_ENCRYPTION_WRITE_VERSION||(process.env.NODE_ENV==='production'?'1':'2');
+export function seal(value:string,context='application',writeVersion?:'2'){
+ const version=writeVersion||process.env.AFRICORE_ENCRYPTION_WRITE_VERSION||(process.env.NODE_ENV==='production'?'1':'2');
  if(!['1','2'].includes(version))throw new Error('Invalid encryption write version');
  const id=currentKeyId(),iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',key(keys()[id]),iv);
  if(version==='2')cipher.setAAD(Buffer.from(encryptionContext(id,context)));

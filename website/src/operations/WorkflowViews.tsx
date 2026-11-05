@@ -1,3 +1,6 @@
+import {useIdempotentAPI} from '../apps/useIdempotentAPI';
+import {useState} from 'react';
+import {WorkflowBranchFields,workflowBranchValues} from './WorkflowBranchFields';
 import {ApprovalDetails} from './ApprovalDetails';
 import {WorkflowDetail,RunControl} from './WorkflowDetail';
 import {parseMoney} from '../../../src/finance/money';
@@ -13,16 +16,20 @@ import {
 export function AutomationView({
   data,
   secondary,
-  api,
+  api:providedApi,
   action,
   currency,
+  scope,
 }: {
   data: any;
   secondary: any;
   api: API;
   action: Action;
   currency: string;
+  scope:string;
 }) {
+ const api=useIdempotentAPI(providedApi,scope);
+ const [template,setTemplate]=useState(secondary.templates?.[0]?.id||'customer_onboarding');
   return (
     <>
       <div className="dashboard-columns">
@@ -31,7 +38,7 @@ export function AutomationView({
             action(
               () =>
                 api('/automations', 'POST', {
-                  name: d.name,
+                  ...workflowBranchValues(d),name: d.name,
                   template: d.template,
                   enabled: d.enabled === 'on',
                   schedule: { frequency: d.frequency, hour: Number(d.hour),timezone:d.timezone },
@@ -51,7 +58,7 @@ export function AutomationView({
             <input name="name" required maxLength={100} />
           </Field>
           <Field label="Trigger template">
-            <select name="template">
+            <select name="template" value={template} onChange={e=>setTemplate(e.target.value)}>
               {secondary.templates?.map((t: any) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
@@ -92,7 +99,7 @@ export function AutomationView({
           <p>
             Action follows the selected supported template: notify the owner, create an assigned CRM follow-up, or prepare a replenishment suggestion for review. No customer message, supplier order or financial action is sent.
           </p>
-          <label className="checkbox-field">
+          <WorkflowBranchFields key={template} template={template}/><label className="checkbox-field">
             <input type="checkbox" name="enabled" />
             Enable workflow
           </label>
@@ -327,8 +334,9 @@ export function ApprovalView({
           </Field>
           <Field label="Assigned approver">
             <select name="approver" required>
+              <option value="">Choose a different owner or administrator</option>
               {secondary.team
-                ?.filter((m: any) => ['owner', 'admin'].includes(m.role))
+                ?.filter((m: any) => ['owner', 'admin'].includes(m.role)&&m.id!==data?.current_actor)
                 .map((m: any) => (
                   <option key={m.id} value={m.id}>
                     {m.email} · {m.role}
@@ -343,7 +351,7 @@ export function ApprovalView({
         </p>
         <button className="button">Request approval</button>
       </Form>}
-      <p>Request exact invoice-credit, stock-adjustment and quotation-discount reviews from the original service record.</p>
+      <p>Request exact journal-posting, invoice-credit, stock-adjustment and quotation-discount reviews from the original service record.</p>
       <section className="panel">
         <h2>My review queue</h2>
         {data?.data?.length ? (
@@ -362,7 +370,7 @@ export function ApprovalView({
                 </p>
               </div>
               {a.status==='pending'&&(admin||a.requester===data.current_actor)&&<details><summary>Cancel this request</summary><Form submit={d=>action(()=>api('/approvals/'+a.id+'/cancel','POST',{reason:d.reason}),'Approval request cancelled.')}><Field label="Cancellation reason"><input name="reason" required minLength={5} maxLength={500}/></Field><button className="quiet-button">Cancel request</button></Form></details>}
-              {a.status === 'pending' && admin && a.approver===data.current_actor && a.requester!==data.current_actor && (
+              {a.status === 'pending' && (a.can_decide ?? admin) && a.approver===data.current_actor && a.requester!==data.current_actor && (
                 <Form
                   className="approval-form"
                   submit={(d) =>
@@ -387,7 +395,7 @@ export function ApprovalView({
             </article>
           ))
         ) : (
-          <Empty text="No requests assigned to or created by you." />
+          data?<Empty text="No requests assigned to or created by you." />:null
         )}
       </section>
     </>

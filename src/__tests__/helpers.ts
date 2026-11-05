@@ -44,7 +44,13 @@ export function configureTestEnv(suiteName: string): { isPg: boolean; sqlitePath
 
   // An explicit empty value prevents .env loading from opting tests into Neon.
   process.env.DATABASE_URL = '';
-  const sqlitePath = path.join(__dirname, `../../test-${suiteName}.db`);
+  // Published prices and provider references deliberately survive ordinary
+  // cleanup. Give each invocation fresh custody instead of deleting history
+  // or weakening those constraints to make repeated test runs pass.
+  const fixtureRoot = path.join(__dirname, '../../.tmp/test-fixtures');
+  fs.mkdirSync(fixtureRoot, { recursive: true });
+  const suiteDirectory = fs.mkdtempSync(path.join(fixtureRoot, suiteName.replace(/[^a-zA-Z0-9_-]/g, '_') + '-'));
+  const sqlitePath = path.join(suiteDirectory, 'fixture.db');
   process.env.DB_PATH = sqlitePath;
   return { isPg: false, sqlitePath };
 }

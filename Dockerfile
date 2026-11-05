@@ -49,6 +49,8 @@ COPY src/platform/password-strength.ts /app/src/platform/password-strength.ts
 COPY src/marketplace/catalog.ts /app/src/marketplace/catalog.ts
 COPY src/inventory/quantity.ts /app/src/inventory/quantity.ts
 COPY src/finance/money.ts /app/src/finance/money.ts
+COPY src/common /app/src/common
+COPY src/services/statement/csv.ts /app/src/services/statement/csv.ts
 RUN npm run build
 
 # --- Production dependencies only ------------------------------------------

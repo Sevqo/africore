@@ -229,7 +229,7 @@ export function OperationsWorkspace({
         <AssistantView api={api} currency={currency} />
       )}
       {section === 'Automations' && (
-        <AutomationView
+        <AutomationView scope={org+'\0'+environment}
           data={data}
           secondary={secondary}
           api={api}

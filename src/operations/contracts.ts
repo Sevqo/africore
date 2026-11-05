@@ -1,3 +1,5 @@
+import {workflowAction,workflowActions,workflowBranchFields} from '../common/workflow-policy';
+export {workflowAction,selectedWorkflowAction} from '../common/workflow-policy';
 import { z } from 'zod';
 import { currencySchema,quantitySchema } from '../platform/domain';
 export const minor = z.number().int().min(1).max(100000000000);
@@ -53,6 +55,8 @@ export const forecastSchema = z
   })
   .strict();
 export const automationTemplates = [
+ {id:'crm_stage_follow_up',name:'Follow up a changed CRM stage',trigger:'crm.stage_changed',category:'crm'},
+ {id:'invoice_review_task',name:'Prepare an invoice review follow-up',trigger:'invoice.issued',category:'crm'},
  {id:'customer_onboarding',name:'Create customer onboarding task',trigger:'customer.created',category:'crm'},
  {id:'stock_replenishment',name:'Prepare replenishment suggestion',trigger:'inventory.reorder_needed',category:'inventory'},
  {id:'order_sync_review',name:'Review confirmed-order synchronization',trigger:'order.confirmed',category:'orders'},
@@ -120,7 +124,7 @@ export const automationTemplates = [
     category: 'payments',
   },
 ] as const;
-export function workflowAction(template:string){return template==='customer_onboarding'?'create_crm_follow_up':template==='stock_replenishment'?'replenishment_suggestion':'in_app_notification';}
+export const workflowBranch=z.object({conditions:z.array(z.object({field:z.enum(['stage','kind','currency','amount_minor']),operator:z.enum(['eq','gte','lte']),value:z.union([z.string().max(100),z.number().int().min(0).max(1e11)])}).strict()).min(1).max(8),action:z.enum(['in_app_notification','create_crm_follow_up','replenishment_suggestion','skip'])}).strict();
 export const automationSchema = z
   .object({
     name: z.string().trim().min(1).max(100),
@@ -142,10 +146,13 @@ export const automationSchema = z
         timezone:z.string().max(100).default('Africa/Nairobi').refine(v=>{try{new Intl.DateTimeFormat('en',{timeZone:v});return true;}catch{return false;}},'Invalid timezone'),
       })
       .default({ frequency: 'daily', hour: 9, timezone:'Africa/Nairobi' }),
+    branches:z.array(workflowBranch).max(10).default([]),
+    fallback_action:z.enum(['in_app_notification','create_crm_follow_up','replenishment_suggestion','skip']).optional(),
+    retry_policy:z.object({max_attempts:z.number().int().min(1).max(5),base_delay_seconds:z.number().int().min(1).max(3600)}).strict().default({max_attempts:3,base_delay_seconds:2}),
     delay_minutes:z.number().int().min(0).max(10080).default(0),
     action: z.enum(['in_app_notification','create_crm_follow_up','replenishment_suggestion']).optional(),
   })
-  .strict().superRefine((d,ctx)=>{if(['customer_onboarding','stock_replenishment','order_sync_review'].includes(d.template)&&d.conditions.minimum_minor!==0)ctx.addIssue({code:'custom',path:['conditions','minimum_minor'],message:'This event template has no monetary threshold; use zero'});if(d.action&&d.action!==workflowAction(d.template))ctx.addIssue({code:'custom',path:['action'],message:'The action must match its supported template'});});
+  .strict().superRefine((d,ctx)=>{const allowed=workflowActions(d.template);for(const branch of d.branches)for(const condition of branch.conditions){if(!workflowBranchFields(d.template).includes(condition.field))ctx.addIssue({code:'custom',path:['branches'],message:'This source field is not supported by the selected trigger'});if(condition.field==='amount_minor'?typeof condition.value!=='number':typeof condition.value!=='string'||condition.operator!=='eq')ctx.addIssue({code:'custom',path:['branches'],message:'Use numeric amount comparisons or text equality'});}for(const action of [...d.branches.map(b=>b.action),...(d.fallback_action?[d.fallback_action]:[])])if(!allowed.includes(action))ctx.addIssue({code:'custom',path:['branches'],message:'Branch actions must be supported by the selected template'});if(['customer_onboarding','stock_replenishment','order_sync_review'].includes(d.template)&&d.conditions.minimum_minor!==0)ctx.addIssue({code:'custom',path:['conditions','minimum_minor'],message:'This event template has no monetary threshold; use zero'});if(d.action&&d.action!==workflowAction(d.template))ctx.addIssue({code:'custom',path:['action'],message:'The action must match its supported template'});});
 export const evidenceSchema = z
   .object({
     statement: z.string().trim().min(5).max(3000),

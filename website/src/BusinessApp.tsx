@@ -1,3 +1,8 @@
+import {ProcurementWorkspace} from './apps/ProcurementWorkspace';
+import {DocumentsWorkspace} from './apps/DocumentsWorkspace';
+import {PeopleWorkspace} from './apps/PeopleWorkspace';
+import {WorkWorkspace} from './apps/WorkWorkspace';
+import {AccountingWorkspace} from './apps/AccountingWorkspace';
 import {NotificationCentre} from './apps/NotificationCentre';
 import {WorkspaceSearch} from './apps/WorkspaceSearch';
 import {WorkspaceAccountMenu} from './apps/WorkspaceAccountMenu';
@@ -324,7 +329,7 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
     if (currentScope.current !== viewScope) return;
     const latest = requestGate.current.begin();
     const current = () => latest() && currentScope.current === viewScope;
-    if (!org || ['Apps','Customer Relationships','Products','Inventory','Quotations'].includes(tab) || tab==='Expenses' || marketTabs.includes(tab) || !canReadServiceTab(market,tab) || tab === 'Business Passport' || operationsTabs.includes(tab)) {
+    if (!org || ['Apps','Customer Relationships','Products','Inventory','Quotations','Work','Accounting','People','Documents'].includes(tab) || tab==='Expenses' || marketTabs.includes(tab) || !canReadServiceTab(market,tab) || tab === 'Business Passport' || operationsTabs.includes(tab)) {
       setError('');
       setBusy(false);
       return;
@@ -1009,10 +1014,15 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
                   serviceIds={market.catalog?.services.filter((s:any)=>s.status==='active').map((s:any)=>s.id)||[]}
                 />
               )}
-              {tab==='Customer Relationships'&&<CrmWorkspace writable={!!writable} api={call} scope={org+'\0'+environment} navigate={setTab}/>}
+              {tab==='Customer Relationships'&&<CrmWorkspace admin={adminWritable} writable={!!writable} api={call} scope={org+'\0'+environment} navigate={setTab}/>}
 {tab==='Products'&&<ProductCatalog writable={!!writable} api={call} scope={org+'\0'+environment}/>}
 {tab==='Inventory'&&<InventoryWorkspace writable={!!writable} api={call} scope={org+'\0'+environment}/>}
-{tab==='Quotations'&&<SalesWorkspace writable={!!writable} api={call} scope={org+'\0'+environment} navigate={setTab} services={market.catalog?.services||[]}/>}
+{tab==='Accounting'&&<AccountingWorkspace key={org+'\0'+environment} api={call} scope={org+'\0'+environment} manager={adminWritable} navigate={setTab}/>}
+{tab==='Procurement'&&<ProcurementWorkspace key={org+'\0'+environment} api={call} scope={org+'\0'+environment}/>}
+{tab==='Documents'&&<DocumentsWorkspace key={org+'\0'+environment} api={call} scope={org+'\0'+environment}/>}
+{tab==='People'&&<PeopleWorkspace key={org+'\0'+environment} api={call} scope={org+'\0'+environment}/>}
+{tab==='Work'&&<WorkWorkspace key={org+'\0'+environment} api={call} scope={org+'\0'+environment}/>}
+{tab==='Quotations'&&<SalesWorkspace admin={adminWritable} writable={!!writable} api={call} scope={org+'\0'+environment} navigate={setTab} services={market.catalog?.services||[]}/>}
 {tab==='Customers'&&<CustomerTools api={call} org={org} environment={environment} writable={writable} onChanged={load}/>}
               {['Cash Flow','Reports'].includes(tab)&&<FinancialOverview api={call} scope={org+'\0'+environment}/>}
               {tab==='Invoices'&&<div className="finance-toolbar" aria-label="Invoice views">{[['all','All invoices'],['draft','Drafts'],['outstanding','Outstanding'],['overdue','Overdue'],['paid','Paid'],['credited','Credited']].map(([value,label])=><button key={value} className="secondary-button" aria-pressed={invoiceFilter===value} onClick={()=>{setOffset(0);setInvoiceFilter(value);}}>{label}</button>)}</div>}

@@ -1,0 +1,16 @@
+import {z} from 'zod';
+import {currencySchema} from '../platform/domain';
+const id=z.string().uuid(),name=z.string().trim().min(1).max(160);
+export const peoplePolicy=z.object({working_week:z.array(z.number().int().min(0).max(6)).min(1).max(7),holidays:z.array(z.object({date:z.string().date(),name})).max(366),allow_manager_profiles:z.boolean(),allow_manager_leave_approval:z.boolean(),share_leave_calendar_with_managers:z.boolean(),share_self_personnel_files:z.boolean(),share_self_compensation:z.boolean(),hr_members:z.array(z.object({user_id:id,permission:z.enum(['view','edit','manage'])}).strict()).max(100),compensation_members:z.array(z.object({user_id:id,permission:z.enum(['view','edit'])}).strict()).max(100)}).strict();
+export const peopleConfigurationInput=z.object({expected_version:z.number().int().min(0),policy:peoplePolicy}).strict();
+export const departmentInput=z.object({expected_version:z.number().int().min(0),name,manager_id:id.nullable().default(null),active:z.boolean().default(true)}).strict();
+export const employeeInput=z.object({expected_version:z.number().int().min(0),employee_number:z.string().trim().min(1).max(60),name,job_title:z.string().max(160).default(''),department_id:id.nullable().default(null),manager_id:id.nullable().default(null),linked_user_id:id.nullable().default(null),self_service:z.boolean().default(false),work_email:z.string().email().max(200).or(z.literal('')).default(''),work_phone:z.string().max(80).default(''),start_on:z.string().date(),status:z.enum(['active','onboarding','inactive']).default('onboarding'),hr_notes:z.string().max(5000).default('')}).strict();
+export const leaveTypeInput=z.object({expected_version:z.number().int().min(0),name,active:z.boolean().default(true),annual_allowance_milli:z.number().int().min(0).max(366000),accrual:z.enum(['annual','monthly']),prorate_start_year:z.boolean().default(false),paid:z.boolean().default(false)}).strict();
+export const leaveRequestInput=z.object({leave_type_id:id,from:z.string().date(),to:z.string().date(),half_day:z.boolean().default(false),reason:z.string().max(3000).default(''),approver:id}).strict();
+export const leavePreviewInput=leaveRequestInput.omit({approver:true,reason:true});
+export const leaveAdjustmentInput=z.object({leave_type_id:id,year:z.number().int().min(1900).max(9999),units_milli:z.number().int().min(-366000).max(366000).refine(n=>n!==0,'A non-zero adjustment is required'),reference:z.string().trim().min(3).max(120),reason:z.string().trim().min(8).max(2000)}).strict();
+export const attendanceCorrectionInput=z.object({expected_version:z.number().int().min(1),check_in:z.string().datetime(),check_out:z.string().datetime(),reason:z.string().trim().min(8).max(2000)}).strict();
+export const compensationInput=z.object({effective_from:z.string().date(),effective_to:z.string().date().nullable().default(null),amount_minor:z.number().int().min(0).max(100000000000),currency:currencySchema,period:z.enum(['hour','week','month','year']),notes:z.string().max(3000).default(''),supersedes_id:id.nullable().default(null)}).strict();
+
+export const peopleConfirmationInput=z.object({confirm:z.literal(true)}).strict();
+export const leaveCancelInput=z.object({expected_version:z.number().int().min(1),reason:z.string().trim().min(8).max(2000)}).strict();

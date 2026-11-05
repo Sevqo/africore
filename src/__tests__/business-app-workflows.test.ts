@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {configureTestEnv} from './helpers';
 configureTestEnv('business-app-workflows');
+import {hash} from '../platform/crypto';
+import {canonical} from '../finance/service';
 import {migrate,dbAll,dbGet,dbRun,closeDb} from '../db';
 import {createApp} from '../app';
 import {stockBalance} from '../inventory/service';
@@ -267,4 +269,79 @@ test('stock counts reject consuming reservations and respect workspace, role and
  assert.equal((await api(path('/inventory/stock-counts'),'POST',{...body,warehouse_id:randomUUID()})).status,404);
  const outsider=await api('/api/auth/signup','POST',{email:randomUUID()+'@example.test',password:'Synthetic-count-outsider-2026!'});await api('/api/auth/verify','POST',{token:outsider.data.verification_token},outsider.cookie);assert.equal((await api(path('/inventory/stock-counts'),'POST',body,outsider.cookie)).status,403);const user=(await api('/api/auth/account','GET',undefined,outsider.cookie)).data.user.id;await dbRun("INSERT INTO ac_memberships(org_id,user_id,role) VALUES (?,?,'viewer')",[org,user]);assert.equal((await api(path('/inventory/stock-counts'),'POST',body,outsider.cookie)).status,403);
  await dbRun("UPDATE ac_service_entitlements SET status='disabled' WHERE org_id=? AND service_id='inventory'",[org]);try{assert.equal((await api(path('/inventory/stock-counts'),'POST',body)).status,402);}finally{await dbRun("UPDATE ac_service_entitlements SET status='active' WHERE org_id=? AND service_id='inventory'",[org]);}
+});
+
+
+test('CRM configuration, team ownership, archive and version history retain authorization and historical stages',async()=>{
+ const configuration=await api(path('/crm/configuration'));assert.equal(configuration.status,200);const teamId=randomUUID(),stages=[...configuration.data.stages,{id:'negotiation',name:'Negotiation'}],teams=[{id:teamId,name:'Synthetic sales team',owner:actor,members:[actor,approverId],active:true}];
+ const saved=await api(path('/crm/configuration'),'PUT',{expected_version:configuration.data.version,stages,teams});assert.equal(saved.status,200,JSON.stringify(saved.data));
+ const lead=await api(path('/crm/entries'),'POST',{kind:'opportunity',customer_id:customerId,title:'Configurable pipeline fixture',stage:'negotiation',team_id:teamId,assigned_to:actor,probability_bps:7500,expected_close_on:'2026-12-01',tags:['priority']});assert.equal(lead.status,201,JSON.stringify(lead.data));
+ const {id,version,created_at,updated_at,...entry}=lead.data;const changed=await api(path('/crm/entries/'+id),'PATCH',{expected_version:version,entry:{...entry,stage:'won',outcome_reason:'Synthetic commercial review complete'}});assert.equal(changed.status,200);const history=await api(path('/crm/entries/'+id+'/history'));assert.equal(history.status,200);assert.equal(history.data.data.length,2);assert.equal(history.data.data[0].snapshot.stage,'negotiation');assert.equal(history.data.data[1].snapshot.stage,'won');
+ assert.equal((await api(path('/crm/configuration'),'PUT',{expected_version:saved.data.version,stages:configuration.data.stages,teams})).status,409);
+ assert.equal((await api(path('/crm/configuration'),'PUT',{expected_version:configuration.data.version,stages,teams})).status,409);
+ assert.equal((await api(path('/crm/configuration'),'PUT',{expected_version:saved.data.version,stages,teams:[{...teams[0],members:[approverId],owner:approverId}]})).status,409);
+ assert.ok(Number((await dbGet("SELECT COUNT(*) AS n FROM ac2_events WHERE org_id=? AND resource_id=? AND event_type='crm.stage_changed'",[org,id])).n)===1);
+ const archived=await api(path('/crm/entries/'+id),'PATCH',{expected_version:2,entry:{...entry,stage:'won',status:'archived'}});assert.equal(archived.status,200);assert.equal((await api(path('/crm/entries/'+id+'/history'))).data.data.length,3);
+});
+
+test('CRM bulk import is atomic and deduplicated by stable source even with a different retry key',async()=>{
+ const source_id='source-'+randomUUID(),row={kind:'lead',customer_id:customerId,title:'Imported controlled lead'},body={source_id,rows:[row]};const first=await api(path('/crm/import'),'POST',body);assert.equal(first.status,200,JSON.stringify(first.data));const replay=await api(path('/crm/import'),'POST',body);assert.deepEqual(replay.data,first.data);assert.equal((await api(path('/crm/import'),'POST',{source_id,rows:[{...row,title:'Changed imported content'}]})).status,409);
+ const before=Number((await dbGet('SELECT COUNT(*) AS n FROM ac_crm_entries WHERE org_id=?',[org])).n);assert.equal((await api(path('/crm/import'),'POST',{source_id:'invalid-'+randomUUID(),rows:[row,{...row,customer_id:randomUUID()}]})).status,404);assert.equal(Number((await dbGet('SELECT COUNT(*) AS n FROM ac_crm_entries WHERE org_id=?',[org])).n),before);
+});
+
+
+test('CRM reporting filters before grouping, retains exact probability arithmetic and isolates currencies and history',async()=>{
+ const opportunity=await api(path('/crm/entries'),'POST',{kind:'opportunity',customer_id:customerId,title:'Synthetic weighted report',assigned_to:actor,amount_minor:12345,currency:'KES',probability_bps:7500,expected_close_on:'2026-12-10'});assert.equal(opportunity.status,201);
+ const foreign=await api(path('/crm/entries'),'POST',{kind:'opportunity',customer_id:customerId,title:'Separate currency fixture',amount_minor:9000000,currency:'USD'});assert.equal(foreign.status,201);
+ const report=await api(path('/crm/report?currency=KES&assignee='+actor));assert.equal(report.status,200,JSON.stringify(report.data));assert.ok(report.data.records.some((r:any)=>r.id===opportunity.data.id));assert.ok(report.data.records.every((r:any)=>r.currency==='KES'&&r.assigned_to===actor));assert.equal(report.data.timezone,'Africa/Nairobi');const before=report.data.by_assignee.find((r:any)=>r.id===actor);assert.ok(before.weighted_open_minor>=9259);
+ assert.equal((await api(path('/crm/report?from=2026-12-31&to=2026-01-01'))).status,400);
+ const stranger=await api('/api/auth/signup','POST',{email:randomUUID()+'@example.test',password:'Synthetic-crm-report-outsider-2026!'});assert.equal((await api(path('/crm/entries/'+opportunity.data.id+'/history'),'GET',undefined,stranger.cookie)).status,403);assert.equal((await api(path('/crm/report'),'GET',undefined,stranger.cookie)).status,403);
+ const body=await api('/api/auth/account','GET',undefined,stranger.cookie);await dbRun("INSERT INTO ac_memberships(org_id,user_id,role) VALUES (?,?,'operations')",[org,body.data.user.id]);await api('/api/auth/verify','POST',{token:stranger.data.verification_token},stranger.cookie);const config=await api(path('/crm/configuration'));assert.equal((await api(path('/crm/configuration'),'PUT',{expected_version:config.data.version,stages:config.data.stages,teams:config.data.teams},stranger.cookie)).status,403);
+});
+
+
+test('quotation revision retains shared history and expired terms cannot be accepted without review',async()=>{
+ const old=await api(path('/sales/quotations'),'POST',{...document(1),issue_date:addDays(day(),-30),valid_until:addDays(day(),-1)});assert.equal(old.status,201);const id=old.data.id;const shared=await api(path('/sales/quotations/'+id+'/action'),'POST',{action:'mark_shared',expected_version:1});assert.equal(shared.status,200);assert.equal((await api(path('/sales/quotations/'+id+'/action'),'POST',{action:'accept',expected_version:2})).status,409);
+ assert.equal((await api(path('/sales/quotations/'+id),'PATCH',{expected_version:2,document:document(2)})).status,409);
+ const revised=await api(path('/sales/quotations/'+id+'/action'),'POST',{action:'revise',expected_version:2,reason:'Synthetic validity extension requested'});assert.equal(revised.status,200,JSON.stringify(revised.data));assert.equal(revised.data.status,'draft');
+ const updated=await api(path('/sales/quotations/'+id),'PATCH',{expected_version:3,document:{...document(2),valid_until:addDays(day(),30)}});assert.equal(updated.status,200);const history=await api(path('/sales/quotations/'+id+'/history'));assert.equal(history.status,200);assert.deepEqual(history.data.data.map((r:any)=>r.quotation_version),[1,2,3,4]);assert.equal(history.data.data[1].snapshot.status,'shared');assert.equal(history.data.data[1].snapshot.valid_until,addDays(day(),-1));assert.equal(history.data.data[3].snapshot.items[0].quantity,2);
+});
+
+test('customer price tiers are explicit, scoped and version-bound without changing saved quotations',async()=>{
+ const configuration={name:'Synthetic repeat-customer pricing',currency:'KES',customer_id:customerId,starts_on:'2026-01-01',active:true,rules:[{product_id:productId,minimum_quantity_milli:1000,unit_price_minor:90000},{product_id:productId,minimum_quantity_milli:3000,unit_price_minor:80000}]};const list=await api(path('/sales/price-lists'),'POST',{expected_version:0,configuration});assert.equal(list.status,201,JSON.stringify(list.data));
+ const preview=await api(path('/sales/pricing-preview'),'POST',{price_list_id:list.data.id,document:document(3)});assert.equal(preview.status,200);assert.equal(preview.data.document.items[0].unit_price_minor,80000);assert.equal(preview.data.document.total_minor,240000);
+ const priced={...preview.data.document,price_list_id:list.data.id,expected_price_list_version:1},saved=await api(path('/sales/quotations'),'POST',priced);assert.equal(saved.status,201,JSON.stringify(saved.data));assert.equal(saved.data.price_list_snapshot.version,1);
+ assert.equal((await api(path('/sales/price-lists/'+list.data.id),'PUT',{expected_version:1,configuration:{...configuration,rules:[{product_id:productId,minimum_quantity_milli:1000,unit_price_minor:75000}]}})).status,200);
+ assert.equal((await api(path('/sales/quotations'),'POST',priced)).status,409);assert.equal((await api(path('/sales/quotations/'+saved.data.id))).data.total_minor,240000);
+ const other=await api(path('/records/customers'),'POST',{name:'Other price customer'});assert.equal((await api(path('/sales/pricing-preview'),'POST',{price_list_id:list.data.id,document:{...document(3),customer_id:other.data.id}})).status,400);
+});
+
+
+test('conditional CRM workflows bind current stage and version, skip unmatched branches and deduplicate tasks',async()=>{
+ const config={name:'Synthetic stage branch',template:'crm_stage_follow_up',enabled:true,conditions:{currency:'KES',minimum_minor:0,days_before_due:1},branches:[{conditions:[{field:'stage',operator:'eq',value:'qualified'}],action:'create_crm_follow_up'}],fallback_action:'skip',retry_policy:{max_attempts:2,base_delay_seconds:3}};
+ const workflow=await api(path('/automations'),'POST',config);assert.equal(workflow.status,201,JSON.stringify(workflow.data));
+ const lead=await api(path('/crm/entries'),'POST',{kind:'opportunity',customer_id:customerId,title:'Conditional stage source'});assert.equal(lead.status,201);const {id,version,created_at,updated_at,...entry}=lead.data;
+ assert.equal((await api(path('/crm/entries/'+id),'PATCH',{expected_version:1,entry:{...entry,stage:'qualified'}})).status,200);await runAutomations(a(),new Date(Date.now()+1000));
+ let runs=await dbAll('SELECT * FROM ac2_runs WHERE workflow_id=?',[workflow.data.id]);assert.equal(runs.length,1);assert.equal(runs[0].status,'succeeded');assert.equal(JSON.parse(runs[0].result).action,'create_crm_follow_up');const task=await dbGet('SELECT * FROM ac_crm_entries WHERE id=?',[runs[0].id]);assert.equal(task.kind,'follow_up');await runAutomations(a(),new Date(Date.now()+2000));assert.equal(Number((await dbGet('SELECT COUNT(*) AS n FROM ac_crm_entries WHERE id=?',[runs[0].id])).n),1);
+ assert.equal((await api(path('/crm/entries/'+id),'PATCH',{expected_version:2,entry:{...entry,stage:'proposal'}})).status,200);await runAutomations(a(),new Date(Date.now()+3000));runs=await dbAll('SELECT * FROM ac2_runs WHERE workflow_id=? ORDER BY created_at,id',[workflow.data.id]);assert.equal(runs.length,2);assert.ok(runs.some(r=>JSON.parse(r.result).action==='skip'));
+ const invalid=await api(path('/automations'),'POST',{...config,branches:[{conditions:[{field:'stage',operator:'eq',value:'won'}],action:'replenishment_suggestion'}]});assert.equal(invalid.status,400);
+ const delayed=await api(path('/automations'),'POST',{...config,name:'Synthetic stale-stage delayed branch',delay_minutes:1});assert.equal(delayed.status,201);
+ const source=await api(path('/crm/entries'),'POST',{kind:'opportunity',customer_id:customerId,title:'Delayed current-stage source'}),{id:sourceId,version:sv,created_at:sc,updated_at:su,...sourceEntry}=source.data;
+ await api(path('/crm/entries/'+sourceId),'PATCH',{expected_version:1,entry:{...sourceEntry,stage:'qualified'}});await runAutomations(a());await api(path('/crm/entries/'+sourceId),'PATCH',{expected_version:2,entry:{...sourceEntry,stage:'proposal'}});await runAutomations(a(),new Date(Date.now()+120000));const delayedRuns=await dbAll('SELECT * FROM ac2_runs WHERE workflow_id=?',[delayed.data.id]);assert.ok(delayedRuns.some(r=>r.status==='cancelled'&&JSON.parse(r.result).reason==='source_changed'));
+});
+
+
+test('company contacts and legacy tag edits retain canonical relationships without cross-workspace lookup',async()=>{
+ const company=await api(path('/records/customers'),'POST',{name:'Synthetic parent company'}),person=await api(path('/records/customers'),'POST',{name:'Synthetic company contact'});assert.equal((await api(path('/crm/customers/'+company.data.id),'PUT',{expected_version:0,tags:[],assigned_to:null,contact_type:'company',company_id:null})).status,200);const linked=await api(path('/crm/customers/'+person.data.id),'PUT',{expected_version:0,tags:['buyer'],assigned_to:actor,contact_type:'individual',company_id:company.data.id});assert.equal(linked.status,200,JSON.stringify(linked.data));
+ const legacy=await api(path('/crm/customers/'+person.data.id),'PUT',{expected_version:1,tags:['repeat'],assigned_to:actor});assert.equal(legacy.status,200);assert.equal(legacy.data.profile.company_id,company.data.id);
+ assert.equal((await api(path('/crm/customers/'+company.data.id),'PUT',{expected_version:1,tags:[],assigned_to:null,contact_type:'individual',company_id:null})).status,409);assert.equal((await api(path('/crm/customers/'+person.data.id),'PUT',{expected_version:2,tags:[],assigned_to:null,contact_type:'individual',company_id:randomUUID()})).status,404);
+});
+
+test('legacy completed CRM creation remains replayable after adding defaulted opportunity metadata',async()=>{
+ const input={kind:'lead',customer_id:customerId,title:'Synthetic legacy request'},created=await api(path('/crm/entries'),'POST',input);assert.equal(created.status,201);const key=randomUUID(),legacy={...input,notes:'',stage:'new',status:'open',assigned_to:null,due_at:null,amount_minor:0,currency:'KES',quotation_id:null,order_id:null};await dbRun('INSERT INTO ac_finance_operations(org_id,environment,operation,idempotency_key,fingerprint,response,created_at) VALUES (?,?,?,?,?,?,?)',[org,'sandbox','crm.entry.create',key,hash(canonical(legacy)),JSON.stringify(created.data),new Date().toISOString()]);const replay=await api(path('/crm/entries'),'POST',input,cookie,key);assert.equal(replay.status,201,JSON.stringify(replay.data));assert.equal(replay.data.id,created.data.id);
+});
+
+test('quotation templates retain reusable terms without creating customer documents and workflow creation replays safely',async()=>{
+ const template=await api(path('/sales/templates'),'POST',{expected_version:0,name:'Synthetic reusable service offer',active:true,configuration:{...document(1),due_days:14,valid_days:7}});assert.equal(template.status,201,JSON.stringify(template.data));assert.ok(!('customer_id'in template.data.configuration));assert.equal(template.data.configuration.due_days,14);assert.equal((await api(path('/sales/templates/'+template.data.id),'PUT',{expected_version:0,name:'Stale template change',active:false,configuration:template.data.configuration})).status,409);
+ const key=randomUUID(),body={name:'Synthetic idempotent workflow setup',template:'daily_summary',enabled:false},first=await api(path('/automations'),'POST',body,cookie,key),second=await api(path('/automations'),'POST',body,cookie,key);assert.equal(first.status,201);assert.equal(second.data.id,first.data.id);
 });

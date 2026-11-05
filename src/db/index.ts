@@ -1,3 +1,8 @@
+import {migrateProcurement} from '../erp/procurement-schema';
+import {migrateDocuments} from '../erp/documents-schema';
+import {migratePeople} from '../erp/people-schema';
+import {migrateAccounting} from '../erp/accounting-schema';
+import {migrateERP} from '../erp/schema';
 import {migrateConnected} from '../operations/connected-schema';
 import {migrateApps} from '../apps/schema';
 import {migrateBusinessOperations} from '../operations/business-schema';
@@ -325,6 +330,11 @@ export async function migrate(): Promise<void> {
   await migrateConnected();
   await migrateApps();
   await migrateBusinessOperations();
+  await migrateERP();
+  await migrateAccounting();
+  await migratePeople();
+  await migrateDocuments();
+  await migrateProcurement();
 
   if (isPostgres) {
     await dbExec(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS matched_invoice_id TEXT;`);
@@ -408,4 +418,4 @@ export async function migrate(): Promise<void> {
 }
 
 
-export { dbGet, dbAll, dbRun, dbExec, dbTransaction, inTransaction, isPostgres, closeDb } from "./adapter";
+export { dbGet, dbAll, dbRun, dbExec, dbTransaction, dbSavepoint, inTransaction, isPostgres, closeDb } from "./adapter";

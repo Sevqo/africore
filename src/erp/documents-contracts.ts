@@ -1,0 +1,15 @@
+import {z} from 'zod';
+const id=z.string().uuid();
+export const documentSource=z.object({source_kind:z.enum(['customer','invoice','expense','purchase_order','supplier_bill','employee','work_task','verification']),source_id:id}).strict();
+export const documentGrant=z.object({user_id:id,permission:z.enum(['viewer','editor']),download:z.boolean(),expires_at:z.string().datetime().nullable().default(null)}).strict();
+export const documentPolicy=z.object({visibility:z.enum(['private','company']).default('private'),grants:z.array(documentGrant).max(100).default([]),folder_id:id.nullable().default(null),inherit_folder:z.boolean().default(false),employee_id:id.nullable().default(null)}).strict();
+export const documentMetadata=z.object({name:z.string().trim().min(1).max(160),description:z.string().max(3000).default(''),tags:z.array(z.string().trim().min(1).max(60)).max(30).default([])}).strict();
+export const documentFile=z.object({filename:z.string().max(120),content_type:z.enum(['application/pdf','image/png','image/jpeg','text/plain']),content_base64:z.string().max(699052)}).strict();
+export const documentCreateInput=z.object({metadata:documentMetadata,policy:documentPolicy,file:documentFile.optional(),kind:z.enum(['file','folder']).default('file'),source:documentSource.optional()}).strict();
+export const documentEditInput=z.object({expected_version:z.number().int().positive(),metadata:documentMetadata}).strict();
+export const documentPolicyInput=z.object({expected_version:z.number().int().positive(),policy:documentPolicy,acknowledge_access_change:z.literal(true)}).strict();
+export const documentVersionInput=z.object({expected_version:z.number().int().positive(),file:documentFile,reason:z.string().trim().min(8).max(2000)}).strict();
+export const documentStateInput=z.object({expected_version:z.number().int().positive(),state:z.enum(['active','trashed']),reason:z.string().trim().min(8).max(2000)}).strict();
+export const documentCopyInput=z.object({expected_version:z.number().int().positive(),metadata:documentMetadata,policy:documentPolicy}).strict();
+export const documentQuery=z.object({view:z.enum(['mine','company','shared','recent','starred','trash']).default('mine'),folder_id:id.optional(),q:z.string().trim().max(100).default(''),tag:z.string().max(60).optional(),sort:z.enum(['recent','name']).default('recent'),offset:z.coerce.number().int().min(0).max(1000000).default(0)}).strict();
+export const documentStarInput=z.object({starred:z.boolean()}).strict();

@@ -1,3 +1,4 @@
+import {erpRouteKinds} from '../erp/metadata';
 import {connectedRouteKinds} from '../operations/connected-metadata';
 import {appRouteKinds} from '../apps/metadata';
 import {businessRouteKinds} from '../operations/business-metadata';
@@ -347,7 +348,7 @@ export const workspaceRouteKinds:Record<string,readonly string[]>={
 };
 export function workspaceRouteAllowed(method:string,route:string,kind:string,recordKind?:string){
  const key=(method==='HEAD'?'GET':method)+' '+route;
- const allowed=workspaceRouteKinds[key]||marketplaceRouteKinds[key]||financeRouteKinds[key]||connectedRouteKinds[key]||appRouteKinds[key]||businessRouteKinds[key];if(!allowed?.includes(kind))return false;
+ const allowed=erpRouteKinds[key]||workspaceRouteKinds[key]||marketplaceRouteKinds[key]||financeRouteKinds[key]||connectedRouteKinds[key]||appRouteKinds[key]||businessRouteKinds[key];if(!allowed?.includes(kind))return false;
  if(route.includes('/records/:kind')){if(kind==='personal')return ['customers','invoices','transactions'].includes(recordKind||'');if(kind==='developer')return ['applications','customers','orders','invoices','transactions'].includes(recordKind||'');}
  return true;
 }

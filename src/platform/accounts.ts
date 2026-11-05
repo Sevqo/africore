@@ -1,3 +1,4 @@
+import {serviceSelectionInput} from '../common/service-selection';
 import { dbAll, dbGet, dbRun, dbTransaction } from "../db/adapter";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
@@ -33,7 +34,7 @@ export const workspaceInput = z
     phone: z.string().max(50).default(""),
     use_case: z.string().max(500).default(""),
     language: z.string().max(80).default(""),
-    services:z.array(z.string().regex(/^[a-z][a-z0-9_]{1,60}$/)).max(30).default([]),
+    services:serviceSelectionInput,
   })
   .strict();
 export const destination = (

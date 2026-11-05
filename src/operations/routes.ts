@@ -1,3 +1,4 @@
+import {approvalQueue} from '../erp/approval-privacy';
 import {financialOperation} from '../finance/service';
 import { operationalSnapshot } from '../metrics';
 import { Router } from 'express';
@@ -184,14 +185,7 @@ operations.get(
     res.json({ data: await list(a, 'automations', p.limit, p.offset), ...p });
   }),
 );
-operations.post(
-  '/organizations/:org/automations',
-  route(async (req, res) =>
-    res
-      .status(201)
-      .json(await createAutomation(await access(req, 'finance'), req.body)),
-  ),
-);
+operations.post('/organizations/:org/automations',route(async(req,res)=>{const a=await access(req,'finance'),create=()=>createAutomation(a,req.body);res.status(201).json(req.headers['idempotency-key']?await financialOperation(a,'automation.create',String(req.headers['idempotency-key']),req.body,create):await create());}));
 operations.patch(
   '/organizations/:org/automations/:id',
   route(async (req, res) => {
@@ -257,20 +251,7 @@ operations.put(
     res.json(await notificationPreferences(await access(req), req.body)),
   ),
 );
-operations.get(
-  '/organizations/:org/approvals',
-  route(async (req, res) => {
-    const a = await access(req, 'finance'),
-      p = pagination(req.query);
-    res.json({
-      data: await dbAll(
-        'SELECT a.*,b.parameters,b.review_summary,b.resource_hash,b.consumed_at FROM ac2_approvals a LEFT JOIN ac_approval_bindings b ON b.approval_id=a.id WHERE a.org_id=? AND a.environment=? AND (a.requester=? OR a.approver=?) ORDER BY a.created_at DESC LIMIT ? OFFSET ?',
-        [a.org, a.environment, a.actor, a.actor, p.limit, p.offset],
-      ),
-      ...p,
-    });
-  }),
-);
+operations.get('/organizations/:org/approvals',route(async(req,res)=>{const p=pagination(req.query);res.json(await approvalQueue(await access(req),p.limit,p.offset));}));
 operations.post(
   '/organizations/:org/approvals',
   route(async (req, res) => {
@@ -283,7 +264,7 @@ operations.post(
   route(async (req, res) =>
     res.json(
       await decideApproval(
-        await access(req, 'admin'),
+        await access(req),
         String(req.params.id),
         req.body,
       ),
