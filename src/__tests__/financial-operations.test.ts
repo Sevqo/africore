@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {randomUUID,createHmac} from 'node:crypto';
 import {configureTestEnv,productFixtureBody} from './helpers';
 configureTestEnv('financial-operations');
-import {migrate,dbAll,dbGet,dbRun,closeDb} from '../db';
+import {migrate,dbAll,dbGet,dbRun,dbExec,dbTransaction,closeDb} from '../db';
 import {createApp} from '../app';
 import {processProviderResult} from '../platform/payments';
 import {parseMoney,basisPoints,nextOccurrence} from '../finance/money';
@@ -80,4 +80,32 @@ test('invoicing and its receivables remain usable with Pay deactivated',async()=
  await dbRun("UPDATE ac_service_entitlements SET status='disabled' WHERE org_id=? AND environment='sandbox' AND service_id='payments'",[org]);
  try{const id=await invoice(1000);assert.equal((await api(path('/invoices/'+id+'/finance'))).status,200);assert.equal((await api(path('/financial-summary?currency=KES&range=all'))).status,200);assert.equal((await api(path('/payment-requests'),'POST',{document_id:id},cookie,randomUUID())).status,402);}
  finally{await dbRun("UPDATE ac_service_entitlements SET status='active' WHERE org_id=? AND environment='sandbox' AND service_id='payments'",[org]);}
+});
+
+test('cash allocation classification changes receivables without fabricating confirmed provider inflows',async()=>{
+ const {cashMovementStatement,effectiveAllocationsWithCash}=await import('../finance/cash-schema');
+ const {documentBalance}=await import('../finance/ledger');
+ const id=await invoice(10000),payment=await request(id,1000);
+ await processProviderResult(payment.id,{reference:'classified-provider-'+id,status:'succeeded',amount_minor:1000,currency:'KES'});
+ const legacy=await documentBalance(access(),id);assert.equal(legacy.provider_paid_minor,1000);assert.equal(legacy.recorded_cash_paid_minor,0);
+ const summaryPath=path('/financial-summary?currency=KES&range=all'),confirmed=(await api(summaryPath)).data.totals.confirmed_inflows_minor;
+ const rollback=new Error('Rollback isolated additive-view fixture');
+ await assert.rejects(dbTransaction(async()=>{
+  await dbExec(cashMovementStatement);await dbExec('DROP VIEW ac_effective_allocations');await dbExec(effectiveAllocationsWithCash);
+  const receipt=randomUUID(),at=new Date().toISOString();
+  const add=async(amount:number,kind:string,original:string|null)=>dbRun('INSERT INTO ac_cash_movements(id,org_id,environment,document_id,amount_minor,currency,kind,related_receipt_id,source_type,source_id,session_id,occurred_at,actor,data,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',[kind==='receipt'?receipt:randomUUID(),org,'sandbox',id,amount,'KES',kind,original,'synthetic-test',randomUUID(),null,at,actor,'{}',at]);
+  await add(2000,'receipt',null);
+  let balance=await documentBalance(access(),id);assert.equal(balance.paid_minor,3000);assert.equal(balance.provider_paid_minor,1000);assert.equal(balance.recorded_cash_paid_minor,2000);assert.equal(balance.outstanding_minor,7000);
+  await add(-500,'return',receipt);
+  balance=await documentBalance(access(),id);assert.equal(balance.paid_minor,2500);assert.equal(balance.recorded_cash_paid_minor,1500);assert.equal(balance.outstanding_minor,7500);
+  const historical=await documentBalance(access(),id,'2000-01-01');assert.equal(historical.paid_minor,0);assert.equal(historical.recorded_cash_paid_minor,0);
+  await assert.rejects(documentBalance({...access(),environment:'production'},id),/not found/);
+  assert.equal(Number((await dbGet('SELECT COUNT(*) AS n FROM ac_events WHERE id=?',[receipt])).n),0);
+  // The HTTP server cannot read this uncommitted fixture on PostgreSQL. The
+  // confirmed-event view itself is checked within the owning transaction.
+  assert.equal(Number((await dbGet("SELECT SUM(amount_minor) AS n FROM ac_financial_events WHERE org_id=? AND environment=? AND status='succeeded' AND currency='KES'",[org,'sandbox'])).n),Number((await dbGet("SELECT SUM(amount_minor) AS n FROM ac_events WHERE org_id=? AND environment=? AND status='succeeded' AND currency='KES'",[org,'sandbox'])).n));
+  throw rollback;
+ }),error=>error===rollback);
+ assert.equal((await documentBalance(access(),id)).recorded_cash_paid_minor,0);
+ assert.equal((await api(summaryPath)).data.totals.confirmed_inflows_minor,confirmed);
 });

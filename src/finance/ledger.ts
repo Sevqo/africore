@@ -6,12 +6,17 @@ export async function documentBalance(a:Access,id:string,asOf?:string){
  const row=await dbGet('SELECT data,kind FROM ac_records WHERE id=? AND org_id=? AND environment=?',[id,a.org,a.environment]);
  if(!row)reject('Document not found in this workspace');
  const document=JSON.parse(row.data);
- const allocations=await dbAll('SELECT amount_minor FROM ac_effective_allocations WHERE org_id=? AND environment=? AND document_id=?'+(asOf?' AND created_at<=?':''),[a.org,a.environment,id,...(asOf?[asOf+'T23:59:59.999Z']:[])]);
+ // SELECT * intentionally supports both the original migration-008 view and
+ // the additive evidence classification installed by migration 019.
+ const allocations=await dbAll('SELECT * FROM ac_effective_allocations WHERE org_id=? AND environment=? AND document_id=?'+(asOf?' AND created_at<=?':''),[a.org,a.environment,id,...(asOf?[asOf+'T23:59:59.999Z']:[])]);
  const credits=await dbAll('SELECT amount_minor FROM ac_credit_notes WHERE org_id=? AND environment=? AND invoice_id=?'+(asOf?' AND issued_on<=?':''),[a.org,a.environment,id,...(asOf?[asOf]:[])]);
  const paid_minor=sumMinor(allocations.map(r=>r.amount_minor)),credited_minor=sumMinor(credits.map(r=>r.amount_minor));
  const outstanding_minor=document.total_minor-paid_minor-credited_minor;
  if(paid_minor<0||credited_minor<0||outstanding_minor<0)reject('Document balance requires financial review');
- return {...document,id,kind:row.kind,paid_minor,credited_minor,outstanding_minor};
+ const recorded_cash_paid_minor=sumMinor(allocations.filter(r=>r.evidence_kind==='cash_observation').map(r=>r.amount_minor));
+ const provider_paid_minor=sumMinor(allocations.filter(r=>r.evidence_kind===undefined||r.evidence_kind==='provider_event').map(r=>r.amount_minor));
+ if(recorded_cash_paid_minor<0||provider_paid_minor<0||sumMinor([recorded_cash_paid_minor,provider_paid_minor])!==paid_minor)reject('Document payment evidence requires financial review');
+ return {...document,id,kind:row.kind,paid_minor,provider_paid_minor,recorded_cash_paid_minor,credited_minor,outstanding_minor};
 }
 export async function refreshDocument(a:Access,id:string){
  const d=await documentBalance(a,id);
