@@ -42,6 +42,12 @@ test('storefront cart cookies and confirmation bodies cross the gateway without 
  assert.equal(r.status,200);assert.equal(r.headers.get('Cache-Control'),'no-store');assert.match(r.headers.get('Set-Cookie'),/HttpOnly; Secure; SameSite=Lax/);assert.equal(r.headers.get('Access-Control-Allow-Origin'),null);assert.equal(r.headers.get('x-africore-gateway-secret'),null);
 });
 
+test('published raster responses retain exact binary bytes and private response safeguards',async()=>{
+ const bytes=new Uint8Array([82,73,70,70,0,0,0,0,87,69,66,80]);
+ const r=await handle(new Request('https://africore.example/api/v1/storefronts/sandbox/fictional-shop/assets/12345678-1234-4123-8123-123456789012'),env,async()=>new Response(bytes,{headers:{'Content-Type':'image/webp','X-Content-Type-Options':'nosniff','Content-Disposition':'inline; filename="public-image.webp"'}}));
+ assert.equal(r.status,200);assert.equal(r.headers.get('Content-Type'),'image/webp');assert.equal(r.headers.get('Cache-Control'),'no-store');assert.equal(r.headers.get('X-Content-Type-Options'),'nosniff');assert.deepEqual(new Uint8Array(await r.arrayBuffer()),bytes);
+});
+
 test('Render hibernation throttling becomes a bounded startup failure while genuine application 429s remain unchanged',async()=>{
  const response=await handle(new Request('https://africore.example/api/auth/config'),env,async()=>new Response('Too Many Requests\n',{status:429,headers:{'Content-Type':'text/plain','x-render-routing':'hibernate-rate-limited'}}));assert.equal(response.status,503);assert.equal(response.headers.get('Retry-After'),'20');assert.equal(response.headers.get('Cache-Control'),'no-store');assert.equal(response.headers.get('X-Frame-Options'),'DENY');assert.equal((await response.json()).error,'backend_starting');
  const limited=await handle(new Request('https://africore.example/api/auth/config'),env,async()=>Response.json({error:'rate_limited'},{status:429,headers:{'Retry-After':'4'}}));assert.equal(limited.status,429);assert.equal(limited.headers.get('Retry-After'),'4');assert.equal((await limited.json()).error,'rate_limited');

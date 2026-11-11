@@ -67,6 +67,7 @@ schemas.commerce_quoteInput=z.toJSONSchema(require('../dist/commerce/quote').quo
 schemas.commerce_publishInput=z.toJSONSchema(require('../dist/commerce/publishing').publishInput,{target:'openapi-3.0',unrepresentable:'any'});
 schemas.commerce_checkoutPolicyInput=z.toJSONSchema(require('../dist/commerce/checkout-policy').checkoutPolicyInput,{target:'openapi-3.0',unrepresentable:'any'});
 for(const name of ['cartCreateInput','cartUpdateInput','cartConfirmInput'])schemas['commerce_'+name]=z.toJSONSchema(require('../dist/commerce/carts')[name],{target:'openapi-3.0',unrepresentable:'any'});
+for(const name of ['publicAssetInput','withdrawAssetInput'])schemas['publishing_'+name]=z.toJSONSchema(require('../dist/publishing/assets')[name],{target:'openapi-3.0',unrepresentable:'any'});
 const paths = {};
 const operations = [
  ...fs.readFileSync('src/commerce/routes.ts','utf8').matchAll(/commerce\.(get|post|put|patch|delete)\s*\(\s*'([^']+)'/g),
@@ -234,6 +235,8 @@ for (const op of operations) {
     if(operation.requestBody){const name=path.endsWith('/publish')?'commerce_publishInput':path.endsWith('/quote')?'commerce_quoteInput':/\/listings(?:\/\{listing\})?$/.test(path)?'commerce_listingInput':/\/stores(?:\/\{id\})?$/.test(path)?'commerce_saveStoreInput':null;if(name)operation.requestBody.content['application/json'].schema={$ref:'#/components/schemas/'+name};}
   }
   if(path.endsWith('/checkout-policy')&&operation.requestBody)operation.requestBody.content['application/json'].schema={$ref:'#/components/schemas/commerce_checkoutPolicyInput'};
+  if(path.includes('/commerce/assets')&&operation.requestBody){const name=path.endsWith('/withdraw')?'withdrawAssetInput':'publicAssetInput';operation.requestBody.content['application/json'].schema={$ref:'#/components/schemas/publishing_'+name};}
+  if(method==='get'&&(path.endsWith('/commerce/assets/{id}/content')||/\/storefronts\/[^/]+\/[^/]+\/assets\/\{id\}$/.test(path))){operation.responses['200'].content={'image/webp':{schema:{type:'string',format:'binary'}}};operation.description='Validated canonical raster bytes only; never the original upload or a private Documents download. Public delivery requires a current publication reference and active scoped asset. No-store and nosniff apply.';}
   if(path.startsWith('/api/v1/storefronts/')&&/\/cart(?:\/confirm)?$/.test(path)){
     operation.description='An expiring HttpOnly, store-scoped cart cookie authorizes access to this buyer cart only. No merchant identity is granted. Quotes use current canonical prices. Confirmation is sandbox-only and creates canonical order, invoice and payment request atomically; payment does not dispatch stock. Responses are private and never cached.';
     if(['put','post'].includes(method)&&(!path.endsWith('/cart')||method==='put'))parameters.push({name:'Idempotency-Key',in:'header',required:true,schema:{type:'string',minLength:8,maxLength:200}});

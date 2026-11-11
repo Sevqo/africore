@@ -1,3 +1,4 @@
+import {assetReferences} from '../publishing/assets';
 import {z} from 'zod';
 import {dbAll,dbGet} from '../db/adapter';
 import {type Access,fail} from '../platform/auth';
@@ -8,7 +9,7 @@ import {listingInput,saveStoreInput,shippingOption,discountPolicy} from './contr
 
 export async function commerceAccess(a:Access,write=false){const role=await currentMember(a);await requireServices(a,['commerce'],!write);if(write&&!['owner','admin'].includes(role))fail(403,'Current owner or administrator authority is required for store configuration');return role;}
 export async function store(a:Access,id:string,write=false){await commerceAccess(a,write);return read(a,id,'commerce_store');}
-export async function stores(a:Access){await commerceAccess(a);const rows=await dbAll("SELECT * FROM ac_erp_objects WHERE org_id=? AND environment=? AND kind='commerce_store' ORDER BY created_at,id LIMIT 11",[a.org,a.environment]);if(rows.length>10)fail(409,'Store coverage exceeds the supported limit');return {data:rows.map(r=>decode(a,r)),limit:10};}
+export async function stores(a:Access){const role=await commerceAccess(a),service=await dbGet('SELECT e.status,s.enabled FROM ac_service_entitlements e JOIN ac_services s ON s.id=e.service_id WHERE e.org_id=? AND e.environment=? AND e.service_id=?',[a.org,a.environment,'commerce']);const rows=await dbAll("SELECT * FROM ac_erp_objects WHERE org_id=? AND environment=? AND kind='commerce_store' ORDER BY created_at,id LIMIT 11",[a.org,a.environment]);if(rows.length>10)fail(409,'Store coverage exceeds the supported limit');return {data:rows.map(r=>decode(a,r)),limit:10,permissions:{write:['owner','admin'].includes(role)&&service?.status==='active'&&Number(service.enabled)===1}};}
 export async function saveStore(a:Access,id:string|null,input:unknown,key:string){const d=saveStoreInput.parse(input);return operation(a,'commerce.store.save:'+(id||'new'),key,d,()=>commerceAccess(a,true),async()=>{
  const previous=id?await read(a,id,'commerce_store'):null;if((previous?.version||0)!==d.expected_version)fail(409,'Store changed; reload before saving');
  const existing=(await stores(a)).data;if(!previous&&existing.length>=10)fail(409,'A workspace environment supports up to ten stores');if(existing.some(s=>s.id!==id&&s.data.settings.slug===d.store.slug))fail(409,'A store already uses this slug');
@@ -16,7 +17,7 @@ export async function saveStore(a:Access,id:string|null,input:unknown,key:string
  if(previous&&previous.data.settings.currency!==d.store.currency){const n=await dbGet("SELECT COUNT(*) AS n FROM ac_erp_objects WHERE org_id=? AND environment=? AND root_id=? AND kind='commerce_listing'",[a.org,a.environment,previous.id]);if(Number(n.n)||(previous.data.shipping||[]).length||(previous.data.discounts||[]).length)fail(409,'Create a separate store currency after listings or monetary rules exist');}
  if(d.store.warehouse_id){await requireServices(a,['inventory']);const warehouse=await dbGet("SELECT id FROM ac_warehouses WHERE id=? AND org_id=? AND environment=? AND status='active'",[d.store.warehouse_id,a.org,a.environment]);if(!warehouse)fail(400,'Choose a current warehouse in this workspace');}
  if(d.store.location_id){if(!d.store.warehouse_id)fail(400,'Choose a warehouse for the fulfillment location');const location=await dbGet('SELECT id FROM ac_stock_locations WHERE id=? AND warehouse_id=? AND org_id=? AND environment=?',[d.store.location_id,d.store.warehouse_id,a.org,a.environment]);if(!location)fail(400,'Choose a current location belonging to the fulfillment warehouse');}
- if(d.store.logo_asset_id)fail(409,'Public media custody must be configured before selecting a logo');
+ if(d.store.logo_asset_id)await assetReferences(a,[d.store.logo_asset_id]);
  const data={...(previous?.data||{}),settings:d.store};return previous?update(a,previous,data):insert(a,'commerce_store',data,{status:'draft'});
  });}
 export async function listing(a:Access,storeId:string,id:string,write=false){const s=await store(a,storeId,write),value=await read(a,id,'commerce_listing');if(value.root_id!==s.id)fail(404,'Store listing not found');return value;}
@@ -30,7 +31,7 @@ export async function saveListing(a:Access,storeId:string,id:string|null,input:u
  const s=await store(a,storeId,true),old=id?await listing(a,storeId,id,true):null;if((old?.version||0)!==d.expected_version)fail(409,'Listing changed; reload');
  const p=await product(a,d.product_id);if(p.version!==d.expected_product_version)fail(409,'Canonical product changed; reload');if(old&&old.parent_id!==p.id)fail(409,'A listing cannot be reassigned to a different product');if(p.currency!==s.data.settings.currency)fail(400,'Product currency must match the store');if(d.state==='active'&&p.status!=='active')fail(409,'Archived canonical products cannot be published');
  if(d.compare_at_minor!==null&&d.compare_at_minor<p.sale_price_minor)fail(400,'Compare-at price cannot be below the current canonical selling price');if(['unit','box'].includes(p.unit)&&(d.minimum_quantity_milli%1000||d.maximum_quantity_milli%1000))fail(400,'Whole-unit products require whole-unit listing limits');
- if(d.asset_ids.length)fail(409,'Validated public media custody is required before attaching assets');
+ await assetReferences(a,d.asset_ids);
  for(const collectionId of d.collection_ids){const c=await read(a,collectionId,'commerce_collection');if(c.root_id!==s.id||c.status!=='active')fail(400,'Choose active collections belonging to this store');}
  const duplicate=await dbGet("SELECT id FROM ac_erp_objects WHERE org_id=? AND environment=? AND root_id=? AND kind='commerce_listing' AND parent_id=? AND id<>?",[a.org,a.environment,s.id,p.id,id||'']);if(duplicate)fail(409,'This canonical product already has a listing');
  if(!old){const count=await dbGet("SELECT COUNT(*) AS n FROM ac_erp_objects WHERE org_id=? AND environment=? AND root_id=? AND kind='commerce_listing'",[a.org,a.environment,s.id]);if(Number(count.n)>=500)fail(409,'Store listing limit reached');}

@@ -9,9 +9,17 @@ import {saveCheckoutPolicy} from './checkout-policy';
 import {createCart,getCart,updateCart,confirmCart} from './carts';
 import {cartCookieName,cartCookieOptions,cartTokenFromCookie} from './cart-access';
 import {fail} from '../platform/auth';
+import {listAssets,uploadAsset,withdrawAsset,currentAsset,assetBytes,publicMediaAccess} from '../publishing/assets';
+import {publicStoreImage} from './public-images';
 export const commerce=Router();
 const key=(req:any)=>z.string().min(8).max(200).parse(req.headers['idempotency-key']);
 const cartScope=(req:any)=>{const environment=String(req.params.environment),slug=String(req.params.slug);return {environment,slug,token:cartTokenFromCookie(req.headers.cookie,environment,slug)};};
+function imageResponse(res:any,bytes:Buffer,mime:string){res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Content-Security-Policy',"default-src 'none'; sandbox");res.setHeader('Content-Disposition','inline; filename="public-image.webp"');res.type(mime).send(bytes);}
+commerce.get('/organizations/:org/commerce/assets',route(async(req,res)=>res.json(await listAssets(await access(req,'admin'),req.query))));
+commerce.post('/organizations/:org/commerce/assets',route(async(req,res)=>res.status(201).json(await uploadAsset(await access(req,'admin'),req.body,key(req)))));
+commerce.post('/organizations/:org/commerce/assets/:id/withdraw',route(async(req,res)=>res.json(await withdrawAsset(await access(req,'admin'),String(req.params.id),req.body,key(req)))));
+commerce.get('/organizations/:org/commerce/assets/:id/content',route(async(req,res)=>{const a=await access(req,'admin');await publicMediaAccess(a,false);const asset=await currentAsset(a,z.string().uuid().parse(req.params.id),false);imageResponse(res,assetBytes(asset),asset.mime);}));
+commerce.get('/storefronts/:environment/:slug/assets/:id',route(async(req,res)=>{const image=await publicStoreImage(String(req.params.environment),String(req.params.slug),String(req.params.id));imageResponse(res,image.bytes,image.mime);}));
 commerce.get('/storefronts/:environment/:slug/cart',route(async(req,res)=>{const s=cartScope(req);res.setHeader('Cache-Control','no-store');res.json(await getCart(s.environment,s.slug,s.token));}));
 commerce.post('/storefronts/:environment/:slug/cart',route(async(req,res)=>{const s=cartScope(req),result=await createCart(s.environment,s.slug,req.body,s.token);res.setHeader('Cache-Control','no-store');if(result.token)res.cookie(cartCookieName(s.environment,s.slug),result.token,cartCookieOptions(s.environment,s.slug));res.status(result.created?201:200).json(result.cart);}));
 commerce.put('/storefronts/:environment/:slug/cart',route(async(req,res)=>{const s=cartScope(req);const token=s.token||fail(401,'Start a cart before saving it');await updateCart(s.environment,s.slug,token,req.body,key(req));res.setHeader('Cache-Control','no-store');res.json(await getCart(s.environment,s.slug,s.token));}));

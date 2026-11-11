@@ -4,7 +4,7 @@ Updated 11 November 2026. The complete request remains in WAVE_3_MASTER_PLAN.md.
 
 ## Release state
 
-Wave 3 source is local and unreleased. Hosted application baseline was Render `228b16c` and Cloudflare `e5ce8dee-103e-4a4f-bb7b-a0697f4ef598` during preflight. Approved Neon development has migrations 001–016; migration 017 has NOT been applied there. No production branch, identity, real payment, paid hosting or external provider activation changed. Hosted status must be checked again before release.
+Wave 3 source is local and unreleased. Hosted application baseline was Render `228b16c` and Cloudflare `e5ce8dee-103e-4a4f-bb7b-a0697f4ef598` during preflight. Approved Neon development has migrations 001–016; migrations 017 and 018 have NOT been applied there. No production branch, identity, real payment, paid hosting or external provider activation changed. Hosted status must be checked again before release.
 
 ## Checkpoint 1: preflight and targeted repairs
 
@@ -43,6 +43,16 @@ Evidence: [desktop checkout](evidence/wave3/storefront-checkout-desktop.png), [m
 
 ## Outstanding scope
 
-Checkpoint 3 is NOT complete. Public media custody, custom-domain verification/routing/TLS, fuller page/SEO publication, customer-identity checkout, recovery messaging, B2B catalogs/terms/verification consent and remaining Commerce lifecycle/acceptance remain outstanding. Current checkout is sandbox-only, not externally qualified M-Pesa or live readiness. No automatic email, courier delivery, refund execution, digital fulfillment or verified marketing consent is implied.
+Checkpoint 3 is NOT complete. Custom-domain verification/routing/TLS, fuller page/SEO publication, customer-identity checkout, recovery messaging, B2B catalogs/terms/verification consent and remaining Commerce lifecycle/acceptance remain outstanding. Current checkout is sandbox-only, not externally qualified M-Pesa or live readiness. No automatic email, courier delivery, refund execution, digital fulfillment or verified marketing consent is implied.
 
 Checkpoints 4–8 (POS, Website editor, Marketing, Support and Subscriptions), checkpoint 9 cross-app/security/full acceptance and checkpoint 10 guarded migration/backend-before-frontend deployment remain pending. Only after core Wave 3 qualification do checkpoints 11–20 begin the eighteen-app/direct-service/Personal/Developer UI transformation. Manufacturing, industry apps and AfriCore Studio remain excluded. Nothing in the master request is cancelled by this checkpoint.
+
+## Public-media follow-up, 11 November 2026
+
+Verified separate public-use image custody, explicit upload/rights acknowledgements, bounded raster decoding and metadata stripping, encrypted canonical WebP storage, immutable asset/history, version-safe named descriptive revisions, scoped private previews, reviewed listing/logo references and immediate public withdrawal. Current publication, workspace/service state, listing/product visibility and currency authorize each public image request. Private Documents are not public media sources. Metadata reads do not load every image body. Upload processing runs outside the asset write transaction, with current authority rechecked in its atomic operation.
+
+Merchant UI supports image preparation, upload, selection, private preview during publication review and withdrawal. The isolated browser uploaded a fictional green raster fixture, attached it to the notebook, reviewed the actual private image, published, and verified decoded public dimensions of 800 × 600. At 390px the document width remained 375px. These are local fictional-data checks, not production media publication. Evidence: [public image desktop](evidence/wave3/storefront-public-image-desktop.png) and [public image mobile](evidence/wave3/storefront-public-image-mobile.png).
+
+Final local regression for this follow-up: PostgreSQL 413/413 pass; SQLite 412 pass and one PostgreSQL-only skip; website build/content 62/62; gateway 10/10; 406 workspace and 59 legacy API operations validated; lint/type/architecture and isolated chain checks pass. The new historical-media-read case preserves owner/admin review after service deactivation while blocking writes and public delivery. Root npm audit reported zero known vulnerabilities after the narrowly scoped development-tool patches described in PUBLIC_MEDIA_ARCHITECTURE.md.
+
+Migration 018 is additive and remains local-only. The checkout checkpoint is committed as 3e17335; hosted schema/release is unchanged. POS checkpoint design is retained in WAVE_3_POS_ARCHITECTURE.md, with cash observations explicitly distinct from provider confirmation. None of these checks marks the remaining five apps, Commerce extensions or Phase 2 complete.

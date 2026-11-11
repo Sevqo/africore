@@ -1,5 +1,6 @@
 export const commerceRouteKinds:Record<string,readonly string[]>={};
 export const commercePolicies:Record<string,{services:string[]}>={};
+for(const route of ['GET /organizations/:org/commerce/assets','POST /organizations/:org/commerce/assets','POST /organizations/:org/commerce/assets/:id/withdraw','GET /organizations/:org/commerce/assets/:id/content']){commerceRouteKinds[route]=['business'];commercePolicies[route]={services:['commerce']};}
 commerceRouteKinds['GET /organizations/:org/commerce/stores/:id/orders']=['business'];
 commercePolicies['GET /organizations/:org/commerce/stores/:id/orders']={services:['commerce']};
 commerceRouteKinds['PUT /organizations/:org/commerce/stores/:id/checkout-policy']=['business'];

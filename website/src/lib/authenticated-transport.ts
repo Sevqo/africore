@@ -1,7 +1,7 @@
 type Transport = (path:string, options?:RequestInit)=>Promise<Response>;
 /** These handlers authorize their own public capability/publication, never a
  * merchant session. Do not initialize managed auth just to browse a store. */
-export function anonymousApiPath(path:string){return /^\/api\/v1\/(?:checkout\/[a-f0-9]{64}(?:\/pay)?|storefronts\/(?:sandbox|production)\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\/cart(?:\/confirm)?)?)(?:\?[^#]*)?$/.test(path);}
+export function anonymousApiPath(path:string){return /^\/api\/v1\/(?:checkout\/[a-f0-9]{64}(?:\/pay)?|storefronts\/(?:sandbox|production)\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\/cart(?:\/confirm)?|\/assets\/[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12})?)(?:\?[^#]*)?$/.test(path);}
 export function createAuthenticatedTransport(send:Transport, identity:()=>Promise<Record<string,string>>, demo:()=>boolean) {
   const publicAuth = new Set(['/api/auth/signup','/api/auth/signin','/api/auth/recover','/api/auth/reset','/api/auth/verify']);
   return async (path:string,options:RequestInit={}) => {
