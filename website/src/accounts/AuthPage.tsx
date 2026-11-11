@@ -1,3 +1,4 @@
+import {appCatalog} from '../../../src/apps/catalog';
 import {needsEmailVerification} from './auth-errors';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { managedClient,invalidateIdentity } from './auth';
@@ -10,6 +11,7 @@ import { PasswordInput } from './PasswordInput';
 import {passwordIssue} from '../../../src/platform/password-strength';
 import {navigate} from '../lib/navigation';
 import {serviceCatalog} from '../../../src/marketplace/catalog';
+import {appIntentQuery} from './app-intent';
 type AuthResult = { email?: string; managed?: boolean; needsVerification?: boolean; message?: string; verified?: boolean; reset?: boolean; signin_href?: string; verification_token?: string; recovery_token?: string };
 function Field({label,children}:{label:string;children:ReactNode}) {return <label className="field"><span>{label}</span>{children}</label>;}
 function ErrorBox({error}:{error:string}) {return error ? <div className="alert error" role="alert">{error}</div> : null;}
@@ -17,7 +19,7 @@ export function AuthPage({ mode,kind }: { mode: string;kind?:string }) {
   const requested=kind||new URLSearchParams(location.search).get('create');
   const intent=requested&&['personal','business','developer'].includes(requested)?requested:undefined;
   const service=new URLSearchParams(location.search).get('service');
-  const params=new URLSearchParams();if(intent)params.set('create',intent);if(serviceCatalog.some(s=>s.id===service))params.set('service',service!);
+  const params=appIntentQuery(location.search,appCatalog);if(intent)params.set('create',intent);if(serviceCatalog.some(s=>s.id===service))params.set('service',service!);
   const intentQuery=params.size?'?'+params.toString():'';
   useEffect(()=>{if(mode==='signin'||mode==='signup') exitDemo();},[mode]);
   const [error, setError] = useState(''),
@@ -44,7 +46,7 @@ export function AuthPage({ mode,kind }: { mode: string;kind?:string }) {
         const callbackURL=location.origin+'/auth/callback'+intentQuery;
         const result=mode==='signup'?await client.signUp.email({name:String(d.name||email.split('@')[0]),email,password,callbackURL}):
           mode==='signin'?await client.signIn.email({email,password}):
-          mode==='recover'?await client.requestPasswordReset({email,redirectTo:location.origin+'/reset'}):
+          mode==='recover'?await client.requestPasswordReset({email,redirectTo:location.origin+'/reset'+intentQuery}):
           mode==='reset'?await client.resetPassword({newPassword:password,token:String(d.token)}):
           await client.emailOtp.verifyEmail({email,otp:String(d.token)});
         if(result.error) {
@@ -107,7 +109,7 @@ export function AuthPage({ mode,kind }: { mode: string;kind?:string }) {
             </Field>
           )}
           {['signup', 'signin', 'reset'].includes(mode) && (
-            <div className="password-field"><PasswordInput current={mode === 'signin'} />{mode === 'signin' && <a className="forgot-password" href="/forgot-password">Forgot password?</a>}</div>
+            <div className="password-field"><PasswordInput current={mode === 'signin'} />{mode === 'signin' && <a className="forgot-password" href={'/forgot-password'+intentQuery}>Forgot password?</a>}</div>
           )}
           {['verify', 'reset'].includes(mode) && (
             <Field label={mode==='verify'?'Email verification code':'Recovery token'}>

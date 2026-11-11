@@ -1,3 +1,4 @@
+import {appCatalog} from '../../../src/apps/catalog';
 import {retryAccountRead} from './account-read';
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { BusinessApp } from "../BusinessApp";
@@ -12,6 +13,7 @@ import "./accounts.css";
 import {navigate,usePathname} from '../lib/navigation';
 import {ServiceAdmin} from '../marketplace/ServiceAdmin';
 import {serviceCatalog} from '../../../src/marketplace/catalog';
+import {appIntentDestination} from './app-intent';
 export function AccountApp() {
   const path=usePathname();
   const [account, setAccount] = useState<any>(null),
@@ -39,7 +41,7 @@ export function AccountApp() {
     const create=new URLSearchParams(location.search).get('create');
     const destination=types.some(t=>t.kind===create)?'/app/workspaces?create='+create:account.destination;
     const service=new URLSearchParams(location.search).get('service');
-    if(typeof destination==='string'&&destination.startsWith('/app'))navigate(destination+(serviceCatalog.some(s=>s.id===service)?(destination.includes('?')?'&':'?')+'service='+encodeURIComponent(service!)+'#Explore%20Services':''),true);
+    if(typeof destination==='string'&&destination.startsWith('/app'))navigate(serviceCatalog.some(s=>s.id===service)?destination+(destination.includes('?')?'&':'?')+'service='+encodeURIComponent(service!)+'#Explore%20Services':appIntentDestination(destination,location.search,appCatalog),true);
   },[account,path]);
   if (isDemo()) return <BusinessApp />;
   if (error)

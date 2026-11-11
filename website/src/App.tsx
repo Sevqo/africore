@@ -22,6 +22,7 @@ import { Icon } from './components/Icon';
 import { Header } from './components/Header';
 import { pages, media } from './content';
 import { FeatureSection } from './components/Media';
+const PublicStorefront=lazy(()=>import('./commerce/PublicStorefront').then(m=>({default:m.PublicStorefront})));
 const Checkout=lazy(()=>import('./BusinessApp').then(m=>({default:m.Checkout})));
 import { AuthPage } from './accounts/AuthPage';
 import { Logo } from './components/Logo';
@@ -174,6 +175,7 @@ function Application() {
   if(path.startsWith('/sign-up/')) return ['personal','business','developer'].includes(path.split('/')[2]) ? <AuthPage mode="signup" kind={path.split('/')[2]}/> : <AccountChooser/>;
   if(path==='/login') return <AuthPage mode="signin"/>;
   if(path==='/forgot-password') return <AuthPage mode="recover"/>;
+  if(/^\/s\/(sandbox|production)\/[a-z0-9]+(?:-[a-z0-9]+)*\/?$/.test(path)){const [, ,environment,slug]=path.split('/');return <PublicStorefront key={environment+'/'+slug} environment={environment} slug={slug}/>;}
   if (path.startsWith('/checkout/')) return <Checkout />;
   if (path === '/demo') {
     startDemo();

@@ -1,3 +1,4 @@
+import {commerceRouteKinds} from '../commerce/metadata';
 import {erpRouteKinds} from '../erp/metadata';
 import {connectedRouteKinds} from '../operations/connected-metadata';
 import {appRouteKinds} from '../apps/metadata';
@@ -6,6 +7,7 @@ import {financeRouteKinds} from '../finance/metadata';
 /** Explicit route metadata. New routes remain denied until reviewed here. */
 import {marketplaceRouteKinds} from '../marketplace/metadata';
 export const workspaceRouteKinds:Record<string,readonly string[]>={
+ ...commerceRouteKinds,
   "GET /organizations/:org/request-logs": [
     "business",
     "developer"

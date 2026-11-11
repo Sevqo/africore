@@ -62,8 +62,14 @@ schemas.work_projectReviewInput=z.toJSONSchema(require('../dist/erp/work-reviews
 schemas.people_onboardingProjectInput=z.toJSONSchema(require('../dist/erp/people-onboarding').onboardingProjectInput,{target:'openapi-3.0',unrepresentable:'any'});
 schemas.documents_documentReviewInput=z.toJSONSchema(require('../dist/erp/document-reviews').documentReviewInput,{target:'openapi-3.0',unrepresentable:'any'});
 for(const name of ['documentRequestInput','documentSubmissionInput','documentRequestCancelInput'])schemas['documents_'+name]=z.toJSONSchema(require('../dist/erp/document-requests')[name],{target:'openapi-3.0',unrepresentable:'any'});
+for(const [name,schema] of Object.entries(require('../dist/commerce/contracts')))schemas['commerce_'+name]=z.toJSONSchema(schema,{target:'openapi-3.0',unrepresentable:'any'});
+schemas.commerce_quoteInput=z.toJSONSchema(require('../dist/commerce/quote').quoteInput,{target:'openapi-3.0',unrepresentable:'any'});
+schemas.commerce_publishInput=z.toJSONSchema(require('../dist/commerce/publishing').publishInput,{target:'openapi-3.0',unrepresentable:'any'});
+schemas.commerce_checkoutPolicyInput=z.toJSONSchema(require('../dist/commerce/checkout-policy').checkoutPolicyInput,{target:'openapi-3.0',unrepresentable:'any'});
+for(const name of ['cartCreateInput','cartUpdateInput','cartConfirmInput'])schemas['commerce_'+name]=z.toJSONSchema(require('../dist/commerce/carts')[name],{target:'openapi-3.0',unrepresentable:'any'});
 const paths = {};
 const operations = [
+ ...fs.readFileSync('src/commerce/routes.ts','utf8').matchAll(/commerce\.(get|post|put|patch|delete)\s*\(\s*'([^']+)'/g),
  ...fs.readFileSync('src/erp/routes.ts','utf8').matchAll(/erp\.(get|post|put|patch|delete)\s*\(\s*'([^']+)'/g),
  ...fs.readFileSync('src/apps/routes.ts','utf8').matchAll(/appRoutes\.(get|post|put|patch|delete)\s*\(\s*'([^']+)'/g),
  ...fs.readFileSync('src/operations/business-routes.ts','utf8').matchAll(/business\.(get|post|put|patch|delete)\s*\(\s*'([^']+)'/g),
@@ -126,7 +132,7 @@ for (const op of operations) {
       429: { description: 'Rate limited' },
     },
     security:
-      path.includes('/checkout/') || (isAuth && ['/config','/signup','/signin','/recover','/verify','/reset'].includes(op[2]))
+      path.includes('/checkout/') || path.startsWith('/api/v1/storefronts/') || (isAuth && ['/config','/signup','/signin','/recover','/verify','/reset'].includes(op[2]))
         ? [{}]
         : [{ session: [] }, { managedSession: [] }, ...(!isAuth?[{ apiKey: [] }]:[])],
   };
@@ -222,6 +228,17 @@ for (const op of operations) {
   if (path.includes('/internal')) operation.security = [{ session: [] },{ managedSession: [] }];
   if (path.includes('/callbacks/'))
     operation.security = [{ sandboxSignature: [] }];
+  if(path.includes('/commerce/')){
+    operation.security=[{session:[]},{managedSession:[]}];
+    if(['post','put','patch','delete'].includes(method)&&!path.endsWith('/quote')&&!parameters.some(p=>p.name==='Idempotency-Key'))parameters.push({name:'Idempotency-Key',in:'header',required:true,schema:{type:'string',minLength:8,maxLength:200}});
+    if(operation.requestBody){const name=path.endsWith('/publish')?'commerce_publishInput':path.endsWith('/quote')?'commerce_quoteInput':/\/listings(?:\/\{listing\})?$/.test(path)?'commerce_listingInput':/\/stores(?:\/\{id\})?$/.test(path)?'commerce_saveStoreInput':null;if(name)operation.requestBody.content['application/json'].schema={$ref:'#/components/schemas/'+name};}
+  }
+  if(path.endsWith('/checkout-policy')&&operation.requestBody)operation.requestBody.content['application/json'].schema={$ref:'#/components/schemas/commerce_checkoutPolicyInput'};
+  if(path.startsWith('/api/v1/storefronts/')&&/\/cart(?:\/confirm)?$/.test(path)){
+    operation.description='An expiring HttpOnly, store-scoped cart cookie authorizes access to this buyer cart only. No merchant identity is granted. Quotes use current canonical prices. Confirmation is sandbox-only and creates canonical order, invoice and payment request atomically; payment does not dispatch stock. Responses are private and never cached.';
+    if(['put','post'].includes(method)&&(!path.endsWith('/cart')||method==='put'))parameters.push({name:'Idempotency-Key',in:'header',required:true,schema:{type:'string',minLength:8,maxLength:200}});
+    if(operation.requestBody){const name=path.endsWith('/confirm')?'cartConfirmInput':method==='post'?'cartCreateInput':'cartUpdateInput';operation.requestBody.content['application/json'].schema={$ref:'#/components/schemas/commerce_'+name};}
+  }
   (paths[path] ||= {})[method] = operation;
 }
 const doc = {

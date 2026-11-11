@@ -18,3 +18,11 @@ test('demo and public legacy auth do not initialize managed authentication',asyn
     assert.equal(await (await send(demo?'/api/v1/organizations':'/api/auth/signin')).text(),'none');
   }
 });
+
+test('public store and exact checkout handlers work without managed auth while protected lookalikes remain authenticated',async()=>{
+ let identities=0;const send=createAuthenticatedTransport(async(_path,options)=>new Response(options.headers.get('Authorization')||'anonymous'),async()=>{identities++;return {Authorization:'Bearer fixture-only'};},()=>false);
+ for(const path of ['/api/v1/storefronts/sandbox/fictional-shop','/api/v1/storefronts/production/fictional-shop?q=example','/api/v1/storefronts/sandbox/fictional-shop/cart','/api/v1/checkout/'+'a'.repeat(64),'/api/v1/checkout/'+'b'.repeat(64)+'/pay'])assert.equal(await (await send(path)).text(),'anonymous');
+ assert.equal(identities,0);
+ for(const path of ['/api/v1/organizations/test/commerce/stores','/api/v1/storefronts/sandbox/fictional-shop/private','/api/v1/checkout/not-a-valid-token'])assert.equal(await (await send(path)).text(),'Bearer fixture-only');
+ assert.equal(identities,3);
+});

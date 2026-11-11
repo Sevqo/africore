@@ -1,14 +1,16 @@
+import {appCatalog} from '../../../src/apps/catalog';
 import {serviceCatalog} from "../../../src/marketplace/catalog";
 import { useState, type FormEvent } from "react";
 import { api } from "../lib/api-client";
 import { Logo } from "../components/Logo";
 import { Icon } from "../components/Icon";
 import { types, url, Field, Alert, Currency } from "./AccountUI";
+import {appIntentDestination,requestedAppIntent} from './app-intent';
 export function Workspaces({ account }: { account: any }) {
   const chosen = new URLSearchParams(location.search).get("create");
   const requestedService=new URLSearchParams(location.search).get("service");
   const service=serviceCatalog.find(s=>s.id===requestedService);
-  const reviewDestination=(w:any)=>url(w)+(service&&service.kinds.includes(w.kind)?"?service="+encodeURIComponent(service.id)+"#Explore%20Services":"");
+  const reviewDestination=(w:any)=>service&&service.kinds.includes(w.kind)?url(w)+"?service="+encodeURIComponent(service.id)+"#Explore%20Services":appIntentDestination(url(w),location.search,appCatalog);
   const [kind, setKind] = useState(
     types.some((t) => t.kind === chosen) ? chosen! : "",
   );
@@ -21,7 +23,7 @@ export function Workspaces({ account }: { account: any }) {
     setError("");
     try {
       const w = await api("/api/auth/workspaces", "POST", { ...d, kind });
-      location.href = reviewDestination(w)+(service?'':w.existing?'':'#Explore%20Services');
+      location.href = reviewDestination(w)+(service||requestedAppIntent(location.search,appCatalog)?'':w.existing?'':'#Explore%20Services');
     } catch (e) {
       setError((e as Error).message);
       setBusy(false);

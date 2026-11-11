@@ -30,6 +30,18 @@ test('direct workspace refresh uses static fallback with auth CSP; internal path
   assert.equal((await handle(new Request('http://africore.example/login'),env)).status,308);
 });
 
+test('published storefront entry paths and public catalog API have explicit gateway routes',async()=>{
+ const page=await handle(new Request('https://africore.example/s/sandbox/fictional-shop'),env);assert.equal(page.status,200);assert.match(page.headers.get('Content-Security-Policy'),/script-src 'self'/);
+ for(const path of ['/s/unknown/fictional-shop','/s/sandbox/fictional-shop/private','/api/v1/storefronts/sandbox/%2Fprivate'])assert.equal((await handle(new Request('https://africore.example'+path),env)).status,404,path);
+ let called=false;const response=await handle(new Request('https://africore.example/api/v1/storefronts/sandbox/fictional-shop?q=example'),env,async request=>{called=true;assert.equal(new URL(request.url).pathname,'/api/v1/storefronts/sandbox/fictional-shop');return Response.json({products:[]});});assert.equal(called,true);assert.equal(response.status,200);assert.equal(response.headers.get('Cache-Control'),'no-store');assert.equal(response.headers.get('x-africore-gateway-secret'),null);
+});
+
+test('storefront cart cookies and confirmation bodies cross the gateway without caching or capability expansion',async()=>{
+ const cookie='africore_cart_fixture='+'a'.repeat(64),path='/api/v1/storefronts/sandbox/fictional-shop/cart/confirm',body=JSON.stringify({expected_version:2,quote_hash:'b'.repeat(64),acknowledge_test_purchase:true});
+ const r=await handle(new Request('https://africore.example'+path,{method:'POST',headers:{Cookie:cookie,'Content-Type':'application/json','Idempotency-Key':'fictional-intent','Sec-Fetch-Site':'same-origin'},body}),env,async request=>{assert.equal(new URL(request.url).pathname,path);assert.equal(request.headers.get('cookie'),cookie);assert.equal(request.headers.get('idempotency-key'),'fictional-intent');assert.equal(request.headers.get('sec-fetch-site'),'same-origin');assert.equal(await request.text(),body);return Response.json({status:'converted'},{headers:{'Set-Cookie':cookie+'; HttpOnly; Secure; SameSite=Lax; Path=/api/v1/storefronts/sandbox/fictional-shop'}});});
+ assert.equal(r.status,200);assert.equal(r.headers.get('Cache-Control'),'no-store');assert.match(r.headers.get('Set-Cookie'),/HttpOnly; Secure; SameSite=Lax/);assert.equal(r.headers.get('Access-Control-Allow-Origin'),null);assert.equal(r.headers.get('x-africore-gateway-secret'),null);
+});
+
 test('Render hibernation throttling becomes a bounded startup failure while genuine application 429s remain unchanged',async()=>{
  const response=await handle(new Request('https://africore.example/api/auth/config'),env,async()=>new Response('Too Many Requests\n',{status:429,headers:{'Content-Type':'text/plain','x-render-routing':'hibernate-rate-limited'}}));assert.equal(response.status,503);assert.equal(response.headers.get('Retry-After'),'20');assert.equal(response.headers.get('Cache-Control'),'no-store');assert.equal(response.headers.get('X-Frame-Options'),'DENY');assert.equal((await response.json()).error,'backend_starting');
  const limited=await handle(new Request('https://africore.example/api/auth/config'),env,async()=>Response.json({error:'rate_limited'},{status:429,headers:{'Retry-After':'4'}}));assert.equal(limited.status,429);assert.equal(limited.headers.get('Retry-After'),'4');assert.equal((await limited.json()).error,'rate_limited');

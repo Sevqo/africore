@@ -1,7 +1,7 @@
 import {readApiResponse} from './api-response';
 import { transport, isDemo } from '../demo/transport';
 import { identityHeaders } from '../accounts/auth';
-import { createAuthenticatedTransport } from './authenticated-transport';
+import { createAuthenticatedTransport,anonymousApiPath } from './authenticated-transport';
 import { protectedQueries, queryIdentity, queryKey, cacheable, clearPrivateQueries, setQueryIdentity, invalidateWorkspace } from './query-cache';
 export const apiFetch = createAuthenticatedTransport(transport, identityHeaders, isDemo);
 export async function api(
@@ -11,7 +11,8 @@ export async function api(
   environment = 'sandbox',
   headers: Record<string, string> = {},
 ) {
-  const identity = isDemo() ? {} : await identityHeaders();
+  const anonymous=anonymousApiPath(path);
+  const identity = isDemo()||anonymous ? {} : await identityHeaders();
   const send=async(signal?:AbortSignal)=>{
   const r = await apiFetch(path, {
     method,
@@ -27,7 +28,7 @@ export async function api(
   });
   let data;
   try {data=await readApiResponse(r);} catch(error) {
-    if (r.status===401&&!headers.Authorization&&!headers.authorization) {clearPrivateQueries();window.dispatchEvent(new CustomEvent('africore:access-changed'));}
+    if (r.status===401&&!anonymous&&!headers.Authorization&&!headers.authorization) {clearPrivateQueries();window.dispatchEvent(new CustomEvent('africore:access-changed'));}
     if(r.status===403)invalidateWorkspace(path,environment);
     throw error;
   }

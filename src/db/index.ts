@@ -1,3 +1,4 @@
+import {migrateCommerce} from '../commerce/schema';
 import {migrateProcurement} from '../erp/procurement-schema';
 import {migrateDocuments} from '../erp/documents-schema';
 import {migratePeople} from '../erp/people-schema';
@@ -335,6 +336,7 @@ export async function migrate(): Promise<void> {
   await migratePeople();
   await migrateDocuments();
   await migrateProcurement();
+  await migrateCommerce();
 
   if (isPostgres) {
     await dbExec(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS matched_invoice_id TEXT;`);

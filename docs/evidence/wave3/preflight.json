@@ -1,0 +1,41 @@
+{
+  "date": "2026-11-05",
+  "hosted_source": "228b16cb52e8e0f0d84d2089fa35e2af5cdc3462",
+  "cloudflare_version": "e5ce8dee-103e-4a4f-bb7b-a0697f4ef598",
+  "migration_inspection": {
+    "approved_development_only": true,
+    "read_only": true,
+    "latest": "016-procurement",
+    "wave3_applied": false
+  },
+  "availability": {
+    "initial": "HTML Cloudflare challenge429 upstream, gateway503",
+    "action": "Normal Render restart of unchanged current release",
+    "subsequent_readiness": 200,
+    "security_controls_changed": false
+  },
+  "managed_session": {
+    "account": true,
+    "business_workspace": true
+  },
+  "app_entry_navigation": {
+    "count": 12,
+    "rendered_errors": 0,
+    "scope": "Entry screens only; detailed local API suites qualify mutations; optional apps were not installed by the agent"
+  },
+  "reported_reversal": {
+    "observed_amount_minor": 12000,
+    "currency": "KES",
+    "original": "succeeded",
+    "report": "unlinked reversal_requires_review",
+    "settlement_unchanged": true,
+    "agent_writes": false
+  },
+  "baseline": {
+    "postgres_pass": 384,
+    "sqlite_pass": 383,
+    "sqlite_pg_only_skip": 1,
+    "failures": 0
+  },
+  "provider_activation": false
+}

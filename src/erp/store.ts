@@ -6,7 +6,7 @@ import {permitted} from '../platform/domain';
 import {canonical} from '../finance/service';
 import {requireServices,checkLimits,recordUsage} from '../marketplace/engine';
 
-export type ERPKind='work_rule_run'|'work_sales_link'|'accounting_tax_code'|'accounting_tax_case'|'supplier_profile'|'purchase_rfq'|'supplier_payment'|'supplier_credit'|'work_project'|'work_task'|'work_message'|'people_settings'|'department'|'employee'|'employee_compensation'|'leave_type'|'leave_request'|'attendance'|'document'|'document_version'|'document_request'|'purchase_request'|'purchase_order'|'purchase_receipt'|'supplier_bill';
+export type ERPKind='commerce_store'|'commerce_listing'|'commerce_collection'|'work_rule_run'|'work_sales_link'|'accounting_tax_code'|'accounting_tax_case'|'supplier_profile'|'purchase_rfq'|'supplier_payment'|'supplier_credit'|'work_project'|'work_task'|'work_message'|'people_settings'|'department'|'employee'|'employee_compensation'|'leave_type'|'leave_request'|'attendance'|'document'|'document_version'|'document_request'|'purchase_request'|'purchase_order'|'purchase_receipt'|'supplier_bill';
 export interface ERPObject {id:string;org_id:string;environment:string;kind:ERPKind;root_id:string;parent_id:string|null;owner_id:string;status:string;stage:string;position:number;due_on:string|null;version:number;created_at:string;updated_at:string;data:any;}
 const context=(a:Access,kind:string,id:string)=>JSON.stringify(['erp',a.org,a.environment,kind,id]);
 const protect=(value:string,scope:string)=>seal(value,scope,'2');

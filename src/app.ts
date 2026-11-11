@@ -1,3 +1,4 @@
+import {commerce} from './commerce/routes';
 import {erp} from './erp/routes';
 import {connected} from './operations/connected-routes';
 import {appRoutes} from './apps/routes';
@@ -89,6 +90,7 @@ export function createApp() {
   app.use('/api/v1', sameOrigin, appRoutes);
   app.use('/api/v1', sameOrigin, business);
   app.use('/api/v1', sameOrigin, erp);
+  app.use('/api/v1', sameOrigin, commerce);
   app.use('/api/v1', sameOrigin, finance);
   app.use('/api/v1', sameOrigin, platform);
   app.use('/api/v1',sameOrigin,marketplace);
@@ -159,6 +161,7 @@ export function createApp() {
     next();
   });
   app.use(express.static(path.join(process.cwd(), 'website/dist')));
+  app.get(/^\/s\/(?:sandbox|production)\/[a-z0-9]+(?:-[a-z0-9]+)*\/?$/,(_req,res)=>res.sendFile('index.html',{root:path.join(process.cwd(),'website/dist')}));
   app.get(['/get-started','/sign-up/{*path}','/login','/forgot-password','/auth/callback'],(_req,res)=>res.sendFile('index.html',{root:path.join(process.cwd(),'website/dist')}));
   app.get(['/learn','/learn/{*path}','/demo','/verify-credential','/trust/{*path}','/passport/{*path}','/app','/app/{*path}','/checkout/{*path}','/buyer/{*path}','/signin','/signup','/recover','/reset','/verify','/products/{*path}','/solutions/{*path}','/developers','/docs','/sandbox','/security','/about','/contact','/support','/pricing','/privacy','/terms'], (_req,res) => res.sendFile('index.html',{root:path.join(process.cwd(),'website/dist')}));
   app.use((req: RequestWithContext, res) => res.status(404).json({ error: "not_found", path: req.originalUrl }));

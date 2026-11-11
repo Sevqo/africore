@@ -34,7 +34,7 @@ export async function handle(request, env, upstreamFetch = fetch) {
     // Deny encoded separators, dot segments, repeated slashes and unknown API
     // roots before forwarding. Legacy/admin routes require a separate channel.
     const path=url.pathname;
-    const publicRoot=/^\/api\/(?:auth(?:\/|$)|openapi\.json$|v1\/(?:organizations(?:\/|$)|workspaces(?:\/|$)|invitations\/accept$|checkout\/|callbacks\/|buyer\/|trust\/|\.well-known\/))/.test(path);
+    const publicRoot=/^\/api\/(?:auth(?:\/|$)|openapi\.json$|v1\/(?:organizations(?:\/|$)|workspaces(?:\/|$)|invitations\/accept$|checkout\/|storefronts\/|callbacks\/|buyer\/|trust\/|\.well-known\/))/.test(path);
     if (/%|\\|\/\//.test(path)||(!publicRoot&&!['/v1/health','/v1/readiness'].includes(path)))return secured(Response.json({error:'not_found'},{status:404}),{privateResponse:true});
     if (path.split('/').some(part=>part.toLowerCase()==='internal'))return secured(Response.json({error:'not_found'},{status:404}),{privateResponse:true});
     if(path==='/api/auth/config'&&request.method==='GET'&&env.NEON_AUTH_BASE_URL){
@@ -70,7 +70,8 @@ export async function handle(request, env, upstreamFetch = fetch) {
   if (url.pathname === '/internal' || url.pathname.startsWith('/internal/')) return new Response('Not found', { status: 404 });
   if (!['GET','HEAD'].includes(request.method)) return new Response('Method not allowed', { status: 405, headers: { Allow: 'GET, HEAD' } });
   const normalized = url.pathname.replace(/\/+$/, '') || '/';
-  const application = /^(?:\/app(?:\/|$)|\/checkout\/|\/buyer\/|\/trust\/share\/|\/passport\/|\/sign-up\/)/.test(normalized) || ['/get-started','/signup','/login','/signin','/forgot-password','/auth/callback','/recover','/verify','/reset','/demo','/verify-credential'].includes(normalized);
+  const storefront=/^\/s\/(?:sandbox|production)\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalized);
+  const application = storefront || /^(?:\/app(?:\/|$)|\/checkout\/|\/buyer\/|\/trust\/share\/|\/passport\/|\/sign-up\/)/.test(normalized) || ['/get-started','/signup','/login','/signin','/forgot-password','/auth/callback','/recover','/verify','/reset','/demo','/verify-credential'].includes(normalized);
   const asset = /\.[a-z0-9]+$/i.test(normalized);
   if (!publicPages.has(normalized) && !application && !asset) return secured(new Response('Page not found', {status:404}));
   let authOrigin = '';

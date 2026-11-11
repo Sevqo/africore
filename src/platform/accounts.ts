@@ -1,4 +1,4 @@
-import {serviceSelectionInput} from '../common/service-selection';
+import {serviceSelectionInput,orderedServiceSelection} from '../common/service-selection';
 import { dbAll, dbGet, dbRun, dbTransaction } from "../db/adapter";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
@@ -116,7 +116,7 @@ export async function createWorkspace(userId: string, input: unknown) {
       `INSERT INTO ac_account_details(user_id,country,use_case,language) VALUES (?,?,?,?) ON CONFLICT(user_id) DO NOTHING`,
       [userId, d.country, d.use_case, d.language],
     );
-    for(const service of d.services)await activate({org:id,actor:userId,environment:'sandbox',role:'owner',api:false},service);
+    for(const service of orderedServiceSelection(d.services))await activate({org:id,actor:userId,environment:'sandbox',role:'owner',api:false},service);
     return { id, kind: d.kind, existing: false };
   });
 }

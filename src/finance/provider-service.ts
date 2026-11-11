@@ -5,6 +5,7 @@ import {Access,audit,fail} from '../platform/auth';
 import {hash,now,seal,unseal,secret} from '../platform/crypto';
 import {processProviderResult} from '../platform/payments';
 import {DarajaSandbox,darajaConfiguration,kenyanPhone} from './providers/daraja';
+import {documentBalance} from './ledger';
 const context=(a:Access,id:string)=>JSON.stringify(['provider',a.org,a.environment,id]);
 export async function providerReadiness(a:Access){
  const connections=await dbAll('SELECT id,provider,account_id,label,status,created_at,updated_at FROM ac_provider_connections WHERE org_id=? AND environment=?',[a.org,a.environment]);
@@ -28,6 +29,7 @@ export async function initiateDaraja(a:Access,requestId:string,input:unknown,key
  const setup=await dbTransaction(async()=>{
   await dbRun('UPDATE ac_organizations SET name=name WHERE id=?',[a.org]);const previous=await dbGet('SELECT id,status,remote_reference,fingerprint FROM ac_payment_attempts WHERE org_id=? AND environment=? AND idempotency_key=?',[a.org,a.environment,key]);if(previous){if(previous.fingerprint!==fingerprint)fail(409,'Attempt key conflicts with original request');return {previous};}
   const request=await dbGet('SELECT * FROM ac_requests WHERE id=? AND org_id=? AND environment=?',[requestId,a.org,a.environment]);if(!request||!['pending','failed'].includes(request.status)||request.expires_at<now())fail(409,'Payment request is not open');
+  const balance=await documentBalance(a,request.document_id);if(!['issued','partially_paid','awaiting_payment'].includes(balance.status)||Number(request.amount_minor)>balance.outstanding_minor)fail(409,'Review the remaining document balance before initiating another payment');
   if(await dbGet("SELECT id FROM ac_payment_attempts WHERE request_id=? AND status IN ('initiating','pending','unknown')",[requestId]))fail(409,'Resolve the existing payment attempt before initiating another');
   if(request.currency!=='KES'||Number(request.amount_minor)%100!==0)fail(400,'Daraja test requests require whole-shilling KES amounts');const callbackOrigin=new URL(process.env.AFRICORE_PUBLIC_ORIGIN||'http://invalid');if(callbackOrigin.protocol!=='https:')fail(503,'A trusted public HTTPS origin is required');
   const connection=await configured(a,d.connection_id),id=randomUUID();await dbRun('INSERT INTO ac_payment_attempts(id,org_id,environment,request_id,provider,account_id,idempotency_key,fingerprint,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)',[id,a.org,a.environment,requestId,'daraja',connection.row.id,key,fingerprint,'initiating',now(),now()]);return {id,request,connection};
