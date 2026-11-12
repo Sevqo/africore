@@ -2,6 +2,16 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateTender,calculateDrawer,remainingCashReturn} from '../pos/settlement';
 import {calendarDay} from '../finance/money';
+import {registerDayWindow} from '../pos/calendar';
+
+test('register report windows preserve local midnight, DST and skipped calendar dates',()=>{
+ assert.deepEqual(registerDayWindow('2026-11-12','Africa/Nairobi'),{from:'2026-11-11T21:00:00.000Z',to:'2026-11-12T21:00:00.000Z'});
+ const spring=registerDayWindow('2026-03-08','America/New_York'),fall=registerDayWindow('2026-11-01','America/New_York');
+ assert.equal(Date.parse(spring.to)-Date.parse(spring.from),23*3600000);
+ assert.equal(Date.parse(fall.to)-Date.parse(fall.from),25*3600000);
+ assert.throws(()=>registerDayWindow('2011-12-30','Pacific/Apia'),/does not exist/);
+ assert.throws(()=>registerDayWindow('2026-02-30','UTC'),/Invalid/);
+});
 
 const policy={outstanding_minor:12000,cash_minor:12000,tendered_minor:15000,intent:'cash' as const,allow_cash:true,allow_electronic:false,allow_pending:false};
 test('channel document calendars preserve the local date across UTC midnight boundaries',()=>{

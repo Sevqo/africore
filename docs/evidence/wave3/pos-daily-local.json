@@ -1,0 +1,17 @@
+{
+  "date": "2026-11-12",
+  "scope": "Register-scoped POS daily overview, local only",
+  "full_regression": { "postgres_passed": 434, "sqlite_passed": 433, "sqlite_pg_only_skipped": 1, "failed": 0 },
+  "final_focused": { "sqlite_pos_and_calendar_passed": 20, "postgres_pos_passed": 13 },
+  "website_passed": 62,
+  "workspace_api_contracts": 427,
+  "lint_frontend_modules": 164,
+  "browser": {
+    "fixture": "Fictional localhost sandbox sale, inspected stock return, cash return and closed shift",
+    "observed": "One KES 1,000 sale; KES 1,000 cash received and returned; zero retained; KES 1,000 outstanding pending correction; one closed shift with zero variance",
+    "desktop": { "viewport": 1440, "document": 1425, "scroll": 1425 },
+    "mobile": { "viewport": 390, "document": 375, "scroll": 375 },
+    "screenshots": ["pos-daily-desktop.jpg", "pos-daily-mobile.jpg"]
+  },
+  "boundaries": "No hosted migration, main merge, deployment, real funds or external provider activation. Core Wave 3 remains incomplete."
+}

@@ -24,6 +24,7 @@ import {setupAccounting,createPeriod,requestJournalReview,postJournalEntry} from
 import {accountingSourceList} from '../erp/accounting-source-list';
 import {financialSnapshot} from '../operations/intelligence';
 import {returnPOSStock,stockReturnChoices} from '../pos/stock';
+import {posDailyReport} from '../pos/report';
 
 let server:any,base:string,cookie='',cashierCookie='',org:string,actor:string,cashier:string,customer:string,registerId:string;
 const access=():Access=>({org,actor,role:'owner',environment:'sandbox',api:false});
@@ -138,6 +139,22 @@ test('POS cash confirms one canonical sale with exact change and works with Pay 
   await assert.rejects(confirmPOSSale(cashierAccess(),draft.id,input,key()),/already confirmed/);
   assert.equal(Number((await dbGet('SELECT COUNT(*) AS n FROM ac_cash_movements WHERE source_id=?',[sale.id])).n),1);
   assert.equal(Number((await dbGet('SELECT COUNT(*) AS n FROM ac_events WHERE org_id=?',[org])).n),evidenceBefore);
+  const report=await posDailyReport(cashierAccess(),r.id);
+  assert.equal(report.sales.total_count,1);assert.equal(report.sales.gross_invoice_minor,2400);
+  assert.equal(report.sales.recorded_cash_retained_minor,2400);assert.equal(report.sales.simulated_electronic_paid_minor,0);
+  assert.equal(report.cash_activity.received_minor,2400);assert.equal(report.shifts.currently_open,1);
+  assert.equal(report.top_products[0].quantity_milli,2000);assert.equal(report.top_products[0].line_subtotal_minor,2400);
+  const yesterday=new Date(Date.now()-3*86400000).toISOString().slice(0,10);
+  assert.equal((await posDailyReport(a,r.id,{date:yesterday})).sales.total_count,0);
+  await assert.rejects(posDailyReport({...a,api:true},r.id),/human/);
+  await assert.rejects(posDailyReport({...a,environment:'production'},r.id),/Activate|not found/);
+  await closeSession(a,session.id,{expected_version:2,counted_cash_minor:3400,acknowledge_close:true},key());
+  const ownerShift=(await openSession(a,r.id,{expected_register_version:1,opening_cash_minor:0,acknowledge_count:true},key())).session;
+  const ownerDraft=await savePOSDraft(a,ownerShift.id,null,{expected_session_version:1,items:[{product_id:p.id,quantity_milli:1000}]},key()),ownerQuote=await currentSaleQuote(a,ownerDraft.id);
+  await confirmPOSSale(a,ownerDraft.id,{expected_version:1,quote_hash:ownerQuote.quote_hash,payment_intent:'cash',cash_amount_minor:1200,tendered_cash_minor:1200,acknowledge_recorded_cash:true},key());
+  assert.equal((await posDailyReport(a,r.id)).sales.gross_invoice_minor,3600);
+  assert.equal((await posDailyReport(cashierAccess(),r.id)).sales.gross_invoice_minor,2400);
+  assert.equal((await posDailyReport(cashierAccess(),r.id)).shifts.currently_open,0);
   await assert.rejects(dbRun('UPDATE ac_cash_movements SET amount_minor=1 WHERE source_id=?',[sale.id]),/immutable/);
  }finally{await dbRun("UPDATE ac_service_entitlements SET status='active' WHERE org_id=? AND environment='sandbox' AND service_id='payments'",[org]);}
 });
@@ -186,6 +203,9 @@ test('POS competing sales reserve and dispatch the last exact-location unit once
  const results=await Promise.allSettled(sales.map(s=>confirmPOSSale(cashierAccess(),s.sale.id,s.input,key())));
  assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal(results.filter(r=>r.status==='rejected').length,1);
  assert.equal((await locationBalance(a,p.id,w.id,location.id)).on_hand_milli,0);assert.equal((await locationBalance(a,p.id,w.id,other.id)).on_hand_milli,9000);
+ const report=await posDailyReport(cashierAccess(),sales[0].sale.root_id);
+ assert.equal(report.stock.available,true);assert.equal(report.stock.data.find((item:any)=>item.id===p.id)?.available_milli,0);
+ assert.equal(report.stock.data.find((item:any)=>item.id===p.id)?.purchase_cost_minor,undefined);
  assert.equal(Number((await dbGet("SELECT COUNT(*) AS n FROM ac_stock_movements WHERE org_id=? AND product_id=? AND kind='dispatch'",[org,p.id])).n),1);
 });
 

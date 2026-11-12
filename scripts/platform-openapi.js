@@ -238,6 +238,7 @@ for (const op of operations) {
     if(operation.requestBody){const name=/\/registers(?:\/\{id\})?$/.test(path)?'registerInput':path.endsWith('/authorize')?'reauthorizeRegisterInput':path.endsWith('/sessions')?'openSessionInput':path.endsWith('/adjustments')?'cashAdjustmentInput':path.endsWith('/close')?'closeSessionInput':path.endsWith('/drafts')?'saleDraftInput':path.endsWith('/draft')?'editSaleDraftInput':path.endsWith('/confirm')?'confirmSaleInput':path.endsWith('/handover')?'handoverInput':path.endsWith('/stock-return')?'stockReturnInput':path.endsWith('/cash-return')?'cashReturnInput':null;if(name)operation.requestBody.content['application/json'].schema={$ref:'#/components/schemas/pos_'+name};}
     if(method==='get'&&path.endsWith('/products')&&!parameters.some(p=>p.name==='q'))parameters.push({name:'q',in:'query',schema:{type:'string',maxLength:100},description:'Literal product name, SKU or keyboard barcode search; no wildcard interpretation.'});
     if(method==='get'&&path.endsWith('/sales')&&!parameters.some(p=>p.name==='state'))parameters.push({name:'state',in:'query',schema:{type:'string',enum:['draft','confirmed']}});
+    if(method==='get'&&path.endsWith('/report'))parameters.push({name:'date',in:'query',schema:{type:'string',format:'date'},description:'Register-local calendar date, defaulting to today. Includes explicit bounded sales coverage and separately dated cash/closure observations.'});
   }
   if(path.includes('/commerce/')){
     operation.security=[{session:[]},{managedSession:[]}];

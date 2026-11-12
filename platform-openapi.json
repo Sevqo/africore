@@ -11635,6 +11635,98 @@
         "description": "Requires a current human Business member and current register-specific assignment. Register configuration requires owner/admin authority; cash returns, adjustments and closing require register management authority. API keys cannot act as cashiers. Sandbox qualification only; no offline queue or connected payment terminal is claimed."
       }
     },
+    "/api/v1/organizations/{org}/pos/registers/{id}/report": {
+      "get": {
+        "summary": "GET /organizations/:org/pos/registers/:id/report",
+        "operationId": "workspace_get__organizations__org_pos_registers__id_report",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Register-local calendar date, defaulting to today. Includes explicit bounded sales coverage and separately dated cash/closure observations."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "description": "Requires a current human Business member and current register-specific assignment. Register configuration requires owner/admin authority; cash returns, adjustments and closing require register management authority. API keys cannot act as cashiers. Sandbox qualification only; no offline queue or connected payment terminal is claimed."
+      }
+    },
     "/api/v1/organizations/{org}/pos/registers/{id}/sessions": {
       "post": {
         "summary": "POST /organizations/:org/pos/registers/:id/sessions",

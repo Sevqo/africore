@@ -8,6 +8,7 @@ import {posSale,savePOSDraft,currentSaleQuote} from './quotes';
 import {confirmPOSSale,handoverPOSSale} from './sales';
 import {returnPOSCash} from './returns';
 import {returnPOSStock} from './stock';
+import {posDailyReport} from './report';
 
 export const pos=Router();
 pos.use('/organizations/:org/pos',(_req,res,next)=>{res.setHeader('Cache-Control','no-store');next();});
@@ -22,6 +23,7 @@ pos.post('/organizations/:org/pos/registers/:id/authorize',route(async(req,res)=
 pos.get('/organizations/:org/pos/registers/:id',route(async(req,res)=>res.json(await registerOverview(await access(req),id(req),req.query))));
 pos.get('/organizations/:org/pos/registers/:id/products',route(async(req,res)=>res.json(await posProducts(await access(req),id(req),req.query))));
 pos.get('/organizations/:org/pos/registers/:id/sales',route(async(req,res)=>res.json(await posSales(await access(req),id(req),req.query))));
+pos.get('/organizations/:org/pos/registers/:id/report',route(async(req,res)=>res.json(await posDailyReport(await access(req),id(req),req.query))));
 pos.post('/organizations/:org/pos/registers/:id/sessions',route(async(req,res)=>res.status(201).json(await openSession(await access(req),id(req),req.body,key(req)))));
 pos.get('/organizations/:org/pos/sessions/:id',route(async(req,res)=>res.json(await drawer(await access(req),id(req)))));
 pos.post('/organizations/:org/pos/sessions/:id/adjustments',route(async(req,res)=>res.json(await adjustDrawer(await access(req),id(req),req.body,key(req)))));
