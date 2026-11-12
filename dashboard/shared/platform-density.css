@@ -1,0 +1,25 @@
+/* The owner's additional 25% reduction applies only to platform screens.
+   Native CSS zoom preserves each component's type hierarchy and includes portals.
+   Public marketing, learning, signup and sign-in screens have no density marker.
+   Print/export sizing and the existing responsive breakpoints remain unchanged. */
+@media screen {
+  html:has([data-platform-density]) {
+    --platform-density: .75;
+    --platform-viewport-height: calc(100dvh / .75);
+    zoom: var(--platform-density);
+    min-height: var(--platform-viewport-height);
+  }
+  :is(body[data-platform-density], body:has([data-platform-density])) :is(.business-shell,.focused-account) {
+    min-height: var(--platform-viewport-height);
+  }
+  :is(body[data-platform-density], body:has([data-platform-density])) :is(.sidebar,.account-nav,.focused-drawer) {
+    height: var(--platform-viewport-height);
+  }
+  :is(body[data-platform-density], body:has([data-platform-density])) :is(.modal-backdrop,.nav-scrim) {
+    width: calc(100vw / .75);
+    height: var(--platform-viewport-height);
+  }
+}
+
+
+

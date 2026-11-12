@@ -1,5 +1,7 @@
 # Platform UI transformation tracker
 
+Additional density checkpoint: the owner's subsequent 25% platform reduction is implemented through the shared platform density stylesheet. Public pages are excluded. Representative final measurements/screenshots are in `evidence/ui-transformation/density/`; earlier captures below predate this reduction. Full acceptance remains pending as recorded below.
+
 12 November 2026. **In progress: no full-platform completion or deployment claim.** The current registry contains 14 implemented apps and 92 navigation sections. Website, Marketing, Support and Subscriptions remain intentionally unimplemented under the supplemental scope. The canonical catalog contains 35 services across workspace kinds.
 
 The 92 registry sections were opened in an isolated browser at desktop and mobile widths. All had no observed document overflow or visible alert in the tested state. Screenshots include empty/unconfigured states; these are not populated-workflow acceptance. Primary screenshots for all 14 apps were manually reviewed; subsequent visual corrections are recorded in the report. Individual section-by-section manual visual acceptance, complete role coverage and all workflows remain pending.

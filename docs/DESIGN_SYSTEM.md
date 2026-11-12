@@ -4,6 +4,8 @@ Reviewed 2026-10-26. The platform uses a black, white and neutral editorial syst
 
 ## Shared source
 
+The 12 November owner request adds a further platform-only 25% visual reduction through `dashboard/shared/platform-density.css`, imported after shared primitives. Root markers scope it to platform screens and their portals; public pages and print retain their scale. Use the existing component sizes rather than applying a second local 0.75 reduction. CRM pointer translation accounts for rendered scale. Physical mobile acceptance remains unverified.
+
 `dashboard/shared/theme.css` is the canonical semantic token and locally hosted font source. Vite imports it through `website/src/tokens.css`; the legacy console imports it directly. `website/src/style.css` retains domain layout rules; `system.css` owns shared components, shells and responsive variants. Do not reintroduce competing shell rules in domain CSS.
 
 | Purpose | Token/value |

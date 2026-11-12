@@ -40,7 +40,7 @@ export function Workspaces({ account }: { account: any }) {
     }
   }
   return (
-    <main className="account-entry">
+    <main data-platform-density className="account-entry">
       <Logo />
       <h1>Your workspaces</h1>
       <p>One identity. Separate records and permissions for every workspace.</p>

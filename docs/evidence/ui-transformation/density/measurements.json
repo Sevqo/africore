@@ -1,0 +1,47 @@
+[
+  {
+    "bodyWidth": 305.3598327636719,
+    "buttonHeight": 32.99799728393555,
+    "headerHeight": 47.887794494628906,
+    "inputFont": "16px",
+    "overflow": false,
+    "width": 320,
+    "zoom": "0.75"
+  },
+  {
+    "bodyWidth": 375.0876770019531,
+    "buttonHeight": 32.99799728393555,
+    "headerHeight": 47.887794494628906,
+    "inputFont": "16px",
+    "overflow": false,
+    "width": 390,
+    "zoom": "0.75"
+  },
+  {
+    "bodyWidth": 753.3812255859375,
+    "buttonHeight": 32.99799728393555,
+    "headerHeight": 53.999000549316406,
+    "inputFont": "16px",
+    "overflow": false,
+    "width": 769,
+    "zoom": "0.75"
+  },
+  {
+    "bodyWidth": 1425.0125732421875,
+    "buttonHeight": 32.99799728393555,
+    "headerHeight": 53.999000549316406,
+    "inputFont": "16px",
+    "overflow": false,
+    "width": 1440,
+    "zoom": "0.75"
+  },
+  {
+    "bodyWidth": 1905.0927734375,
+    "buttonHeight": 32.99799728393555,
+    "headerHeight": 53.999000549316406,
+    "inputFont": "16px",
+    "overflow": false,
+    "width": 1920,
+    "zoom": "0.75"
+  }
+]

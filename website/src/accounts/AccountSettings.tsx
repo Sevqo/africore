@@ -44,7 +44,7 @@ export function AccountSettings({ account }: { account: any }) {
     }
   }
   return (
-    <main className="account-entry security-center">
+    <main className="account-entry security-center" data-platform-density>
       <Logo />
       <a href="/app/workspaces">All workspaces</a>
       <h1>Account & security</h1><nav className="account-settings-sections" aria-label="Account settings sections">{[['profile-preferences','Profile'],['account-email','Email'],['account-password','Password'],['account-sessions','Sessions'],['account-recovery','Recovery']].map(([id,label])=><a key={id} href={'#'+id}>{label}</a>)}</nav>

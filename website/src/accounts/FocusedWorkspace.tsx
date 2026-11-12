@@ -252,7 +252,7 @@ export function FocusedWorkspace({
         <button onClick={async()=>{try{await managedSignOut();location.href='/login';}catch(e){setError((e as Error).message);}}}>Sign out</button>
       </>;
   return (
-    <div className="focused-account" data-workspace-kind={personal?'personal':'developer'}>
+    <div className="focused-account" data-platform-density data-workspace-kind={personal?'personal':'developer'}>
       <a className="workspace-skip" href="#focused-workspace-main" onClick={event=>{event.preventDefault();document.getElementById('focused-workspace-main')?.focus();}}>Skip to workspace content</a>
       <aside className="account-nav">
         <Logo />

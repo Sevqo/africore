@@ -46,7 +46,7 @@ export function AccountApp() {
   if (isDemo()) return <BusinessApp />;
   if (error)
     return (
-      <main className="account-entry">
+      <main data-platform-density className="account-entry">
         <Logo />
         <h1>Workspace unavailable</h1>
         <Alert error={error} />
@@ -58,7 +58,7 @@ export function AccountApp() {
     );
   if (!account)
     return (
-      <main className="account-entry" role="status">
+      <main data-platform-density className="account-entry" role="status">
         Loading your account…
       </main>
     );
@@ -75,7 +75,7 @@ export function AccountApp() {
     : account.workspaces.find((w: any) => "/app/" + w.kind === path);
   if (!target)
     return (
-      <main className="account-entry">
+      <main data-platform-density className="account-entry">
         <h1>Workspace access required</h1>
         <p>This address is not one of your current memberships.</p>
         <a href="/app/workspaces">View authorized workspaces</a>
@@ -132,13 +132,13 @@ function ActiveWorkspace({
     };
   }, [id, selected]);
   return error ? (
-    <main className="account-entry">
+    <main data-platform-density className="account-entry">
       <h1>Workspace access changed</h1>
       <Alert error={error} />
       <a href="/app/workspaces">Resolve current access</a>
     </main>
   ) : !ready ? (
-    <main className="account-entry" role="status">
+    <main data-platform-density className="account-entry" role="status">
       Opening your authorized workspace…
     </main>
   ) : (

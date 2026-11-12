@@ -718,7 +718,7 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
   if(resolvingOrgs) return <main className="account-entry" role="status">Loading your Business workspace…</main>;
   if(orgLoadError) return <main className="account-entry"><h1>Business workspace unavailable</h1><ErrorBox error={orgLoadError}/><a href="/app/workspaces">Resolve current access</a><button className="button" onClick={()=>location.reload()}>Try again</button></main>;
   return (
-    <div className="business-shell">
+    <div className="business-shell" data-platform-density>
       <a className="workspace-skip" href="#workspace-main" onClick={event=>{event.preventDefault();document.getElementById('workspace-main')?.focus();}}>Skip to workspace content</a>
       {navOpen && (
         <button
