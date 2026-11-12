@@ -100,3 +100,58 @@ html:has([data-platform-density]) {
   .business-shell button,.focused-account button{transition:background-color 120ms,color 120ms,box-shadow 120ms}
   .business-shell button:active,.focused-account button:active{filter:brightness(.96)}
 }
+/* Domain compositions, also used on the corresponding independent service routes. */
+.business-shell .app-directory{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.business-shell .app-directory .app-directory-card{display:flex;flex-direction:column;text-align:center;align-items:center;padding:24px 16px!important;gap:12px;box-shadow:0 2px 5px #10251a05}
+.business-shell .app-directory-card h2{font-size:15px;margin:0 0 5px}
+.business-shell .app-directory-card p{font-size:12px;line-height:1.5;max-width:24ch;margin:0 0 10px}
+.business-shell .app-directory-card>button{margin-top:auto;width:100%;font-size:12px}
+.business-shell .app-mark{width:44px;height:44px;border-radius:11px;flex:none}
+.business-shell .app-mark .icon{width:24px;height:24px}
+.business-shell .app-mark-crm{background:#e7e3ff;color:#7852c9}
+.business-shell .app-mark-inventory{background:#fff0cf;color:#ba720b}
+.business-shell .app-mark-sales{background:#e0efff;color:#397bd0}
+.business-shell .app-mark-accounting{background:#e5eaff;color:#4c5dd4}
+.business-shell .app-mark-people{background:#ddf6df;color:#2d8c42}
+.business-shell .app-mark-procurement{background:#ffedcf;color:#c57a09}
+.business-shell .app-mark-documents{background:#e3edff;color:#3972d2}
+.business-shell .app-mark-business_id{background:#eaf8d9;color:#579029}
+.business-shell .apps-workspace .crm-board{gap:12px;padding:0;background:transparent;border:0;align-items:start}
+.business-shell .crm-board>.crm-stage{background:#f0f3f1;border:0;border-radius:8px;padding:10px;min-width:220px}
+.business-shell .crm-stage-heading{padding:4px 2px 12px;border-bottom:2px solid #dce7de;margin-bottom:12px}
+.business-shell .crm-stage:nth-child(2) .crm-stage-heading{border-color:#a7c8ed}
+.business-shell .crm-stage:nth-child(3) .crm-stage-heading{border-color:#d9c8ee}
+.business-shell .crm-stage:nth-child(4) .crm-stage-heading{border-color:#9bc67e}
+.business-shell .crm-board .crm-opportunity{box-shadow:0 1px 3px #19362510;border:1px solid #e4e9e5;border-left:3px solid #8fc05d;border-radius:6px;padding:12px;background:white}
+.business-shell .work-board{gap:14px;padding:0;background:transparent;align-items:start}
+.business-shell .work-board .work-stage{border:0;border-radius:8px;padding:12px;background:#f0f3f1;min-width:230px}
+.business-shell .work-stage>h3{background:#e2ece4;padding:9px 10px;margin:-12px -12px 12px;border-radius:8px 8px 0 0}
+.business-shell .work-stage:nth-child(2)>h3{background:#e1edfc}
+.business-shell .work-stage:nth-child(3)>h3{background:#f5edce}
+.business-shell .work-stage:nth-child(4)>h3{background:#e4f0d7}
+.business-shell .work-board .work-task{border-radius:6px;padding:12px;box-shadow:0 1px 3px #10251a09;margin:0 0 10px}
+.business-shell .work-task p{font-size:12px;margin:5px 0;color:var(--muted)}
+.business-shell .stock-toolbar{padding:0 0 16px;border-bottom:1px solid var(--line)}
+.business-shell .stock-facts{background:#f6f8f6;border:0;border-radius:8px;padding:16px}
+.business-shell .inventory-workspace>.panel:has(table),.business-shell .accounting-workspace>.panel:has(table),.business-shell .sales-workspace>.panel:has(table){padding:0;overflow:auto}
+.business-shell .documents-workspace .documents-register{border:1px solid var(--line)!important;border-radius:8px;min-height:0;padding:0}
+.business-shell .documents-workspace .document-drop-hint{margin:0;border-radius:0;border-bottom:1px dashed #dce5dd;padding:14px;background:#f9fbf8;font-size:12px}
+.business-shell .documents-workspace .documents-register table{margin:0}
+.business-shell .documents-workspace .form-grid{background:transparent;border:0;padding:0 0 16px;border-bottom:1px solid var(--line)}
+.business-shell .service-marketplace .service-grid{display:grid;grid-template-columns:1fr;gap:0}
+.business-shell .service-marketplace .service-card{display:grid;grid-template-columns:minmax(180px,1fr) minmax(200px,2fr) auto;gap:12px 24px;align-items:center;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:18px;background:white;box-shadow:none}
+.business-shell .service-card h3{font-size:15px;margin:0}
+.business-shell .service-card p{font-size:12px;line-height:1.6;margin:0}
+.business-shell .service-card .service-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.business-shell .service-card .service-price{font-size:12px}
+.business-shell .service-overview{border:0!important;background:transparent!important;padding:0!important}
+.business-shell .service-detail>section{border:0;border-top:1px solid var(--line);border-radius:0}
+.business-shell .accounting-workspace .table-scroll{border:1px solid var(--line);border-radius:8px;background:white}
+.business-shell .identity-assurance-guide{border:0;border-top:1px solid var(--line);padding-top:16px}
+.business-shell .identity-assurance-guide>article{background:transparent;border-left:2px solid #c5dcae;border-radius:0;padding:4px 14px}
+.business-shell .people-workspace .app-price-review{background:#f8faf7;border:0;border-left:3px solid #a1c870;border-radius:0}
+.business-shell .pos-workspace .pos-basket{background:#fff;border:1px solid #dce5dc;border-radius:9px;box-shadow:0 4px 20px #18331c08}
+.business-shell .automations-workspace .app-pipeline{border:0;background:transparent}
+@media(max-width:1200px){.business-shell .app-directory{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:850px){.business-shell .app-directory{grid-template-columns:repeat(2,minmax(0,1fr))}.business-shell .service-marketplace .service-card{grid-template-columns:1fr auto}.business-shell .service-card>p{grid-column:1/-1}}
+@media(max-width:480px){.business-shell .service-marketplace .service-card{grid-template-columns:1fr}.business-shell .app-directory{gap:10px}.business-shell .app-directory .app-directory-card{padding:18px 10px!important}.business-shell .app-directory-card p{font-size:11px}}
