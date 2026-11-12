@@ -1,5 +1,10 @@
 # Implementation status — Stage 3 sandbox beta
 
+## Approved-reference UI — 12 November 2026
+
+The founder's six-image design system is implemented locally across the existing platform, with native responsive sizing replacing root zoom, full-page Notifications, separate merchant/storefront presentations and an editorial homepage. Final local regression: frontend 68; SQLite 434 plus one skip; PostgreSQL 435; lint/types, contracts, gateway/dev and isolated chain passed. See APPROVED_UI_IMPLEMENTATION.md for representative browser evidence and exact external limits. These new reference-driven changes are not deployed.
+
+
 ## Platform UI acceptance — 12 November 2026
 
 The 14-app platform UI and additional 25% authenticated-interface reduction are implemented. Broader local acceptance covers 92 app sections and 73 service/workspace/shared contexts (330 desktop/mobile observations), representative populated workflows, five-role reads and keyboard checks. Final frontend 66, SQLite 434 plus one skip, fresh local PostgreSQL 435, contracts, lint/types, dev/gateway and isolated chain checks passed. See PLATFORM_UI_TRANSFORMATION_REPORT.md and UI_TRANSFORMATION_TRACKER.md for exact evidence and external limits. This UI work is not deployed or pushed to main; hosted preview remains unchanged.

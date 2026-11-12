@@ -1,0 +1,357 @@
+{
+  "observations": [
+    {
+      "name": "finance-mobile",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=dashboard#Apps",
+      "alerts": [],
+      "brokenImages": [],
+      "documentWidth": 375,
+      "width": 390,
+      "zoom": "1"
+    },
+    {
+      "name": "finance-desktop",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=dashboard#Apps",
+      "alerts": [],
+      "brokenImages": [],
+      "documentWidth": 1425,
+      "width": 1440,
+      "zoom": "1"
+    },
+    {
+      "name": "commerce-desktop",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=commerce&section=dashboard#Apps",
+      "alerts": [],
+      "brokenImages": [],
+      "documentWidth": 1425,
+      "width": 1440,
+      "zoom": "1"
+    },
+    {
+      "name": "storefront-mobile",
+      "url": "http://127.0.0.1:4002/s/sandbox/fictional-ui-acceptance",
+      "alerts": [],
+      "brokenImages": [],
+      "documentWidth": 375,
+      "width": 390,
+      "zoom": "1"
+    },
+    {
+      "name": "storefront-desktop",
+      "url": "http://127.0.0.1:4002/s/sandbox/fictional-ui-acceptance",
+      "alerts": [],
+      "brokenImages": [],
+      "documentWidth": 1425,
+      "width": 1440,
+      "zoom": "1"
+    },
+    {
+      "name": "public-desktop",
+      "url": "http://127.0.0.1:4002/",
+      "alerts": [],
+      "brokenImages": [],
+      "documentWidth": 1425,
+      "width": 1440,
+      "zoom": "1"
+    },
+    {
+      "name": "public-mobile",
+      "url": "http://127.0.0.1:4002/",
+      "alerts": [],
+      "brokenImages": [],
+      "documentWidth": 375,
+      "width": 390,
+      "zoom": "1"
+    },
+    {
+      "name": "services-mobile",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#My%20Services",
+      "alerts": [],
+      "brokenImages": [],
+      "documentWidth": 375,
+      "width": 390,
+      "zoom": "1"
+    },
+    {
+      "name": "services-desktop",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#My%20Services",
+      "alerts": [],
+      "brokenImages": [],
+      "documentWidth": 1425,
+      "width": 1440,
+      "zoom": "1"
+    },
+    {
+      "name": "crm-desktop",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=crm&section=pipeline#Apps",
+      "alerts": [],
+      "brokenImages": [],
+      "documentWidth": 1425,
+      "width": 1440,
+      "zoom": "1"
+    },
+    {
+      "name": "crm-mobile",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=crm&section=pipeline#Apps",
+      "alerts": [],
+      "brokenImages": [],
+      "documentWidth": 375,
+      "width": 390,
+      "zoom": "1"
+    },
+    {
+      "name": "documents-mobile",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=mine#Apps",
+      "alerts": [],
+      "brokenImages": [],
+      "documentWidth": 375,
+      "width": 390,
+      "zoom": "1"
+    },
+    {
+      "name": "documents-desktop",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=mine#Apps",
+      "alerts": [],
+      "brokenImages": [],
+      "documentWidth": 1425,
+      "width": 1440,
+      "zoom": "1"
+    },
+    {
+      "name": "inventory-1440",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=inventory&section=products#Apps",
+      "alerts": [],
+      "documentWidth": 1425,
+      "heading": "Apps",
+      "width": 1440,
+      "zoom": "1"
+    },
+    {
+      "name": "inventory-390",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=inventory&section=products#Apps",
+      "alerts": [],
+      "documentWidth": 375,
+      "heading": "Apps",
+      "width": 390,
+      "zoom": "1"
+    },
+    {
+      "name": "sales-1440",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=sales&section=dashboard#Apps",
+      "alerts": [],
+      "documentWidth": 1425,
+      "heading": "Apps",
+      "width": 1440,
+      "zoom": "1"
+    },
+    {
+      "name": "sales-390",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=sales&section=dashboard#Apps",
+      "alerts": [],
+      "documentWidth": 375,
+      "heading": "Apps",
+      "width": 390,
+      "zoom": "1"
+    },
+    {
+      "name": "analytics-1440",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=analytics&section=dashboard#Apps",
+      "alerts": [],
+      "documentWidth": 1425,
+      "heading": "Apps",
+      "width": 1440,
+      "zoom": "1"
+    },
+    {
+      "name": "analytics-390",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=analytics&section=dashboard#Apps",
+      "alerts": [],
+      "documentWidth": 375,
+      "heading": "Apps",
+      "width": 390,
+      "zoom": "1"
+    },
+    {
+      "name": "automations-1440",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=automations&section=dashboard#Apps",
+      "alerts": [],
+      "documentWidth": 1425,
+      "heading": "Apps",
+      "width": 1440,
+      "zoom": "1"
+    },
+    {
+      "name": "automations-390",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=automations&section=dashboard#Apps",
+      "alerts": [],
+      "documentWidth": 375,
+      "heading": "Apps",
+      "width": 390,
+      "zoom": "1"
+    },
+    {
+      "name": "accounting-1440",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=accounting&section=ledger#Apps",
+      "alerts": [],
+      "documentWidth": 1425,
+      "heading": "Apps",
+      "width": 1440,
+      "zoom": "1"
+    },
+    {
+      "name": "accounting-390",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=accounting&section=ledger#Apps",
+      "alerts": [],
+      "documentWidth": 375,
+      "heading": "Apps",
+      "width": 390,
+      "zoom": "1"
+    },
+    {
+      "name": "people-1440",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=directory#Apps",
+      "alerts": [],
+      "documentWidth": 1425,
+      "heading": "Apps",
+      "width": 1440,
+      "zoom": "1"
+    },
+    {
+      "name": "people-390",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=directory#Apps",
+      "alerts": [],
+      "documentWidth": 375,
+      "heading": "Apps",
+      "width": 390,
+      "zoom": "1"
+    },
+    {
+      "name": "procurement-1440",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=reports#Apps",
+      "alerts": [],
+      "documentWidth": 1425,
+      "heading": "Apps",
+      "width": 1440,
+      "zoom": "1"
+    },
+    {
+      "name": "procurement-390",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=reports#Apps",
+      "alerts": [],
+      "documentWidth": 375,
+      "heading": "Apps",
+      "width": 390,
+      "zoom": "1"
+    },
+    {
+      "name": "business_id-1440",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=profile#Apps",
+      "alerts": [],
+      "documentWidth": 1425,
+      "heading": "Apps",
+      "width": 1440,
+      "zoom": "1"
+    },
+    {
+      "name": "business_id-390",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=profile#Apps",
+      "alerts": [],
+      "documentWidth": 375,
+      "heading": "Apps",
+      "width": 390,
+      "zoom": "1"
+    },
+    {
+      "name": "pos-1440",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=pos&section=counter#Apps",
+      "alerts": [],
+      "documentWidth": 1425,
+      "heading": "Apps",
+      "width": 1440,
+      "zoom": "1"
+    },
+    {
+      "name": "pos-390",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=pos&section=counter#Apps",
+      "alerts": [],
+      "documentWidth": 375,
+      "heading": "Apps",
+      "width": 390,
+      "zoom": "1"
+    },
+    {
+      "name": "commerce-desktop",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=commerce&section=dashboard#Apps",
+      "alerts": [],
+      "documentWidth": 1425,
+      "heading": "Apps",
+      "width": 1440,
+      "zoom": "1"
+    },
+    {
+      "name": "services-desktop",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#My%20Services",
+      "alerts": [],
+      "documentWidth": 1425,
+      "heading": "My Services",
+      "width": 1440,
+      "zoom": "1"
+    },
+    {
+      "name": "notifications-desktop",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Notifications",
+      "alerts": [],
+      "documentWidth": 1440,
+      "heading": "Notifications",
+      "width": 1440,
+      "zoom": "1"
+    },
+    {
+      "name": "commerce-mobile",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=commerce&section=dashboard#Apps",
+      "alerts": [],
+      "documentWidth": 375,
+      "heading": "Apps",
+      "width": 390,
+      "zoom": "1"
+    },
+    {
+      "name": "services-mobile",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#My%20Services",
+      "alerts": [],
+      "documentWidth": 438,
+      "heading": "My Services",
+      "width": 390,
+      "zoom": "1"
+    },
+    {
+      "name": "services-mobile-final",
+      "documentWidth": 375,
+      "width": 390,
+      "zoom": "1"
+    },
+    {
+      "name": "finance-final",
+      "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=dashboard#Apps",
+      "alerts": [],
+      "documentWidth": 1425,
+      "heading": "Apps",
+      "width": 1440,
+      "zoom": "1"
+    }
+  ],
+  "additionalChecks": {
+    "personalDesktopAndMobileNoOverflow": true,
+    "developerDesktopAndMobileNoOverflow": true,
+    "personalBellFullPage": true,
+    "businessBellFullPage": true,
+    "commerceTabsRevealExistingForms": true,
+    "serviceCardsAndListSwitch": true,
+    "workTaskInspection": true,
+    "publicMobileMenu": true,
+    "mobileDrawerEscapeFocusReturn": true,
+    "mobileEditableFont": "16px",
+    "mobileControlHeight": "approximately 44px"
+  },
+  "limits": "Representative local fixture states; earlier failed mobile service observation is retained with its final corrected result."
+}

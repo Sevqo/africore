@@ -46,3 +46,8 @@ Product-experience amendment: experience.css supplies the compact homepage/devic
 
 ## Authentication and homepage repair
 The malformed homepage CTA was an unmatched cta-section class, not a missing global stylesheet; it now uses final-cta. AuthPage is separate from BusinessApp, with one shared PasswordInput, SVG visibility icons, stable autocomplete fields and grouped primary/recovery/signup/footer actions. Local dev Vite explicitly serves dashboard/shared tokens/fonts, fixing blocked shared font requests without a broad filesystem allowlist. Customer signup CTAs lead to account selection; actual teaching simulations, developer tooling and test financial actions retain explicit environment/availability labels.
+
+
+## Approved reference update — 12 November 2026
+
+The six-image founder reference pack supersedes the earlier root-zoom density treatment. platform-density.css now supplies native viewport variables without zoom; approved-platform.css composes charcoal operational navigation, green selected states, native responsive type/control sizes, domain-specific app layouts and full-page Notifications. Public editorial presentation remains separate in experience.css, and merchant storefronts use storefront.css. Preserve 16px mobile editable text and 44px primary touch controls. See APPROVED_UI_IMPLEMENTATION.md for checkpoints and verification.
