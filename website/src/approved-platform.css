@@ -1,0 +1,102 @@
+/* Founder-approved composition: charcoal navigation, open workspace, green actions.
+   Shared by every app and independent service; domain layouts remain distinct. */
+html:has([data-platform-density]) {
+  --text:#17201c; --ink:#111815; --muted:#66716b; --line:#e2e7e3;
+  --surface:#f5f7f6; --surface-alt:#edf1ee; --accent:#76b900;
+  --accent-hover:#5b9400; --accent-text:#326b0b; --accent-light:#edf7df;
+  --workspace-border:#e2e7e3; --workspace-shadow:0 2px 5px #14251b04;
+  --app-panel:18px;
+}
+.business-shell.business-shell,.focused-account.focused-account {font-size:14px;line-height:1.5;background:var(--surface);color:var(--text)}
+.business-shell .sidebar,.focused-account .account-nav {
+  width:224px;flex:0 0 224px;padding:22px 14px; background:#1c2225;
+  color:#e8ede9;border-right:1px solid #30383b;height:100dvh;
+}
+.business-shell .sidebar .logo,.focused-account .account-nav .logo{color:#fff;font-size:25px;letter-spacing:-1px}
+.business-shell .sidebar nav{gap:5px}
+.business-shell .sidebar .workspace-label,.focused-account .account-nav>p{color:#aab5af;font-size:11px;letter-spacing:.05em;margin:20px 10px 12px}
+.business-shell .sidebar nav button,.focused-account .account-nav nav a {
+  display:flex;align-items:center;gap:11px;width:100%;min-height:38px;
+  padding:8px 12px;border:0;border-radius:7px;background:transparent;
+  color:#e1e8e3;font-size:13px;text-align:left;text-decoration:none;line-height:1.4;
+}
+.business-shell .sidebar nav button:hover,.focused-account .account-nav nav a:hover{background:#30393b}
+.business-shell .sidebar nav button.active,.focused-account .account-nav nav a[aria-current=page]{background:linear-gradient(100deg,#438400,#68a900);color:white;font-weight:650}
+.business-shell .workspace-primary-nav{display:grid;gap:5px;padding-bottom:16px;margin-bottom:14px;border-bottom:1px solid #3b4547}
+.business-shell .workspace-nav-group summary{color:#aab5af;padding:9px 10px;font-size:11px;letter-spacing:.025em}
+.business-shell .workspace-nav-group button{padding-left:36px!important}
+.business-shell .sidebar-bottom{border-color:#3b4547;margin-top:auto;padding-top:18px}
+.business-shell .sidebar-bottom :is(a,button),.focused-account .account-nav>a,.focused-account .account-nav>button{color:#bdc9c1;font-size:12px}
+.business-shell .app-main{flex:1;min-width:0}
+.business-shell .app-header{height:68px;min-height:68px;padding:12px 26px;gap:14px;background:white;border-bottom:1px solid var(--line);box-shadow:none}
+.business-shell .app-header>div{gap:10px}
+.business-shell .app-header select{height:38px;min-height:38px;font-size:13px;background:#fafbfa;max-width:260px;border:1px solid var(--line)}
+.business-shell .app-header>div:first-of-type>.quiet-button{display:none}
+.business-shell .workspace-search-trigger{height:38px;min-height:38px;padding:8px 12px;background:#f7f9f8;border-color:var(--line);font-size:13px;max-width:560px}
+.business-shell .workspace-content,.focused-account .account-content{padding:24px 28px;max-width:none;min-width:0}
+.business-shell .workspace-title{margin-bottom:22px;align-items:center}
+.business-shell h1,.focused-account h1{font-size:28px;line-height:1.18;letter-spacing:-.035em;font-weight:720}
+.business-shell h2,.focused-account h2{font-size:20px;line-height:1.3;letter-spacing:-.025em}
+.business-shell h3,.focused-account h3{font-size:15px;line-height:1.4;letter-spacing:-.015em}
+.business-shell :is(.panel,.account-panel),.focused-account :is(.panel,.account-panel){border-color:var(--line);border-radius:9px;padding:18px;box-shadow:none;background:white}
+.business-shell :is(button,.button,.secondary-button,.quiet-button),.focused-account :is(button,.button,.secondary-button,.quiet-button){min-height:36px;padding:7px 12px;font-size:13px;line-height:1.4}
+.business-shell .button,.focused-account .button{background:linear-gradient(#73b400,#589700);color:white;border-color:#589700;font-weight:650}
+.business-shell :is(.secondary-button,.quiet-button),.focused-account :is(.secondary-button,.quiet-button){color:var(--text)}
+.business-shell :is(input:not([type=checkbox]):not([type=radio]),select,textarea),.focused-account :is(input:not([type=checkbox]):not([type=radio]),select,textarea){font-size:14px;min-height:38px;padding:8px 10px;border:1px solid #dce3dd;background:#fff;border-radius:7px}
+.business-shell .icon-button,.focused-account .icon-button{width:38px;height:38px;padding:8px;min-width:38px}
+.business-shell .field>span,.focused-account .field>span{font-size:12px;font-weight:550}
+.business-shell table,.focused-account table{font-size:13px}
+.business-shell thead th,.focused-account thead th{font-size:11px;letter-spacing:0;text-transform:none;background:#f7f9f7;padding:11px 12px}
+.business-shell tbody td,.focused-account tbody td{padding:12px;border-bottom:1px solid #edf0ed}
+.business-shell .badge,.focused-account .badge{font-size:11px;border:0;background:var(--accent-light);color:var(--accent-text);padding:3px 8px;border-radius:5px}
+.business-shell .environment-note,.focused-account .environment-note{background:transparent;border:0;padding:0;font-size:11px;color:var(--muted)}
+.business-shell .app-header .notification-count{background:#4c980b;color:white}
+.business-shell .workspace-account-button .initial-avatar,.focused-account .initial-avatar{background:#e7f5d8;color:#396a13}
+.focused-account .focused-mobile-header{display:flex;position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid var(--line);margin:-24px -28px 24px;padding:12px 28px;align-items:center;justify-content:space-between;min-height:68px}
+.focused-account .focused-mobile-header>.quiet-button{display:none}
+.focused-account .focused-user-actions{display:flex;gap:12px;align-items:center}
+.business-shell :is(.metric-grid strong,.account-metrics strong),.focused-account .account-metrics strong{font-size:25px;letter-spacing:-.035em}
+.business-shell :is(.account-form,.form-grid),.focused-account :is(.account-form,.form-grid){gap:14px}
+.business-shell .panel>.panel,.focused-account .panel>.panel{box-shadow:none}
+.business-shell .apps-workspace .app-identity>.app-mark{background:#3d981d;color:white;width:58px;height:58px;border-radius:12px;box-shadow:inset 0 1px 1px #ffffff40,0 3px 6px #28610015}
+.business-shell .apps-workspace .app-identity{padding:0 0 8px;gap:16px}
+.business-shell .apps-workspace .app-title h1{font-size:28px}
+.business-shell .apps-workspace .app-identity p{font-size:13px}
+.business-shell .apps-workspace .app-section-tabs{padding:0;border-bottom:1px solid var(--line);gap:16px}
+.business-shell .apps-workspace .app-section-tabs>button{padding:10px 4px!important;font-size:13px;border-radius:0}
+.business-shell .apps-workspace .app-section-tabs>button[aria-current=page]{background:transparent;border-bottom:2px solid #64a400;color:#3d7609}
+.business-shell .apps-workspace .app-service-details{background:white;border:1px solid var(--line);border-radius:9px;padding:14px 18px}
+.business-shell .apps-workspace .app-service-details>summary{font-size:12px;font-weight:600;color:var(--text)}
+.business-shell .apps-workspace .app-inclusions{padding-top:15px;gap:24px}
+.business-shell .apps-workspace .app-inclusions h3{font-size:13px}
+.business-shell .apps-workspace .app-service-chips>span{background:#f5f8ff;border-color:#e6ebf5;padding:9px 12px;font-size:12px;gap:10px}
+.business-shell .apps-workspace .app-service-chips small{font-size:10px}
+@media(min-width:1025px){.business-shell .app-nav-toggle{display:none}.focused-account .focused-mobile-header>.quiet-button{display:none}}
+@media(max-width:1024px){
+  .business-shell .sidebar:not(.is-open){display:none}
+  .business-shell .sidebar.is-open{position:fixed;inset:0 auto 0 0;display:flex;width:min(290px,88vw);z-index:100}
+  .business-shell .app-nav-toggle{display:inline-flex}
+  .focused-account>.account-nav{display:none}
+  .focused-account .focused-mobile-header>.quiet-button{display:inline-flex}
+}
+@media(max-width:767px){
+  .business-shell .workspace-content,.focused-account .account-content{padding:18px 16px}
+  .business-shell .app-header{height:64px;min-height:64px;padding:10px 12px;gap:6px}
+  .business-shell .app-header select{max-width:100%;font-size:16px;height:44px}
+  .business-shell .app-header>div:first-of-type{flex:1;min-width:0}
+  .business-shell .workspace-search-trigger{flex:none;width:44px;min-width:44px;height:44px}
+  .business-shell .workspace-search-trigger :is(span,kbd){display:none}
+  .business-shell :is(h1,.apps-workspace .app-title h1),.focused-account h1{font-size:25px}
+  .business-shell :is(button,.button,.secondary-button,.quiet-button),.focused-account :is(button,.button,.secondary-button,.quiet-button){min-height:44px;font-size:14px}
+  .business-shell :is(input:not([type=checkbox]):not([type=radio]),select,textarea),.focused-account :is(input:not([type=checkbox]):not([type=radio]),select,textarea){min-height:44px;font-size:16px}
+  .business-shell .icon-button,.focused-account .icon-button{width:44px;height:44px;min-width:44px}
+  .business-shell .apps-workspace .app-identity>.app-mark{width:46px;height:46px;flex:none}
+  .business-shell .apps-workspace .app-identity>div{flex-basis:calc(100% - 62px)}
+  .business-shell .apps-workspace .app-identity>button{width:auto;min-height:38px;font-size:12px}
+  .focused-account .focused-mobile-header{margin:-18px -16px 18px;padding:10px 12px}
+  .business-shell :is(.panel,.account-panel),.focused-account :is(.panel,.account-panel){padding:16px}
+}
+@media(prefers-reduced-motion:no-preference){
+  .business-shell button,.focused-account button{transition:background-color 120ms,color 120ms,box-shadow 120ms}
+  .business-shell button:active,.focused-account button:active{filter:brightness(.96)}
+}

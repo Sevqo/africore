@@ -748,6 +748,7 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
         </div>
         <span className="workspace-label">Business workspace</span>
         <nav aria-label="Business navigation">
+          <div className="workspace-primary-nav">{([{tab:'Overview',label:'Home',icon:'home'},{tab:'Apps',label:'Apps',icon:'grid'},{tab:'My Services',label:'Services',icon:'network'}] as const).map(item=><button key={item.tab} className={tab===item.tab&&!appContext.app?'active':''} aria-current={tab===item.tab&&!appContext.app?'page':undefined} onClick={()=>{const url=new URL(location.href);url.searchParams.delete('app');url.searchParams.delete('section');url.hash=encodeURIComponent(item.tab);history.pushState(null,'',url.pathname+url.search+url.hash);dispatchEvent(new Event('africore:app-navigation'));setTab(item.tab);setCreating(false);setNavOpen(false);}}><Icon name={item.icon}/>{item.label}</button>)}</div>
           {appContext.app?<AppContextNavigation app={appContext.app} section={appContext.section} tab={tab} navigate={value=>{setTab(value);setCreating(false);setNavOpen(false);}}/>:[{label:'Pinned services',icon:'grid' as IconName,items:favoriteTabs(market)},...navigation].map(group=>({...group,items:group.items.filter(t=>visibleServiceTab(market,t))})).filter(group=>group.items.length).map((group) => (
             <details
               key={group.label}
