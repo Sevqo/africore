@@ -1,0 +1,15 @@
+{
+  "observed_date": "2026-11-12",
+  "source_commit": "7e5f2297c6577dec13290eb90602527b76c6b869",
+  "run_id": 43161693976,
+  "url": "https://github.com/Sevqo/afriscore/actions/runs/43161693976",
+  "jobs": [
+    { "id": 130994180825, "name": "Local EVM and independent verification", "conclusion": "success" },
+    { "id": 130994181047, "name": "Website build", "conclusion": "success" },
+    { "id": 130994181151, "name": "Tests (SQLite)", "conclusion": "success" },
+    { "id": 130994181171, "name": "Tests (PostgreSQL)", "conclusion": "success" },
+    { "id": 130994181218, "name": "Type check", "conclusion": "success" }
+  ],
+  "qualification": "All five Linux CI jobs succeeded after the commit-before-response repair. Type check job includes lint, startup/development and gateway checks; SQLite job includes API contracts.",
+  "hosted": "Wave 3 remains unreleased; no Neon migration, main merge or deployment"
+}

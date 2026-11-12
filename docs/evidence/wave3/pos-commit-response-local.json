@@ -15,5 +15,5 @@
   "workspace_contracts": 427,
   "gateway_startup_passed": 13,
   "hosted_changes": false,
-  "remote_repair_ci": "Pending observation on repair commit"
+  "remote_repair_ci": "All five jobs passed on source commit 7e5f229, run 43161693976; see pos-linux-ci.json"
 }
