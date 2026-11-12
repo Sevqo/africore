@@ -240,7 +240,7 @@ export function FocusedWorkspace({
         </DataTable>
       ) : (
         <p className="empty">
-          No {tab.toLowerCase()} records yet. Add a record using the form above.
+          {tab==='Overview'?'No income records are available in this view. Open Income to review access and add a record.':<>No {tab.toLowerCase()} records yet. Add a record using the form above.</>}
         </p>
       );
   const notificationNavigate=(target:string)=>setTab(personal?(({Customers:'Clients',Payments:'Payment Records',Reconciliation:'Payment Records',Approvals:'Notifications',Automations:'Notifications'} as Record<string,string>)[target]||target):(items.includes(target)?target:'Notifications'));
@@ -252,7 +252,8 @@ export function FocusedWorkspace({
         <button onClick={async()=>{try{await managedSignOut();location.href='/login';}catch(e){setError((e as Error).message);}}}>Sign out</button>
       </>;
   return (
-    <div className="focused-account">
+    <div className="focused-account" data-workspace-kind={personal?'personal':'developer'}>
+      <a className="workspace-skip" href="#focused-workspace-main" onClick={event=>{event.preventDefault();document.getElementById('focused-workspace-main')?.focus();}}>Skip to workspace content</a>
       <aside className="account-nav">
         <Logo />
         <p>{personal ? "PERSONAL WORKSPACE" : "DEVELOPER CONSOLE"}</p>
@@ -290,7 +291,7 @@ export function FocusedWorkspace({
           Sign out
         </button>
       </aside>
-      <main className="account-content">
+      <main className="account-content" id="focused-workspace-main" tabIndex={-1}>
         <div className="focused-mobile-header"><button className="quiet-button" aria-label={'Open '+(personal?'Personal':'Developer')+' navigation'} aria-expanded={navigationOpen} onClick={()=>setNavigationOpen(true)}><Icon name="menu"/></button><span>{w.name}</span><div className="focused-user-actions"><NotificationBell kind={w.kind} api={call} scope={w.id+'\0'+environment} navigate={notificationNavigate}/><WorkspaceAccountMenu name={account.profile?.display_name} email={account.user?.email} role={w.role}/></div></div>
         {navigationOpen&&<Overlay onClose={()=>setNavigationOpen(false)}><aside role="dialog" aria-modal="true" aria-label="Workspace navigation" className="account-nav focused-drawer"><button onClick={()=>setNavigationOpen(false)}>Close menu <Icon name="close"/></button>{navigation}</aside></Overlay>}
         <header className="account-top">
@@ -353,9 +354,9 @@ export function FocusedWorkspace({
                     </section>
                   ))}
                 </div>
-                <section className="panel"><InteractiveChart compact title="Recorded personal activity" points={summary.series||[]} currency={currency} series={[{key:'income',label:'Recorded income',color:'#426900'},{key:'expenses',label:'Recorded expenses',color:'#595959'},{key:'net',label:'Recorded net',color:'#985b20',dashed:true}]} description="Manual income and expenses; not provider confirmation, profit or a bank balance."/>{tab==='Reports'&&<button className="secondary-button" onClick={()=>{const csv=['Date,Currency,Recorded income minor,Recorded expenses minor,Recorded net minor',...(summary.series||[]).map((p:any)=>[p.date,currency,p.income,p.expenses,p.net].join(','))].join('\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));const a=document.createElement('a');a.href=url;a.download='africore-personal-activity.csv';a.click();URL.revokeObjectURL(url);}}>Export activity CSV</button>}</section>
+                <section className="panel"><InteractiveChart variant="area" compact title="Recorded personal activity" points={summary.series||[]} currency={currency} series={[{key:'income',label:'Recorded income',color:'#426900'},{key:'expenses',label:'Recorded expenses',color:'#595959'},{key:'net',label:'Recorded net',color:'#985b20',dashed:true}]} description="Manual income and expenses; not provider confirmation, profit or a bank balance."/>{tab==='Reports'&&<button className="secondary-button" onClick={()=>{const csv=['Date,Currency,Recorded income minor,Recorded expenses minor,Recorded net minor',...(summary.series||[]).map((p:any)=>[p.date,currency,p.income,p.expenses,p.net].join(','))].join('\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));const a=document.createElement('a');a.href=url;a.download='africore-personal-activity.csv';a.click();URL.revokeObjectURL(url);}}>Export activity CSV</button>}</section>
                 <p>{summary.coverage}</p>
-                <div className="account-type-tabs">
+                <div className="account-type-tabs personal-quick-actions" aria-label="Personal quick actions">
                   {["Income", "Expenses", "Invoices", "Clients"].map((t) => (
                     <a className="secondary-button" href={"#" + t} key={t}>
                       Add {t === "Clients" ? "client" : t.toLowerCase()}

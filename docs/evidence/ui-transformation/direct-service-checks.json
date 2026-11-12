@@ -1,0 +1,386 @@
+[
+  {
+    "service": "Accounting ledger",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Accounting",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Accounting"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 390,
+      "width": 390
+    }
+  },
+  {
+    "service": "AfriCore Pay",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Payments",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Payments"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 390,
+      "width": 390
+    }
+  },
+  {
+    "service": "Automations",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Automations",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Automations"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "service": "Business Passport",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Business%20Passport",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Business Passport"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "service": "Business Verification",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Business%20Passport",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Business Passport"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "service": "Cash Flow",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Cash%20Flow",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Cash Flow"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "service": "Commerce operations",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Commerce",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Commerce"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "service": "Customer relationships",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Customer%20Relationships",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Customer Relationships"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "service": "Customers & clients",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Customers",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Customers"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 390,
+      "width": 390
+    }
+  },
+  {
+    "service": "Expenses",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Expenses",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Expenses"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "service": "Financial Intelligence",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Intelligence",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Intelligence"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "service": "Fulfillment & delivery",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Fulfillment",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Fulfillment"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "service": "Inventory Tracking",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Inventory",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Inventory"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "service": "Invoicing",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Invoices",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Invoices"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "service": "Orders",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Orders",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Orders"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 390,
+      "width": 390
+    }
+  },
+  {
+    "service": "People operations",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#People",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "People"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 390,
+      "width": 390
+    }
+  },
+  {
+    "service": "Point of Sale",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Point%20of%20Sale",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Point of Sale"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "service": "Private documents",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Documents",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Documents"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "service": "Procurement",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Procurement",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Procurement"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 390,
+      "width": 390
+    }
+  },
+  {
+    "service": "Product Catalog",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Products",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Products"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 390,
+      "width": 390
+    }
+  },
+  {
+    "service": "Projects and teamwork",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Work",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Work"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 390,
+      "width": 390
+    }
+  },
+  {
+    "service": "Sales and quotations",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Quotations",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Quotations"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "service": "Trust Network",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Business%20Passport",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Business Passport"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "service": "Verifiable Credentials",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Business%20Passport",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Business Passport"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  }
+]

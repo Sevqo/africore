@@ -5,6 +5,7 @@ import {
   nearestPoint,
   selectRange,
   rangeAvailable,
+  previousPeriod,
   type ChartPoint,
   type ChartRange,
   type ChartSeries,
@@ -31,6 +32,8 @@ export function InteractiveChart({
   headingLevel = 2,
   asOfDate,
   compact = false,
+  variant = 'line',
+  onPointSelect,
 }: {
   title: string;
   points: ChartPoint[];
@@ -42,12 +45,15 @@ export function InteractiveChart({
   headingLevel?: 2 | 3;
   asOfDate?: string;
   compact?: boolean;
+  variant?: 'line' | 'area';
+  onPointSelect?: (point: ChartPoint) => void;
 }) {
   const Heading = headingLevel === 3 ? "h3" : "h2";
   const id = useId(),
     [range, setRange] = useState<ChartRange>("ALL"),
     [active, setActive] = useState<number | null>(null),
-    [hidden, setHidden] = useState<string[]>([]);
+    [hidden, setHidden] = useState<string[]>([]),
+    [compare, setCompare] = useState(false);
   const shown = useMemo(
     () =>
       selectRange(
@@ -61,8 +67,10 @@ export function InteractiveChart({
     [points, range, forecast, series, asOfDate],
   );
   const visible = series.filter((s) => !hidden.includes(s.key));
+  const prior = useMemo(()=>forecast ? null : previousPeriod(points.filter(p=>series.every(s=>Number.isFinite(Number(p[s.key])))), range, asOfDate),[points,series,forecast,range,asOfDate]);
+  const comparison = compare ? prior : null;
   const [min, max] = chartDomain(
-    shown,
+    [...shown, ...(comparison?.records || [])],
     visible.map((s) => s.key),
   );
   const x = (i: number) =>
@@ -156,6 +164,7 @@ export function InteractiveChart({
           </button>
         ))}
       </div>
+      {!forecast&&<div className="chart-comparison"><button className="quiet-button" type="button" aria-pressed={!!comparison} disabled={!prior} title={prior?'Compare recorded values in the preceding equal-length period':'Choose a shorter range with earlier loaded history to compare periods'} onClick={()=>setCompare(value=>!value)}>Compare previous period</button>{comparison&&<small>{comparison.from} to {comparison.to} · dashed comparison · missing dates remain gaps</small>}</div>}
       {loading ? (
         <div className="chart-loading" role="status">
           Loading recorded activity…
@@ -179,7 +188,7 @@ export function InteractiveChart({
                   left:
                     "clamp(0px," +
                     (x(Math.min(active, shown.length - 1)) / 900) * 100 +
-                    "%,calc(100% - 180px))",
+                    "%,calc(100% - 240px))",
                 }}
               >
                 <strong>{selected.date}</strong>
@@ -188,10 +197,12 @@ export function InteractiveChart({
                     {s.label}: {format(Number(selected[s.key]), currency)}
                   </span>
                 ))}
+                {comparison&&<><strong>Previous: {comparison.byAlignedDate.get(selected.date)?.date||'No matching recorded date'}</strong>{visible.map(s=><span key={'prior-'+s.key}>{s.label}: {comparison.byAlignedDate.has(selected.date)?format(Number(comparison.byAlignedDate.get(selected.date)![s.key]),currency):'—'}</span>)}</>}
               </div>
             )}
             <svg
               viewBox="0 0 900 300"
+              preserveAspectRatio="none"
               role="img"
               aria-label={
                 title +
@@ -205,7 +216,11 @@ export function InteractiveChart({
                 choose(e.clientX, e.currentTarget);
               }}
               onPointerLeave={() => setActive(null)}
+              onPointerCancel={() => setActive(null)}
             >
+              <defs>{visible.map(s=><linearGradient key={s.key} id={`${id}-${s.key}-fill`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={s.color} stopOpacity=".16"/><stop offset="100%" stopColor={s.color} stopOpacity="0"/></linearGradient>)}</defs>
+              {variant==='area'&&shown.length>1&&visible.map(s=><path key={s.key} d={`M ${x(0)} ${y(0)} ${shown.map((p,i)=>`L ${x(i)} ${y(Number(p[s.key]))}`).join(' ')} L ${x(shown.length-1)} ${y(0)} Z`} fill={`url(#${id}-${s.key}-fill)`} aria-hidden="true"/>)}
+              {comparison&&visible.map(s=>{let connected=false;const path=shown.map((point,i)=>{const previous=comparison.byAlignedDate.get(point.date);if(!previous){connected=false;return '';}const command=connected?'L':'M';connected=true;return `${command} ${x(i)} ${y(Number(previous[s.key]))}`;}).join(' ');return <path key={'prior-'+s.key} d={path} fill="none" stroke={s.color} strokeWidth="2" strokeDasharray="4 5" opacity=".65" vectorEffect="non-scaling-stroke"/>;})}
               {[max, (max + min) / 2, min].map((n, i) => (
                 <g key={i}>
                   <line
@@ -318,6 +333,7 @@ export function InteractiveChart({
               onChange={(e) => setActive(Number(e.target.value))}
             />
           </label>
+          {onPointSelect&&selected&&<button type="button" className="quiet-button chart-drill" onClick={()=>onPointSelect(selected)}>View records for {selected.date}</button>}
         </>
       )}
       {(!compact||shown.length>0)&&<div
@@ -363,6 +379,7 @@ export function InteractiveChart({
                 {series.map((s) => (
                   <th key={s.key}>{s.label}</th>
                 ))}
+                {comparison&&<><th>Previous date</th>{series.map(s=><th key={'prior-'+s.key}>Previous {s.label.toLowerCase()}</th>)}</>}
               </tr>
             </thead>
             <tbody>
@@ -372,6 +389,7 @@ export function InteractiveChart({
                   {series.map((s) => (
                     <td key={s.key}>{format(Number(p[s.key]), currency)}</td>
                   ))}
+                  {comparison&&<><td>{comparison.byAlignedDate.get(p.date)?.date||'No matching recorded date'}</td>{series.map(s=><td key={'prior-'+s.key}>{comparison.byAlignedDate.has(p.date)?format(Number(comparison.byAlignedDate.get(p.date)![s.key]),currency):'—'}</td>)}</>}
                 </tr>
               ))}
             </tbody>

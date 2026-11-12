@@ -1,0 +1,1658 @@
+[
+  {
+    "app": "pos",
+    "section": "report",
+    "label": "Daily overview",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=pos&section=report#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore POS"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "pos",
+    "section": "counter",
+    "label": "Counter",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=pos&section=counter#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore POS"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "pos",
+    "section": "sales",
+    "label": "Saved sales",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=pos&section=sales#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore POS"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "pos",
+    "section": "sessions",
+    "label": "Shifts and cash",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=pos&section=sessions#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore POS"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "pos",
+    "section": "registers",
+    "label": "Register policy",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=pos&section=registers#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore POS"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "commerce",
+    "section": "dashboard",
+    "label": "Store and catalog",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=commerce&section=dashboard#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Commerce"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "commerce",
+    "section": "orders",
+    "label": "Storefront orders",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=commerce&section=orders#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Commerce"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "procurement",
+    "section": "reports",
+    "label": "Overview and reports",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=reports#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Procurement"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "procurement",
+    "section": "replenishment",
+    "label": "Replenishment",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=replenishment#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Procurement"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "procurement",
+    "section": "request",
+    "label": "Purchase requests",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=request#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Procurement"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "procurement",
+    "section": "supplier",
+    "label": "Suppliers",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=supplier#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Procurement"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "procurement",
+    "section": "rfq",
+    "label": "Supplier offers",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=rfq#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Procurement"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "procurement",
+    "section": "order",
+    "label": "Purchase orders",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=order#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Procurement"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "procurement",
+    "section": "receipt",
+    "label": "Goods receipts",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=receipt#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Procurement"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "procurement",
+    "section": "bill",
+    "label": "Supplier bills",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=bill#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Procurement"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "procurement",
+    "section": "credit",
+    "label": "Supplier credits",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=credit#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Procurement"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "procurement",
+    "section": "payment",
+    "label": "Payment observations",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=payment#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Procurement"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "documents",
+    "section": "mine",
+    "label": "My files",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=mine#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Documents"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "documents",
+    "section": "company",
+    "label": "Company files",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=company#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Documents"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "documents",
+    "section": "shared",
+    "label": "Shared with me",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=shared#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Documents"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "documents",
+    "section": "recent",
+    "label": "Recent",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=recent#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Documents"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "documents",
+    "section": "starred",
+    "label": "Starred",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=starred#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Documents"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "documents",
+    "section": "trash",
+    "label": "Trash",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=trash#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Documents"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "documents",
+    "section": "requests",
+    "label": "Requests",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=requests#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Documents"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "documents",
+    "section": "settings",
+    "label": "Storage and privacy",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=settings#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Documents"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "people",
+    "section": "dashboard",
+    "label": "Overview",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=dashboard#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore People"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "people",
+    "section": "employees",
+    "label": "Employees",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=employees#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore People"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "people",
+    "section": "org-chart",
+    "label": "Organization chart",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=org-chart#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore People"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "people",
+    "section": "reports",
+    "label": "People reports",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=reports#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore People"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "people",
+    "section": "departments",
+    "label": "Departments",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=departments#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore People"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "people",
+    "section": "leave",
+    "label": "Leave and reviews",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=leave#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore People"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "people",
+    "section": "attendance",
+    "label": "Attendance",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=attendance#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore People"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "people",
+    "section": "leave-types",
+    "label": "Leave policies",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=leave-types#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore People"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "people",
+    "section": "settings",
+    "label": "Employer policy and access",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=settings#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore People"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "business_id",
+    "section": "dashboard",
+    "label": "Overview",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=dashboard#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Business ID"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "business_id",
+    "section": "profile",
+    "label": "Business profile",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=profile#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Business ID"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "business_id",
+    "section": "verification",
+    "label": "Verification",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=verification#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Business ID"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "business_id",
+    "section": "passport",
+    "label": "Business Passport",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=passport#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Business ID"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "business_id",
+    "section": "credentials",
+    "label": "Credentials",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=credentials#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Business ID"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "business_id",
+    "section": "evidence",
+    "label": "Evidence",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=evidence#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Business ID"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "business_id",
+    "section": "sharing",
+    "label": "Shared information",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=sharing#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Business ID"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "business_id",
+    "section": "relationships",
+    "label": "Trust relationships",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=relationships#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Business ID"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "business_id",
+    "section": "history",
+    "label": "Verification history",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=history#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Business ID"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "business_id",
+    "section": "settings",
+    "label": "Privacy and settings",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=settings#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Business ID"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "accounting",
+    "section": "dashboard",
+    "label": "Dashboard and reports",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=accounting&section=dashboard#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Accounting"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "accounting",
+    "section": "entries",
+    "label": "Journal entries",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=accounting&section=entries#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Accounting"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "accounting",
+    "section": "sources",
+    "label": "Shared financial sources",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=accounting&section=sources#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Accounting"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "accounting",
+    "section": "aging",
+    "label": "Current AR and AP aging",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=accounting&section=aging#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Accounting"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "accounting",
+    "section": "tax",
+    "label": "Tax codes and adjustments",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=accounting&section=tax#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Accounting"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "accounting",
+    "section": "settings",
+    "label": "Accounts and periods",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=accounting&section=settings#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Accounting"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "work",
+    "section": "dashboard",
+    "label": "Projects",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=dashboard#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Work"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "work",
+    "section": "templates",
+    "label": "Approved templates and Sales",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=templates#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Work"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "work",
+    "section": "my-work",
+    "label": "My work",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=my-work#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Work"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "work",
+    "section": "board",
+    "label": "Boards",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=board#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Work"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "work",
+    "section": "discussions",
+    "label": "Discussions",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=discussions#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Work"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "work",
+    "section": "calendar",
+    "label": "Calendar",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=calendar#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Work"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "work",
+    "section": "timeline",
+    "label": "Timeline",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=timeline#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Work"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "work",
+    "section": "workload",
+    "label": "Team workload",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=workload#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Work"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "work",
+    "section": "workflows",
+    "label": "Private workflows",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=workflows#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Work"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "finance",
+    "section": "dashboard",
+    "label": "Dashboard",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=dashboard#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Finance"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "finance",
+    "section": "Invoices",
+    "label": "Invoices",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=Invoices#Invoices",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Invoices"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "finance",
+    "section": "Customers",
+    "label": "Customers",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=Customers#Customers",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Customers"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 390,
+      "width": 390
+    }
+  },
+  {
+    "app": "finance",
+    "section": "Payments",
+    "label": "Payments",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=Payments#Payments",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Payments"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 390,
+      "width": 390
+    }
+  },
+  {
+    "app": "finance",
+    "section": "Expenses",
+    "label": "Expenses",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=Expenses#Expenses",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Expenses"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "finance",
+    "section": "Reconciliation",
+    "label": "Reconciliation",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=Reconciliation#Reconciliation",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Reconciliation"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 390,
+      "width": 390
+    }
+  },
+  {
+    "app": "finance",
+    "section": "receivables",
+    "label": "Receivables",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=receivables#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Finance"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "finance",
+    "section": "Reports",
+    "label": "Financial reports",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=Reports#Reports",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Reports"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "crm",
+    "section": "dashboard",
+    "label": "Dashboard",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=crm&section=dashboard#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore CRM"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "crm",
+    "section": "Customers",
+    "label": "Customers",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=crm&section=Customers#Customers",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Customers"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 390,
+      "width": 390
+    }
+  },
+  {
+    "app": "crm",
+    "section": "pipeline",
+    "label": "Pipeline",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=crm&section=pipeline#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore CRM"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "crm",
+    "section": "followups",
+    "label": "Follow-ups",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=crm&section=followups#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore CRM"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "crm",
+    "section": "activity",
+    "label": "Activity",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=crm&section=activity#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore CRM"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "inventory",
+    "section": "dashboard",
+    "label": "Dashboard",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=inventory&section=dashboard#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Inventory"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "inventory",
+    "section": "products",
+    "label": "Products",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=inventory&section=products#Products",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Products"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 390,
+      "width": 390
+    }
+  },
+  {
+    "app": "inventory",
+    "section": "warehouses",
+    "label": "Warehouses",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=inventory&section=warehouses#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Inventory"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "inventory",
+    "section": "movements",
+    "label": "Stock movements",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=inventory&section=movements#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Inventory"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "inventory",
+    "section": "reservations",
+    "label": "Reservations",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=inventory&section=reservations#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Inventory"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "inventory",
+    "section": "replenishment",
+    "label": "Replenishment",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=inventory&section=replenishment#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Inventory"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "sales",
+    "section": "dashboard",
+    "label": "Dashboard",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=sales&section=dashboard#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Sales"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "sales",
+    "section": "quotations",
+    "label": "Quotations",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=sales&section=quotations#Quotations",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Quotations"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "sales",
+    "section": "Orders",
+    "label": "Orders",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=sales&section=Orders#Orders",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Orders"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 390,
+      "width": 390
+    }
+  },
+  {
+    "app": "sales",
+    "section": "Fulfillment",
+    "label": "Fulfillment",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=sales&section=Fulfillment#Fulfillment",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Fulfillment"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "sales",
+    "section": "Customers",
+    "label": "Customers",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=sales&section=Customers#Customers",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Customers"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 390,
+      "width": 390
+    }
+  },
+  {
+    "app": "analytics",
+    "section": "dashboard",
+    "label": "Dashboard",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=analytics&section=dashboard#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Analytics"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "analytics",
+    "section": "Intelligence",
+    "label": "Financial patterns",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=analytics&section=Intelligence#Intelligence",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Intelligence"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "analytics",
+    "section": "saved-reports",
+    "label": "Saved reports",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=analytics&section=saved-reports#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Analytics"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "analytics",
+    "section": "coverage",
+    "label": "Data quality",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=analytics&section=coverage#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Analytics"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "automations",
+    "section": "dashboard",
+    "label": "Dashboard",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=automations&section=dashboard#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Automations"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "automations",
+    "section": "Automations",
+    "label": "Workflows",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=automations&section=Automations#Automations",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Automations"
+      ],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "automations",
+    "section": "runs",
+    "label": "Execution history",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=automations&section=runs#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Automations"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "automations",
+    "section": "private-work",
+    "label": "Private project workflows",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=automations&section=private-work#Apps",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "AfriCore Automations"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "automations",
+    "section": "Approvals",
+    "label": "Approvals",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=automations&section=Approvals#Approvals",
+    "desktop": {
+      "alerts": [],
+      "headings": [
+        "Approvals"
+      ],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  }
+]

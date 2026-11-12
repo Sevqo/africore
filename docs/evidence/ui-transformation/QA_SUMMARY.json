@@ -1,0 +1,26 @@
+{
+  "date": "2026-11-12",
+  "scope": "Disposable local fixture; current-owner render checks, not full product acceptance",
+  "registrySections": 92,
+  "directBusinessServices": 24,
+  "renderIssues": 0,
+  "frontendTests": {
+    "pass": 66,
+    "fail": 0
+  },
+  "sqliteTests": {
+    "pass": 434,
+    "skip": 1,
+    "fail": 0
+  },
+  "postgresTests": {
+    "pass": 435,
+    "skip": 0,
+    "fail": 0,
+    "engine": "Isolated local PostgreSQL 17; stopped after test"
+  },
+  "legacyOpenApiOperations": 59,
+  "workspaceOpenApiOperations": 427,
+  "localChain": "Passed",
+  "deployed": false
+}

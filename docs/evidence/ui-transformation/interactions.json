@@ -1,0 +1,56 @@
+[
+  {
+    "workflow": "Mobile workspace search",
+    "result": "Authorized product found; Escape closed dialog",
+    "geometry": {
+      "left": 14.989981651306152,
+      "right": 381.29906368255615,
+      "scrollWidth": 390,
+      "width": 390
+    },
+    "restoredFocus": "Search this workspace"
+  },
+  {
+    "workflow": "Inventory product → stock → movements",
+    "result": "Passed with recorded 5-unit stock receipt",
+    "mobileDialog": {
+      "bottom": 784.6635818481445,
+      "height": 801,
+      "left": 11.996994972229004,
+      "right": 308.57823276519775,
+      "width": 320
+    }
+  },
+  {
+    "workflow": "CRM pointer drag",
+    "result": "Opportunity moved from Proposal to Qualified and persisted in the refreshed board"
+  },
+  {
+    "workflow": "Work project → move task → details → comment",
+    "result": "Passed in the single-user disposable project; task moved to In progress and comment persisted"
+  },
+  {
+    "workflow": "Finance invoice → review → close → dashboard; period and currency controls",
+    "result": "Passed without issuing or paying the draft invoice"
+  },
+  {
+    "workflow": "Direct service catalog → list layout → filter → Open Service",
+    "result": "Passed; Invoicing opened independently of app installation controls"
+  },
+  {
+    "workflow": "Analytics date preset → matching records",
+    "result": "Last 90 days applied; authoritative customer header opened in drill-down"
+  },
+  {
+    "workflow": "Documents upload → open → preview → version history",
+    "result": "Passed with an 86-byte synthetic text file; no real document or sharing grant used"
+  },
+  {
+    "workflow": "CRM keyboard movement",
+    "result": "Enter reveals stage controls; native selection and Move persisted Proposal after the pointer drag"
+  },
+  {
+    "workflow": "Profile/account section navigation",
+    "result": "Profile preferences and security sections rendered at desktop/mobile; Sessions anchor remained below sticky navigation; credentials were not changed"
+  }
+]

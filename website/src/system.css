@@ -648,6 +648,8 @@ footer {
 }
 /* Compact operational density shares the same geometry and palette. */
 .business-shell {
+  --workspace-border: #e2e6e2;
+  --workspace-shadow: 0 2px 8px #16261905, 0 0 0 1px #16261903;
   display: flex;
   min-height: 100svh;
   background: var(--surface);
@@ -795,6 +797,61 @@ footer {
   max-width: 1520px;
   margin: auto;
 }
+.workspace-skip{position:fixed;left:16px;top:-100px;z-index:200;padding:12px 18px;background:var(--ink);color:var(--white);border-radius:8px}
+.workspace-skip:focus{top:12px}
+.account-settings-sections{position:sticky;top:0;z-index:20;display:flex;gap:6px;flex-wrap:wrap;padding:12px 0;background:var(--white);border-bottom:1px solid var(--line);margin:16px 0 20px}
+.account-settings-sections a{padding:10px 14px;min-height:44px;box-sizing:border-box;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;color:var(--muted)}
+.account-settings-sections a:hover{background:var(--accent-light);color:var(--accent-text)}
+.security-center h2[id]{scroll-margin-top:90px}
+.focused-account[data-workspace-kind] .account-content{background:var(--surface);min-width:0}
+.focused-account[data-workspace-kind] .account-metrics>section{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:18px;min-width:0}
+.focused-account[data-workspace-kind] .account-metrics strong{font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+.personal-quick-actions{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px!important;padding-block:8px}
+.personal-quick-actions>a{justify-content:center;min-height:48px!important;background:var(--white)}
+.developer-journey{margin-block:24px;padding:24px;background:var(--white);border:1px solid var(--line);border-radius:10px}
+.developer-journey header>h3{margin:6px 0 10px;font-size:22px;letter-spacing:-.035em}
+.developer-journey header>p{font-size:14px;line-height:1.6;color:var(--muted);margin:0 0 20px;max-width:65ch}
+.developer-journey>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.developer-journey a{display:grid;grid-template-columns:32px minmax(0,1fr);gap:8px 12px;padding:18px;border:1px solid var(--line);border-radius:8px;text-decoration:none;color:var(--text)}
+.developer-journey a:hover{background:var(--surface);border-color:var(--accent-text)}
+.developer-journey .developer-step{grid-row:1/4;color:var(--accent-text);font-family:var(--font-code);font-size:13px}
+.developer-journey a strong{font-size:15px;letter-spacing:-.015em}
+.developer-journey a p{margin:0;font-size:13px;line-height:1.6;color:var(--muted)}
+.developer-journey a small{font-size:12px;color:var(--muted)}
+@media(max-width:560px){.personal-quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.developer-journey{padding:18px}.developer-journey>div{grid-template-columns:1fr}}
+.segmented-control{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:var(--radius-button);background:var(--surface);max-width:100%}
+.segmented-control>button{border:0;background:transparent;color:var(--muted);font-weight:600;min-width:42px}
+.segmented-control>button[aria-pressed=true]{background:var(--white);color:var(--text);box-shadow:0 1px 4px #00000014}
+.segmented-control>button:active{background:var(--accent-light)}
+.chart-comparison{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-block:8px 12px}
+.chart-comparison>small{font-size:11px;color:var(--muted);line-height:1.5}
+.chart-comparison>button[aria-pressed=true]{background:var(--accent-light);color:var(--accent-text)}
+.service-results-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.service-results-toolbar>p{margin:0;font-size:13px;color:var(--muted)}
+.service-grid.service-list-layout{grid-template-columns:1fr}
+.service-list-layout .service-card{display:grid;grid-template-columns:minmax(160px,1fr) minmax(0,2fr) auto;gap:12px 24px;padding:20px;align-items:center}
+.service-list-layout .service-card-meta{grid-column:1;grid-row:1;font-size:11px;justify-content:start;flex-wrap:wrap}
+.service-list-layout .service-card>h2{grid-column:1;grid-row:2;font-size:17px}
+.service-list-layout .service-card>p{grid-column:2;font-size:13px;line-height:1.6}
+.service-list-layout .service-card .service-actions{grid-column:3;grid-row:1/4;margin:0}
+@media(max-width:900px){.service-list-layout .service-card{display:flex;align-items:stretch}.service-list-layout .service-card .service-actions{margin-top:8px}}
+:is(.business-shell,.focused-account){font-optical-sizing:auto}
+:is(.business-shell,.focused-account) :is(h1,h2,h3){text-wrap:balance}
+:is(.business-shell,.focused-account) :is(.panel,.account-panel){min-width:0}
+:is(.business-shell,.focused-account) :is(th,td){font-variant-numeric:tabular-nums}
+:is(.business-shell,.focused-account,.account-entry) .checkbox-field{display:flex;align-items:flex-start;gap:10px;min-height:44px;padding-block:8px;line-height:1.55;box-sizing:border-box}
+:is(.business-shell,.focused-account,.account-entry) input:is([type=checkbox],[type=radio]){width:18px;height:18px;min-height:18px!important;flex:0 0 18px;padding:0;margin:2px 0 0;accent-color:var(--accent-text)}
+:is(.business-shell,.focused-account,.account-entry) .field:has(>input[type=checkbox]){display:grid;grid-template-columns:18px minmax(0,1fr);align-items:start;gap:10px;min-height:44px;padding-block:8px}
+:is(.business-shell,.focused-account,.account-entry) .field:has(>input[type=checkbox])>input{grid-column:1;grid-row:1}
+:is(.business-shell,.focused-account,.account-entry) .field:has(>input[type=checkbox])>span{grid-column:2;grid-row:1;line-height:1.55}
+:is(.business-shell,.focused-account) thead th{font-size:11px;font-weight:650;letter-spacing:.025em;color:var(--muted);background:var(--surface);padding-block:12px}
+:is(.business-shell,.focused-account) tbody td{padding-block:13px;border-bottom-color:var(--workspace-border,var(--line))}
+:is(.business-shell,.focused-account) tbody tr:focus-within{background:var(--accent-light)}
+:is(.business-shell,.focused-account) :is(button,.button,.secondary-button):active:not(:disabled){filter:brightness(.95)}
+:is(.business-shell,.focused-account) .modal-backdrop{padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));overscroll-behavior:contain}
+:is(.business-shell,.focused-account) .modal-backdrop>[role=dialog]{max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain}
+@media(prefers-contrast:more){.business-shell{--workspace-border:#666}:is(.business-shell,.focused-account) .panel{border-color:#666}}
+@media(prefers-reduced-transparency:reduce){:is(.business-shell,.focused-account) .modal-backdrop{backdrop-filter:none;background:#000b}}
 .workspace-title {
   display: flex;
   align-items: center;

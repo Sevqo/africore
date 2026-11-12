@@ -1,0 +1,170 @@
+[
+  {
+    "app": "POS",
+    "desktop": {
+      "errors": [],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "Commerce",
+    "desktop": {
+      "errors": [],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "Procurement",
+    "desktop": {
+      "errors": [],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "Documents",
+    "desktop": {
+      "errors": [],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "People",
+    "desktop": {
+      "errors": [],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "Business ID",
+    "desktop": {
+      "errors": [],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "Accounting",
+    "desktop": {
+      "errors": [],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "Work",
+    "desktop": {
+      "errors": [],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "Finance",
+    "desktop": {
+      "errors": [],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "CRM",
+    "desktop": {
+      "errors": [],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "Inventory",
+    "desktop": {
+      "errors": [],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "Sales",
+    "desktop": {
+      "errors": [],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "Analytics",
+    "desktop": {
+      "errors": [],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  },
+  {
+    "app": "Automations",
+    "desktop": {
+      "errors": [],
+      "scrollWidth": 1425,
+      "width": 1440
+    },
+    "mobile": {
+      "scrollWidth": 375,
+      "width": 390
+    }
+  }
+]

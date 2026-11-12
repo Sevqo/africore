@@ -14,6 +14,21 @@ export type ChartSeries = {
   dashed?: boolean;
 };
 export type ChartRange = "7D" | "30D" | "90D" | "YTD" | "1Y" | "ALL";
+/** Adjacent equal-length calendar windows, limited to the records actually loaded. */
+export function previousPeriod(points: ChartPoint[], range: ChartRange, asOfDate?: string) {
+  const sorted = selectRange(points, 'ALL');
+  if (!sorted.length || range === 'ALL') return null;
+  const end = Date.parse((asOfDate && isIsoDate(asOfDate) ? asOfDate : sorted.at(-1)!.date) + 'T00:00:00Z');
+  const day = 86400000;
+  const start = range === 'YTD' ? Date.UTC(new Date(end).getUTCFullYear(), 0, 1) : end - ((range === '1Y' ? 365 : Number.parseInt(range)) - 1) * day;
+  const duration = end - start + day;
+  const from = new Date(start - duration).toISOString().slice(0, 10), to = new Date(start - day).toISOString().slice(0, 10);
+  if (sorted[0].date > from) return null;
+  const records = sorted.filter(point => point.date >= from && point.date <= to);
+  if (!records.length) return null;
+  const byAlignedDate = new Map(records.map(point => [new Date(Date.parse(point.date + 'T00:00:00Z') + duration).toISOString().slice(0, 10), point]));
+  return {from, to, records, byAlignedDate};
+}
 export function selectRange(
   points: ChartPoint[],
   range: ChartRange,

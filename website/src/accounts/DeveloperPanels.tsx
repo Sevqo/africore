@@ -48,12 +48,15 @@ export function DeveloperPanels({
             total. Request limits are enforced by the API; this view does not
             imply a production allowance.
           </p>
-          <ol>
-            <li>Create an application.</li>
-            <li>Create a scoped sandbox key.</li>
-            <li>Use API Explorer to read synthetic resources.</li>
-            <li>Configure an HTTPS webhook on an approved test destination.</li>
-          </ol>
+          <section className="developer-journey" aria-labelledby="developer-journey-title">
+            <header><span className="eyebrow">Build with AfriCore</span><h3 id="developer-journey-title">From application to integration</h3><p>Configure each step explicitly. Credentials and provider access stay under your control.</p></header>
+            <div>{[
+              {step:'01',tab:'My Applications',title:'Your applications',description:'Organize an integration and its purpose.',detail:apps.length+' recorded applications'},
+              {step:'02',tab:'API Keys',title:'Scoped credentials',description:'Choose the capabilities your integration needs.',detail:keys.filter((key:any)=>!key.revoked_at).length+' active loaded keys'},
+              {step:'03',tab:'API Explorer',title:'Explore the API',description:'Inspect requests in the selected environment.',detail:'Explicit credentials required'},
+              {step:'04',tab:'Webhooks',title:'Event delivery',description:'Review endpoints and signed delivery outcomes.',detail:hooks.length+' loaded endpoints'},
+            ].map(item=><a key={item.step} href={'#'+encodeURIComponent(item.tab)}><span className="developer-step">{item.step}</span><strong>{item.title}</strong><p>{item.description}</p><small>{item.detail}</small></a>)}</div>
+          </section>
         </>
       )}
       {tab === "My Applications" && (

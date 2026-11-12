@@ -1,18 +1,19 @@
-import {CommerceWorkspace} from './commerce/CommerceWorkspace';
-import {POSWorkspace} from './pos/POSWorkspace';
-import {ProcurementWorkspace} from './apps/ProcurementWorkspace';
-import {DocumentsWorkspace} from './apps/DocumentsWorkspace';
-import {PeopleWorkspace} from './apps/PeopleWorkspace';
-import {WorkWorkspace} from './apps/WorkWorkspace';
-import {AccountingWorkspace} from './apps/AccountingWorkspace';
+import {CommerceWorkspace} from './apps/lazy-workspaces';
+import {POSWorkspace} from './apps/lazy-workspaces';
+import {ProcurementWorkspace} from './apps/lazy-workspaces';
+import {DocumentsWorkspace} from './apps/lazy-workspaces';
+import {PeopleWorkspace} from './apps/lazy-workspaces';
+import {WorkWorkspace} from './apps/lazy-workspaces';
+import {AccountingWorkspace} from './apps/lazy-workspaces';
 import {NotificationCentre} from './apps/NotificationCentre';
 import {WorkspaceSearch} from './apps/WorkspaceSearch';
+import {WorkspaceAppLauncher} from './apps/WorkspaceAppLauncher';
 import {WorkspaceAccountMenu} from './apps/WorkspaceAccountMenu';
 import {OrderDraftEditor} from './apps/OrderDraftEditor';
 import {useAppContext,AppContextNavigation} from './apps/AppNavigation';
-import {CrmWorkspace} from './apps/CrmWorkspace';
-import {InventoryWorkspace} from './apps/InventoryWorkspace';
-import {SalesWorkspace} from './apps/SalesWorkspace';
+import {CrmWorkspace} from './apps/lazy-workspaces';
+import {InventoryWorkspace} from './apps/lazy-workspaces';
+import {SalesWorkspace} from './apps/lazy-workspaces';
 import {ProductCatalog} from './apps/ProductCatalog';
 import {NotificationBell} from './apps/NotificationBell';
 import {AppsWorkspace} from './apps/AppsWorkspace';
@@ -718,6 +719,7 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
   if(orgLoadError) return <main className="account-entry"><h1>Business workspace unavailable</h1><ErrorBox error={orgLoadError}/><a href="/app/workspaces">Resolve current access</a><button className="button" onClick={()=>location.reload()}>Try again</button></main>;
   return (
     <div className="business-shell">
+      <a className="workspace-skip" href="#workspace-main" onClick={event=>{event.preventDefault();document.getElementById('workspace-main')?.focus();}}>Skip to workspace content</a>
       {navOpen && (
         <button
           className="nav-scrim"
@@ -794,6 +796,7 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
       </aside>
       <div className="app-main">
         <header className="app-header">
+          {!isDemo()&&org&&<WorkspaceAppLauncher api={call} scope={org+'\0'+environment} navigate={setTab}/>}
           <button
             className="icon-button app-nav-toggle"
             aria-label="Open business navigation"
@@ -849,7 +852,7 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
             {org&&!isDemo()&&<NotificationBell key={org+'\0'+environment} api={call} scope={org+'\0'+environment} navigate={setTab} openRecord={openRecord}/>}{!isDemo()?<WorkspaceAccountMenu name={account?.profile?.display_name} email={me?.email} role={organization?.role}/>:<span>{me?.email}</span>}
           </div>
         </header>
-        <main className="workspace-content">
+        <main className="workspace-content" id="workspace-main" tabIndex={-1}>
           <div className="workspace-title">
             <div>
               <span className="eyebrow">
