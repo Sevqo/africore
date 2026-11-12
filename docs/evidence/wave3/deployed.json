@@ -1,0 +1,43 @@
+{
+  "date": "2026-11-12",
+  "authorization": "Owner explicitly requested push to main and deploy the current tested checkpoint",
+  "backend": {
+    "source_commit": "32e8d1af619b689cfc9692881783bc87d42ffd85",
+    "render_deploy": "dep-dbql4t67bikc73ae21gg",
+    "status": "Live",
+    "readiness": 200,
+    "exact_api_contract_matches": true,
+    "container_build": "Passed including 62 website/content tests after adding the missing app catalog COPY"
+  },
+  "frontend": {
+    "origin": "https://africore-web.cypriankiprop41.workers.dev",
+    "worker_version": "f7fbe1b1-fc43-4ee8-8598-a5e67bbed895",
+    "main_account_business_asset_hashes_match": true,
+    "public_pages_verified": 67,
+    "missing_page_asset_and_storefront_api": 404
+  },
+  "database": {
+    "branch": "br-jolly-lake-b4ff04st",
+    "latest_migration": "019-point-of-sale",
+    "additive_migrations": ["017-commerce-foundation", "018-public-media", "019-point-of-sale"],
+    "encrypted_backup_readback_verified": true,
+    "original_public_rows_retained": 1640,
+    "startup_schema_verification": "passed",
+    "full_restore_tested": false,
+    "production_branch_changed": false,
+    "local_upgrade_rehearsal": {"commands": 62, "original_rows_retained": 136, "readiness": "passed", "replay": "empty"}
+  },
+  "hosted_acceptance": {
+    "existing_managed_identity_and_business_workspace": "opened without credential reconstruction",
+    "app_directory_count": 14,
+    "commerce_and_pos_visible": true,
+    "pos_installation_preview": "loaded authoritative services, prices and approval notice; cancelled without installation",
+    "anonymous_account": 401,
+    "direct_backend_account": 403,
+    "managed_auth_endpoint_unchanged": true,
+    "security_session_listing": "Existing session requested fresh authentication; security mutations were not tested",
+    "hosted_financial_mutations": false,
+    "private_screenshot": "Retained locally outside source control"
+  },
+  "limitations": "This releases the current Commerce/POS sandbox preview checkpoint, not all Wave 3. No live providers, paid hosting, auth migration, offline or physical hardware qualification. Remaining Commerce scope, Website, Marketing, Support, Subscriptions and later platform UI remain in the master plan. Unknown storefront entry URLs serve the app shell; their authoritative catalog API returns 404."
+}

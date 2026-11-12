@@ -1,10 +1,10 @@
 # Wave 3 implementation record
 
-Updated 12 November 2026. The complete request remains in WAVE_3_MASTER_PLAN.md. This is an active checkpoint, not a Wave 3 completion or deployment claim.
+Updated 12 November 2026. The complete request remains in WAVE_3_MASTER_PLAN.md. The owner-authorized Commerce/POS preview checkpoint is deployed; full Wave 3 remains incomplete.
 
 ## Release state
 
-Wave 3 source is local and unreleased. Hosted application baseline was Render `228b16c` and Cloudflare `e5ce8dee-103e-4a4f-bb7b-a0697f4ef598` during preflight. Approved Neon development has migrations 001–016; migrations 017 and 018 have NOT been applied there. No production branch, identity, real payment, paid hosting or external provider activation changed. Hosted status must be checked again before release.
+Current checkpoint: main pushed, Render `32e8d1a` Live and Cloudflare `f7fbe1b1-fc43-4ee8-8598-a5e67bbed895` deployed. Approved Neon development has migrations 001–019 after guarded backup/readback and preservation of all original public rows. No production Neon branch, managed identity, real payment, paid hosting or external provider activation changed. See the final deployment section and evidence/wave3/deployed.json for qualification and limitations. Earlier sections retain their historical checkpoint status.
 
 ## Checkpoint 1: preflight and targeted repairs
 
@@ -108,3 +108,15 @@ Final local regression after the repair: PostgreSQL 435/435 and SQLite 434 pass 
 The Website builder implementation boundary is recorded in WAVE_3_WEBSITE_ARCHITECTURE.md for the next core workstream. It is design only; Website is not registered or advertised as implemented. Remaining master-plan scope is retained.
 
 Remote qualification observed: source commit 7e5f229 passed all five Linux CI jobs in run 43161693976 (PostgreSQL, SQLite/API contracts, website, type/lint/gateway/startup and isolated chain). This supersedes the pending-CI statement above. Evidence: evidence/wave3/pos-linux-ci.json. The PostgreSQL response-before-commit failure is resolved on that exact source commit. GitHub push succeeded; the previous red checks were a test failure, not a rejected report push. Main/hosted schema and release remain unchanged.
+
+## Owner-authorized checkpoint deployment — 12 November 2026
+
+The owner explicitly requested pushing and deploying the current tested checkpoint, overriding the earlier hold on deploying only after every Wave 3 core app is complete. This authorizes this Commerce/POS preview release; the rest of WAVE_3_MASTER_PLAN.md remains pending.
+
+Main was fast-forwarded. Render is Live on 32e8d1a (dep-dbql4t67bikc73ae21gg); Cloudflare africore-web is published as f7fbe1b1-fc43-4ee8-8598-a5e67bbed895. The first Render build found a missing pure src/apps/catalog.ts COPY in the isolated frontend stage; the minimal Docker fix passed the actual container build and its 62 website tests on retry. Hosted readiness returned 200 and the API contract bytes matched exactly before the frontend was published. The main/account/business frontend assets match the reviewed local build. All 67 public pages and missing page/asset/catalog-API checks passed.
+
+Guarded development migration 017–019 used an encrypted backup with authenticated readback, preserved all 1,640 original public rows, and passed the deployed schema verifier. The exact upgrade plan had first passed on a disposable local PostgreSQL fixture with identity/workspace/paid-invoice history (136 retained rows, 62 statements and an empty replay). No production Neon branch or managed identity was changed. Full disaster restore is not claimed. Keep compatible readers for cash classification and returned-cash holds when rolling forward or back.
+
+The existing managed identity opened its existing Business workspace. The live app directory contains fourteen apps including Commerce and POS, and the POS review loaded current services/prices and separate approval requirements. The review was cancelled: no hosted app installation, policy activation or financial write was performed. Anonymous account access remains 401 and direct backend account access 403. Account session listing requested fresh authentication; security mutations and a new password sign-in were not retested. The hosted screenshot stays in private local evidence; no workspace identifiers or customer financial data are committed in this report.
+
+Open Business → Apps → View app → Review installation to explicitly activate POS or Commerce in the selected workspace/environment. Reload older workspace tabs to load the new interface. POS/checkout writes remain sandbox-only. This deployment does not complete the remaining Commerce requirements, Website, Marketing, Support, Subscriptions, cross-app/hardware/provider qualification or the final eighteen-app/platform UI phase. Sanitized release evidence: evidence/wave3/deployed.json.
