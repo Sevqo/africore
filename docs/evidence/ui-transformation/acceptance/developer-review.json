@@ -1,0 +1,741 @@
+[
+  {
+    "app": "developer",
+    "section": "Overview",
+    "label": "Overview",
+    "url": "http://127.0.0.1:4002/app/developer#Overview",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Overview",
+          "From application to integration"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "180-developer-Overview-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Overview",
+          "From application to integration"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "180-developer-Overview-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "developer",
+    "section": "Notifications",
+    "label": "Notifications",
+    "url": "http://127.0.0.1:4002/app/developer#Notifications",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Notifications",
+          "Notification history"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "181-developer-Notifications-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Notifications",
+          "Notification history"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "181-developer-Notifications-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "developer",
+    "section": "Products",
+    "label": "Products",
+    "url": "http://127.0.0.1:4002/app/developer#Products",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Products",
+          "Product Catalog"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "182-developer-Products-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Products",
+          "Product Catalog"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "182-developer-Products-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "developer",
+    "section": "My-Services",
+    "label": "My Services",
+    "url": "http://127.0.0.1:4002/app/developer#My%20Services",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "My Services",
+          "Usage overview",
+          "Customers & clients",
+          "Developer API access"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "183-developer-My-Services-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "My Services",
+          "Usage overview",
+          "Customers & clients",
+          "Developer API access"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "183-developer-My-Services-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "developer",
+    "section": "Explore-Services",
+    "label": "Explore Services",
+    "url": "http://127.0.0.1:4002/app/developer#Explore%20Services",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Explore Services",
+          "AfriCore Data",
+          "AfriCore Pay",
+          "AI Business Assistant",
+          "Connect & data sync",
+          "Customers & clients",
+          "Developer API access",
+          "Invoicing",
+          "Orders",
+          "Product Catalog",
+          "Reconciliation",
+          "Verification APIs",
+          "Webhooks"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "184-developer-Explore-Services-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Explore Services",
+          "AfriCore Data",
+          "AfriCore Pay",
+          "AI Business Assistant",
+          "Connect & data sync",
+          "Customers & clients",
+          "Developer API access",
+          "Invoicing",
+          "Orders",
+          "Product Catalog",
+          "Reconciliation",
+          "Verification APIs",
+          "Webhooks"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "184-developer-Explore-Services-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "developer",
+    "section": "Usage-Billing",
+    "label": "Usage & Billing",
+    "url": "http://127.0.0.1:4002/app/developer#Usage%20%26%20Billing",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Usage & Billing",
+          "Control usage",
+          "Current limits and alerts",
+          "Estimate history"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "185-developer-Usage-Billing-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Usage & Billing",
+          "Customers & clients",
+          "Developer API access",
+          "Control usage",
+          "Current limits and alerts",
+          "Estimate history"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "185-developer-Usage-Billing-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "developer",
+    "section": "Assistant",
+    "label": "Assistant",
+    "url": "http://127.0.0.1:4002/app/developer#Assistant",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Assistant",
+          "AI Business Assistant"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "186-developer-Assistant-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Assistant",
+          "AI Business Assistant"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "186-developer-Assistant-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "developer",
+    "section": "Data",
+    "label": "Data",
+    "url": "http://127.0.0.1:4002/app/developer#Data",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Data",
+          "AfriCore Data"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "187-developer-Data-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Data",
+          "AfriCore Data"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "187-developer-Data-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "developer",
+    "section": "My-Applications",
+    "label": "My Applications",
+    "url": "http://127.0.0.1:4002/app/developer#My%20Applications",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "My Applications",
+          "Create application"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "188-developer-My-Applications-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "My Applications",
+          "Create application"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "188-developer-My-Applications-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "developer",
+    "section": "API-Keys",
+    "label": "API Keys",
+    "url": "http://127.0.0.1:4002/app/developer#API%20Keys",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "API Keys",
+          "Create sandbox key"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "189-developer-API-Keys-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "API Keys",
+          "Create sandbox key"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "189-developer-API-Keys-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "developer",
+    "section": "API-Explorer",
+    "label": "API Explorer",
+    "url": "http://127.0.0.1:4002/app/developer#API%20Explorer",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "API Explorer"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "screenshot": "viewport fallback",
+        "file": "190-developer-API-Explorer-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "API Explorer"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "190-developer-API-Explorer-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "developer",
+    "section": "Sandbox",
+    "label": "Sandbox",
+    "url": "http://127.0.0.1:4002/app/developer#Sandbox",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Sandbox"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "191-developer-Sandbox-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Sandbox"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "191-developer-Sandbox-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "developer",
+    "section": "Webhooks",
+    "label": "Webhooks",
+    "url": "http://127.0.0.1:4002/app/developer#Webhooks",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Webhooks",
+          "Webhooks"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "192-developer-Webhooks-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Webhooks",
+          "Webhooks"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "192-developer-Webhooks-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "developer",
+    "section": "Request-Logs",
+    "label": "Request Logs",
+    "url": "http://127.0.0.1:4002/app/developer#Request%20Logs",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Request Logs"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "193-developer-Request-Logs-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Request Logs"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "193-developer-Request-Logs-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "developer",
+    "section": "Usage-Limits",
+    "label": "Usage & Limits",
+    "url": "http://127.0.0.1:4002/app/developer#Usage%20%26%20Limits",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Usage & Limits",
+          "From application to integration"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "194-developer-Usage-Limits-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Usage & Limits",
+          "From application to integration"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "194-developer-Usage-Limits-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "developer",
+    "section": "API-Documentation",
+    "label": "API Documentation",
+    "url": "http://127.0.0.1:4002/app/developer#API%20Documentation",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "API Documentation"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "195-developer-API-Documentation-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "API Documentation"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "195-developer-API-Documentation-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "developer",
+    "section": "SDKs-Examples",
+    "label": "SDKs & Examples",
+    "url": "http://127.0.0.1:4002/app/developer#SDKs%20%26%20Examples",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "SDKs & Examples"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "196-developer-SDKs-Examples-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "SDKs & Examples"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "196-developer-SDKs-Examples-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "developer",
+    "section": "Verification-APIs",
+    "label": "Verification APIs",
+    "url": "http://127.0.0.1:4002/app/developer#Verification%20APIs",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Verification APIs",
+          "Verification APIs"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "197-developer-Verification-APIs-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Verification APIs",
+          "Verification APIs"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "197-developer-Verification-APIs-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "developer",
+    "section": "Settings",
+    "label": "Settings",
+    "url": "http://127.0.0.1:4002/app/developer#Settings",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Settings"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "198-developer-Settings-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Settings"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "198-developer-Settings-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "developer",
+    "section": "Support",
+    "label": "Support",
+    "url": "http://127.0.0.1:4002/app/developer#Support",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Support"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "199-developer-Support-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review developer",
+          "Support"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "199-developer-Support-390.jpg"
+      }
+    ]
+  }
+]

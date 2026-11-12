@@ -1,0 +1,50 @@
+[
+  {
+    "surface": "POS",
+    "result": "Register created; zero-float shift opened; canonical untracked product basket quoted KES250; synthetic recorded cash300/change50; receipt outstanding0, cash drawer250; provider confirmations0; handover separate"
+  },
+  {
+    "surface": "POS shift",
+    "result": "Counted250 equals expected250; shift closed; variance0; closed observation immutable wording present"
+  },
+  {
+    "surface": "Commerce",
+    "result": "Draft shop created; canonical listing added; pickup option saved; sandbox checkout policy saved; exact public projection reviewed and published only on localhost"
+  },
+  {
+    "surface": "Commerce guest",
+    "result": "Cart added canonical product250; fictional contact and pickup saved; reviewed test order created; canonical order/invoice references, confirmed0/remaining250 and unfulfilled status retained"
+  },
+  {
+    "surface": "People",
+    "result": "Owner opened populated employee, inspected fields, edited job title through dialog; saved state confirmed"
+  },
+  {
+    "surface": "Procurement and Documents",
+    "result": "Approved supplier bill250; private source-linked attachment opened exact record and text preview; author self-approval absent"
+  },
+  {
+    "surface": "Accounting",
+    "result": "Reviewed start and period initialized; approved supplierbill250 prepared once as balanced source journal; author requested exact version; different admin approved in UI; author posted using exact unconsumed approval; posted history immutable wording present"
+  },
+  {
+    "surface": "Business ID",
+    "result": "Private fictional Passport created; explicit profile evidence and consent submitted to manual identity review; pending/manual assurance retained, no independent verification claim"
+  },
+  {
+    "surface": "Historical chart",
+    "result": "Explicit Sep1–Nov12 history loaded; 30D current325; exact table aligned Nov5 income200 with Oct6 income80, and Nov12 income125 with Oct13 income60; sparse unknown dates remain gaps; keyboard date explorer changed focus/readout."
+  },
+  {
+    "surface": "Developer",
+    "result": "Free optional API service reviewed; application created; read-only sandbox key shown once/hidden; customer read denied without service, allowed after separate activation; credential revoked and subsequent request denied; raw key not saved in evidence"
+  },
+  {
+    "surface": "Work and Automations",
+    "result": "Populated project opened; board/discussion/calendar/timeline/workload inspected; disabled completion rule saved for separate policy review; no external delivery or rule execution enabled"
+  },
+  {
+    "surface": "Navigation recovery",
+    "result": "Obsolete People section falls back to its first authorized registry section instead of blank content"
+  }
+]

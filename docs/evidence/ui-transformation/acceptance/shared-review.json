@@ -1,0 +1,612 @@
+[
+  {
+    "app": "shared-business",
+    "section": "Overview",
+    "label": "Overview",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Overview",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Business Overview",
+          "Financial activity",
+          "Receivables aging",
+          "Quick actions",
+          "Recent provider events"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "210-shared-business-Overview-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Business Overview",
+          "Financial activity",
+          "Receivables aging",
+          "Quick actions",
+          "Recent provider events"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "210-shared-business-Overview-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "shared-business",
+    "section": "Apps",
+    "label": "Apps",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Apps",
+          "AfriCore POS",
+          "AfriCore Commerce",
+          "AfriCore Procurement",
+          "AfriCore Documents",
+          "AfriCore People",
+          "AfriCore Business ID",
+          "AfriCore Accounting",
+          "AfriCore Work",
+          "AfriCore Finance",
+          "AfriCore CRM",
+          "AfriCore Inventory",
+          "AfriCore Sales",
+          "AfriCore Analytics",
+          "AfriCore Automations"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "211-shared-business-Apps-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Apps",
+          "AfriCore POS",
+          "AfriCore Commerce",
+          "AfriCore Procurement",
+          "AfriCore Documents",
+          "AfriCore People",
+          "AfriCore Business ID",
+          "AfriCore Accounting",
+          "AfriCore Work",
+          "AfriCore Finance",
+          "AfriCore CRM",
+          "AfriCore Inventory",
+          "AfriCore Sales",
+          "AfriCore Analytics",
+          "AfriCore Automations"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "211-shared-business-Apps-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "shared-business",
+    "section": "My-Services",
+    "label": "My Services",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#My%20Services",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "My Services",
+          "Usage overview",
+          "Accounting ledger",
+          "AfriCore Pay",
+          "Automations",
+          "Business Passport",
+          "Business Verification",
+          "Cash Flow",
+          "Commerce operations",
+          "Customer relationships",
+          "Customers & clients",
+          "Expenses",
+          "Financial Intelligence",
+          "Fulfillment & delivery",
+          "Inventory Tracking",
+          "Invoicing",
+          "Orders",
+          "People operations",
+          "Point of Sale",
+          "Private documents",
+          "Procurement",
+          "Product Catalog",
+          "Projects and teamwork",
+          "Sales and quotations",
+          "Trust Network",
+          "Verifiable Credentials"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "212-shared-business-My-Services-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "My Services",
+          "Usage overview",
+          "Accounting ledger",
+          "AfriCore Pay",
+          "Automations",
+          "Business Passport",
+          "Business Verification",
+          "Cash Flow",
+          "Commerce operations",
+          "Customer relationships",
+          "Customers & clients",
+          "Expenses",
+          "Financial Intelligence",
+          "Fulfillment & delivery",
+          "Inventory Tracking",
+          "Invoicing",
+          "Orders",
+          "People operations",
+          "Point of Sale",
+          "Private documents",
+          "Procurement",
+          "Product Catalog",
+          "Projects and teamwork",
+          "Sales and quotations",
+          "Trust Network",
+          "Verifiable Credentials"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "212-shared-business-My-Services-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "shared-business",
+    "section": "Explore-Services",
+    "label": "Explore Services",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Explore%20Services",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Explore Services",
+          "Accounting ledger",
+          "AfriCore Data",
+          "AfriCore Pay",
+          "AI Business Assistant",
+          "Automations",
+          "Blockchain Verification",
+          "Business Passport",
+          "Business Verification",
+          "Cash Flow",
+          "Commerce operations",
+          "Connect & data sync",
+          "Customer relationships",
+          "Customers & clients",
+          "Developer API access",
+          "Expenses",
+          "Financial Intelligence",
+          "Forecasts",
+          "Fulfillment & delivery",
+          "Inventory Tracking",
+          "Invoicing",
+          "Orders",
+          "People operations",
+          "Point of Sale",
+          "Private documents",
+          "Procurement",
+          "Product Catalog",
+          "Projects and teamwork",
+          "Protected Payments",
+          "Reconciliation",
+          "Sales and quotations",
+          "Trust Network",
+          "Verifiable Credentials",
+          "Verification APIs",
+          "Webhooks"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "213-shared-business-Explore-Services-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Explore Services",
+          "Accounting ledger",
+          "AfriCore Data",
+          "AfriCore Pay",
+          "AI Business Assistant",
+          "Automations",
+          "Blockchain Verification",
+          "Business Passport",
+          "Business Verification",
+          "Cash Flow",
+          "Commerce operations",
+          "Connect & data sync",
+          "Customer relationships",
+          "Customers & clients",
+          "Developer API access",
+          "Expenses",
+          "Financial Intelligence",
+          "Forecasts",
+          "Fulfillment & delivery",
+          "Inventory Tracking",
+          "Invoicing",
+          "Orders",
+          "People operations",
+          "Point of Sale",
+          "Private documents",
+          "Procurement",
+          "Product Catalog",
+          "Projects and teamwork",
+          "Protected Payments",
+          "Reconciliation",
+          "Sales and quotations",
+          "Trust Network",
+          "Verifiable Credentials",
+          "Verification APIs",
+          "Webhooks"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "213-shared-business-Explore-Services-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "shared-business",
+    "section": "Usage-Billing",
+    "label": "Usage & Billing",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Usage%20%26%20Billing",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Usage & Billing",
+          "Control usage",
+          "Current limits and alerts",
+          "Estimate history"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "214-shared-business-Usage-Billing-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Usage & Billing",
+          "Accounting ledger",
+          "AfriCore Pay",
+          "Automations",
+          "Business Passport",
+          "Business Verification",
+          "Cash Flow",
+          "Commerce operations",
+          "Customer relationships",
+          "Customers & clients",
+          "Expenses",
+          "Financial Intelligence",
+          "Fulfillment & delivery",
+          "Control usage",
+          "Current limits and alerts",
+          "Estimate history"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "214-shared-business-Usage-Billing-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "shared-business",
+    "section": "Notifications",
+    "label": "Notifications",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Notifications",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Notifications",
+          "Notification history"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "215-shared-business-Notifications-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Notifications",
+          "Notification history"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "215-shared-business-Notifications-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "shared-business",
+    "section": "Approvals",
+    "label": "Approvals",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Approvals",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Approvals",
+          "Request a second-person review",
+          "My review queue"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "216-shared-business-Approvals-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Approvals",
+          "Request a second-person review",
+          "My review queue"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "216-shared-business-Approvals-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "shared-business",
+    "section": "Team",
+    "label": "Team",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Team",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Team",
+          "Members",
+          "Invitations"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "217-shared-business-Team-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Team",
+          "Members",
+          "Invitations"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "217-shared-business-Team-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "shared-business",
+    "section": "Settings",
+    "label": "Settings",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Settings",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Settings",
+          "Business profile",
+          "Audit history"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "218-shared-business-Settings-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Settings",
+          "Business profile",
+          "Audit history"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "218-shared-business-Settings-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "shared-business",
+    "section": "Assistant",
+    "label": "Assistant",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Assistant",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Assistant",
+          "AI Business Assistant"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "219-shared-business-Assistant-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Assistant",
+          "AI Business Assistant"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "219-shared-business-Assistant-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "shared-business",
+    "section": "Data",
+    "label": "Data",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Data",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Data",
+          "AfriCore Data"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "220-shared-business-Data-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Data",
+          "AfriCore Data"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "220-shared-business-Data-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "shared-business",
+    "section": "Connect",
+    "label": "Connect",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Connect",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Connect",
+          "Connect & data sync"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "221-shared-business-Connect-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Connect",
+          "Connect & data sync"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "221-shared-business-Connect-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "shared-business",
+    "section": "Forecasts",
+    "label": "Forecasts",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Forecasts",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Forecasts",
+          "Forecasts"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "222-shared-business-Forecasts-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Forecasts",
+          "Forecasts"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "222-shared-business-Forecasts-390.jpg"
+      }
+    ]
+  }
+]

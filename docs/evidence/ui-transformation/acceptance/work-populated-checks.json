@@ -1,0 +1,72 @@
+[
+  {
+    "alerts": [],
+    "heading": [
+      "This app includes the following services",
+      "About this app",
+      "Your projects",
+      "Synthetic UI review project",
+      "Private execution history",
+      "Project discussions",
+      "Other AfriCore Apps"
+    ],
+    "overflow": false,
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=discussions#Apps"
+  },
+  {
+    "alerts": [],
+    "heading": [
+      "This app includes the following services",
+      "About this app",
+      "Your projects",
+      "Synthetic UI review project",
+      "Private execution history",
+      "Task calendar",
+      "Other AfriCore Apps"
+    ],
+    "overflow": false,
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=calendar#Apps"
+  },
+  {
+    "alerts": [],
+    "heading": [
+      "This app includes the following services",
+      "About this app",
+      "Your projects",
+      "Synthetic UI review project",
+      "Private execution history",
+      "Project timeline",
+      "Other AfriCore Apps"
+    ],
+    "overflow": false,
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=timeline#Apps"
+  },
+  {
+    "alerts": [],
+    "heading": [
+      "This app includes the following services",
+      "About this app",
+      "Your projects",
+      "Synthetic UI review project",
+      "Private execution history",
+      "Current team workload",
+      "Other AfriCore Apps"
+    ],
+    "overflow": false,
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=workload#Apps"
+  },
+  {
+    "alerts": [],
+    "heading": [
+      "This app includes the following services",
+      "About this app",
+      "Your projects",
+      "Synthetic UI review project",
+      "Private execution history",
+      "Project discussions",
+      "Other AfriCore Apps"
+    ],
+    "overflow": false,
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=workflows#Apps"
+  }
+]

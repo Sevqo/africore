@@ -13,7 +13,7 @@ export function useAppContext(api:API,scope:string,enabled=true){
  useEffect(()=>{const sync=()=>setSelection({id:new URLSearchParams(location.search).get('app'),section:new URLSearchParams(location.search).get('section')||''}),refresh=()=>setRevision(v=>v+1);addEventListener('popstate',sync);addEventListener(appNavigationEvent,sync);addEventListener('africore:apps-changed',refresh);return()=>{removeEventListener('popstate',sync);removeEventListener(appNavigationEvent,sync);removeEventListener('africore:apps-changed',refresh);};},[]);
  useEffect(()=>{if(!enabled)return;let current=true;setCatalog({scope,apps:[]});api('/apps').then(r=>{if(current)setCatalog({scope,apps:r.apps});}).catch(()=>{});return()=>{current=false;};},[scope,enabled,revision]);
  const app=catalog.scope===scope?catalog.apps.find(a=>a.id===selection.id&&a.installation?.status==='installed'):null;
- return {app,section:selection.section||app?.navigation?.[0]?.section||'dashboard'};
+ return {app,section:app?.navigation?.some((item:any)=>item.section===selection.section)?selection.section:app?.navigation?.[0]?.section||'dashboard'};
 }
 export function AppContextNavigation({app,section,tab,navigate}:{app:any;section:string;tab:string;navigate:(tab:string)=>void}){
  const direct:Record<string,string>={Invoices:'Invoices',Payments:'Payments',Expenses:'Expenses',Reconciliation:'Reconciliation',Reports:'Reports',Customers:'Customers',Orders:'Orders',Fulfillment:'Fulfillment',Intelligence:'Intelligence',Automations:'Automations',Approvals:'Approvals',products:'Products',quotations:'Quotations'};

@@ -1,0 +1,268 @@
+[
+  {
+    "role": "owner",
+    "reads": [
+      {
+        "path": "/apps",
+        "status": 200,
+        "permissions": null,
+        "count": null
+      },
+      {
+        "path": "/people/configuration",
+        "status": 200,
+        "permissions": {
+          "can_configure": true,
+          "hr_view": true,
+          "hr_write": true,
+          "hr_manage": true,
+          "comp_view": true,
+          "comp_write": true
+        },
+        "count": null
+      },
+      {
+        "path": "/accounting/configuration",
+        "status": 200,
+        "permissions": null,
+        "count": null
+      },
+      {
+        "path": "/procurement?type=bill",
+        "status": 200,
+        "permissions": {
+          "write": true,
+          "finance": true,
+          "review": true
+        },
+        "count": 1
+      },
+      {
+        "path": "/documents/3b9f81d7-0302-4585-92a8-920aa6aca1ec",
+        "status": 200,
+        "permissions": {
+          "edit": true,
+          "manage": true,
+          "download": true
+        },
+        "count": null
+      },
+      {
+        "path": "/pos/registers",
+        "status": 200,
+        "permissions": {
+          "configure": true
+        },
+        "count": 1
+      }
+    ]
+  },
+  {
+    "role": "admin",
+    "reads": [
+      {
+        "path": "/apps",
+        "status": 200,
+        "permissions": null,
+        "count": null
+      },
+      {
+        "path": "/people/configuration",
+        "status": 200,
+        "permissions": {
+          "can_configure": true,
+          "hr_view": true,
+          "hr_write": true,
+          "hr_manage": true,
+          "comp_view": true,
+          "comp_write": true
+        },
+        "count": null
+      },
+      {
+        "path": "/accounting/configuration",
+        "status": 200,
+        "permissions": null,
+        "count": null
+      },
+      {
+        "path": "/procurement?type=bill",
+        "status": 200,
+        "permissions": {
+          "write": true,
+          "finance": true,
+          "review": true
+        },
+        "count": 1
+      },
+      {
+        "path": "/documents/3b9f81d7-0302-4585-92a8-920aa6aca1ec",
+        "status": 404,
+        "permissions": null,
+        "count": null
+      },
+      {
+        "path": "/pos/registers",
+        "status": 200,
+        "permissions": {
+          "configure": true
+        },
+        "count": 1
+      }
+    ]
+  },
+  {
+    "role": "finance",
+    "reads": [
+      {
+        "path": "/apps",
+        "status": 200,
+        "permissions": null,
+        "count": null
+      },
+      {
+        "path": "/people/configuration",
+        "status": 200,
+        "permissions": {
+          "can_configure": false,
+          "hr_view": false,
+          "hr_write": false,
+          "hr_manage": false,
+          "comp_view": false,
+          "comp_write": false
+        },
+        "count": null
+      },
+      {
+        "path": "/accounting/configuration",
+        "status": 200,
+        "permissions": null,
+        "count": null
+      },
+      {
+        "path": "/procurement?type=bill",
+        "status": 200,
+        "permissions": {
+          "write": true,
+          "finance": true,
+          "review": false
+        },
+        "count": 1
+      },
+      {
+        "path": "/documents/3b9f81d7-0302-4585-92a8-920aa6aca1ec",
+        "status": 404,
+        "permissions": null,
+        "count": null
+      },
+      {
+        "path": "/pos/registers",
+        "status": 200,
+        "permissions": {
+          "configure": false
+        },
+        "count": 0
+      }
+    ]
+  },
+  {
+    "role": "operations",
+    "reads": [
+      {
+        "path": "/apps",
+        "status": 200,
+        "permissions": null,
+        "count": null
+      },
+      {
+        "path": "/people/configuration",
+        "status": 200,
+        "permissions": {
+          "can_configure": false,
+          "hr_view": false,
+          "hr_write": false,
+          "hr_manage": false,
+          "comp_view": false,
+          "comp_write": false
+        },
+        "count": null
+      },
+      {
+        "path": "/accounting/configuration",
+        "status": 403,
+        "permissions": null,
+        "count": null
+      },
+      {
+        "path": "/procurement?type=bill",
+        "status": 403,
+        "permissions": null,
+        "count": null
+      },
+      {
+        "path": "/documents/3b9f81d7-0302-4585-92a8-920aa6aca1ec",
+        "status": 404,
+        "permissions": null,
+        "count": null
+      },
+      {
+        "path": "/pos/registers",
+        "status": 200,
+        "permissions": {
+          "configure": false
+        },
+        "count": 0
+      }
+    ]
+  },
+  {
+    "role": "viewer",
+    "reads": [
+      {
+        "path": "/apps",
+        "status": 200,
+        "permissions": null,
+        "count": null
+      },
+      {
+        "path": "/people/configuration",
+        "status": 200,
+        "permissions": {
+          "can_configure": false,
+          "hr_view": false,
+          "hr_write": false,
+          "hr_manage": false,
+          "comp_view": false,
+          "comp_write": false
+        },
+        "count": null
+      },
+      {
+        "path": "/accounting/configuration",
+        "status": 403,
+        "permissions": null,
+        "count": null
+      },
+      {
+        "path": "/procurement?type=bill",
+        "status": 403,
+        "permissions": null,
+        "count": null
+      },
+      {
+        "path": "/documents/3b9f81d7-0302-4585-92a8-920aa6aca1ec",
+        "status": 404,
+        "permissions": null,
+        "count": null
+      },
+      {
+        "path": "/pos/registers",
+        "status": 200,
+        "permissions": {
+          "configure": false
+        },
+        "count": 0
+      }
+    ]
+  }
+]

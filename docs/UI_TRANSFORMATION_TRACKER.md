@@ -1,165 +1,200 @@
 # Platform UI transformation tracker
 
-Additional density checkpoint: the owner's subsequent 25% platform reduction is implemented through the shared platform density stylesheet. Public pages are excluded. Representative final measurements/screenshots are in `evidence/ui-transformation/density/`; earlier captures below predate this reduction. Full acceptance remains pending as recorded below.
+12 November 2026 — **Implementation and bounded local UI acceptance complete. Not deployed.**
 
-12 November 2026. **In progress: no full-platform completion or deployment claim.** The current registry contains 14 implemented apps and 92 navigation sections. Website, Marketing, Support and Subscriptions remain intentionally unimplemented under the supplemental scope. The canonical catalog contains 35 services across workspace kinds.
+The implemented scope contains 14 existing apps and 92 app sections. The four absent Wave 3 apps remain outside this UI release. The owner's additional 25% reduction applies throughout authenticated platform shells, controls, typography and header tools; public website pages are excluded.
 
-The 92 registry sections were opened in an isolated browser at desktop and mobile widths. All had no observed document overflow or visible alert in the tested state. Screenshots include empty/unconfigured states; these are not populated-workflow acceptance. Primary screenshots for all 14 apps were manually reviewed; subsequent visual corrections are recorded in the report. Individual section-by-section manual visual acceptance, complete role coverage and all workflows remain pending.
+The final isolated-browser matrix covers 165 route/context entries at desktop and mobile widths: 330 observations. Every entry was inspected through rendered DOM checks and saved native screenshots. All app-section contact sheets and representative direct-service screens were manually reviewed, alongside targeted populated journeys. This is representative visual and functional acceptance, not a claim that every screenshot, workflow permutation or assistive technology has been manually qualified. Setup and entitlement gates are valid tested states, not evidence of activated external functionality.
 
-| App | Section | Route pattern | Implemented work | Desktop render | Mobile render | Functional evidence | Remaining / completion |
-|---|---|---|---|---|---|---|---|
-| AfriCore POS | Daily overview | /app/business/:id?app=pos&section=report#Apps | Register setup journey and sticky desktop basket | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore POS | Counter | /app/business/:id?app=pos&section=counter#Apps | Register setup journey and sticky desktop basket | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore POS | Saved sales | /app/business/:id?app=pos&section=sales#Apps | Register setup journey and sticky desktop basket | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore POS | Shifts and cash | /app/business/:id?app=pos&section=sessions#Apps | Register setup journey and sticky desktop basket | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore POS | Register policy | /app/business/:id?app=pos&section=registers#Apps | Register setup journey and sticky desktop basket | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Commerce | Store and catalog | /app/business/:id?app=commerce&section=dashboard#Apps | Store setup journey and compact shared shell | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Commerce | Storefront orders | /app/business/:id?app=commerce&section=orders#Apps | Store setup journey and compact shared shell | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Procurement | Overview and reports | /app/business/:id?app=procurement&section=reports#Apps | undefined | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Procurement | Replenishment | /app/business/:id?app=procurement&section=replenishment#Apps | undefined | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Procurement | Purchase requests | /app/business/:id?app=procurement&section=request#Apps | undefined | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Procurement | Suppliers | /app/business/:id?app=procurement&section=supplier#Apps | undefined | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Procurement | Supplier offers | /app/business/:id?app=procurement&section=rfq#Apps | undefined | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Procurement | Purchase orders | /app/business/:id?app=procurement&section=order#Apps | undefined | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Procurement | Goods receipts | /app/business/:id?app=procurement&section=receipt#Apps | undefined | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Procurement | Supplier bills | /app/business/:id?app=procurement&section=bill#Apps | undefined | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Procurement | Supplier credits | /app/business/:id?app=procurement&section=credit#Apps | undefined | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Procurement | Payment observations | /app/business/:id?app=procurement&section=payment#Apps | undefined | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Documents | My files | /app/business/:id?app=documents&section=mine#Apps | Document register, upload target and compact filters | Checked; captured | 390px checked; captured | Upload/preview/retained versions; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Documents | Company files | /app/business/:id?app=documents&section=company#Apps | Document register, upload target and compact filters | Checked; captured | 390px checked; captured | Upload/preview/retained versions; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Documents | Shared with me | /app/business/:id?app=documents&section=shared#Apps | Document register, upload target and compact filters | Checked; captured | 390px checked; captured | Upload/preview/retained versions; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Documents | Recent | /app/business/:id?app=documents&section=recent#Apps | Document register, upload target and compact filters | Checked; captured | 390px checked; captured | Upload/preview/retained versions; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Documents | Starred | /app/business/:id?app=documents&section=starred#Apps | Document register, upload target and compact filters | Checked; captured | 390px checked; captured | Upload/preview/retained versions; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Documents | Trash | /app/business/:id?app=documents&section=trash#Apps | Document register, upload target and compact filters | Checked; captured | 390px checked; captured | Upload/preview/retained versions; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Documents | Requests | /app/business/:id?app=documents&section=requests#Apps | Document register, upload target and compact filters | Checked; captured | 390px checked; captured | Upload/preview/retained versions; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Documents | Storage and privacy | /app/business/:id?app=documents&section=settings#Apps | Document register, upload target and compact filters | Checked; captured | 390px checked; captured | Upload/preview/retained versions; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore People | Overview | /app/business/:id?app=people&section=dashboard#Apps | Focused overview and profile cards | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore People | Employees | /app/business/:id?app=people&section=employees#Apps | Focused overview and profile cards | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore People | Organization chart | /app/business/:id?app=people&section=org-chart#Apps | Focused overview and profile cards | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore People | People reports | /app/business/:id?app=people&section=reports#Apps | Focused overview and profile cards | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore People | Departments | /app/business/:id?app=people&section=departments#Apps | Focused overview and profile cards | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore People | Leave and reviews | /app/business/:id?app=people&section=leave#Apps | Focused overview and profile cards | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore People | Attendance | /app/business/:id?app=people&section=attendance#Apps | Focused overview and profile cards | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore People | Leave policies | /app/business/:id?app=people&section=leave-types#Apps | Focused overview and profile cards | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore People | Employer policy and access | /app/business/:id?app=people&section=settings#Apps | Focused overview and profile cards | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Business ID | Overview | /app/business/:id?app=business_id&section=dashboard#Apps | Assurance guide and content-first trust layout | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Business ID | Business profile | /app/business/:id?app=business_id&section=profile#Apps | Assurance guide and content-first trust layout | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Business ID | Verification | /app/business/:id?app=business_id&section=verification#Apps | Assurance guide and content-first trust layout | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Business ID | Business Passport | /app/business/:id?app=business_id&section=passport#Apps | Assurance guide and content-first trust layout | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Business ID | Credentials | /app/business/:id?app=business_id&section=credentials#Apps | Assurance guide and content-first trust layout | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Business ID | Evidence | /app/business/:id?app=business_id&section=evidence#Apps | Assurance guide and content-first trust layout | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Business ID | Shared information | /app/business/:id?app=business_id&section=sharing#Apps | Assurance guide and content-first trust layout | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Business ID | Trust relationships | /app/business/:id?app=business_id&section=relationships#Apps | Assurance guide and content-first trust layout | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Business ID | Verification history | /app/business/:id?app=business_id&section=history#Apps | Assurance guide and content-first trust layout | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Business ID | Privacy and settings | /app/business/:id?app=business_id&section=settings#Apps | Assurance guide and content-first trust layout | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Accounting | Dashboard and reports | /app/business/:id?app=accounting&section=dashboard#Apps | Compact accounting setup, shared forms/tables | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Accounting | Journal entries | /app/business/:id?app=accounting&section=entries#Apps | Compact accounting setup, shared forms/tables | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Accounting | Shared financial sources | /app/business/:id?app=accounting&section=sources#Apps | Compact accounting setup, shared forms/tables | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Accounting | Current AR and AP aging | /app/business/:id?app=accounting&section=aging#Apps | Compact accounting setup, shared forms/tables | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Accounting | Tax codes and adjustments | /app/business/:id?app=accounting&section=tax#Apps | Compact accounting setup, shared forms/tables | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Accounting | Accounts and periods | /app/business/:id?app=accounting&section=settings#Apps | Compact accounting setup, shared forms/tables | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Work | Projects | /app/business/:id?app=work&section=dashboard#Apps | Project directory and compact task cards | Checked; captured | 390px checked; captured | Task move/details/discussion; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Work | Approved templates and Sales | /app/business/:id?app=work&section=templates#Apps | Project directory and compact task cards | Checked; captured | 390px checked; captured | Task move/details/discussion; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Work | My work | /app/business/:id?app=work&section=my-work#Apps | Project directory and compact task cards | Checked; captured | 390px checked; captured | Task move/details/discussion; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Work | Boards | /app/business/:id?app=work&section=board#Apps | Project directory and compact task cards | Checked; captured | 390px checked; captured | Task move/details/discussion; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Work | Discussions | /app/business/:id?app=work&section=discussions#Apps | Project directory and compact task cards | Checked; captured | 390px checked; captured | Task move/details/discussion; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Work | Calendar | /app/business/:id?app=work&section=calendar#Apps | Project directory and compact task cards | Checked; captured | 390px checked; captured | Task move/details/discussion; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Work | Timeline | /app/business/:id?app=work&section=timeline#Apps | Project directory and compact task cards | Checked; captured | 390px checked; captured | Task move/details/discussion; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Work | Team workload | /app/business/:id?app=work&section=workload#Apps | Project directory and compact task cards | Checked; captured | 390px checked; captured | Task move/details/discussion; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Work | Private workflows | /app/business/:id?app=work&section=workflows#Apps | Project directory and compact task cards | Checked; captured | 390px checked; captured | Task move/details/discussion; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Finance | Dashboard | /app/business/:id?app=finance&section=dashboard#Apps | Finance layout, area charts, period/currency controls, invoice drill-down | Checked; captured | 390px checked; captured | Invoice review/return and currency/period controls; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Finance | Invoices | /app/business/:id?app=finance&section=Invoices#Apps | Finance layout, area charts, period/currency controls, invoice drill-down | Checked; captured | 390px checked; captured | Invoice review/return and currency/period controls; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Finance | Customers | /app/business/:id?app=finance&section=Customers#Apps | Finance layout, area charts, period/currency controls, invoice drill-down | Checked; captured | 390px checked; captured | Invoice review/return and currency/period controls; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Finance | Payments | /app/business/:id?app=finance&section=Payments#Apps | Finance layout, area charts, period/currency controls, invoice drill-down | Checked; captured | 390px checked; captured | Invoice review/return and currency/period controls; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Finance | Expenses | /app/business/:id?app=finance&section=Expenses#Apps | Finance layout, area charts, period/currency controls, invoice drill-down | Checked; captured | 390px checked; captured | Invoice review/return and currency/period controls; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Finance | Reconciliation | /app/business/:id?app=finance&section=Reconciliation#Apps | Finance layout, area charts, period/currency controls, invoice drill-down | Checked; captured | 390px checked; captured | Invoice review/return and currency/period controls; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Finance | Receivables | /app/business/:id?app=finance&section=receivables#Apps | Finance layout, area charts, period/currency controls, invoice drill-down | Checked; captured | 390px checked; captured | Invoice review/return and currency/period controls; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Finance | Financial reports | /app/business/:id?app=finance&section=Reports#Apps | Finance layout, area charts, period/currency controls, invoice drill-down | Checked; captured | 390px checked; captured | Invoice review/return and currency/period controls; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore CRM | Dashboard | /app/business/:id?app=crm&section=dashboard#Apps | Pointer-tracked board, stage values, keyboard moves and persistent feedback | Checked; captured | 390px checked; captured | Pointer and keyboard stage moves; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore CRM | Customers | /app/business/:id?app=crm&section=Customers#Apps | Pointer-tracked board, stage values, keyboard moves and persistent feedback | Checked; captured | 390px checked; captured | Pointer and keyboard stage moves; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore CRM | Pipeline | /app/business/:id?app=crm&section=pipeline#Apps | Pointer-tracked board, stage values, keyboard moves and persistent feedback | Checked; captured | 390px checked; captured | Pointer and keyboard stage moves; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore CRM | Follow-ups | /app/business/:id?app=crm&section=followups#Apps | Pointer-tracked board, stage values, keyboard moves and persistent feedback | Checked; captured | 390px checked; captured | Pointer and keyboard stage moves; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore CRM | Activity | /app/business/:id?app=crm&section=activity#Apps | Pointer-tracked board, stage values, keyboard moves and persistent feedback | Checked; captured | 390px checked; captured | Pointer and keyboard stage moves; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Inventory | Dashboard | /app/business/:id?app=inventory&section=dashboard#Apps | Loaded-product filters and stock inspector | Checked; captured | 390px checked; captured | Product inspection → movements; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Inventory | Products | /app/business/:id?app=inventory&section=products#Apps | Loaded-product filters and stock inspector | Checked; captured | 390px checked; captured | Product inspection → movements; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Inventory | Warehouses | /app/business/:id?app=inventory&section=warehouses#Apps | Loaded-product filters and stock inspector | Checked; captured | 390px checked; captured | Product inspection → movements; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Inventory | Stock movements | /app/business/:id?app=inventory&section=movements#Apps | Loaded-product filters and stock inspector | Checked; captured | 390px checked; captured | Product inspection → movements; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Inventory | Reservations | /app/business/:id?app=inventory&section=reservations#Apps | Loaded-product filters and stock inspector | Checked; captured | 390px checked; captured | Product inspection → movements; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Inventory | Replenishment | /app/business/:id?app=inventory&section=replenishment#Apps | Loaded-product filters and stock inspector | Checked; captured | 390px checked; captured | Product inspection → movements; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Sales | Dashboard | /app/business/:id?app=sales&section=dashboard#Apps | Quotation filters, compact review actions and pricing disclosure | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Sales | Quotations | /app/business/:id?app=sales&section=quotations#Apps | Quotation filters, compact review actions and pricing disclosure | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Sales | Orders | /app/business/:id?app=sales&section=Orders#Apps | Quotation filters, compact review actions and pricing disclosure | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Sales | Fulfillment | /app/business/:id?app=sales&section=Fulfillment#Apps | Quotation filters, compact review actions and pricing disclosure | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Sales | Customers | /app/business/:id?app=sales&section=Customers#Apps | Quotation filters, compact review actions and pricing disclosure | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Analytics | Dashboard | /app/business/:id?app=analytics&section=dashboard#Apps | Authorized line/bar charts, report customization and coverage disclosure | Checked; captured | 390px checked; captured | Date preset and record drill-down; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Analytics | Financial patterns | /app/business/:id?app=analytics&section=Intelligence#Apps | Authorized line/bar charts, report customization and coverage disclosure | Checked; captured | 390px checked; captured | Date preset and record drill-down; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Analytics | Saved reports | /app/business/:id?app=analytics&section=saved-reports#Apps | Authorized line/bar charts, report customization and coverage disclosure | Checked; captured | 390px checked; captured | Date preset and record drill-down; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Analytics | Data quality | /app/business/:id?app=analytics&section=coverage#Apps | Authorized line/bar charts, report customization and coverage disclosure | Checked; captured | 390px checked; captured | Date preset and record drill-down; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Automations | Dashboard | /app/business/:id?app=automations&section=dashboard#Apps | Execution-state chart and action explanation disclosure | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Automations | Workflows | /app/business/:id?app=automations&section=Automations#Apps | Execution-state chart and action explanation disclosure | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Automations | Execution history | /app/business/:id?app=automations&section=runs#Apps | Execution-state chart and action explanation disclosure | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Automations | Private project workflows | /app/business/:id?app=automations&section=private-work#Apps | Execution-state chart and action explanation disclosure | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
-| AfriCore Automations | Approvals | /app/business/:id?app=automations&section=Approvals#Apps | Execution-state chart and action explanation disclosure | Checked; captured | 390px checked; captured | Not manually qualified; representative only | Not complete: individual visual/workflow/role acceptance pending |
+## Route matrix
 
-## Direct service inventory
+“Passed” means no observed document overflow, visible alert, unnamed visible native control, or completed broken image in the recorded owner state. Each evidence JSON includes exact URLs, widths, headings and screenshot names.
 
-Catalog cards/list/filter interaction and independent Invoicing entry were tested. All 24 active Business service entry points passed desktop/mobile render checks and have captures in direct-service-checks.json. Configured workflows, other activation states and other workspace kinds remain pending. No service was removed or forcibly activated outside disposable test data.
+| Surface | App/context | Section | Render checks | Viewports |
+|---|---|---|---|---|
+| Apps | pos | Daily overview | Passed | 2 |
+| Apps | pos | Counter | Passed | 2 |
+| Apps | pos | Saved sales | Passed | 2 |
+| Apps | pos | Shifts and cash | Passed | 2 |
+| Apps | pos | Register policy | Passed | 2 |
+| Apps | commerce | Store and catalog | Passed | 2 |
+| Apps | commerce | Storefront orders | Passed | 2 |
+| Apps | procurement | Overview and reports | Passed | 2 |
+| Apps | procurement | Replenishment | Passed | 2 |
+| Apps | procurement | Purchase requests | Passed | 2 |
+| Apps | procurement | Suppliers | Passed | 2 |
+| Apps | procurement | Supplier offers | Passed | 2 |
+| Apps | procurement | Purchase orders | Passed | 2 |
+| Apps | procurement | Goods receipts | Passed | 2 |
+| Apps | procurement | Supplier bills | Passed | 2 |
+| Apps | procurement | Supplier credits | Passed | 2 |
+| Apps | procurement | Payment observations | Passed | 2 |
+| Apps | documents | My files | Passed | 2 |
+| Apps | documents | Company files | Passed | 2 |
+| Apps | documents | Shared with me | Passed | 2 |
+| Apps | documents | Recent | Passed | 2 |
+| Apps | documents | Starred | Passed | 2 |
+| Apps | documents | Trash | Passed | 2 |
+| Apps | documents | Requests | Passed | 2 |
+| Apps | documents | Storage and privacy | Passed | 2 |
+| Apps | people | Overview | Passed | 2 |
+| Apps | people | Employees | Passed | 2 |
+| Apps | people | Organization chart | Passed | 2 |
+| Apps | people | People reports | Passed | 2 |
+| Apps | people | Departments | Passed | 2 |
+| Apps | people | Leave and reviews | Passed | 2 |
+| Apps | people | Attendance | Passed | 2 |
+| Apps | people | Leave policies | Passed | 2 |
+| Apps | people | Employer policy and access | Passed | 2 |
+| Apps | business_id | Overview | Passed | 2 |
+| Apps | business_id | Business profile | Passed | 2 |
+| Apps | business_id | Verification | Passed | 2 |
+| Apps | business_id | Business Passport | Passed | 2 |
+| Apps | business_id | Credentials | Passed | 2 |
+| Apps | business_id | Evidence | Passed | 2 |
+| Apps | business_id | Shared information | Passed | 2 |
+| Apps | business_id | Trust relationships | Passed | 2 |
+| Apps | business_id | Verification history | Passed | 2 |
+| Apps | business_id | Privacy and settings | Passed | 2 |
+| Apps | accounting | Dashboard and reports | Passed | 2 |
+| Apps | accounting | Journal entries | Passed | 2 |
+| Apps | accounting | Shared financial sources | Passed | 2 |
+| Apps | accounting | Current AR and AP aging | Passed | 2 |
+| Apps | accounting | Tax codes and adjustments | Passed | 2 |
+| Apps | accounting | Accounts and periods | Passed | 2 |
+| Apps | work | Projects | Passed | 2 |
+| Apps | work | Approved templates and Sales | Passed | 2 |
+| Apps | work | My work | Passed | 2 |
+| Apps | work | Boards | Passed | 2 |
+| Apps | work | Discussions | Passed | 2 |
+| Apps | work | Calendar | Passed | 2 |
+| Apps | work | Timeline | Passed | 2 |
+| Apps | work | Team workload | Passed | 2 |
+| Apps | work | Private workflows | Passed | 2 |
+| Apps | finance | Dashboard | Passed | 2 |
+| Apps | finance | Invoices | Passed | 2 |
+| Apps | finance | Customers | Passed | 2 |
+| Apps | finance | Payments | Passed | 2 |
+| Apps | finance | Expenses | Passed | 2 |
+| Apps | finance | Reconciliation | Passed | 2 |
+| Apps | finance | Receivables | Passed | 2 |
+| Apps | finance | Financial reports | Passed | 2 |
+| Apps | crm | Dashboard | Passed | 2 |
+| Apps | crm | Customers | Passed | 2 |
+| Apps | crm | Pipeline | Passed | 2 |
+| Apps | crm | Follow-ups | Passed | 2 |
+| Apps | crm | Activity | Passed | 2 |
+| Apps | inventory | Dashboard | Passed | 2 |
+| Apps | inventory | Products | Passed | 2 |
+| Apps | inventory | Warehouses | Passed | 2 |
+| Apps | inventory | Stock movements | Passed | 2 |
+| Apps | inventory | Reservations | Passed | 2 |
+| Apps | inventory | Replenishment | Passed | 2 |
+| Apps | sales | Dashboard | Passed | 2 |
+| Apps | sales | Quotations | Passed | 2 |
+| Apps | sales | Orders | Passed | 2 |
+| Apps | sales | Fulfillment | Passed | 2 |
+| Apps | sales | Customers | Passed | 2 |
+| Apps | analytics | Dashboard | Passed | 2 |
+| Apps | analytics | Financial patterns | Passed | 2 |
+| Apps | analytics | Saved reports | Passed | 2 |
+| Apps | analytics | Data quality | Passed | 2 |
+| Apps | automations | Dashboard | Passed | 2 |
+| Apps | automations | Workflows | Passed | 2 |
+| Apps | automations | Execution history | Passed | 2 |
+| Apps | automations | Private project workflows | Passed | 2 |
+| Apps | automations | Approvals | Passed | 2 |
+| Business direct services | direct-service | Accounting ledger | Passed | 2 |
+| Business direct services | direct-service | AfriCore Pay | Passed | 2 |
+| Business direct services | direct-service | Automations | Passed | 2 |
+| Business direct services | direct-service | Business Passport | Passed | 2 |
+| Business direct services | direct-service | Business Verification | Passed | 2 |
+| Business direct services | direct-service | Cash Flow | Passed | 2 |
+| Business direct services | direct-service | Commerce operations | Passed | 2 |
+| Business direct services | direct-service | Customer relationships | Passed | 2 |
+| Business direct services | direct-service | Customers & clients | Passed | 2 |
+| Business direct services | direct-service | Expenses | Passed | 2 |
+| Business direct services | direct-service | Financial Intelligence | Passed | 2 |
+| Business direct services | direct-service | Fulfillment & delivery | Passed | 2 |
+| Business direct services | direct-service | Inventory Tracking | Passed | 2 |
+| Business direct services | direct-service | Invoicing | Passed | 2 |
+| Business direct services | direct-service | Orders | Passed | 2 |
+| Business direct services | direct-service | People operations | Passed | 2 |
+| Business direct services | direct-service | Point of Sale | Passed | 2 |
+| Business direct services | direct-service | Private documents | Passed | 2 |
+| Business direct services | direct-service | Procurement | Passed | 2 |
+| Business direct services | direct-service | Product Catalog | Passed | 2 |
+| Business direct services | direct-service | Projects and teamwork | Passed | 2 |
+| Business direct services | direct-service | Sales and quotations | Passed | 2 |
+| Business direct services | direct-service | Trust Network | Passed | 2 |
+| Business direct services | direct-service | Verifiable Credentials | Passed | 2 |
+| Personal | personal | Overview | Passed | 2 |
+| Personal | personal | Apps | Passed | 2 |
+| Personal | personal | Notifications | Passed | 2 |
+| Personal | personal | My Services | Passed | 2 |
+| Personal | personal | Explore Services | Passed | 2 |
+| Personal | personal | Usage & Billing | Passed | 2 |
+| Personal | personal | Assistant | Passed | 2 |
+| Personal | personal | Income | Passed | 2 |
+| Personal | personal | Expenses | Passed | 2 |
+| Personal | personal | Invoices | Passed | 2 |
+| Personal | personal | Clients | Passed | 2 |
+| Personal | personal | Payment Records | Passed | 2 |
+| Personal | personal | Cash Flow | Passed | 2 |
+| Personal | personal | Reports | Passed | 2 |
+| Personal | personal | Learn | Passed | 2 |
+| Personal | personal | Settings | Passed | 2 |
+| Developer | developer | Overview | Passed | 2 |
+| Developer | developer | Notifications | Passed | 2 |
+| Developer | developer | Products | Passed | 2 |
+| Developer | developer | My Services | Passed | 2 |
+| Developer | developer | Explore Services | Passed | 2 |
+| Developer | developer | Usage & Billing | Passed | 2 |
+| Developer | developer | Assistant | Passed | 2 |
+| Developer | developer | Data | Passed | 2 |
+| Developer | developer | My Applications | Passed | 2 |
+| Developer | developer | API Keys | Passed | 2 |
+| Developer | developer | API Explorer | Passed | 2 |
+| Developer | developer | Sandbox | Passed | 2 |
+| Developer | developer | Webhooks | Passed | 2 |
+| Developer | developer | Request Logs | Passed | 2 |
+| Developer | developer | Usage & Limits | Passed | 2 |
+| Developer | developer | API Documentation | Passed | 2 |
+| Developer | developer | SDKs & Examples | Passed | 2 |
+| Developer | developer | Verification APIs | Passed | 2 |
+| Developer | developer | Settings | Passed | 2 |
+| Developer | developer | Support | Passed | 2 |
+| Shared Business pages | shared-business | Overview | Passed | 2 |
+| Shared Business pages | shared-business | Apps | Passed | 2 |
+| Shared Business pages | shared-business | My Services | Passed | 2 |
+| Shared Business pages | shared-business | Explore Services | Passed | 2 |
+| Shared Business pages | shared-business | Usage & Billing | Passed | 2 |
+| Shared Business pages | shared-business | Notifications | Passed | 2 |
+| Shared Business pages | shared-business | Approvals | Passed | 2 |
+| Shared Business pages | shared-business | Team | Passed | 2 |
+| Shared Business pages | shared-business | Settings | Passed | 2 |
+| Shared Business pages | shared-business | Assistant | Passed | 2 |
+| Shared Business pages | shared-business | Data | Passed | 2 |
+| Shared Business pages | shared-business | Connect | Passed | 2 |
+| Shared Business pages | shared-business | Forecasts | Passed | 2 |
 
-| Service | Tabs | Implementation / evidence | Remaining |
-|---|---|---|---|
-| pos | Point of Sale | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| commerce | Commerce | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| documents | Documents | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| people | People | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| accounting | Accounting | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| work | Work | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| crm | Customer Relationships | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| products | Products | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| inventory | Inventory | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| sales | Quotations | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| customers | Customers, Clients | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| procurement | Procurement | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| orders | Orders | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| invoicing | Invoices | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| income | Income | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| expenses | Expenses | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| cash_flow | Cash Flow | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| payments | Payments, Payment Records | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| reconciliation | Reconciliation, Transactions | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| intelligence | Intelligence, Risk Review | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| forecasting | Forecasts | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| assistant | Assistant | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| automations | Automations | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| data | Data | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| connect | Connect, Integrations | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| passport | Business Passport | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| verification | No direct tab | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| credentials | No direct tab | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| trust_network | No direct tab | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| blockchain | No direct tab | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| fulfillment | Fulfillment | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| protected_payments | Protected Payments, Disputes | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| developer_api | Developers, My Applications, API Keys, API Explorer, Sandbox, API Documentation, SDKs & Examples, Support | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| webhooks | Webhooks | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
-| verification_api | Verification APIs | Shared forms/tables; catalog layout and navigation | Independent service workflow and role review |
+## Functional, role and keyboard acceptance
 
-## Shared experiences
+Representative real local-browser journeys passed for POS cash sale/shift close; Commerce storefront test order; People profile editing; Procurement private source attachment; Accounting separate-reviewer approval and immutable balanced posting; BusinessID fictional manual-review submission; Personal manual income and aligned historical chart comparison; Developer explicitly scoped request and revocation; and populated Work board/calendar/timeline/workload and disabled private workflow configuration. Earlier Finance, Inventory, CRM, Documents and Analytics journeys remain recorded in the parent evidence directory. All records are synthetic and local.
 
-| Surface | Implementation / evidence | Remaining |
-|---|---|---|
-| Business shell / launcher | Dialog launcher, directory filters, skip link, app-specific defaults; app switching exercised | Full role/keyboard audit |
-| Search | Authorized product found at mobile width; Escape/focus restoration checked | Complete source/failure matrix |
-| Personal | Metrics, area-chart support, quick actions and shared controls; desktop/mobile captures | All service/configured-state workflows |
-| Developer | Integration journey cards and scoped shared controls; desktop/mobile captures | All configured tooling workflows |
-| Settings / Billing / Profile / Notifications / Approvals | Shared controls retained; registry Approvals rendering checked | Account section navigation and responsive profile rendering checked; remaining shared-page refinement and full qualification pending |
+Five-role read checks and restricted-view browser checks passed: Accounting and bills deny operations/viewer access; a private document remains owner-only even for admin; viewer HR views expose no private employee. Search, launcher and mobile drawer Escape/focus handling, skip link, chart keyboard exploration and ledger keyboard scrolling were exercised. See acceptance/role-api-checks.json, role-ui-checks.json, keyboard-checks.json, journeys.json and work-populated-checks.json.
 
 ## Quality gates
 
-- Frontend build, 67 prerendered public pages and 66 frontend tests passed.
-- SQLite backend suite: 435 discovered, 434 passed, one PostgreSQL-only skip.
-- Root typecheck, lint/architecture checks and 3 development configuration tests passed at the recorded checkpoints; final source checks must be refreshed after additional edits.
-- Local-chain contract/credential/authorization/anchoring/independent-verification check passed.
-- Legacy OpenAPI: 59/59 operations pass. Workspace OpenAPI: 427 operations pass after line-ending normalization of the generated artifact; backend sources were not changed.
-- PostgreSQL: 435/435 passed against an isolated local PostgreSQL 17 cluster, then the cluster was stopped. Hosted, physical-device and comprehensive assistive-technology qualification remain pending.
+- Website build, public prerender and 66 frontend tests passed after final source corrections.
+- SQLite: 435 discovered, 434 passed, one PostgreSQL-only skip; PostgreSQL: 435/435 passed on a fresh disposable local database. An initial reused-fixture run failed from retained state and was discarded; the fresh run is the acceptance result. PostgreSQL was stopped afterward.
+- Lint, architecture (168 modules), fixture isolation and root typecheck passed.
+- Legacy OpenAPI 59 and workspace OpenAPI 427 operations validated; no semantic contract changes.
+- Development configuration 3, gateway/edge 10 and isolated local chain checks passed.
+- Full backend checks preceded the final frontend-only corrections; final frontend build/lint were repeated. No backend/schema changes were made.
 
-Evidence: [registry checks](evidence/ui-transformation/registry-route-checks.json), [representative interactions](evidence/ui-transformation/interactions.json), [Finance responsive checks](evidence/ui-transformation/finance-responsive.json).
+## Practical limits and release status
+
+Local UI work is complete within this bounded matrix. Physical iPhone/Safari, comprehensive screen-reader/WCAG certification, real network performance timings, external providers/mailbox delivery and hosted release verification were not performed. Module-preload inspection confirms Finance does not preload the other app workspaces; it does not establish Core Web Vitals. Some full-page captures include sticky-header stitching artifacts; targeted viewport screenshots and DOM geometry provide the critical layout checks.
+
+No main push, deployment, hosted database tests, live funds, external AI activation or missing-app implementation occurred. The hosted preview is unchanged. Original catalog service aliases and authorization gates remain intact. Evidence: [acceptance summary](evidence/ui-transformation/acceptance/QA_SUMMARY.md).

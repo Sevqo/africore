@@ -1,0 +1,3751 @@
+[
+  {
+    "app": "pos",
+    "section": "report",
+    "label": "Daily overview",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=pos&section=report#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore POS",
+          "About this app",
+          "Point of Sale",
+          "Synthetic UI acceptance counter",
+          "Daily register overview"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "000-pos-report-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore POS",
+          "This app includes the following services",
+          "About this app",
+          "Point of Sale",
+          "Synthetic UI acceptance counter",
+          "Daily register overview",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "000-pos-report-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "pos",
+    "section": "counter",
+    "label": "Counter",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=pos&section=counter#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore POS",
+          "About this app",
+          "Point of Sale",
+          "Synthetic UI acceptance counter",
+          "Open a shift"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "001-pos-counter-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore POS",
+          "This app includes the following services",
+          "About this app",
+          "Point of Sale",
+          "Synthetic UI acceptance counter",
+          "Open a shift",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "001-pos-counter-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "pos",
+    "section": "sales",
+    "label": "Saved sales",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=pos&section=sales#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore POS",
+          "About this app",
+          "Point of Sale",
+          "Synthetic UI acceptance counter",
+          "Saved sales and drafts"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "002-pos-sales-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore POS",
+          "This app includes the following services",
+          "About this app",
+          "Point of Sale",
+          "Synthetic UI acceptance counter",
+          "Saved sales and drafts",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "002-pos-sales-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "pos",
+    "section": "sessions",
+    "label": "Shifts and cash",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=pos&section=sessions#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore POS",
+          "About this app",
+          "Point of Sale",
+          "Synthetic UI acceptance counter",
+          "Open a shift"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "003-pos-sessions-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore POS",
+          "This app includes the following services",
+          "About this app",
+          "Point of Sale",
+          "Synthetic UI acceptance counter",
+          "Open a shift",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "003-pos-sessions-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "pos",
+    "section": "registers",
+    "label": "Register policy",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=pos&section=registers#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore POS",
+          "About this app",
+          "Point of Sale",
+          "Synthetic UI acceptance counter",
+          "Set up a register",
+          "Revise register policy",
+          "Reauthorize unchanged saved policy"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "004-pos-registers-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore POS",
+          "This app includes the following services",
+          "About this app",
+          "Point of Sale",
+          "Synthetic UI acceptance counter",
+          "Set up a register",
+          "Revise register policy",
+          "Reauthorize unchanged saved policy",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "004-pos-registers-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "commerce",
+    "section": "dashboard",
+    "label": "Store and catalog",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=commerce&section=dashboard#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Commerce",
+          "About this app",
+          "Online commerce",
+          "Fictional UI acceptance shop",
+          "Published product selection",
+          "Public-use image library",
+          "Collections",
+          "Delivery and pickup",
+          "Checkout authorization",
+          "Review public publication"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "005-commerce-dashboard-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Commerce",
+          "This app includes the following services",
+          "About this app",
+          "Online commerce",
+          "Fictional UI acceptance shop",
+          "Published product selection",
+          "Public-use image library",
+          "Collections",
+          "Delivery and pickup",
+          "Checkout authorization",
+          "Review public publication",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "005-commerce-dashboard-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "commerce",
+    "section": "orders",
+    "label": "Storefront orders",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=commerce&section=orders#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Commerce",
+          "About this app",
+          "Online commerce",
+          "Fictional UI acceptance shop",
+          "Storefront orders"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "006-commerce-orders-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Commerce",
+          "This app includes the following services",
+          "About this app",
+          "Online commerce",
+          "Fictional UI acceptance shop",
+          "Storefront orders",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "006-commerce-orders-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "procurement",
+    "section": "reports",
+    "label": "Overview and reports",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=reports#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Procurement",
+          "About this app",
+          "Procurement reports",
+          "KES committed purchases",
+          "Supplier payable aging"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "007-procurement-reports-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Procurement",
+          "This app includes the following services",
+          "About this app",
+          "Procurement reports",
+          "KES committed purchases",
+          "Supplier payable aging",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "007-procurement-reports-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "procurement",
+    "section": "replenishment",
+    "label": "Replenishment",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=replenishment#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Procurement",
+          "About this app",
+          "Replenishment review"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "008-procurement-replenishment-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Procurement",
+          "This app includes the following services",
+          "About this app",
+          "Replenishment review",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "008-procurement-replenishment-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "procurement",
+    "section": "request",
+    "label": "Purchase requests",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=request#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Procurement",
+          "About this app",
+          "Purchase requests"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "009-procurement-request-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Procurement",
+          "This app includes the following services",
+          "About this app",
+          "Purchase requests",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "009-procurement-request-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "procurement",
+    "section": "supplier",
+    "label": "Suppliers",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=supplier#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Procurement",
+          "About this app",
+          "Suppliers"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "010-procurement-supplier-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Procurement",
+          "This app includes the following services",
+          "About this app",
+          "Suppliers",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "010-procurement-supplier-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "procurement",
+    "section": "rfq",
+    "label": "Supplier offers",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=rfq#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Procurement",
+          "About this app",
+          "Supplier offers"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "011-procurement-rfq-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Procurement",
+          "This app includes the following services",
+          "About this app",
+          "Supplier offers",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "011-procurement-rfq-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "procurement",
+    "section": "order",
+    "label": "Purchase orders",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=order#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Procurement",
+          "About this app",
+          "Purchase orders"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "012-procurement-order-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Procurement",
+          "This app includes the following services",
+          "About this app",
+          "Purchase orders",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "012-procurement-order-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "procurement",
+    "section": "receipt",
+    "label": "Goods receipts",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=receipt#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Procurement",
+          "About this app",
+          "Goods receipts",
+          "No goods receipts yet"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "013-procurement-receipt-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Procurement",
+          "This app includes the following services",
+          "About this app",
+          "Goods receipts",
+          "No goods receipts yet",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "013-procurement-receipt-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "procurement",
+    "section": "bill",
+    "label": "Supplier bills",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=bill#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Procurement",
+          "About this app",
+          "Supplier bills"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "014-procurement-bill-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Procurement",
+          "This app includes the following services",
+          "About this app",
+          "Supplier bills",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "014-procurement-bill-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "procurement",
+    "section": "credit",
+    "label": "Supplier credits",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=credit#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Procurement",
+          "About this app",
+          "Supplier credits",
+          "No supplier credits yet"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "015-procurement-credit-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Procurement",
+          "This app includes the following services",
+          "About this app",
+          "Supplier credits",
+          "No supplier credits yet",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "015-procurement-credit-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "procurement",
+    "section": "payment",
+    "label": "Payment observations",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=payment#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Procurement",
+          "About this app",
+          "Payment observations",
+          "No payment observations yet"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "016-procurement-payment-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Procurement",
+          "This app includes the following services",
+          "About this app",
+          "Payment observations",
+          "No payment observations yet",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "016-procurement-payment-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "documents",
+    "section": "mine",
+    "label": "My files",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=mine#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Documents",
+          "About this app",
+          "Private documents"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "017-documents-mine-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Documents",
+          "This app includes the following services",
+          "About this app",
+          "Private documents",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "017-documents-mine-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "documents",
+    "section": "company",
+    "label": "Company files",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=company#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Documents",
+          "About this app",
+          "Private documents"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "018-documents-company-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Documents",
+          "This app includes the following services",
+          "About this app",
+          "Private documents",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "018-documents-company-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "documents",
+    "section": "shared",
+    "label": "Shared with me",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=shared#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Documents",
+          "About this app",
+          "Private documents"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "019-documents-shared-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Documents",
+          "This app includes the following services",
+          "About this app",
+          "Private documents",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "019-documents-shared-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "documents",
+    "section": "recent",
+    "label": "Recent",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=recent#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Documents",
+          "About this app",
+          "Private documents"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "020-documents-recent-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Documents",
+          "This app includes the following services",
+          "About this app",
+          "Private documents",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "020-documents-recent-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "documents",
+    "section": "starred",
+    "label": "Starred",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=starred#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Documents",
+          "About this app",
+          "Private documents"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "021-documents-starred-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Documents",
+          "This app includes the following services",
+          "About this app",
+          "Private documents",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "021-documents-starred-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "documents",
+    "section": "trash",
+    "label": "Trash",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=trash#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Documents",
+          "About this app",
+          "Private documents"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "022-documents-trash-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Documents",
+          "This app includes the following services",
+          "About this app",
+          "Private documents",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "022-documents-trash-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "documents",
+    "section": "requests",
+    "label": "Requests",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=requests#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Documents",
+          "About this app",
+          "Private documents",
+          "Private document requests"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "023-documents-requests-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Documents",
+          "This app includes the following services",
+          "About this app",
+          "Private documents",
+          "Private document requests",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "023-documents-requests-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "documents",
+    "section": "settings",
+    "label": "Storage and privacy",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=settings#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Documents",
+          "About this app",
+          "Private documents",
+          "Storage and privacy",
+          "File handling",
+          "Current access",
+          "Personnel and financial records",
+          "Retention and expiry"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "024-documents-settings-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Documents",
+          "This app includes the following services",
+          "About this app",
+          "Private documents",
+          "Storage and privacy",
+          "File handling",
+          "Current access",
+          "Personnel and financial records",
+          "Retention and expiry",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "024-documents-settings-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "people",
+    "section": "dashboard",
+    "label": "Overview",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=dashboard#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore People",
+          "About this app",
+          "People operations",
+          "Authorized employee directory"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "025-people-dashboard-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore People",
+          "This app includes the following services",
+          "About this app",
+          "People operations",
+          "Authorized employee directory",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "025-people-dashboard-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "people",
+    "section": "employees",
+    "label": "Employees",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=employees#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore People",
+          "About this app",
+          "People operations",
+          "Authorized employee directory"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "026-people-employees-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore People",
+          "This app includes the following services",
+          "About this app",
+          "People operations",
+          "Authorized employee directory",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "026-people-employees-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "people",
+    "section": "org-chart",
+    "label": "Organization chart",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=org-chart#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore People",
+          "About this app",
+          "People operations",
+          "Organization chart",
+          "Fictional UI colleague"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "027-people-org-chart-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore People",
+          "This app includes the following services",
+          "About this app",
+          "People operations",
+          "Organization chart",
+          "Fictional UI colleague",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "027-people-org-chart-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "people",
+    "section": "reports",
+    "label": "People reports",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=reports#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore People",
+          "About this app",
+          "People operations",
+          "People reports",
+          "Current employment",
+          "Leave requests overlapping selected dates",
+          "Recorded attendance"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "028-people-reports-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore People",
+          "This app includes the following services",
+          "About this app",
+          "People operations",
+          "People reports",
+          "Current employment",
+          "Leave requests overlapping selected dates",
+          "Recorded attendance",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "028-people-reports-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "people",
+    "section": "departments",
+    "label": "Departments",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=departments#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore People",
+          "About this app",
+          "People operations",
+          "Authorized employee directory",
+          "Departments"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "029-people-departments-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore People",
+          "This app includes the following services",
+          "About this app",
+          "People operations",
+          "Authorized employee directory",
+          "Departments",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "029-people-departments-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "people",
+    "section": "leave",
+    "label": "Leave and reviews",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=leave#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore People",
+          "About this app",
+          "People operations",
+          "Leave requests",
+          "Assigned leave reviews"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "030-people-leave-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore People",
+          "This app includes the following services",
+          "About this app",
+          "People operations",
+          "Leave requests",
+          "Assigned leave reviews",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "030-people-leave-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "people",
+    "section": "attendance",
+    "label": "Attendance",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=attendance#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore People",
+          "About this app",
+          "People operations",
+          "Recorded attendance"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "031-people-attendance-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore People",
+          "This app includes the following services",
+          "About this app",
+          "People operations",
+          "Recorded attendance",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "031-people-attendance-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "people",
+    "section": "leave-types",
+    "label": "Leave policies",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=leave-types#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore People",
+          "About this app",
+          "People operations",
+          "Employer leave types"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "032-people-leave-types-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore People",
+          "This app includes the following services",
+          "About this app",
+          "People operations",
+          "Employer leave types",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "032-people-leave-types-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "people",
+    "section": "settings",
+    "label": "Employer policy and access",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=settings#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore People",
+          "About this app",
+          "People operations",
+          "Employer policy and private access"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "033-people-settings-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore People",
+          "This app includes the following services",
+          "About this app",
+          "People operations",
+          "Employer policy and private access",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "033-people-settings-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "business_id",
+    "section": "dashboard",
+    "label": "Overview",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=dashboard#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Business ID",
+          "About this app",
+          "Source evidence",
+          "Issuer credentials",
+          "Independent evidence dimensions",
+          "identity assurance",
+          "credential validity",
+          "relationship verification",
+          "evidence quality",
+          "corrections",
+          "Fictional UI business identity",
+          "Evidence coverage · 20%",
+          "What each assurance level means"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "034-business_id-dashboard-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Business ID",
+          "This app includes the following services",
+          "About this app",
+          "Business profile",
+          "Source evidence",
+          "Issuer credentials",
+          "Independent evidence dimensions",
+          "identity assurance",
+          "credential validity",
+          "relationship verification",
+          "evidence quality",
+          "corrections",
+          "Fictional UI business identity",
+          "Evidence coverage · 20%",
+          "What each assurance level means",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "034-business_id-dashboard-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "business_id",
+    "section": "profile",
+    "label": "Business profile",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=profile#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Business ID",
+          "About this app",
+          "Source evidence",
+          "Issuer credentials",
+          "Business identity review",
+          "Submit identity information",
+          "Attach a supporting document"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "035-business_id-profile-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Business ID",
+          "This app includes the following services",
+          "About this app",
+          "Business profile",
+          "Source evidence",
+          "Issuer credentials",
+          "Business identity review",
+          "Submit identity information",
+          "Attach a supporting document",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "035-business_id-profile-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "business_id",
+    "section": "verification",
+    "label": "Verification",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=verification#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Business ID",
+          "About this app",
+          "Source evidence",
+          "Issuer credentials",
+          "Review before disclosure",
+          "Request evidence from another business"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "036-business_id-verification-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Business ID",
+          "This app includes the following services",
+          "About this app",
+          "Business profile",
+          "Source evidence",
+          "Issuer credentials",
+          "Review before disclosure",
+          "Request evidence from another business",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "036-business_id-verification-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "business_id",
+    "section": "passport",
+    "label": "Business Passport",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=passport#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Business ID",
+          "About this app",
+          "Source evidence",
+          "Issuer credentials",
+          "Independent evidence dimensions",
+          "identity assurance",
+          "credential validity",
+          "relationship verification",
+          "evidence quality",
+          "corrections",
+          "Fictional UI business identity",
+          "Evidence coverage · 20%",
+          "What each assurance level means"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "037-business_id-passport-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Business ID",
+          "This app includes the following services",
+          "About this app",
+          "Business profile",
+          "Source evidence",
+          "Issuer credentials",
+          "Independent evidence dimensions",
+          "identity assurance",
+          "credential validity",
+          "relationship verification",
+          "evidence quality",
+          "corrections",
+          "Fictional UI business identity",
+          "Evidence coverage · 20%",
+          "What each assurance level means",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "037-business_id-passport-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "business_id",
+    "section": "credentials",
+    "label": "Credentials",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=credentials#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Business ID",
+          "About this app",
+          "Source evidence",
+          "Issuer credentials",
+          "Minimal claims. Inspectable signatures.",
+          "Authorize an issuer request"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "038-business_id-credentials-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Business ID",
+          "This app includes the following services",
+          "About this app",
+          "Business profile",
+          "Source evidence",
+          "Issuer credentials",
+          "Minimal claims. Inspectable signatures.",
+          "Authorize an issuer request",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "038-business_id-credentials-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "business_id",
+    "section": "evidence",
+    "label": "Evidence",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=evidence#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Business ID",
+          "About this app",
+          "Source evidence",
+          "Issuer credentials",
+          "Source and assurance stay visible",
+          "profile · Level 0",
+          "Reference an existing business record",
+          "Challenge an inaccurate record"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "039-business_id-evidence-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Business ID",
+          "This app includes the following services",
+          "About this app",
+          "Business profile",
+          "Source evidence",
+          "Issuer credentials",
+          "Source and assurance stay visible",
+          "profile · Level 0",
+          "Reference an existing business record",
+          "Challenge an inaccurate record",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "039-business_id-evidence-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "business_id",
+    "section": "sharing",
+    "label": "Shared information",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=sharing#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Business ID",
+          "About this app",
+          "Source evidence",
+          "Issuer credentials",
+          "Named recipients. Limited access.",
+          "Authorize a minimal presentation"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "040-business_id-sharing-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Business ID",
+          "This app includes the following services",
+          "About this app",
+          "Business profile",
+          "Source evidence",
+          "Issuer credentials",
+          "Named recipients. Limited access.",
+          "Authorize a minimal presentation",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "040-business_id-sharing-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "business_id",
+    "section": "relationships",
+    "label": "Trust relationships",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=relationships#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Business ID",
+          "About this app",
+          "Source evidence",
+          "Issuer credentials",
+          "Confirmed commercial relationships",
+          "Request counterparty confirmation"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "041-business_id-relationships-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Business ID",
+          "This app includes the following services",
+          "About this app",
+          "Business profile",
+          "Source evidence",
+          "Issuer credentials",
+          "Confirmed commercial relationships",
+          "Request counterparty confirmation",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "041-business_id-relationships-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "business_id",
+    "section": "history",
+    "label": "Verification history",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=history#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Business ID",
+          "About this app",
+          "Source evidence",
+          "Issuer credentials",
+          "Trust activity"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "042-business_id-history-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Business ID",
+          "This app includes the following services",
+          "About this app",
+          "Business profile",
+          "Source evidence",
+          "Issuer credentials",
+          "Trust activity",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "042-business_id-history-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "business_id",
+    "section": "settings",
+    "label": "Privacy and settings",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=settings#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Business ID",
+          "About this app",
+          "Source evidence",
+          "Issuer credentials",
+          "Your disclosure choices"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "043-business_id-settings-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Business ID",
+          "This app includes the following services",
+          "About this app",
+          "Business profile",
+          "Source evidence",
+          "Issuer credentials",
+          "Your disclosure choices",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "043-business_id-settings-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "accounting",
+    "section": "dashboard",
+    "label": "Dashboard and reports",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=accounting&section=dashboard#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Accounting",
+          "About this app",
+          "Trial balance",
+          "Profit and loss",
+          "Balance sheet",
+          "General ledger"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "044-accounting-dashboard-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Accounting",
+          "This app includes the following services",
+          "About this app",
+          "Trial balance",
+          "Profit and loss",
+          "Balance sheet",
+          "General ledger",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "044-accounting-dashboard-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "accounting",
+    "section": "entries",
+    "label": "Journal entries",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=accounting&section=entries#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Accounting",
+          "About this app",
+          "Journal entries"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "045-accounting-entries-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Accounting",
+          "This app includes the following services",
+          "About this app",
+          "Journal entries",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "045-accounting-entries-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "accounting",
+    "section": "sources",
+    "label": "Shared financial sources",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=accounting&section=sources#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Accounting",
+          "About this app",
+          "Shared financial sources"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "046-accounting-sources-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Accounting",
+          "This app includes the following services",
+          "About this app",
+          "Shared financial sources",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "046-accounting-sources-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "accounting",
+    "section": "aging",
+    "label": "Current AR and AP aging",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=accounting&section=aging#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Accounting",
+          "About this app",
+          "Current receivable and payable aging",
+          "Receivables",
+          "Payables"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "047-accounting-aging-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Accounting",
+          "This app includes the following services",
+          "About this app",
+          "Current receivable and payable aging",
+          "Receivables",
+          "Payables",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "047-accounting-aging-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "accounting",
+    "section": "tax",
+    "label": "Tax codes and adjustments",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=accounting&section=tax#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Accounting",
+          "About this app",
+          "Tax codes and manual adjustments",
+          "Preview a separate manual adjustment"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "048-accounting-tax-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Accounting",
+          "This app includes the following services",
+          "About this app",
+          "Tax codes and manual adjustments",
+          "Preview a separate manual adjustment",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "048-accounting-tax-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "accounting",
+    "section": "settings",
+    "label": "Accounts and periods",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=accounting&section=settings#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Accounting",
+          "About this app",
+          "Accounting configuration",
+          "Integration readiness",
+          "Chart of accounts",
+          "Fiscal periods",
+          "Journals"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "049-accounting-settings-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Accounting",
+          "This app includes the following services",
+          "About this app",
+          "Accounting configuration",
+          "Integration readiness",
+          "Chart of accounts",
+          "Fiscal periods",
+          "Journals",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "049-accounting-settings-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "work",
+    "section": "dashboard",
+    "label": "Projects",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=dashboard#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Work",
+          "About this app",
+          "Your projects"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "050-work-dashboard-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Work",
+          "This app includes the following services",
+          "About this app",
+          "Your projects",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "050-work-dashboard-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "work",
+    "section": "templates",
+    "label": "Approved templates and Sales",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=templates#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Work",
+          "About this app",
+          "Approved templates and Sales projects"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "051-work-templates-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Work",
+          "This app includes the following services",
+          "About this app",
+          "Approved templates and Sales projects",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "051-work-templates-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "work",
+    "section": "my-work",
+    "label": "My work",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=my-work#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Work",
+          "About this app",
+          "My work across projects",
+          "Your projects"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "052-work-my-work-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Work",
+          "This app includes the following services",
+          "About this app",
+          "My work across projects",
+          "Your projects",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "052-work-my-work-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "work",
+    "section": "board",
+    "label": "Boards",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=board#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Work",
+          "About this app",
+          "Your projects"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "053-work-board-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Work",
+          "This app includes the following services",
+          "About this app",
+          "Your projects",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "053-work-board-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "work",
+    "section": "discussions",
+    "label": "Discussions",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=discussions#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Work",
+          "About this app",
+          "Your projects"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "054-work-discussions-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Work",
+          "This app includes the following services",
+          "About this app",
+          "Your projects",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "054-work-discussions-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "work",
+    "section": "calendar",
+    "label": "Calendar",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=calendar#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Work",
+          "About this app",
+          "Your projects"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "055-work-calendar-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Work",
+          "This app includes the following services",
+          "About this app",
+          "Your projects",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "055-work-calendar-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "work",
+    "section": "timeline",
+    "label": "Timeline",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=timeline#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Work",
+          "About this app",
+          "Your projects"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "056-work-timeline-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Work",
+          "This app includes the following services",
+          "About this app",
+          "Your projects",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "056-work-timeline-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "work",
+    "section": "workload",
+    "label": "Team workload",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=workload#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Work",
+          "About this app",
+          "Your projects"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "057-work-workload-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Work",
+          "This app includes the following services",
+          "About this app",
+          "Your projects",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "057-work-workload-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "work",
+    "section": "workflows",
+    "label": "Private workflows",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=workflows#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Work",
+          "About this app",
+          "Your projects"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "058-work-workflows-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Work",
+          "This app includes the following services",
+          "About this app",
+          "Your projects",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "058-work-workflows-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "finance",
+    "section": "dashboard",
+    "label": "Dashboard",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=dashboard#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Finance",
+          "About this app",
+          "Cash flow overview",
+          "Receivables",
+          "Expense breakdown",
+          "Recent invoices",
+          "Quick actions",
+          "Recorded physical cash"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "059-finance-dashboard-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Finance",
+          "This app includes the following services",
+          "About this app",
+          "Cash flow overview",
+          "Receivables",
+          "Expense breakdown",
+          "Recent invoices",
+          "Quick actions",
+          "Recorded physical cash",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "059-finance-dashboard-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "finance",
+    "section": "Invoices",
+    "label": "Invoices",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=Invoices#Invoices",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Invoices",
+          "Invoices created"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "060-finance-Invoices-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Invoices",
+          "Invoices created"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "060-finance-Invoices-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "finance",
+    "section": "Customers",
+    "label": "Customers",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=Customers#Customers",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Customers"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "061-finance-Customers-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Customers"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "061-finance-Customers-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "finance",
+    "section": "Payments",
+    "label": "Payments",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=Payments#Payments",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Payments",
+          "Payment activity & provider readiness",
+          "M-Pesa Daraja sandbox",
+          "Payment requests created",
+          "Payment requests"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "062-finance-Payments-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Payments",
+          "Payment activity & provider readiness",
+          "Isolated simulator",
+          "M-Pesa Daraja sandbox",
+          "Payment requests created",
+          "Payment requests"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "062-finance-Payments-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "finance",
+    "section": "Expenses",
+    "label": "Expenses",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=Expenses#Expenses",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Expenses",
+          "Record an expense",
+          "Recorded expenses"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "063-finance-Expenses-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Expenses",
+          "Record an expense",
+          "Recorded expenses"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "063-finance-Expenses-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "finance",
+    "section": "Reconciliation",
+    "label": "Reconciliation",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=Reconciliation#Reconciliation",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Reconciliation",
+          "Reconciliation"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "064-finance-Reconciliation-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Reconciliation",
+          "Reconciliation"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "064-finance-Reconciliation-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "finance",
+    "section": "receivables",
+    "label": "Receivables",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=receivables#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Finance",
+          "About this app",
+          "Cash flow overview",
+          "Receivables",
+          "Expense breakdown",
+          "Recent invoices",
+          "Quick actions",
+          "Recorded physical cash"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "065-finance-receivables-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Finance",
+          "This app includes the following services",
+          "About this app",
+          "Cash flow overview",
+          "Receivables",
+          "Expense breakdown",
+          "Recent invoices",
+          "Quick actions",
+          "Recorded physical cash",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "065-finance-receivables-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "finance",
+    "section": "Reports",
+    "label": "Financial reports",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=Reports#Reports",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Reports",
+          "Recorded financial activity",
+          "Collections and recorded expenses"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "066-finance-Reports-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Reports",
+          "Recorded financial activity",
+          "Collections and recorded expenses"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "066-finance-Reports-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "crm",
+    "section": "dashboard",
+    "label": "Dashboard",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=crm&section=dashboard#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore CRM",
+          "About this app",
+          "Opportunity pipeline",
+          "Relationship records"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "067-crm-dashboard-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore CRM",
+          "This app includes the following services",
+          "About this app",
+          "Opportunity pipeline",
+          "Relationship records",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "067-crm-dashboard-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "crm",
+    "section": "Customers",
+    "label": "Customers",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=crm&section=Customers#Customers",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Customers"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "068-crm-Customers-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Customers"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "068-crm-Customers-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "crm",
+    "section": "pipeline",
+    "label": "Pipeline",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=crm&section=pipeline#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore CRM",
+          "About this app",
+          "Relationship records"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "069-crm-pipeline-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore CRM",
+          "This app includes the following services",
+          "About this app",
+          "Relationship records",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "069-crm-pipeline-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "crm",
+    "section": "followups",
+    "label": "Follow-ups",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=crm&section=followups#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore CRM",
+          "About this app",
+          "Opportunity pipeline",
+          "Assigned follow-ups"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "070-crm-followups-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore CRM",
+          "This app includes the following services",
+          "About this app",
+          "Opportunity pipeline",
+          "Assigned follow-ups",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "070-crm-followups-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "crm",
+    "section": "activity",
+    "label": "Activity",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=crm&section=activity#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore CRM",
+          "About this app",
+          "One customer across services"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "071-crm-activity-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore CRM",
+          "This app includes the following services",
+          "About this app",
+          "One customer across services",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "071-crm-activity-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "inventory",
+    "section": "dashboard",
+    "label": "Dashboard",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=inventory&section=dashboard#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Inventory",
+          "About this app",
+          "Stock by product"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "072-inventory-dashboard-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Inventory",
+          "This app includes the following services",
+          "About this app",
+          "Stock by product",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "072-inventory-dashboard-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "inventory",
+    "section": "products",
+    "label": "Products",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=inventory&section=products#Products",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Products",
+          "Shared product catalog"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "073-inventory-products-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Products",
+          "Shared product catalog"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "073-inventory-products-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "inventory",
+    "section": "warehouses",
+    "label": "Warehouses",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=inventory&section=warehouses#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Inventory",
+          "About this app",
+          "Warehouses & locations"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "074-inventory-warehouses-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Inventory",
+          "This app includes the following services",
+          "About this app",
+          "Warehouses & locations",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "074-inventory-warehouses-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "inventory",
+    "section": "movements",
+    "label": "Stock movements",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=inventory&section=movements#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Inventory",
+          "About this app",
+          "Movements"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "075-inventory-movements-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Inventory",
+          "This app includes the following services",
+          "About this app",
+          "Movements",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "075-inventory-movements-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "inventory",
+    "section": "reservations",
+    "label": "Reservations",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=inventory&section=reservations#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Inventory",
+          "About this app",
+          "Reservations"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "076-inventory-reservations-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Inventory",
+          "This app includes the following services",
+          "About this app",
+          "Reservations",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "076-inventory-reservations-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "inventory",
+    "section": "replenishment",
+    "label": "Replenishment",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=inventory&section=replenishment#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Inventory",
+          "About this app",
+          "Reorder review",
+          "Workflow replenishment suggestions"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "077-inventory-replenishment-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Inventory",
+          "This app includes the following services",
+          "About this app",
+          "Reorder review",
+          "Workflow replenishment suggestions",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "077-inventory-replenishment-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "sales",
+    "section": "dashboard",
+    "label": "Dashboard",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=sales&section=dashboard#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Sales",
+          "About this app",
+          "Quotation to fulfillment",
+          "Quotations"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "078-sales-dashboard-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Sales",
+          "This app includes the following services",
+          "About this app",
+          "Quotation to fulfillment",
+          "Customer and quantity price lists",
+          "Quotations",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "078-sales-dashboard-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "sales",
+    "section": "quotations",
+    "label": "Quotations",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=sales&section=quotations#Quotations",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Quotations",
+          "Quotation to fulfillment",
+          "Quotations"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "079-sales-quotations-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Quotations",
+          "Quotation to fulfillment",
+          "Customer and quantity price lists",
+          "Quotations"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "079-sales-quotations-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "sales",
+    "section": "Orders",
+    "label": "Orders",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=sales&section=Orders#Orders",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Orders"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "080-sales-Orders-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Orders"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "080-sales-Orders-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "sales",
+    "section": "Fulfillment",
+    "label": "Fulfillment",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=sales&section=Fulfillment#Fulfillment",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Fulfillment",
+          "Create shipment",
+          "Shipments & delivery evidence"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "081-sales-Fulfillment-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Fulfillment",
+          "Create shipment",
+          "Shipments & delivery evidence"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "081-sales-Fulfillment-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "sales",
+    "section": "Customers",
+    "label": "Customers",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=sales&section=Customers#Customers",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Customers"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "082-sales-Customers-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Customers"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "082-sales-Customers-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "analytics",
+    "section": "dashboard",
+    "label": "Dashboard",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=analytics&section=dashboard#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Analytics",
+          "About this app",
+          "Orders by current status",
+          "Recorded creation activity",
+          "Record creation over time",
+          "Inventory as of now",
+          "Saved report views"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "083-analytics-dashboard-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Analytics",
+          "This app includes the following services",
+          "About this app",
+          "Orders by current status",
+          "Recorded creation activity",
+          "Record creation over time",
+          "Inventory as of now",
+          "Saved report views",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "083-analytics-dashboard-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "analytics",
+    "section": "Intelligence",
+    "label": "Financial patterns",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=analytics&section=Intelligence#Intelligence",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Intelligence",
+          "Evidence-backed alerts",
+          "Financial activity",
+          "Money in and money out",
+          "Data quality & coverage",
+          "Explainable insights",
+          "Invoiced sales are concentrated",
+          "Expense coverage is incomplete",
+          "Start with reliable records",
+          "Customer payment behavior",
+          "Record an expense",
+          "Plan a recurring obligation",
+          "Obligations"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "084-analytics-Intelligence-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Intelligence",
+          "Evidence-backed alerts",
+          "Financial activity",
+          "Money in and money out",
+          "Data quality & coverage",
+          "Explainable insights",
+          "Invoiced sales are concentrated",
+          "Expense coverage is incomplete",
+          "Start with reliable records",
+          "Customer payment behavior",
+          "Record an expense",
+          "Plan a recurring obligation",
+          "Obligations"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "084-analytics-Intelligence-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "analytics",
+    "section": "saved-reports",
+    "label": "Saved reports",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=analytics&section=saved-reports#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Analytics",
+          "About this app",
+          "Orders by current status",
+          "Recorded creation activity",
+          "Record creation over time",
+          "Inventory as of now",
+          "Saved report views"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "085-analytics-saved-reports-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Analytics",
+          "This app includes the following services",
+          "About this app",
+          "Orders by current status",
+          "Recorded creation activity",
+          "Record creation over time",
+          "Inventory as of now",
+          "Saved report views",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "085-analytics-saved-reports-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "analytics",
+    "section": "coverage",
+    "label": "Data quality",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=analytics&section=coverage#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Analytics",
+          "About this app",
+          "Orders by current status",
+          "Recorded creation activity",
+          "Record creation over time",
+          "Inventory as of now",
+          "Saved report views"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "086-analytics-coverage-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Analytics",
+          "This app includes the following services",
+          "About this app",
+          "Orders by current status",
+          "Recorded creation activity",
+          "Record creation over time",
+          "Inventory as of now",
+          "Saved report views",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "086-analytics-coverage-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "automations",
+    "section": "dashboard",
+    "label": "Dashboard",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=automations&section=dashboard#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Automations",
+          "About this app",
+          "Execution overview",
+          "Create a workflow",
+          "Your workflows",
+          "Run history"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "087-automations-dashboard-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Automations",
+          "This app includes the following services",
+          "About this app",
+          "Execution overview",
+          "Create a workflow",
+          "Your workflows",
+          "Run history",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "087-automations-dashboard-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "automations",
+    "section": "Automations",
+    "label": "Workflows",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=automations&section=Automations#Automations",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Automations",
+          "Create a workflow",
+          "Your workflows",
+          "Run history"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "088-automations-Automations-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Automations",
+          "Create a workflow",
+          "Your workflows",
+          "Run history"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "088-automations-Automations-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "automations",
+    "section": "runs",
+    "label": "Execution history",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=automations&section=runs#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Automations",
+          "About this app",
+          "Execution overview",
+          "Run history"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "089-automations-runs-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Automations",
+          "This app includes the following services",
+          "About this app",
+          "Execution overview",
+          "Run history",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "089-automations-runs-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "automations",
+    "section": "private-work",
+    "label": "Private project workflows",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=automations&section=private-work#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Automations",
+          "About this app",
+          "Private project workflows"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "090-automations-private-work-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "AfriCore Automations",
+          "This app includes the following services",
+          "About this app",
+          "Private project workflows",
+          "Other AfriCore Apps"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "090-automations-private-work-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "automations",
+    "section": "Approvals",
+    "label": "Approvals",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=automations&section=Approvals#Approvals",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Approvals",
+          "Request a second-person review",
+          "My review queue"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "091-automations-Approvals-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Approvals",
+          "Request a second-person review",
+          "My review queue"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "091-automations-Approvals-390.jpg"
+      }
+    ]
+  }
+]

@@ -82,7 +82,7 @@ Production builds emit separate app workspace chunks instead of eagerly loading 
 
 Actual isolated-browser captures are in [evidence/ui-transformation](evidence/ui-transformation/). There are desktop/mobile primary captures for all 14 apps, 184 registry-section captures, Personal/Developer captures and representative dialog/workflow captures. [Registry observations](evidence/ui-transformation/registry-route-checks.json) distinguish render checks from business acceptance.
 
-The previously approved Finance image and original before screenshots were not supplied or available in this checkout. No comparison image was fabricated. Some initial captures precede subsequent corrections; route captures represent the later reviewed implementation checkpoint. Final narrow fixes require targeted recapture where noted in the tracker.
+The previously approved Finance image and original before screenshots were not supplied or available in this checkout. No comparison image was fabricated. Some initial captures precede subsequent corrections; route captures represent the later reviewed implementation checkpoint. Critical ledger and Work corrections were recaptured during final acceptance.
 
 ![Finance desktop](evidence/ui-transformation/finance-desktop.png)
 
@@ -100,15 +100,23 @@ The previously approved Finance image and original before screenshots were not s
 - PostgreSQL: **435/435 passed** against a new PostgreSQL 17 cluster bound to localhost. The cluster was stopped after testing. No hosted database was used.
 - Browser: directory filtering/app switching, mobile search/Escape/focus return, invoice inspect/close/return, Finance currency/period controls, Inventory product/stock/movement navigation, CRM pointer and keyboard stage moves, Work task movement/details/discussion, Analytics matching-record drill-down, direct Invoicing entry, and Documents upload/preview/retained versions passed in the disposable fixture.
 
-All mutations used explicitly synthetic local records. No real provider confirmation, payment, journal posting, external message or personnel data was created. Detailed representative results: [interactions.json](evidence/ui-transformation/interactions.json).
+All mutations used explicitly synthetic local records. No real provider confirmation, payment, external message or real personnel data was created. Later acceptance includes a synthetic local approved journal posting. Detailed representative results: [interactions.json](evidence/ui-transformation/interactions.json).
 
-## 21. Remaining limitations and continuation
+## 21. Final local acceptance — 12 November
 
-Complete the tracker’s outstanding individual route visual acceptance, configured states, service/workspace/shared-page refinements, role matrix, full accessibility/performance review and release gates. The 92 app-section and 24 Business service render checks are not fully qualified business workflows. Populated POS/Commerce, Accounting posting/source review, People permitted-profile fields, Procurement linked documents and Business ID verification need their dedicated manual journeys. Keep the four missing Wave 3 apps outside this task. Preserve current progress rather than restarting the audit.
+The broader local acceptance is finished for the implemented scope: 14 apps / 92 sections, 24 Business direct services, 16 Personal sections, 20 Developer sections and 13 shared Business pages. These 165 entries have 330 desktop/mobile observations with native captures. All tested owner states passed overflow, visible-alert, native-control-name and completed-image checks. App contact sheets and representative service screens received manual visual review; targeted configured journeys and role checks supplement empty/setup states. See [final tracker](UI_TRANSFORMATION_TRACKER.md) and [acceptance evidence](evidence/ui-transformation/acceptance/QA_SUMMARY.md).
+
+Acceptance-driven source fixes remove duplicated embedded navigation; preserve direct-service tabs; validate obsolete section links; close successful Commerce creation; correct Procurement approval copy; label approval/service fields; prevent narrow ledger amount wrapping with keyboard-scrollable tables; show isolated known comparison points without fabricating missing values; and remove the unrelated discussion form from Work workflows.
+
+Populated local journeys passed for POS sale and shift close, storefront order, People editing, Procurement source attachment, separately approved Accounting posting, fictional BusinessID review, Personal historical comparison, Developer scoped request/revocation, and Work populated views. Five-role API checks plus restricted-view UI checks preserve existing authorization. Search/launcher/drawer focus restoration, skip links, chart keyboard controls and ledger scrolling were checked. No real financial/provider activity occurred.
+
+Final verification: 66 frontend tests/build/prerender; SQLite 434 pass plus one PG-only skip; fresh local PostgreSQL 435 pass; lint/type/architecture/isolation; OpenAPI 59/427 operations; development configuration 3; edge/gateway 10; isolated chain. The initial reused PostgreSQL fixture was discarded after retained-state failures; the fresh disposable run passed. Backend checks preceded only the final frontend corrections; frontend build/lint were repeated after those corrections.
+
+Physical devices/Safari, exhaustive workflow/role permutations, full screen-reader/WCAG certification and browser performance timings remain unqualified. Native captures are JPEGs; the acceptance directory uses matching .jpg extensions. Full-page capture stitching can displace sticky elements, so viewport captures and actual DOM measurements are used for critical layout conclusions. The four missing apps remain outside scope.
 
 ## 22. Deployment status
 
-Not deployed and not pushed to main. The existing hosted preview remains unchanged. Release is pending the outstanding scope and verification, including the unfinished UI acceptance matrix and hosted verification. Local build or synthetic browser success does not constitute hosted acceptance.
+Local implementation and bounded UI acceptance are complete. Not deployed or pushed to main; hosted preview remains unchanged. Hosted release verification is separate from this local result. No database migration, provider activation, paid upgrade or auth change is included.
 
 ## Additional owner density request — 12 November
 
@@ -116,4 +124,4 @@ The owner requested a further 25% visual reduction across the platform, excludin
 
 Root scaling preserves full viewport layout. Fixed scrims/drawers compensate for the scaled viewport, and CRM pointer translation compensates for rendered scale. Browser measurements at 320, 390, 768, 1440 and 1920 requested widths found no document overflow. Header icon buttons measured approximately 33px, compared with approximately 44px before (0.75 ratio). The 390px search dialog remained inside its viewport; CRM pointer movement saved Proposal → Qualified in the disposable local fixture. Public homepage root zoom remained 1 with no density marker. Evidence is in `evidence/ui-transformation/density/`; previous screenshots elsewhere in this report predate this additional reduction.
 
-Revalidation: website build/prerender and 66 frontend tests, root lint/architecture/isolation and typecheck passed. Earlier full SQLite/PostgreSQL/contracts/chain results above belong to checkpoint a0aae68 and were not repeated for this CSS/CRM-coordinate-only follow-up. No backend/schema/financial behavior changed. Browser coverage here is representative, not every app/state or physical device, and does not close the outstanding acceptance matrix.
+Revalidation: website build/prerender and 66 frontend tests, root lint/architecture/isolation and typecheck passed. Full SQLite/PostgreSQL/contracts/chain checks were subsequently refreshed during final acceptance as recorded in section 21. No backend/schema/financial behavior changed. The density measurements are supplemented by the final 330-observation route matrix; physical-device acceptance is not claimed.

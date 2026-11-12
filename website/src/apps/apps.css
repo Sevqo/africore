@@ -177,3 +177,8 @@
 @media(min-width:1450px){.app-directory{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:767px){.app-directory{grid-template-columns:1fr}.app-directory-card{padding:18px!important}.app-identity{flex-wrap:wrap}.apps-workspace .app-title h1{font-size:24px}.app-identity>.app-mark{width:44px;height:44px}.app-identity>div{flex-basis:calc(100% - 64px)}.app-identity>button{width:100%}.apps-workspace .finance-toolbar>.field{flex:1}.finance-app-metrics>article{padding:16px!important}.finance-app-main>.panel,.finance-app-bottom>.panel{padding:16px}.apps-workspace .interactive-chart .chart-plot>svg{min-width:0;height:230px}.app-directory-toolbar>.field{max-width:none}.app-service-details .app-inclusions aside{border:0;padding:0}}
 @media(prefers-reduced-motion:no-preference){.app-directory-card{transition:box-shadow 160ms ease,border-color 160ms ease}.app-directory-card:focus-within{box-shadow:0 3px 14px #1626190d;border-color:var(--accent-text)}}
+
+/* Keep financial columns intact; narrow ledgers scroll within their panel. */
+.apps-workspace td.numeric{white-space:nowrap}
+@media(max-width:560px){.apps-workspace .table-scroll>table:not(.stackable){min-width:640px}}
+.apps-workspace .table-scroll:focus-visible{outline:2px solid var(--accent-text);outline-offset:2px}

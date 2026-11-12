@@ -1,0 +1,48 @@
+[
+  {
+    "check": "Search Escape/focus return",
+    "dialogOpen": false,
+    "focus": "Search this workspace"
+  },
+  {
+    "check": "Launcher reverse Tab remains contained",
+    "focus": "Close app launcher",
+    "inside": true
+  },
+  {
+    "check": "Launcher Escape/focus return",
+    "dialogOpen": false,
+    "focus": "Switch app"
+  },
+  {
+    "check": "Drawer reverse Tab remains contained",
+    "focus": "AAfriCore.",
+    "inside": true
+  },
+  {
+    "check": "Drawer Escape/focus return",
+    "dialogOpen": false,
+    "focus": "Open business navigation"
+  },
+  {
+    "check": "Account sessions anchor",
+    "hash": "#account-sessions",
+    "overflow": false,
+    "scale": "0.75",
+    "targetTop": 1569.5274658203125
+  },
+  {
+    "check": "Settled mobile sessions anchor",
+    "targetTop": 130.0885009765625,
+    "width": 390
+  },
+  {
+    "check": "Skip link",
+    "focusedId": "workspace-main"
+  },
+  {
+    "check": "Chart keyboard explorer and wide exact data",
+    "overflow": false,
+    "value": "0"
+  }
+]

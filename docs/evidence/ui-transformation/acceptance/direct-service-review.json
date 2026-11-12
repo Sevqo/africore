@@ -1,0 +1,956 @@
+[
+  {
+    "app": "direct-service",
+    "section": "Accounting",
+    "label": "Accounting ledger",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Accounting",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Accounting",
+          "Trial balance",
+          "Profit and loss",
+          "Balance sheet",
+          "General ledger"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "100-direct-service-Accounting-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Accounting",
+          "Trial balance",
+          "Profit and loss",
+          "Balance sheet",
+          "General ledger"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "100-direct-service-Accounting-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "Payments",
+    "label": "AfriCore Pay",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Payments",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Payments",
+          "Payment activity & provider readiness",
+          "M-Pesa Daraja sandbox",
+          "Payment requests created",
+          "Payment requests"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "101-direct-service-Payments-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Payments",
+          "Payment activity & provider readiness",
+          "Isolated simulator",
+          "M-Pesa Daraja sandbox",
+          "Payment requests created",
+          "Payment requests"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "101-direct-service-Payments-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "Automations",
+    "label": "Automations",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Automations",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Automations",
+          "Create a workflow",
+          "Your workflows",
+          "Run history"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "102-direct-service-Automations-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Automations",
+          "Create a workflow",
+          "Your workflows",
+          "Run history"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "102-direct-service-Automations-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "Business-Passport",
+    "label": "Business Passport",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Business%20Passport",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Business Passport",
+          "Independent evidence dimensions",
+          "identity assurance",
+          "credential validity",
+          "relationship verification",
+          "evidence quality",
+          "corrections",
+          "Fictional UI business identity",
+          "Evidence coverage · 20%",
+          "What each assurance level means"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "103-direct-service-Business-Passport-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Business Passport",
+          "Independent evidence dimensions",
+          "identity assurance",
+          "credential validity",
+          "relationship verification",
+          "evidence quality",
+          "corrections",
+          "Fictional UI business identity",
+          "Evidence coverage · 20%",
+          "What each assurance level means"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "103-direct-service-Business-Passport-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "Business-Passport",
+    "label": "Business Verification",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Business%20Passport",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Business Passport",
+          "Independent evidence dimensions",
+          "identity assurance",
+          "credential validity",
+          "relationship verification",
+          "evidence quality",
+          "corrections",
+          "Fictional UI business identity",
+          "Evidence coverage · 20%",
+          "What each assurance level means"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "104-direct-service-Business-Passport-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Business Passport",
+          "Independent evidence dimensions",
+          "identity assurance",
+          "credential validity",
+          "relationship verification",
+          "evidence quality",
+          "corrections",
+          "Fictional UI business identity",
+          "Evidence coverage · 20%",
+          "What each assurance level means"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "104-direct-service-Business-Passport-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "Cash-Flow",
+    "label": "Cash Flow",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Cash%20Flow",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Cash Flow",
+          "Recorded financial activity",
+          "Collections and recorded expenses",
+          "Record an expense",
+          "Plan an obligation",
+          "Recorded expenses",
+          "Upcoming obligations"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "105-direct-service-Cash-Flow-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Cash Flow",
+          "Recorded financial activity",
+          "Collections and recorded expenses",
+          "Record an expense",
+          "Plan an obligation",
+          "Recorded expenses",
+          "Upcoming obligations"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "105-direct-service-Cash-Flow-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "Commerce",
+    "label": "Commerce operations",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Commerce",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Commerce",
+          "Online commerce",
+          "Fictional UI acceptance shop",
+          "Published product selection",
+          "Public-use image library",
+          "Collections",
+          "Delivery and pickup",
+          "Checkout authorization",
+          "Review public publication"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "106-direct-service-Commerce-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Commerce",
+          "Online commerce",
+          "Fictional UI acceptance shop",
+          "Published product selection",
+          "Public-use image library",
+          "Collections",
+          "Delivery and pickup",
+          "Checkout authorization",
+          "Review public publication"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "106-direct-service-Commerce-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "Customer-Relationships",
+    "label": "Customer relationships",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Customer%20Relationships",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Customer Relationships",
+          "Opportunity pipeline",
+          "Relationship records"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "107-direct-service-Customer-Relationships-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Customer Relationships",
+          "Opportunity pipeline",
+          "Relationship records"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "107-direct-service-Customer-Relationships-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "Customers",
+    "label": "Customers & clients",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Customers",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Customers"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "108-direct-service-Customers-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Customers"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "108-direct-service-Customers-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "Expenses",
+    "label": "Expenses",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Expenses",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Expenses",
+          "Record an expense",
+          "Recorded expenses"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "109-direct-service-Expenses-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Expenses",
+          "Record an expense",
+          "Recorded expenses"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "109-direct-service-Expenses-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "Intelligence",
+    "label": "Financial Intelligence",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Intelligence",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Intelligence",
+          "Evidence-backed alerts",
+          "Financial activity",
+          "Money in and money out",
+          "Data quality & coverage",
+          "Explainable insights",
+          "Invoiced sales are concentrated",
+          "Expense coverage is incomplete",
+          "Start with reliable records",
+          "Customer payment behavior",
+          "Record an expense",
+          "Plan a recurring obligation",
+          "Obligations"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "110-direct-service-Intelligence-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Intelligence",
+          "Evidence-backed alerts",
+          "Financial activity",
+          "Money in and money out",
+          "Data quality & coverage",
+          "Explainable insights",
+          "Invoiced sales are concentrated",
+          "Expense coverage is incomplete",
+          "Start with reliable records",
+          "Customer payment behavior",
+          "Record an expense",
+          "Plan a recurring obligation",
+          "Obligations"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "110-direct-service-Intelligence-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "Fulfillment",
+    "label": "Fulfillment & delivery",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Fulfillment",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Fulfillment",
+          "Create shipment",
+          "Shipments & delivery evidence"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "111-direct-service-Fulfillment-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Fulfillment",
+          "Create shipment",
+          "Shipments & delivery evidence"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "111-direct-service-Fulfillment-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "Inventory",
+    "label": "Inventory Tracking",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Inventory",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Inventory",
+          "Stock by product"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "112-direct-service-Inventory-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Inventory",
+          "Stock by product"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "112-direct-service-Inventory-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "Invoices",
+    "label": "Invoicing",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Invoices",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Invoices",
+          "Invoices created"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "113-direct-service-Invoices-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Invoices",
+          "Invoices created"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "113-direct-service-Invoices-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "Orders",
+    "label": "Orders",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Orders",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Orders"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "114-direct-service-Orders-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Orders"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "114-direct-service-Orders-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "People",
+    "label": "People operations",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#People",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "People",
+          "People operations",
+          "Authorized employee directory"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "115-direct-service-People-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "People",
+          "People operations",
+          "Authorized employee directory"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "115-direct-service-People-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "Point-of-Sale",
+    "label": "Point of Sale",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Point%20of%20Sale",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Point of Sale",
+          "Point of Sale",
+          "Synthetic UI acceptance counter",
+          "Open a shift"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "116-direct-service-Point-of-Sale-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Point of Sale",
+          "Point of Sale",
+          "Synthetic UI acceptance counter",
+          "Open a shift"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "116-direct-service-Point-of-Sale-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "Documents",
+    "label": "Private documents",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Documents",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Documents",
+          "Private documents"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "117-direct-service-Documents-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Documents",
+          "Private documents"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "117-direct-service-Documents-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "Procurement",
+    "label": "Procurement",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Procurement",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Procurement",
+          "Purchase requests"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "118-direct-service-Procurement-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Procurement",
+          "Purchase requests"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "118-direct-service-Procurement-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "Products",
+    "label": "Product Catalog",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Products",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Products",
+          "Shared product catalog"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "119-direct-service-Products-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Products",
+          "Shared product catalog"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "119-direct-service-Products-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "Work",
+    "label": "Projects and teamwork",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Work",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Work",
+          "Your projects"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "120-direct-service-Work-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Work",
+          "Your projects"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "120-direct-service-Work-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "Quotations",
+    "label": "Sales and quotations",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Quotations",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Quotations",
+          "Quotation to fulfillment",
+          "Quotations"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "121-direct-service-Quotations-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Quotations",
+          "Quotation to fulfillment",
+          "Customer and quantity price lists",
+          "Quotations"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "121-direct-service-Quotations-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "Business-Passport",
+    "label": "Trust Network",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Business%20Passport",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Business Passport",
+          "Independent evidence dimensions",
+          "identity assurance",
+          "credential validity",
+          "relationship verification",
+          "evidence quality",
+          "corrections",
+          "Fictional UI business identity",
+          "Evidence coverage · 20%",
+          "What each assurance level means"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "122-direct-service-Business-Passport-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Business Passport",
+          "Independent evidence dimensions",
+          "identity assurance",
+          "credential validity",
+          "relationship verification",
+          "evidence quality",
+          "corrections",
+          "Fictional UI business identity",
+          "Evidence coverage · 20%",
+          "What each assurance level means"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "122-direct-service-Business-Passport-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "direct-service",
+    "section": "Business-Passport",
+    "label": "Verifiable Credentials",
+    "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Business%20Passport",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Business Passport",
+          "Independent evidence dimensions",
+          "identity assurance",
+          "credential validity",
+          "relationship verification",
+          "evidence quality",
+          "corrections",
+          "Fictional UI business identity",
+          "Evidence coverage · 20%",
+          "What each assurance level means"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "123-direct-service-Business-Passport-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "Business Passport",
+          "Independent evidence dimensions",
+          "identity assurance",
+          "credential validity",
+          "relationship verification",
+          "evidence quality",
+          "corrections",
+          "Fictional UI business identity",
+          "Evidence coverage · 20%",
+          "What each assurance level means"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "123-direct-service-Business-Passport-390.jpg"
+      }
+    ]
+  }
+]

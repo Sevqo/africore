@@ -379,16 +379,16 @@ export function ApprovalView({
                     )
                   }
                 >
-                  <input
+                  <Field label="Reason for the decision"><input
                     required
                     name="reason"
                     minLength={5}
                     placeholder="Reason for the decision"
-                  />
-                  <select name="decision">
+                  /></Field>
+                  <Field label="Decision"><select name="decision">
                     <option value="approved">Approve</option>
                     <option value="rejected">Reject</option>
-                  </select>
+                  </select></Field>
                   <button className="secondary-button">Record decision</button>
                 </Form>
               )}

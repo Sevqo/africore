@@ -1,0 +1,595 @@
+[
+  {
+    "app": "personal",
+    "section": "Overview",
+    "label": "Overview",
+    "url": "http://127.0.0.1:4002/app/personal#Overview",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Overview",
+          "Recorded personal activity"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "150-personal-Overview-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Overview",
+          "Recorded personal activity"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "150-personal-Overview-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "personal",
+    "section": "Apps",
+    "label": "Apps",
+    "url": "http://127.0.0.1:4002/app/personal#Apps",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Apps",
+          "AfriCore Finance",
+          "AfriCore Analytics"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "151-personal-Apps-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Apps",
+          "AfriCore Finance",
+          "AfriCore Analytics"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "151-personal-Apps-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "personal",
+    "section": "Notifications",
+    "label": "Notifications",
+    "url": "http://127.0.0.1:4002/app/personal#Notifications",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Notifications",
+          "Notification history"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "152-personal-Notifications-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Notifications",
+          "Notification history"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "152-personal-Notifications-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "personal",
+    "section": "My-Services",
+    "label": "My Services",
+    "url": "http://127.0.0.1:4002/app/personal#My%20Services",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "My Services",
+          "Usage overview",
+          "Income tracking"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "153-personal-My-Services-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "My Services",
+          "Usage overview",
+          "Income tracking"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "153-personal-My-Services-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "personal",
+    "section": "Explore-Services",
+    "label": "Explore Services",
+    "url": "http://127.0.0.1:4002/app/personal#Explore%20Services",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Explore Services",
+          "AfriCore Pay",
+          "AI Business Assistant",
+          "Cash Flow",
+          "Customers & clients",
+          "Expenses",
+          "Income tracking",
+          "Invoicing"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "154-personal-Explore-Services-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Explore Services",
+          "AfriCore Pay",
+          "AI Business Assistant",
+          "Cash Flow",
+          "Customers & clients",
+          "Expenses",
+          "Income tracking",
+          "Invoicing"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "154-personal-Explore-Services-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "personal",
+    "section": "Usage-Billing",
+    "label": "Usage & Billing",
+    "url": "http://127.0.0.1:4002/app/personal#Usage%20%26%20Billing",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Usage & Billing",
+          "Control usage",
+          "Current limits and alerts",
+          "Estimate history"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "155-personal-Usage-Billing-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Usage & Billing",
+          "Income tracking",
+          "Control usage",
+          "Current limits and alerts",
+          "Estimate history"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "155-personal-Usage-Billing-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "personal",
+    "section": "Assistant",
+    "label": "Assistant",
+    "url": "http://127.0.0.1:4002/app/personal#Assistant",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Assistant",
+          "AI Business Assistant"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "156-personal-Assistant-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Assistant",
+          "AI Business Assistant"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "156-personal-Assistant-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "personal",
+    "section": "Income",
+    "label": "Income",
+    "url": "http://127.0.0.1:4002/app/personal#Income",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Income",
+          "Add income"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "157-personal-Income-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Income",
+          "Add income"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "157-personal-Income-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "personal",
+    "section": "Expenses",
+    "label": "Expenses",
+    "url": "http://127.0.0.1:4002/app/personal#Expenses",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Expenses",
+          "Expenses"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "158-personal-Expenses-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Expenses",
+          "Expenses"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "158-personal-Expenses-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "personal",
+    "section": "Invoices",
+    "label": "Invoices",
+    "url": "http://127.0.0.1:4002/app/personal#Invoices",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Invoices",
+          "Invoicing"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "159-personal-Invoices-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Invoices",
+          "Invoicing"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "159-personal-Invoices-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "personal",
+    "section": "Clients",
+    "label": "Clients",
+    "url": "http://127.0.0.1:4002/app/personal#Clients",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Clients",
+          "Customers & clients"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "160-personal-Clients-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Clients",
+          "Customers & clients"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "160-personal-Clients-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "personal",
+    "section": "Payment-Records",
+    "label": "Payment Records",
+    "url": "http://127.0.0.1:4002/app/personal#Payment%20Records",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Payment Records",
+          "AfriCore Pay"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "161-personal-Payment-Records-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Payment Records",
+          "AfriCore Pay"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "161-personal-Payment-Records-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "personal",
+    "section": "Cash-Flow",
+    "label": "Cash Flow",
+    "url": "http://127.0.0.1:4002/app/personal#Cash%20Flow",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Cash Flow",
+          "Cash Flow"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "162-personal-Cash-Flow-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Cash Flow",
+          "Cash Flow"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "162-personal-Cash-Flow-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "personal",
+    "section": "Reports",
+    "label": "Reports",
+    "url": "http://127.0.0.1:4002/app/personal#Reports",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Reports",
+          "Recorded personal activity"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "163-personal-Reports-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Reports",
+          "Recorded personal activity"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "163-personal-Reports-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "personal",
+    "section": "Learn",
+    "label": "Learn",
+    "url": "http://127.0.0.1:4002/app/personal#Learn",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Learn"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "164-personal-Learn-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Learn"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "164-personal-Learn-390.jpg"
+      }
+    ]
+  },
+  {
+    "app": "personal",
+    "section": "Settings",
+    "label": "Settings",
+    "url": "http://127.0.0.1:4002/app/personal#Settings",
+    "views": [
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Settings"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 1440,
+        "zoom": "0.75",
+        "file": "165-personal-Settings-1440.jpg"
+      },
+      {
+        "alerts": [],
+        "brokenImages": [],
+        "headings": [
+          "UI review personal",
+          "Settings"
+        ],
+        "overflow": false,
+        "unnamed": [],
+        "width": 390,
+        "zoom": "0.75",
+        "file": "165-personal-Settings-390.jpg"
+      }
+    ]
+  }
+]

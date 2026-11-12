@@ -182,7 +182,7 @@ export function PassportWorkspace({
           connected backend.
         </p>
       )}
-      <nav className="passport-tabs" aria-label="Business Passport sections">
+      {!holderOnly&&<nav className="passport-tabs" aria-label="Business Passport sections">
         {tabs.filter(t=>{if(holderOnly&&['Issuer Desk','Trust Operations'].includes(t))return false;const required=({'Business Identity':'verification',Credentials:'credentials','Issuer Desk':'credentials','Business Network':'trust_network'} as Record<string,string>)[t];return !required||enabled(required);}).map((t) => (
           <button
             key={t}
@@ -195,7 +195,7 @@ export function PassportWorkspace({
             {t}
           </button>
         ))}
-      </nav>
+      </nav>}
       <details className="panel learning-helper">
         <summary>What do the proof checks mean?</summary>
         <p>

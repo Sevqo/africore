@@ -1,5 +1,10 @@
 # Implementation status — Stage 3 sandbox beta
 
+## Platform UI acceptance — 12 November 2026
+
+The 14-app platform UI and additional 25% authenticated-interface reduction are implemented. Broader local acceptance covers 92 app sections and 73 service/workspace/shared contexts (330 desktop/mobile observations), representative populated workflows, five-role reads and keyboard checks. Final frontend 66, SQLite 434 plus one skip, fresh local PostgreSQL 435, contracts, lint/types, dev/gateway and isolated chain checks passed. See PLATFORM_UI_TRANSFORMATION_REPORT.md and UI_TRANSFORMATION_TRACKER.md for exact evidence and external limits. This UI work is not deployed or pushed to main; hosted preview remains unchanged.
+
+
 ## Modular platform — 28 October 2026
 
 Service discovery, persisted entitlements, explicit new-workspace service selection, My Services/pinning, dynamic navigation, six price models, authoritative usage/reservations/limits/alerts and zero-due estimate statements are implemented across Personal, Business and Developer. Independent customer entry, Business Expenses/Cash Flow and optional Intelligence/Passport support reads are repaired. Authentication redirects/bootstrap and fresh managed-identity reads are optimized; unnecessary verification prompts are removed. Migration 007 is applied only to approved Neon development after encrypted backup/readback. Final local release checks: SQLite 241 plus one PostgreSQL-only skip, PostgreSQL 242, frontend 24, gateway 4, startup 3 and local chain/independent verification. See MODULAR_RELEASE_REPORT, SERVICE_ARCHITECTURE, SERVICE_CATALOG, SERVICE_PRICING, NEON_EMAIL_VERIFICATION and AUTH_PERFORMANCE. Automated customer charging and live providers remain disabled; actual mailbox receipt remains unverified by owner choice. Deployment verification is recorded in the release report, separately from source completion.
