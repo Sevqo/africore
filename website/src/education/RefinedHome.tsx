@@ -68,7 +68,7 @@ const groups = [
 ];
 export function RefinedHome() {
   return (
-    <>
+    <div className="approved-editorial-home">
       <section className="hero hero-compact">
         <div className="hero-copy">
           <span className="eyebrow">AfriCore Business</span>
@@ -247,6 +247,6 @@ export function RefinedHome() {
         </a>
         <p>Start with your work, your customers and a clearer view of your business.</p>
       </section>
-    </>
+    </div>
   );
 }
