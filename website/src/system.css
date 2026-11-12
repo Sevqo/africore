@@ -9,7 +9,7 @@ html {
   scroll-padding-top: calc(var(--header-height) + 24px);
 }
 body {
-  min-width: 320px;
+  min-width: min(320px, 100%);
   line-height: 1.5;
 }
 #root {

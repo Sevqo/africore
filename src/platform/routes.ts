@@ -617,7 +617,7 @@ platform.get(
 );
 platform.post(
   '/checkout/:token/pay',
-  route(async (req, res) => {
+  route(async (req, res) => dbTransaction(async()=>{
     const token = z.string().length(64).parse(req.params.token),
       scenario = z
         .enum([
@@ -629,6 +629,11 @@ platform.post(
           'reversed',
         ])
         .parse(req.body.scenario);
+    const scope=await dbGet('SELECT org_id FROM ac_requests WHERE checkout_hash=?',[hash(token)]);
+    if(!scope)fail(404,'Checkout not found');
+    // Serialize the current balance/hold check and local simulation with cash
+    // returns and competing payments. No external provider is called here.
+    await dbRun('UPDATE ac_organizations SET name=name WHERE id=?',[scope.org_id]);
     const r = await dbGet('SELECT * FROM ac_requests WHERE checkout_hash=?', [
       hash(token),
     ]);
@@ -644,7 +649,7 @@ platform.post(
       fail(409,'This document is already settled or no longer accepts payment. Ask the merchant to review its current balance.');
     const result = await sandboxProvider.initiate(r, scenario);
     res.json(await processProviderResult(r.id, result));
-  }),
+  })),
 );
 platform.post(
   '/callbacks/:provider',

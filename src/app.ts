@@ -1,4 +1,5 @@
 import {commerce} from './commerce/routes';
+import {pos} from './pos/routes';
 import {erp} from './erp/routes';
 import {connected} from './operations/connected-routes';
 import {appRoutes} from './apps/routes';
@@ -91,6 +92,7 @@ export function createApp() {
   app.use('/api/v1', sameOrigin, business);
   app.use('/api/v1', sameOrigin, erp);
   app.use('/api/v1', sameOrigin, commerce);
+  app.use('/api/v1', sameOrigin, pos);
   app.use('/api/v1', sameOrigin, finance);
   app.use('/api/v1', sameOrigin, platform);
   app.use('/api/v1',sameOrigin,marketplace);

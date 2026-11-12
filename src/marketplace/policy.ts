@@ -1,4 +1,5 @@
 import {commercePolicies} from '../commerce/metadata';
+import {posPolicies} from '../pos/metadata';
 import {erpPolicies} from '../erp/metadata';
 import {connectedPolicies} from '../operations/connected-metadata';
 import {appPolicies} from '../apps/metadata';
@@ -44,5 +45,5 @@ export function policyFor(method:string,route:string,kind?:string):ServicePolicy
   const services:Record<string,string[]>={customers:['customers','invoicing','orders','crm','sales'],orders:['orders'],invoices:['invoicing'],transactions:['payments','reconciliation'],applications:['developer_api'],integrations:['connect']};
   return services[kind||'']?{services:method==='GET'&&kind==='orders'?['orders','fulfillment','protected_payments']:services[kind!],meter:method==='POST'&&kind==='customers'?'customers':method==='POST'&&kind==='orders'?'orders':method==='PATCH'&&kind==='invoices'?'invoicing':undefined}:undefined;
  }
- return commercePolicies[(method==='HEAD'?'GET':method)+' '+route]||erpPolicies[(method==='HEAD'?'GET':method)+' '+route]||servicePolicies[(method==='HEAD'?'GET':method)+' '+route]||financePolicies[(method==='HEAD'?'GET':method)+' '+route]||connectedPolicies[(method==='HEAD'?'GET':method)+' '+route]||appPolicies[(method==='HEAD'?'GET':method)+' '+route]||businessPolicies[(method==='HEAD'?'GET':method)+' '+route];
+ return posPolicies[(method==='HEAD'?'GET':method)+' '+route]||commercePolicies[(method==='HEAD'?'GET':method)+' '+route]||erpPolicies[(method==='HEAD'?'GET':method)+' '+route]||servicePolicies[(method==='HEAD'?'GET':method)+' '+route]||financePolicies[(method==='HEAD'?'GET':method)+' '+route]||connectedPolicies[(method==='HEAD'?'GET':method)+' '+route]||appPolicies[(method==='HEAD'?'GET':method)+' '+route]||businessPolicies[(method==='HEAD'?'GET':method)+' '+route];
 }

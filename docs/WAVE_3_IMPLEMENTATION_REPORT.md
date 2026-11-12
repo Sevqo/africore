@@ -1,6 +1,6 @@
 # Wave 3 implementation record
 
-Updated 11 November 2026. The complete request remains in WAVE_3_MASTER_PLAN.md. This is an active checkpoint, not a Wave 3 completion or deployment claim.
+Updated 12 November 2026. The complete request remains in WAVE_3_MASTER_PLAN.md. This is an active checkpoint, not a Wave 3 completion or deployment claim.
 
 ## Release state
 
@@ -72,3 +72,17 @@ Extracted canonical channel order/invoice conversion for reuse by Commerce and P
 The POS migration 019 and internal services remain deliberately unwired to hosted startup and app discovery. The register test suite temporarily supplies process-local synthetic service metadata to exercise the real schema and domain; it does not publish POS availability. Sale confirmation, tender persistence, handover/returns, Accounting/report integration, routes and cashier UI still require implementation and qualification. This is not a completed POS app or a deployment. No hosted migration, live provider, identity or financial-data change was performed.
 
 Qualification for this POS-foundation checkpoint: full PostgreSQL 422/422; full SQLite 421 pass, one PostgreSQL-only skip; lint/build/architecture pass; 406 workspace and 59 legacy contracts pass; startup/development 3/3; Cloudflare gateway 10/10; isolated local-chain check passes. Register tests include conflicting simultaneous opens and denied replay after membership revocation. These results qualify the internal foundation and existing Commerce regressions, not the unfinished POS sale/UI journeys.
+
+## POS integrated checkpoint, 12 November 2026
+
+Supersedes the foundation-only wiring/status paragraphs above. POS now has mounted, documented human-only register APIs and shared app/direct-service UI. Local startup applies additive migration 019; hosted startup verifies it without applying migrations. Hosted Neon migrations 017–019 remain unapplied and Wave 3 remains unreleased.
+
+Implemented canonical product/barcode search, version-bound priced drafts, current-policy confirmation, recorded cash/change, split sandbox electronic remainder, pending orders, explicit paid handover, immutable counted shifts, scoped history/receipts, bounded cash returns and original-dispatch stock returns. Stock returns reuse shared Inventory and include returns recorded outside POS in their quantity ceiling. Configuring-owner revocation can be recovered by another current administrator explicitly reauthorizing the unchanged saved policy. Member removal controls wait for the actual team lookup.
+
+Cash is classified as merchant-observed physical cash throughout invoice balances, separate report coverage and optional Accounting sources. Float is excluded from sales. Accounting preparation/posting preserves independent exact review. Cash returns create a derived collection hold while a receivable remains: new links, initiation, local simulator collection and manual allocation are blocked. Authenticated late provider evidence remains immutable but becomes a review exception rather than silently recollecting a held invoice. Invoice credits and physical returns remain separate actions. The original issuing calendar is captured for POS/Commerce credit-date validation.
+
+Sandbox browser verification used fictional local data: counted KES 500 opening float, KES 1,000 product sale, KES 1,500 tender and KES 500 change; explicit dispatch; one physical unit received back; KES 1,000 cash returned; collection-hold notice; shift closed at KES 500 with zero variance. Historical receipt remained readable after closure/reload. The stale quote crossing the register's calendar day was rejected and required a fresh review. At 320px, an existing shared body minimum plus scrollbar and related-app label caused overflow; the minimum now respects available width and app labels wrap. Verified document/scroll width 305/305 at 320px and 375/375 at 390px. Browser emulation is not physical-device or printer qualification. Evidence: pos-quote-desktop.jpg, pos-paid-receipt-desktop.jpg, pos-paid-receipt-mobile.jpg and pos-return-receipt-mobile.jpg.
+
+Qualification: full PostgreSQL 433/433; SQLite 432 pass with one PostgreSQL-only skip; website build/content 62/62; lint/architecture 163 frontend modules; 426 workspace and 59 legacy API contracts; gateway 10/10 and startup/development 3/3; isolated local-chain check passed. Corrected focused POS tests also passed on both engines. All database tests used disposable local databases, never Neon.
+
+Outstanding: the POS daily dashboard/payment mix/top products/low-stock report, broader cross-app acceptance and external provider/hardware qualification; the remaining Commerce requirements above; Website, Marketing, Support and Subscriptions; guarded hosted migration and backend-before-frontend deployment. POS writes are sandbox-only and network-required; no offline queue, live M-Pesa, terminal, automatic drawer, PIN identity or automatic journal posting is advertised. The final eighteen-app/platform UI phase still follows core qualification. This checkpoint is not completion of Wave 3.

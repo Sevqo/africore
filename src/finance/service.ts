@@ -6,7 +6,7 @@ import {Access,audit,fail} from '../platform/auth';
 import {hash,now} from '../platform/crypto';
 import {record,update,enqueue} from '../platform/payments';
 import {documentBalance,refreshDocument} from './ledger';
-import {nextOccurrence,sumMinor} from './money';
+import {nextOccurrence,sumMinor,calendarDay} from './money';
 import {all,get,change,atomic} from '../operations/store';
 export function canonical(value:any):string {return JSON.stringify(value&&typeof value==='object'?Array.isArray(value)?value.map(v=>JSON.parse(canonical(v))):Object.fromEntries(Object.keys(value).sort().map(k=>[k,JSON.parse(canonical(value[k]))])):value);}
 export async function financialOperation<T>(a:Access,operation:string,key:string,input:unknown,run:()=>Promise<T>):Promise<T>{
@@ -24,7 +24,9 @@ export async function creditInvoice(a:Access,id:string,input:unknown,key:string)
  const d=creditInput.parse(input);
  return financialOperation(a,'invoice.credit:'+id,key,d,async()=>{
   const invoice=await documentBalance(a,id);if(invoice.kind!=='invoices'||!['issued','partially_paid','paid'].includes(invoice.status))fail(409,'Only an issued invoice can receive a credit note');
-  if(d.issued_on<invoice.issue_date||d.issued_on>now().slice(0,10))fail(400,'Credit date must follow invoice issue and not be in the future');
+  const issuingZone=invoice.pos_source?.timezone||invoice.commerce_source?.timezone||'UTC';let currentDocumentDay:string;
+  try{currentDocumentDay=calendarDay(now(),issuingZone);}catch{fail(409,'The original document calendar requires financial review');}
+  if(d.issued_on<invoice.issue_date||d.issued_on>currentDocumentDay!)fail(400,'Credit date must follow invoice issue and not be in the future in its issuing calendar');
   if(d.amount_minor>invoice.outstanding_minor)fail(409,'Credit exceeds the unpaid amount; paid amounts require an authorized refund');
   const policy=await dbGet('SELECT configuration FROM ac_business_policies WHERE org_id=? AND environment=?',[a.org,a.environment]);
   if(policy&&JSON.parse(policy.configuration).require_invoice_correction_approval){const {requireApproval}=await import('../operations/automation');await requireApproval(a,d.approval_id,'invoice_adjustment',id,{credit_note:{amount_minor:d.amount_minor,reason:d.reason,issued_on:d.issued_on}});}
@@ -44,6 +46,7 @@ export async function allocatePayment(a:Access,eventId:string,input:unknown,key:
   if(sumMinor(d.allocations.map(r=>r.amount_minor))+sumMinor(used.map(r=>r.amount_minor))>Number(event.amount_minor)-returned)fail(409,'Allocation exceeds available confirmed funds');
   for(const target of d.allocations){
    const doc=await documentBalance(a,target.document_id);
+   if(doc.collection_hold)fail(409,'Review the recorded cash return and invoice correction before allocating another payment');
    if(doc.kind!=='invoices'||!['issued','partially_paid'].includes(doc.status)||doc.currency!==event.currency||target.amount_minor>doc.outstanding_minor)fail(409,'Invoice state, currency or outstanding amount does not permit allocation');
    await dbRun('INSERT INTO ac_allocation_changes(id,org_id,environment,event_id,document_id,amount_minor,reason,occurred_at,created_at) VALUES (?,?,?,?,?,?,?,?,?)',[randomUUID(),a.org,a.environment,eventId,doc.id,target.amount_minor,d.reason,now(),now()]);
    await refreshDocument(a,doc.id);

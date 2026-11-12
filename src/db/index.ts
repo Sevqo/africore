@@ -1,4 +1,5 @@
 import {migratePublicMedia} from '../publishing/schema';
+import {migratePOS} from '../pos/schema';
 import {migrateCommerce} from '../commerce/schema';
 import {migrateProcurement} from '../erp/procurement-schema';
 import {migrateDocuments} from '../erp/documents-schema';
@@ -339,6 +340,7 @@ export async function migrate(): Promise<void> {
   await migrateProcurement();
   await migrateCommerce();
   await migratePublicMedia();
+  await migratePOS();
 
   if (isPostgres) {
     await dbExec(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS matched_invoice_id TEXT;`);

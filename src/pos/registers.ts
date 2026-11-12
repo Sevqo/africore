@@ -3,12 +3,14 @@ import {type Access,fail} from '../platform/auth';
 import {currentMember,read,insert,update,decode,operation} from '../erp/store';
 import {requireServices} from '../marketplace/engine';
 import {record} from '../platform/payments';
-import {registerInput} from './contracts';
+import {registerInput,reauthorizeRegisterInput} from './contracts';
+import {now} from '../platform/crypto';
 import {businessPolicyFor} from '../operations/business-policy';
 
 export async function posManager(a:Access,write=false){
  const role=await currentMember(a);await requireServices(a,['pos'],!write);
  if(!['owner','admin'].includes(role))fail(403,'Current owner or administrator authority is required for register configuration');
+ if(write&&a.environment!=='sandbox')fail(409,'POS configuration is currently qualified for sandbox evaluation only');
  return role;
 }
 /** Register assignment confers no general Finance or Operations permission.
@@ -22,14 +24,18 @@ export async function registerAccess(a:Access,id:string,options:{write?:boolean;
  if(!workspaceManager&&!assignedManager&&!register.data.cashier_ids.includes(a.actor))fail(404,'Register not found');
  if(options.manager&&!workspaceManager&&!assignedManager)fail(403,'Register manager authority is required');
  if(options.write&&(!register.data.active||!configuring||!['owner','admin'].includes(configuring.role)))fail(409,'This register requires current owner policy authorization');
+ if(options.write&&a.environment!=='sandbox')fail(409,'POS operations are currently qualified for sandbox evaluation only');
  if(options.write)for(const service of ['products','orders','invoicing','cash_flow'])await requireServices(a,[service]);
- return {register,manager:workspaceManager||assignedManager,role};
+ const dependencies=await dbGet("SELECT COUNT(*) AS n FROM ac_service_entitlements e JOIN ac_services s ON s.id=e.service_id WHERE e.org_id=? AND e.environment=? AND e.service_id IN ('pos','products','orders','invoicing','cash_flow') AND e.status='active' AND s.enabled=1",[a.org,a.environment]);
+ const write_allowed=a.environment==='sandbox'&&!!register.data.active&&!!configuring&&['owner','admin'].includes(configuring.role)&&Number(dependencies.n)===5;
+ return {register,manager:workspaceManager||assignedManager,role,write_allowed};
 }
 export async function registers(a:Access){
  const role=await currentMember(a);await requireServices(a,['pos'],true);
  const rows=await dbAll("SELECT * FROM ac_erp_objects WHERE org_id=? AND environment=? AND kind='pos_register' ORDER BY created_at,id LIMIT 101",[a.org,a.environment]);
  if(rows.length>100)fail(409,'Register coverage exceeds the supported limit');
- return {data:rows.map(row=>decode(a,row)).filter(r=>['owner','admin'].includes(role)||r.data.cashier_ids.includes(a.actor)||['finance'].includes(role)&&r.data.manager_ids.includes(a.actor)),permissions:{configure:['owner','admin'].includes(role)}};
+ const service=await dbGet("SELECT e.status,s.enabled FROM ac_service_entitlements e JOIN ac_services s ON s.id=e.service_id WHERE e.org_id=? AND e.environment=? AND e.service_id='pos'",[a.org,a.environment]);
+ return {data:rows.map(row=>decode(a,row)).filter(r=>['owner','admin'].includes(role)||r.data.cashier_ids.includes(a.actor)||['finance'].includes(role)&&r.data.manager_ids.includes(a.actor)),permissions:{configure:a.environment==='sandbox'&&['owner','admin'].includes(role)&&service?.status==='active'&&Number(service.enabled)===1}};
 }
 export async function saveRegister(a:Access,id:string|null,input:unknown,key:string){
  const d=registerInput.parse(input);
@@ -59,7 +65,19 @@ export async function saveRegister(a:Access,id:string|null,input:unknown,key:str
    const open=await dbGet("SELECT session_id FROM ac_pos_sessions WHERE register_id=? AND org_id=? AND environment=? AND status='open'",[previous.id,a.org,a.environment]);
    if(open)fail(409,'Close the current session before changing register configuration');
   }
-  const {expected_version:_version,...configuration}=d,data={...configuration,policy_authorized_by:a.actor};
+  const {expected_version:_version,...configuration}=d,data={...configuration,policy_authorized_by:a.actor,policy_authorized_at:now()};
   return previous?update(a,previous,data,{status:d.active?'active':'inactive'}):insert(a,'pos_register',data,{status:d.active?'active':'inactive'});
+ });
+}
+
+/** An open shift must remain closeable after its configuring owner is revoked.
+ * A current owner explicitly adopts unchanged settings; no grant, tax, price,
+ * currency, warehouse or original shift observation is silently rewritten. */
+export async function reauthorizeRegister(a:Access,id:string,input:unknown,key:string){
+ const d=reauthorizeRegisterInput.parse(input);
+ return operation(a,'pos.register.authorize:'+id,key,d,()=>posManager(a,true),async()=>{
+  const register=await read(a,id,'pos_register');if(register.version!==d.expected_version)fail(409,'Review the current register policy before authorizing it');
+  for(const service of ['products','orders','invoicing','cash_flow'])await requireServices(a,[service]);
+  return update(a,register,{...register.data,policy_authorized_by:a.actor,policy_authorized_at:now()},{},'policy_authorized');
  });
 }

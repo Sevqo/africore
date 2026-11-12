@@ -221,6 +221,7 @@ export async function processProviderResult(
     const balance=await documentBalance(a,doc.id);
     let exception: string | undefined;
     if (['reversed','refunded'].includes(result.status)) exception = 'reversal_requires_review';
+    else if(result.status==='succeeded'&&balance.collection_hold)exception='cash_return_invoice_review';
     else if (
       ['cancelled', 'expired'].includes(request.status) ||
       request.expires_at < now()

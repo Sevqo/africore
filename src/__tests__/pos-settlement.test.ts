@@ -1,8 +1,12 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateTender,calculateDrawer,remainingCashReturn} from '../pos/settlement';
+import {calendarDay} from '../finance/money';
 
 const policy={outstanding_minor:12000,cash_minor:12000,tendered_minor:15000,intent:'cash' as const,allow_cash:true,allow_electronic:false,allow_pending:false};
+test('channel document calendars preserve the local date across UTC midnight boundaries',()=>{
+ const at='2026-11-11T22:30:00.000Z';assert.equal(calendarDay(at),'2026-11-11');assert.equal(calendarDay(at,'Africa/Nairobi'),'2026-11-12');assert.equal(calendarDay(at,'Pacific/Honolulu'),'2026-11-11');assert.throws(()=>calendarDay(at,'Fictional/Timezone'));assert.throws(()=>calendarDay('not-an-instant'));
+});
 test('POS full cash applies only the invoice balance and gives exact change',()=>{
  assert.deepEqual(calculateTender(policy),{cash_applied_minor:12000,tendered_cash_minor:15000,change_minor:3000,electronic_request_minor:0,pending_minor:0});
  for(const change of [{cash_minor:12001},{cash_minor:10000},{tendered_minor:11999},{allow_cash:false},{outstanding_minor:0}])assert.throws(()=>calculateTender({...policy,...change}));

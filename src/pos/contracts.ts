@@ -8,6 +8,7 @@ const timezone=z.string().max(80).default('Africa/Nairobi').refine(value=>{
   try{new Intl.DateTimeFormat('en',{timeZone:value});return true;}catch{return false;}
 },'Choose a supported timezone');
 const members=z.array(z.string().uuid()).max(100).refine(ids=>new Set(ids).size===ids.length,'Choose each member once');
+export const reauthorizeRegisterInput=z.object({expected_version:version,acknowledge_current_register_policy:z.literal(true),acknowledge_automated_invoicing:z.literal(true),acknowledge_recorded_cash:z.literal(true)}).strict();
 
 /** Configuring authority and member identities are resolved by the server.
  * This cannot assign a Neon role, create a shared PIN or enable live payment. */
@@ -15,6 +16,7 @@ export const registerInput=z.object({
   expected_version:z.number().int().min(0),
   name:z.string().trim().min(1).max(160),
   currency:currencySchema.default('KES'),
+  tax_bps:z.number().int().min(0).max(10_000).default(0),
   timezone,
   warehouse_id:z.string().uuid().nullable().default(null),
   location_id:z.string().uuid().nullable().default(null),
@@ -95,4 +97,13 @@ export const cashReturnInput=z.object({
   amount_minor:positiveAmount,
   reason:z.string().trim().min(8).max(1_000),
   acknowledge_physical_cash_return:z.literal(true),
+}).strict();
+export const stockReturnInput=z.object({
+ expected_sale_version:version,
+ receiving_session_id:z.string().uuid(),
+ expected_session_version:version,
+ original_dispatch_id:z.string().uuid(),
+ quantity_milli:z.number().int().positive().max(100_000_000),
+ reason:z.string().trim().min(8).max(1000),
+ acknowledge_physical_return:z.literal(true),
 }).strict();

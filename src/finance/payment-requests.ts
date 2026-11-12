@@ -67,6 +67,7 @@ export async function createPaymentRequest(a:Access,input:unknown,key:string){
           fail(409, 'Collect against the linked invoice');
       }
       const balance=await documentBalance(a,doc.id);
+      if(balance.collection_hold)fail(409,'A recorded cash return requires reviewed invoice correction before further collection');
       const id = randomUUID(),
         token = secret(),
         amount = d.amount_minor??balance.outstanding_minor,

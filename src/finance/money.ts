@@ -1,5 +1,11 @@
 /** Integer minor units throughout the financial domain. No implicit FX. */
 export const currencyDigits: Record<string, number> = {KES:2,USD:2,EUR:2,GBP:2,UGX:0,TZS:2,RWF:0};
+/** Document dates use the explicitly captured issuing calendar; provider
+ * occurrence timestamps and financial event cutoffs remain UTC instants. */
+export function calendarDay(at:string,timeZone='UTC'){
+ const value=new Date(at);if(!Number.isFinite(value.getTime()))throw new Error('Invalid calendar observation time');
+ return new Intl.DateTimeFormat('en-CA',{timeZone,year:'numeric',month:'2-digit',day:'2-digit'}).format(value);
+}
 export function exactNumber(value: bigint): number {
   if (value > BigInt(Number.MAX_SAFE_INTEGER) || value < BigInt(Number.MIN_SAFE_INTEGER)) throw Object.assign(new Error('Financial amount exceeds supported precision'), {status:400});
   return Number(value);

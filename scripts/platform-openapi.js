@@ -63,6 +63,7 @@ schemas.people_onboardingProjectInput=z.toJSONSchema(require('../dist/erp/people
 schemas.documents_documentReviewInput=z.toJSONSchema(require('../dist/erp/document-reviews').documentReviewInput,{target:'openapi-3.0',unrepresentable:'any'});
 for(const name of ['documentRequestInput','documentSubmissionInput','documentRequestCancelInput'])schemas['documents_'+name]=z.toJSONSchema(require('../dist/erp/document-requests')[name],{target:'openapi-3.0',unrepresentable:'any'});
 for(const [name,schema] of Object.entries(require('../dist/commerce/contracts')))schemas['commerce_'+name]=z.toJSONSchema(schema,{target:'openapi-3.0',unrepresentable:'any'});
+for(const [name,schema] of Object.entries(require('../dist/pos/contracts')))schemas['pos_'+name]=z.toJSONSchema(schema,{target:'openapi-3.0',unrepresentable:'any'});
 schemas.commerce_quoteInput=z.toJSONSchema(require('../dist/commerce/quote').quoteInput,{target:'openapi-3.0',unrepresentable:'any'});
 schemas.commerce_publishInput=z.toJSONSchema(require('../dist/commerce/publishing').publishInput,{target:'openapi-3.0',unrepresentable:'any'});
 schemas.commerce_checkoutPolicyInput=z.toJSONSchema(require('../dist/commerce/checkout-policy').checkoutPolicyInput,{target:'openapi-3.0',unrepresentable:'any'});
@@ -71,6 +72,7 @@ for(const name of ['publicAssetInput','withdrawAssetInput'])schemas['publishing_
 const paths = {};
 const operations = [
  ...fs.readFileSync('src/commerce/routes.ts','utf8').matchAll(/commerce\.(get|post|put|patch|delete)\s*\(\s*'([^']+)'/g),
+ ...fs.readFileSync('src/pos/routes.ts','utf8').matchAll(/pos\.(get|post|put|patch|delete)\s*\(\s*'([^']+)'/g),
  ...fs.readFileSync('src/erp/routes.ts','utf8').matchAll(/erp\.(get|post|put|patch|delete)\s*\(\s*'([^']+)'/g),
  ...fs.readFileSync('src/apps/routes.ts','utf8').matchAll(/appRoutes\.(get|post|put|patch|delete)\s*\(\s*'([^']+)'/g),
  ...fs.readFileSync('src/operations/business-routes.ts','utf8').matchAll(/business\.(get|post|put|patch|delete)\s*\(\s*'([^']+)'/g),
@@ -229,6 +231,14 @@ for (const op of operations) {
   if (path.includes('/internal')) operation.security = [{ session: [] },{ managedSession: [] }];
   if (path.includes('/callbacks/'))
     operation.security = [{ sandboxSignature: [] }];
+  if(path.includes('/pos/')){
+    operation.security=[{session:[]},{managedSession:[]}];
+    operation.description='Requires a current human Business member and current register-specific assignment. Register configuration requires owner/admin authority; cash returns, adjustments and closing require register management authority. API keys cannot act as cashiers. Sandbox qualification only; no offline queue or connected payment terminal is claimed.';
+    if(['post','put','patch','delete'].includes(method)&&!parameters.some(p=>p.name==='Idempotency-Key'))parameters.push({name:'Idempotency-Key',in:'header',required:true,schema:{type:'string',minLength:8,maxLength:200}});
+    if(operation.requestBody){const name=/\/registers(?:\/\{id\})?$/.test(path)?'registerInput':path.endsWith('/authorize')?'reauthorizeRegisterInput':path.endsWith('/sessions')?'openSessionInput':path.endsWith('/adjustments')?'cashAdjustmentInput':path.endsWith('/close')?'closeSessionInput':path.endsWith('/drafts')?'saleDraftInput':path.endsWith('/draft')?'editSaleDraftInput':path.endsWith('/confirm')?'confirmSaleInput':path.endsWith('/handover')?'handoverInput':path.endsWith('/stock-return')?'stockReturnInput':path.endsWith('/cash-return')?'cashReturnInput':null;if(name)operation.requestBody.content['application/json'].schema={$ref:'#/components/schemas/pos_'+name};}
+    if(method==='get'&&path.endsWith('/products')&&!parameters.some(p=>p.name==='q'))parameters.push({name:'q',in:'query',schema:{type:'string',maxLength:100},description:'Literal product name, SKU or keyboard barcode search; no wildcard interpretation.'});
+    if(method==='get'&&path.endsWith('/sales')&&!parameters.some(p=>p.name==='state'))parameters.push({name:'state',in:'query',schema:{type:'string',enum:['draft','confirmed']}});
+  }
   if(path.includes('/commerce/')){
     operation.security=[{session:[]},{managedSession:[]}];
     if(['post','put','patch','delete'].includes(method)&&!path.endsWith('/quote')&&!parameters.some(p=>p.name==='Idempotency-Key'))parameters.push({name:'Idempotency-Key',in:'header',required:true,schema:{type:'string',minLength:8,maxLength:200}});

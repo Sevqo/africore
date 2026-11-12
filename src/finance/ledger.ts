@@ -16,7 +16,11 @@ export async function documentBalance(a:Access,id:string,asOf?:string){
  const recorded_cash_paid_minor=sumMinor(allocations.filter(r=>r.evidence_kind==='cash_observation').map(r=>r.amount_minor));
  const provider_paid_minor=sumMinor(allocations.filter(r=>r.evidence_kind===undefined||r.evidence_kind==='provider_event').map(r=>r.amount_minor));
  if(recorded_cash_paid_minor<0||provider_paid_minor<0||sumMinor([recorded_cash_paid_minor,provider_paid_minor])!==paid_minor)reject('Document payment evidence requires financial review');
- return {...document,id,kind:row.kind,paid_minor,provider_paid_minor,recorded_cash_paid_minor,credited_minor,outstanding_minor};
+ const cash_returned_minor=sumMinor(allocations.filter(r=>r.evidence_kind==='cash_observation'&&Number(r.amount_minor)<0).map(r=>-Number(r.amount_minor)));
+ // Derive from immutable returns, never a client-writable release flag. A
+ // reviewed credit can close the balance without erasing the return history.
+ const collection_hold=cash_returned_minor>0&&outstanding_minor>0?{reason:'recorded_cash_return_requires_invoice_review',cash_returned_minor}:null;
+ return {...document,id,kind:row.kind,paid_minor,provider_paid_minor,recorded_cash_paid_minor,cash_returned_minor,collection_hold,credited_minor,outstanding_minor};
 }
 export async function refreshDocument(a:Access,id:string){
  const d=await documentBalance(a,id);

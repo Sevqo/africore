@@ -29,7 +29,8 @@ export async function openSession(a:Access,registerId:string,input:unknown,key:s
   const {register}=await registerAccess(a,registerId,{write:true});
   if(register.version!==d.expected_register_version)fail(409,'Register policy changed; reload before opening');
   if(await dbGet("SELECT session_id FROM ac_pos_sessions WHERE org_id=? AND environment=? AND register_id=? AND status='open'",[a.org,a.environment,registerId]))fail(409,'This register already has an open session');
-  const at=now(),session=await insert(a,'pos_session',{cashier_id:a.actor,register_version:register.version,currency:register.data.currency,timezone:register.data.timezone,opening_cash_minor:d.opening_cash_minor,opening_note:d.note,opened_at:at},{root:registerId,status:'open'});
+  const profile=await dbGet('SELECT u.email,p.display_name FROM ac_users u LEFT JOIN ac_profiles p ON p.user_id=u.id WHERE u.id=?',[a.actor]);
+  const at=now(),session=await insert(a,'pos_session',{cashier_id:a.actor,cashier_label:profile?.display_name||profile?.email||a.actor,register_version:register.version,currency:register.data.currency,timezone:register.data.timezone,opening_cash_minor:d.opening_cash_minor,opening_note:d.note,opened_at:at},{root:registerId,status:'open'});
   await dbRun('INSERT INTO ac_pos_sessions(session_id,org_id,environment,register_id,cashier_id,status,opened_at) VALUES (?,?,?,?,?,?,?)',[session.id,a.org,a.environment,registerId,a.actor,'open',at]);
   return {session_id:session.id};
  });return drawer(a,result.session_id);

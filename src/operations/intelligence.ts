@@ -142,6 +142,9 @@ export async function financialSnapshot(
   if(query.range==='all'&&!query.from){const dates=[...invoices.map(i=>i.issue_date),...events.map(e=>e.created_at.slice(0,10)),...transactions.map(t=>t.occurred_at.slice(0,10)),...expenses.map(e=>e.occurred_on)].filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d)&&d<=to).sort();from=dates[0]||to;}
   const inPeriod = (d: string) =>
     d.slice(0, 10) >= from && d.slice(0, 10) <= to;
+  const invoiceCurrencies=new Map(invoices.map(i=>[i.id,i.currency]));
+  const cashObservations=allocations.filter(row=>row.evidence_kind==='cash_observation'&&invoiceCurrencies.get(row.document_id)===query.currency&&inPeriod(row.created_at));
+  const cashReceipts=cashObservations.filter(row=>Number(row.amount_minor)>0),cashReturns=cashObservations.filter(row=>Number(row.amount_minor)<0);
   const issued = invoices.filter(
     (i) =>
       i.currency === query.currency &&
@@ -178,9 +181,13 @@ export async function financialSnapshot(
       date: string;
       confirmed_inflows_minor: number;
       recorded_outflows_minor: number;
+      recorded_cash_receipts_minor:number;
+      recorded_cash_returns_minor:number;
     }
   >();
-  const point=(date:string)=>{let value=periods.get(date);if(!value){value={date,confirmed_inflows_minor:0,recorded_outflows_minor:0};periods.set(date,value);}return value;};
+  const point=(date:string)=>{let value=periods.get(date);if(!value){value={date,confirmed_inflows_minor:0,recorded_outflows_minor:0,recorded_cash_receipts_minor:0,recorded_cash_returns_minor:0};periods.set(date,value);}return value;};
+  for(const e of cashReceipts){const row=point(e.created_at.slice(0,10));row.recorded_cash_receipts_minor=sumMinor([row.recorded_cash_receipts_minor,e.amount_minor]);}
+  for(const e of cashReturns){const row=point(e.created_at.slice(0,10));row.recorded_cash_returns_minor=sumMinor([row.recorded_cash_returns_minor,-Number(e.amount_minor)]);}
   for (const e of confirmed)
     point(e.created_at.slice(0, 10)).confirmed_inflows_minor += Number(
       e.amount_minor,
@@ -395,15 +402,16 @@ export async function financialSnapshot(
     period: { from, to },
     as_of: to,
     refreshed_at:now(),
-    metric_metadata:Object.fromEntries(['confirmed_inflows_minor','recorded_outflows_minor','net_movement_minor','outstanding_minor','overdue_minor'].map(key=>[key,{currency:query.currency,period:{from,to},source:'authorized_canonical_records',calculation:key==='net_movement_minor'?'confirmed inflows less linked returns and recorded outflows':key==='outstanding_minor'?'issued invoice value less effective allocations and credits as of period end':'See shared metric definitions',completeness:'Covered records only; consult quality notices',refreshed_at:now()}])),
+    metric_metadata:Object.fromEntries(['confirmed_inflows_minor','recorded_outflows_minor','net_movement_minor','outstanding_minor','overdue_minor','recorded_cash_receipts_minor','recorded_cash_returns_minor','recorded_cash_net_minor'].map(key=>[key,{currency:query.currency,period:{from,to},source:key.startsWith('recorded_cash_')?'merchant_observed_physical_cash':'authorized_canonical_records',calculation:key==='net_movement_minor'?'confirmed inflows less linked returns and recorded outflows':key==='outstanding_minor'?'issued invoice value less effective allocations and credits as of period end':key.startsWith('recorded_cash_')?'Scoped recorded cash receipts and linked cash returns only; opening float and adjustments excluded':'See shared metric definitions',completeness:'Covered records only; consult quality notices',refreshed_at:now()}])),
     expense_categories:[...new Set(moneyExpenses.map(e=>e.category||'other'))].map(category=>({category,amount_minor:sum(moneyExpenses.filter(e=>(e.category||'other')===category),'amount_minor'),currency:query.currency,classification:'merchant_recorded'})),
     definitions: {
       confirmed_inflows:
         'Provider-confirmed collections less linked, confirmed returns in the selected occurrence period. Sandbox provider results are simulations.',
+      recorded_cash:'Merchant-observed physical cash receipts and linked cash returned, reported separately from provider confirmation. Opening float and drawer adjustments are excluded. Neither source establishes bank balance or profit.',
       recorded_outflows:
         'Self-reported expenses plus uncategorized merchant-imported outflows; not a verified expense ledger.',
       net_movement:
-        'Recorded coverage only; not available bank balance or profit.',
+        'Provider-confirmed collections less linked returns and recorded outflows. Recorded physical cash is reported separately; this is not bank balance or profit.',
       receivables:
         'Issued invoices at range end, less effective allocations and credit notes as of that date.',
     },
@@ -411,6 +419,7 @@ export async function financialSnapshot(
       confirmed_inflows_minor: sum(confirmed, 'amount_minor')-sum(returns,'amount_minor'),
       merchant_imported_inflows_minor:sum(transactions.filter(t=>t.type==='inflow'&&t.currency===query.currency&&inPeriod(t.occurred_at)),'amount_minor'),
       gross_confirmed_inflows_minor:sum(confirmed,'amount_minor'),returned_minor:sum(returns,'amount_minor'),
+      recorded_cash_receipts_minor:sum(cashReceipts,'amount_minor'),recorded_cash_returns_minor:Math.abs(sum(cashReturns,'amount_minor')),recorded_cash_net_minor:sum(cashObservations,'amount_minor'),
       recorded_outflows_minor: outflows,
       net_movement_minor: sum(confirmed, 'amount_minor') -sum(returns,'amount_minor')- outflows,
       outstanding_minor: outstanding,

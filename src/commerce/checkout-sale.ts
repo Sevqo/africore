@@ -17,7 +17,7 @@ export async function createCheckoutSale(a:Access,s:ERPObject,cart:any,quote:any
  if(quote.discount_minor>basisPoints(quote.subtotal_minor,businessPolicy.configuration.discount_approval_bps))fail(409,'This discount requires merchant approval before checkout');
  const meterCustomer=(await entitlement(a,'customers'))?.status==='active';
  for(const service of [...(meterCustomer?['customers']:[]),'orders','invoicing'])await checkLimits(a,service,1);
- const provenance={channel:'commerce',store_id:s.id,cart_id:cart.id,policy_owner:policyOwner,requested_by:a.actor,contact_verification:'guest_unverified'};
+ const provenance={channel:'commerce',store_id:s.id,cart_id:cart.id,policy_owner:policyOwner,requested_by:a.actor,contact_verification:'guest_unverified',timezone:s.data.settings.timezone,document_date_basis:'store_calendar'};
  // Guest contact never merges existing customers or Neon subjects.
  const address=contact.delivery_address?Object.values(contact.delivery_address).filter(Boolean).join(', '):'';
  const customer=await save(a,'customers',{name:contact.name,type:'individual',email:contact.email,phone:contact.phone,address,notes:'Created by sandbox storefront checkout. Guest contact is unverified.',commerce_source:provenance,marketing_consent:{state:contact.marketing_opt_in?'pending_confirmation':'not_requested',notice_version:contact.consent_notice_version,recorded_at:cart.data.contact_recorded_at}});

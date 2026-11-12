@@ -1,4 +1,5 @@
 import {CommerceWorkspace} from './commerce/CommerceWorkspace';
+import {POSWorkspace} from './pos/POSWorkspace';
 import {ProcurementWorkspace} from './apps/ProcurementWorkspace';
 import {DocumentsWorkspace} from './apps/DocumentsWorkspace';
 import {PeopleWorkspace} from './apps/PeopleWorkspace';
@@ -150,6 +151,7 @@ export function Checkout() {
             {['paid','credited'].includes(data.status)&&<p role="status">This invoice is settled. No further payment is needed. Historical payment evidence remains available below.</p>}
             {data.status==='partially_paid'&&<p>A partial payment is recorded. Ask the merchant for a new request covering the remaining invoice balance; this receipt cannot be charged again.</p>}
             {data.payment_unavailable_reason==='request_exceeds_remaining_balance'&&<p>This request exceeds the remaining invoice balance. Ask the merchant for a new link; the original request amount has not been changed.</p>}
+            {data.payment_unavailable_reason==='recorded_cash_return_requires_invoice_review'&&<p role="status">Payment is paused while the merchant reviews an invoice correction for recorded cash returned. Do not make another payment for that returned amount.</p>}
             {data.receipts?.length>0&&<section aria-label="Payment evidence"><h2>Payment evidence</h2>{data.receipts.map((receipt:any)=><article key={receipt.id}><p>{money(receipt.amount_minor,receipt.currency)} · {receipt.status} · {new Date(receipt.occurred_at).toLocaleString()}</p><p>{receipt.effect==='requires_review'?'Reversal evidence awaits merchant review. The original settlement has not been reversed.':receipt.effect==='applied_return'?'Confirmed return applied to the original payment.':'Recorded payment confirmation.'}</p></article>)}<small>{data.receipt_coverage}</small></section>}
             {data.request_status === 'paid' && (
               <details><summary>Sandbox evidence test</summary><p>This reports an unlinked reversal for merchant review. It does not refund money or change invoice allocations. A linked simulator return is performed by authorized staff in Payment activity.</p><button
@@ -226,7 +228,8 @@ const navigation: { label: string; icon: IconName; items: string[] }[] = [
   },
   { label: 'Administration', icon: 'settings', items: ['Team', 'Settings'] },
 ];
-const tabs = navigation.flatMap((group) => group.items);
+const directAppTabs=['Point of Sale','Commerce','Procurement','Customer Relationships','Products','Inventory','Quotations','Work','Accounting','People','Documents'];
+const tabs = [...new Set([...navigation.flatMap((group) => group.items),...directAppTabs])];
 export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:any}={}) {
   const [resolvingOrgs,setResolvingOrgs]=useState(true),[orgLoadError,setOrgLoadError]=useState('');
   const workspaceSwitch = useRef(0);
@@ -335,7 +338,7 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
     if (currentScope.current !== viewScope) return;
     const latest = requestGate.current.begin();
     const current = () => latest() && currentScope.current === viewScope;
-    if (!org || ['Apps','Commerce','Procurement','Customer Relationships','Products','Inventory','Quotations','Work','Accounting','People','Documents'].includes(tab) || tab==='Expenses' || marketTabs.includes(tab) || !canReadServiceTab(market,tab) || tab === 'Business Passport' || operationsTabs.includes(tab)) {
+    if (!org || tab==='Apps' || directAppTabs.includes(tab) || tab==='Expenses' || marketTabs.includes(tab) || !canReadServiceTab(market,tab) || tab === 'Business Passport' || operationsTabs.includes(tab)) {
       setError('');
       setBusy(false);
       return;
@@ -1024,6 +1027,7 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
 {tab==='Products'&&<ProductCatalog writable={!!writable} api={call} scope={org+'\0'+environment}/>}
 {tab==='Inventory'&&<InventoryWorkspace writable={!!writable} api={call} scope={org+'\0'+environment}/>}
 {tab==='Accounting'&&<AccountingWorkspace key={org+'\0'+environment} api={call} scope={org+'\0'+environment} manager={adminWritable} navigate={setTab}/>}
+{tab==='Point of Sale'&&<POSWorkspace key={org+'\0'+environment} api={call} scope={org+'\0'+environment} manager={adminWritable} navigate={setTab}/>}
 {tab==='Commerce'&&<CommerceWorkspace key={org+'\0'+environment} api={call} scope={org+'\0'+environment} manager={adminWritable} navigate={setTab}/>}
 {tab==='Procurement'&&<ProcurementWorkspace key={org+'\0'+environment} api={call} scope={org+'\0'+environment}/>}
 {tab==='Documents'&&<DocumentsWorkspace key={org+'\0'+environment} api={call} scope={org+'\0'+environment}/>}

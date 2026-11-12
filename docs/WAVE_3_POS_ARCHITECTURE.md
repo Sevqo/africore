@@ -37,3 +37,11 @@ The first qualified implementation remains network-required. No offline transact
 ## Required qualification
 
 Fresh SQLite and PostgreSQL tests must cover wrong register/workspace/environment, revoked cashier/configuring-owner authority, duplicate/concurrent sales, stock competition with Commerce, split tender, overpayment, linked returns, exact cash variance, closed-shift writes, service caps, unchanged confirmed-provider totals and independent Accounting approval. Browser checks must exercise product/barcode search, cash tender/change, pending electronic status, receipt, handover, shift closing and mobile layout using fictional data only. POS must not enter the app registry merely because its schema exists.
+
+## Integrated implementation and rollback floor — 12 November 2026
+
+Migration 019 is now wired into local migration and hosted verify-only readiness, including the allocation evidence-kind column. POS routes enforce current human register assignment under shared membership and environment fences. Confirmation uses the canonical channel-sale conversion. Cash observations, source adapters, collection holds and canonical stock returns are implemented and qualified as recorded in WAVE_3_IMPLEMENTATION_REPORT.md.
+
+A cash return derives a collection hold from immutable cash history while outstanding remains. Payment creation/initiation, local collection and manual allocation reject that state; late authenticated provider confirmation is retained as a review exception. Exact independently reviewed credits can close the receivable. Never roll back to readers that ignore cash evidence classification or returned-cash holds after those facts exist. Restore compatible application readers together; do not remove immutable financial facts to make an older reader run.
+
+Before hosted deployment, qualify guarded encrypted backup/readback for additive migrations 017–019 on the approved development branch, verify previous financial/identity rows, deploy compatible backend readers first, verify readiness and only then publish the frontend. Existing browser tabs must reload the updated interface; the new unknown-app fallback no longer opens Automations for an unsupported app. No hosted migration or release has occurred at this checkpoint. Live provider/physical hardware/offline operation remain unqualified.

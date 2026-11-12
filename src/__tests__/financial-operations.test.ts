@@ -98,6 +98,11 @@ test('cash allocation classification changes receivables without fabricating con
   let balance=await documentBalance(access(),id);assert.equal(balance.paid_minor,3000);assert.equal(balance.provider_paid_minor,1000);assert.equal(balance.recorded_cash_paid_minor,2000);assert.equal(balance.outstanding_minor,7000);
   await add(-500,'return',receipt);
   balance=await documentBalance(access(),id);assert.equal(balance.paid_minor,2500);assert.equal(balance.recorded_cash_paid_minor,1500);assert.equal(balance.outstanding_minor,7500);
+  assert.equal(balance.cash_returned_minor,500);assert.equal(balance.collection_hold?.reason,'recorded_cash_return_requires_invoice_review');
+  const {createPaymentRequest}=await import('../finance/payment-requests');
+  await assert.rejects(createPaymentRequest(access(),{document_id:id},randomUUID()),/reviewed invoice correction/);
+  const {checkoutSummary}=await import('../finance/checkout');
+  const held=await checkoutSummary({...await dbGet('SELECT * FROM ac_requests WHERE id=?',[payment.id]),status:'pending',amount_minor:1000});assert.equal(held.can_pay,false);assert.equal(held.payment_unavailable_reason,'recorded_cash_return_requires_invoice_review');
   const historical=await documentBalance(access(),id,'2000-01-01');assert.equal(historical.paid_minor,0);assert.equal(historical.recorded_cash_paid_minor,0);
   await assert.rejects(documentBalance({...access(),environment:'production'},id),/not found/);
   assert.equal(Number((await dbGet('SELECT COUNT(*) AS n FROM ac_events WHERE id=?',[receipt])).n),0);

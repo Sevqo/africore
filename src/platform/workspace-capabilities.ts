@@ -1,4 +1,5 @@
 import {commerceRouteKinds} from '../commerce/metadata';
+import {posRouteKinds} from '../pos/metadata';
 import {erpRouteKinds} from '../erp/metadata';
 import {connectedRouteKinds} from '../operations/connected-metadata';
 import {appRouteKinds} from '../apps/metadata';
@@ -8,6 +9,7 @@ import {financeRouteKinds} from '../finance/metadata';
 import {marketplaceRouteKinds} from '../marketplace/metadata';
 export const workspaceRouteKinds:Record<string,readonly string[]>={
  ...commerceRouteKinds,
+ ...posRouteKinds,
   "GET /organizations/:org/request-logs": [
     "business",
     "developer"

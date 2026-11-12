@@ -1,0 +1,21 @@
+{
+  "date": "2026-11-12",
+  "scope": "POS integrated local checkpoint; not Wave 3 completion",
+  "database_targets": "Disposable local SQLite and PostgreSQL only; never Neon",
+  "postgres": { "tests": 433, "passed": 433, "failed": 0 },
+  "sqlite": { "tests": 433, "passed": 432, "skipped": 1, "failed": 0 },
+  "website": { "passed": 62, "failed": 0 },
+  "contracts": { "workspace": 426, "legacy": 59 },
+  "gateway": { "passed": 10 },
+  "development_startup": { "passed": 3 },
+  "lint_architecture": { "passed": true, "frontend_modules": 163 },
+  "local_chain": "passed isolated contract/credential/authorization/anchor checks",
+  "browser": {
+    "data": "Fictional local sandbox fixture",
+    "observed": ["cash tender and change", "paid explicit dispatch", "original-dispatch physical return", "cash return with collection hold", "zero-variance counted closure", "receipt after closure", "app refresh", "stale calendar-day quote rejected"],
+    "mobile": [ { "viewport": 320, "document": 305, "scroll": 305 }, { "viewport": 390, "document": 375, "scroll": 375 } ],
+    "physical_devices_printers_and_terminals": "not qualified"
+  },
+  "hosted": { "deployed": false, "migrations_017_018_019": "not applied" },
+  "remaining": "POS daily dashboard/report, remaining Commerce scope, Website/Marketing/Support/Subscriptions, core acceptance and guarded release; platform UI phase follows core qualification"
+}
