@@ -8,3 +8,51 @@
 .merchant-name{display:inline-flex;align-items:center;gap:10px}.merchant-logo{width:36px;height:36px;object-fit:contain;flex:none}.merchant-product-media{aspect-ratio:4/3;background:#f0f1ec;border-bottom:1px solid #e0e6d9;overflow:hidden}.merchant-product-media img{display:block;width:100%;height:100%;object-fit:contain}.merchant-product-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.merchant-product-gallery .merchant-product-media{border:1px solid #dfe3d9;border-radius:8px}.merchant-comparison{font-size:12px;color:#53604b;line-height:1.5}
 .merchant-cart{margin-top:28px;background:#fff;border:1px solid #dfe3d9;border-radius:10px;padding:22px;max-width:900px}.merchant-cart h2{font-size:23px;margin:0}.merchant-cart h3{font-size:18px}.merchant-cart p{font-size:14px;line-height:1.6}.merchant-cart-heading{display:flex;justify-content:space-between;align-items:center;gap:16px}.merchant-cart-lines{list-style:none;padding:0;margin:20px 0}.merchant-cart-lines li{display:flex;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid #e0e6d9}.merchant-cart-lines li>div{flex:1;overflow-wrap:anywhere}.merchant-cart-lines li>label{max-width:110px}.merchant-cart label{display:flex;flex-direction:column;gap:7px;font-size:14px;font-weight:600}.merchant-cart input,.merchant-cart select{min-width:0;width:100%}.merchant-cart-totals{max-width:420px;margin:22px 0 22px auto}.merchant-cart-totals>div{display:flex;justify-content:space-between;gap:20px;padding:7px 0}.merchant-cart-totals dd{margin:0;font-weight:600}.merchant-cart-totals>div:last-child{border-top:1px solid #dfe3d9;padding-top:12px}.merchant-checkout-form fieldset{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;border:0;margin:0;padding:0}.merchant-checkout-form>p{max-width:650px}.merchant-cart label.merchant-cart-check{display:flex;flex-direction:row;align-items:start;gap:10px;font-weight:400;line-height:1.5;grid-column:1/-1}.merchant-cart-check input{width:20px;min-height:20px;height:20px;flex:none;margin-top:2px}.merchant-cart-confirm{margin-top:22px;display:grid;gap:16px}.merchant-cart-confirm button,.merchant-checkout-form button{justify-self:start}.merchant-cart-notice{color:#53604b;border-top:1px solid #dfe3d9;padding-top:16px;margin-top:22px}.merchant-add-button{width:100%;background:#edf3e6!important}.merchant-checkout-link{display:inline-block;padding:12px 16px;border:1px solid #466b1d;border-radius:8px;font-weight:600}
 @media(max-width:600px){.merchant-cart{padding:16px}.merchant-cart-lines li{flex-wrap:wrap;gap:10px}.merchant-cart-lines li>div{flex-basis:100%}.merchant-checkout-form fieldset{grid-template-columns:minmax(0,1fr)}.merchant-cart-totals{max-width:none}.merchant-cart-heading{align-items:start}.merchant-cart h2{font-size:20px}.merchant-cart-heading button{font-size:14px}}
+
+/* Approved marketplace composition; all merchandising is the merchant's published data. */
+.merchant-store{background:#f6f8f6;padding-left:210px;--shop-line:#e1e7e1}
+.merchant-sidebar{position:fixed;inset:0 auto 0 0;width:210px;background:#1b2226;color:#e4ece5;padding:24px 14px;display:flex;flex-direction:column;z-index:25}
+.merchant-sidebar-brand{font-size:22px;font-weight:750;letter-spacing:-.04em;text-decoration:none;overflow-wrap:anywhere;padding:0 10px 24px;border-bottom:1px solid #394344}
+.merchant-sidebar nav{display:grid;gap:7px;margin-top:24px}
+.merchant-sidebar nav a{display:flex;gap:12px;align-items:center;padding:12px 10px;text-decoration:none;border-radius:7px;font-size:13px}
+.merchant-sidebar nav a:first-child{background:#4d8e11;color:white}
+.merchant-sidebar .icon{width:19px;height:19px}
+.merchant-sidebar>div{margin-top:auto;padding:20px 10px 0;border-top:1px solid #394344;display:grid;gap:9px;font-size:11px;color:#b6c6ba}
+.merchant-header{padding:18px 26px;min-height:72px;gap:20px;position:sticky;top:0;z-index:20;border-color:var(--shop-line)}
+.merchant-header .merchant-name{font-size:22px;letter-spacing:-.03em;border:0;padding:0}
+.merchant-main{max-width:1500px;padding:0 26px 40px}
+.merchant-intro{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:30px;align-items:center;padding:36px;border:0;border-radius:12px;background:linear-gradient(110deg,#1c4432,#355b35);color:white;margin:20px 0 28px;min-height:260px;overflow:hidden}
+.merchant-intro h1{font-size:clamp(28px,3vw,48px);letter-spacing:-.045em;margin:10px 0;max-width:20ch}
+.merchant-intro p{font-size:15px;line-height:1.6;max-width:48ch;color:#e0ecdf}
+.merchant-intro .store-eyebrow{font-size:11px;color:#c0ddad;letter-spacing:.06em}
+.merchant-intro .merchant-product-media{border:0;background:transparent;aspect-ratio:1.5;border-radius:10px}
+.merchant-intro .merchant-product-media img{max-height:280px;mix-blend-mode:normal}
+.merchant-intro:not(:has(.merchant-product-media)){grid-template-columns:1fr}
+.merchant-shop-action{display:inline-flex;align-items:center;gap:10px;margin-top:12px;padding:10px 18px;border-radius:7px;background:#76b900;color:#11220a!important;text-decoration:none;font-weight:700;font-size:14px}
+.merchant-shop-action .icon{width:18px}
+.merchant-catalog-toolbar{padding:20px 0 14px;gap:16px;border-bottom:1px solid var(--shop-line)}
+.merchant-catalog-toolbar form>div{border:1px solid #a2ba89;border-radius:8px;background:white;padding:3px;margin-top:5px}
+.merchant-catalog-toolbar form input{border:0;min-height:38px}
+.merchant-catalog-toolbar form button{background:#588e15;color:white;border:0;min-height:38px}
+.merchant-catalog-toolbar label{font-size:12px}
+.merchant-catalog-toolbar>p{font-size:11px}
+.merchant-collections{display:flex;overflow-x:auto;gap:10px;padding:16px 0 0;scrollbar-width:thin}
+.merchant-collections button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-width:115px;max-width:180px;min-height:76px;font-size:12px;border-color:var(--shop-line);background:white}
+.merchant-collections button[aria-pressed=true]{background:#e7f3dc;border-color:#cce2b5;color:#3d701a}
+.merchant-collections .icon{width:24px;height:24px}
+.merchant-product-grid,.theme-compact .merchant-product-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.merchant-product{border-color:var(--shop-line);border-radius:9px;box-shadow:0 2px 4px #172b1904}
+.merchant-product-media{aspect-ratio:1.2;background:#fff;padding:12px;border:0}
+.merchant-product-mark{height:160px;background:#f0f4ee;border:0;font-family:var(--font-body);font-size:42px;color:#91a18c}
+.merchant-product-copy,.theme-compact .merchant-product-copy{padding:14px}
+.merchant-product h3{font-size:15px;line-height:1.4;margin:8px 0;font-weight:650}
+.merchant-product .store-eyebrow{font-size:10px;color:#74806d}
+.merchant-price{font-size:18px;letter-spacing:-.025em;margin:12px 0}
+.merchant-add-button{font-size:13px!important;min-height:38px!important;background:#629b1a!important;color:white!important;border-color:#629b1a!important}
+.merchant-details-button{font-size:12px!important;min-height:36px!important;background:#f9fbf8!important;border-color:var(--shop-line)!important}
+.merchant-product-description{font-size:12px}
+.merchant-footer{padding:24px 26px;border-color:var(--shop-line);background:white}
+@media(max-width:1200px){.merchant-product-grid,.theme-compact .merchant-product-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.merchant-sidebar{width:185px}.merchant-store{padding-left:185px}}
+@media(max-width:900px){.merchant-store{padding-left:0}.merchant-sidebar{display:none}.merchant-product-grid,.theme-compact .merchant-product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.merchant-header{position:static}.merchant-intro{padding:26px;gap:20px}}
+@media(max-width:480px){.merchant-main{padding:0 14px 30px}.merchant-header{padding:16px 14px;gap:12px}.merchant-header nav{gap:12px}.merchant-intro{grid-template-columns:1fr;padding:24px;margin:16px 0 22px}.merchant-intro .merchant-product-media{max-height:190px}.merchant-product-grid,.theme-compact .merchant-product-grid{gap:10px}.merchant-product h3{font-size:14px}.merchant-product-copy{padding:12px}.merchant-price{font-size:17px}.merchant-product-media{padding:8px}.merchant-product-mark{height:125px}.merchant-store button{min-height:44px!important}.merchant-catalog-toolbar form>div{flex-wrap:nowrap}.merchant-product .merchant-add-button,.merchant-product .merchant-details-button{font-size:12px!important;padding:8px}.merchant-collections button{min-width:100px;font-size:11px}.merchant-footer{padding:20px 14px}}
+@media(max-width:350px){.merchant-product-grid,.theme-compact .merchant-product-grid{grid-template-columns:1fr}}
