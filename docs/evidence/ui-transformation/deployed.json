@@ -1,0 +1,64 @@
+{
+  "dateUTC": "2026-11-12T15:50:27.520Z",
+  "sourceCommit": "38e2353",
+  "cloudflareVersion": "5114299d-952b-40ca-995e-d20b28150353",
+  "url": "https://africore-web.cypriankiprop41.workers.dev",
+  "checks": [
+    {
+      "path": "/",
+      "status": 200,
+      "contentType": "text/html"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "contentType": "text/html"
+    },
+    {
+      "path": "/app/personal",
+      "status": 200,
+      "contentType": "text/html"
+    },
+    {
+      "path": "/app/developer",
+      "status": 200,
+      "contentType": "text/html"
+    },
+    {
+      "path": "/api/auth/config",
+      "status": 200,
+      "contentType": "application/json"
+    },
+    {
+      "path": "/api/auth/account",
+      "status": 503,
+      "contentType": "application/json"
+    },
+    {
+      "path": "/assets/AccountingWorkspace-BALqkUfD.js",
+      "status": 200,
+      "sha256MatchesBuild": true
+    },
+    {
+      "path": "/assets/BusinessApp-Cu_YgwUE.css",
+      "status": 200,
+      "sha256MatchesBuild": true
+    },
+    {
+      "path": "/assets/FinanceDashboard-Dl3pXz-B.js",
+      "status": 200,
+      "sha256MatchesBuild": true
+    },
+    {
+      "path": "/assets/index-CfsgeN7A.css",
+      "status": 200,
+      "sha256MatchesBuild": true
+    },
+    {
+      "path": "/assets/WorkWorkspace-3otuvVSv.js",
+      "status": 200,
+      "sha256MatchesBuild": true
+    }
+  ],
+  "limits": "Node HTTP asset verification passed; Python client denied by edge. Anonymous account API repeatedly returned 503 backend_unavailable; cause not established. Hosted sign-in/backend acceptance not claimed. No hosted mutations or physical-device qualification."
+}

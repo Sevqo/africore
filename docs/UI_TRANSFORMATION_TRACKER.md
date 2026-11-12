@@ -198,3 +198,10 @@ Five-role read checks and restricted-view browser checks passed: Accounting and 
 Local UI work is complete within this bounded matrix. Physical iPhone/Safari, comprehensive screen-reader/WCAG certification, real network performance timings, external providers/mailbox delivery and hosted release verification were not performed. Module-preload inspection confirms Finance does not preload the other app workspaces; it does not establish Core Web Vitals. Some full-page captures include sticky-header stitching artifacts; targeted viewport screenshots and DOM geometry provide the critical layout checks.
 
 No main push, deployment, hosted database tests, live funds, external AI activation or missing-app implementation occurred. The hosted preview is unchanged. Original catalog service aliases and authorization gates remain intact. Evidence: [acceptance summary](evidence/ui-transformation/acceptance/QA_SUMMARY.md).
+
+
+## Cloudflare UI release — 12 November 2026
+
+Owner explicitly authorized commit and deployment after local acceptance. UI source commit `38e2353` was pushed to main and deployed to the existing `africore-web` Worker at https://africore-web.cypriankiprop41.workers.dev. Active version `5114299d-952b-40ca-995e-d20b28150353` receives 100% of traffic according to Wrangler deployment listing. Cloudflare gateway tests 10/10 and dry-run passed; 96 changed assets uploaded successfully.
+
+Node HTTPS checks: homepage, login, Personal and Developer route HTML and auth configuration returned 200. Five checked content-hashed CSS/workspace assets returned 200 and exactly matched the local tested build SHA-256. Anonymous account API repeatedly returned 503 backend_unavailable; its cause is not established and hosted sign-in/backend acceptance is not claimed. Python HTTP client was denied by the edge; successful checks used Node. No keys, bindings, migrations or hosted records were changed. See evidence/ui-transformation/deployed.json. Earlier “not deployed” statements describe the preceding local acceptance checkpoint and are superseded by this release entry.

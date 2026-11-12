@@ -31,3 +31,10 @@ Existing Cloudflare Worker africore-web published version eca89b18-a110-459a-9b7
 Post-deployment probes: homepage/login/auth-config/readiness200; anonymous account401; direct backend account403. The approved synthetic managed Neon session resolved account200 and Personal/Business/Developer resources200. Additional assertions confirmed Personal series and member/invitation arrays from the new backend. No hosted financial or founder records were changed by these read-only checks. Deployed explicit browser demo displayed the compact dashboard and truthful synthetic/test labels.
 
 Frontend final23/23 checks, backend213cases(212SQLitepass+1PG-only skip;213PostgreSQLpass), all required local gates passed. Local disposable PostgreSQL stopped. Free Render sleep/cold-start, manual invitation delivery, physical iPhone/mailbox qualification and production authorization limits remain as documented. Automatic deployment secrets were not added; this release used existing manual deployment paths.
+
+
+## Cloudflare UI release — 12 November 2026
+
+Owner explicitly authorized commit and deployment after local acceptance. UI source commit `38e2353` was pushed to main and deployed to the existing `africore-web` Worker at https://africore-web.cypriankiprop41.workers.dev. Active version `5114299d-952b-40ca-995e-d20b28150353` receives 100% of traffic according to Wrangler deployment listing. Cloudflare gateway tests 10/10 and dry-run passed; 96 changed assets uploaded successfully.
+
+Node HTTPS checks: homepage, login, Personal and Developer route HTML and auth configuration returned 200. Five checked content-hashed CSS/workspace assets returned 200 and exactly matched the local tested build SHA-256. Anonymous account API repeatedly returned 503 backend_unavailable; its cause is not established and hosted sign-in/backend acceptance is not claimed. Python HTTP client was denied by the edge; successful checks used Node. No keys, bindings, migrations or hosted records were changed. See evidence/ui-transformation/deployed.json. Earlier “not deployed” statements describe the preceding local acceptance checkpoint and are superseded by this release entry.
