@@ -617,7 +617,8 @@ platform.get(
 );
 platform.post(
   '/checkout/:token/pay',
-  route(async (req, res) => dbTransaction(async()=>{
+  route(async (req, res) => {
+   const outcome=await dbTransaction(async()=>{
     const token = z.string().length(64).parse(req.params.token),
       scenario = z
         .enum([
@@ -648,8 +649,10 @@ platform.post(
     if(scenario!=='reversed'&&['pending','failed'].includes(r.status)&&!(await checkoutSummary(r)).can_pay)
       fail(409,'This document is already settled or no longer accepts payment. Ask the merchant to review its current balance.');
     const result = await sandboxProvider.initiate(r, scenario);
-    res.json(await processProviderResult(r.id, result));
-  })),
+    return processProviderResult(r.id, result);
+   });
+   res.json(outcome);
+  }),
 );
 platform.post(
   '/callbacks/:provider',

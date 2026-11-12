@@ -10,7 +10,7 @@ import {migratePOS} from '../pos/schema';
 import {saveRegister,registerAccess,registers,reauthorizeRegister} from '../pos/registers';
 import {openSession,adjustDrawer,closeSession,drawer} from '../pos/sessions';
 import type {Access} from '../platform/auth';
-import {createProduct,editProduct,createWarehouse,createLocation,postMovement,locationBalance} from '../inventory/service';
+import {product,createProduct,editProduct,createWarehouse,createLocation,postMovement,locationBalance} from '../inventory/service';
 import {quotePOSDraft,savePOSDraft,currentSaleQuote} from '../pos/quotes';
 import {confirmPOSSale,handoverPOSSale} from '../pos/sales';
 import {documentBalance} from '../finance/ledger';
@@ -319,4 +319,28 @@ test('POS physical returns reuse globally bounded dispatch returns without refun
  assert.equal((await stockReturnChoices(a,sale.id)).data[0].remaining_milli,0);
  await assert.rejects(returnPOSStock(a,sale.id,{...input,expected_sale_version:returned.version,expected_session_version:3},key()),/exceeds the original dispatched/);
  assert.equal((await locationBalance(a,p.id,w.id,null)).on_hand_milli,2000);assert.equal(Number((await dbGet("SELECT COUNT(*) AS n FROM ac_stock_movements WHERE org_id=? AND source_id=? AND kind='return'",[org,dispatch.id])).n),2);
+});
+
+test('POS and a public Commerce buyer cannot both reserve the same last canonical unit',async()=>{
+ const a=access(),root='/api/v1/organizations/'+org,w=await createWarehouse(a,{code:'CH-'+key(),name:'Fictional shared channel warehouse'},key()),p=await createProduct(a,{sku:'CHANNEL-'+key(),name:'Fictional shared last unit',sale_price_minor:2000,track_inventory:true},key());
+ await postMovement(a,{product_id:p.id,warehouse_id:w.id,quantity_milli:1000,kind:'receipt',reason:'Fictional shared channel race stock'},key());
+ const store=await api(root+'/commerce/stores',{expected_version:0,store:{name:'Fictional shared channel store',slug:'fictional-shared-channel',currency:'KES',warehouse_id:w.id}});assert.equal(store.status,201,JSON.stringify(store.data));const storePath=root+'/commerce/stores/'+store.data.id,shipping=key();
+ assert.equal((await api(storePath+'/rules',{expected_version:1,shipping:[{id:shipping,name:'Fictional pickup',kind:'pickup',countries:['KE'],rate_minor:0}],discounts:[]},cookie,'PUT')).status,200);
+ assert.equal((await api(storePath+'/listings',{expected_version:0,product_id:p.id,expected_product_version:(await product(a,p.id)).version,state:'active'})).status,201);
+ assert.equal((await api(storePath+'/checkout-policy',{expected_version:2,enabled:true,consent_notice_version:'checkout-v1',acknowledge_automated_invoicing:true,acknowledge_sandbox_only:true},cookie,'PUT')).status,200);
+ const preview=(await api(storePath+'/publication-preview',undefined,cookie,'GET')).data;
+ assert.equal((await api(storePath+'/publish',{expected_version:preview.expected_version,review_hash:preview.review_hash,acknowledge_publication:true})).status,200);
+ const cartPath='/api/v1/storefronts/sandbox/fictional-shared-channel/cart',cart=await api(cartPath,{},'');assert.equal(cart.status,201,JSON.stringify(cart.data));
+ const saved=await api(cartPath,{expected_version:1,cart:{items:[{product_id:p.id,quantity_milli:1000}],shipping_option_id:shipping},country:'KE',contact:{name:'Fictional shared channel guest',email:'shared-channel@example.test',delivery_address:null,consent_notice_version:'checkout-v1'}},cart.cookie,'PUT');assert.equal(saved.status,200,JSON.stringify(saved.data));
+ const r=await saveRegister(a,null,{...configuration(),name:'Fictional shared channel counter',warehouse_id:w.id},key()),session=(await openSession(cashierAccess(),r.id,{expected_register_version:1,opening_cash_minor:0,acknowledge_count:true},key())).session;
+ const draft=await savePOSDraft(cashierAccess(),session.id,null,{expected_session_version:1,items:[{product_id:p.id,quantity_milli:1000}]},key()),quote=await currentSaleQuote(cashierAccess(),draft.id);
+ const outcomes=await Promise.allSettled([
+  confirmPOSSale(cashierAccess(),draft.id,{expected_version:1,quote_hash:quote.quote_hash,payment_intent:'cash',cash_amount_minor:2000,tendered_cash_minor:2000,acknowledge_recorded_cash:true,handover_now:true,acknowledge_handover:true},key()),
+  api(cartPath+'/confirm',{expected_version:saved.data.version,quote_hash:saved.data.quote_hash,acknowledge_test_purchase:true},cart.cookie).then(result=>{if(result.status!==200)throw Object.assign(new Error(result.data.message),{status:result.status});return result.data;})
+ ]);
+ assert.equal(outcomes.filter(result=>result.status==='fulfilled').length,1);assert.equal(outcomes.filter(result=>result.status==='rejected').length,1);
+ assert.equal((await locationBalance(a,p.id,w.id,null)).available_milli,0);
+ assert.equal(Number((await dbGet("SELECT COUNT(*) AS n FROM ac_stock_reservations WHERE org_id=? AND product_id=?",[org,p.id])).n),1);
+ const dispatches=Number((await dbGet("SELECT COUNT(*) AS n FROM ac_stock_movements WHERE org_id=? AND product_id=? AND kind='dispatch'",[org,p.id])).n);assert.ok(dispatches===0||dispatches===1);
+ const linked=Number((await dbGet('SELECT COUNT(*) AS n FROM ac_pos_sale_links WHERE org_id=? AND register_id=?',[org,r.id])).n);assert.equal(dispatches,linked);
 });

@@ -1,0 +1,19 @@
+{
+  "date": "2026-11-12",
+  "failure": {
+    "run_id": 43160314998,
+    "job_id": 130989643574,
+    "job": "Tests (PostgreSQL)",
+    "test": "settled checkout links stop new collections and distinguish review evidence from an effective linked reversal",
+    "cause": "Sandbox checkout sent HTTP success before the outer PostgreSQL transaction committed; immediate read could miss the reversal receipt",
+    "other_ci_jobs": "SQLite, Website, type/lint and isolated chain succeeded"
+  },
+  "repair": "Await the complete outer transaction before sending its response, retaining serialized balance/hold validation",
+  "local_full": { "postgres_passed": 435, "sqlite_passed": 434, "sqlite_pg_only_skipped": 1, "failed": 0 },
+  "cross_channel": "14 POS tests passed on each engine, including one public Commerce/POS last-unit race with one successful reservation and no duplicate dispatch",
+  "lint": "passed; 164 frontend modules",
+  "workspace_contracts": 427,
+  "gateway_startup_passed": 13,
+  "hosted_changes": false,
+  "remote_repair_ci": "Pending observation on repair commit"
+}
