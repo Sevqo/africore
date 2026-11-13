@@ -42,6 +42,8 @@
 .business-shell .workspace-admin-links { padding-left: 24px; }
 .business-shell .workspace-admin-links button { min-height: 34px; border-radius: 6px; }
 
+.customer-payment-behavior-mobile { display: none; }
+
 .business-shell .app-main { min-width: 0; background: var(--workspace-canvas); }
 .business-shell .workspace-title { margin-bottom: 12px; }
 .business-shell .workspace-title > div > p { margin-top: 4px; font-size: 12px; }
@@ -421,6 +423,48 @@
   .business-shell[data-platform-density] .workspace-launcher { padding: 16px; }
   .business-shell[data-platform-density] .workspace-launcher-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 4px; }
   .business-shell[data-platform-density] .workspace-launcher-app { padding: 10px 5px!important; }
+}
+
+@media (max-width: 560px) {
+  .customer-payment-behavior-desktop { display: none; }
+  .customer-payment-behavior-mobile {
+    display: block;
+    min-width: 0;
+    margin-top: 12px;
+  }
+  .customer-payment-record {
+    min-width: 0;
+    padding: 10px 0;
+    border-top: 1px solid var(--workspace-line, var(--line));
+  }
+  .customer-payment-record h3 {
+    margin: 0 0 8px;
+    font-size: 14px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  .customer-payment-record dl {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 12px;
+    margin: 0;
+  }
+  .customer-payment-record dl > div { min-width: 0; }
+  .customer-payment-record dt {
+    margin: 0 0 3px;
+    color: var(--workspace-muted, var(--muted));
+    font-size: 11px;
+    line-height: 1.3;
+  }
+  .customer-payment-record dd {
+    min-width: 0;
+    margin: 0;
+    text-align: right;
+    font-size: 13px;
+    line-height: 1.35;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
 }
 @media (max-width: 400px) {
   .business-shell[data-platform-density] .workspace-launcher-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }

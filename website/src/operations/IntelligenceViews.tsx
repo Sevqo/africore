@@ -120,13 +120,13 @@ export function IntelligenceView({
           </article>
         ))}
       </section>
-      <section className="panel">
+      <section className="panel customer-payment-behavior">
         <h2>Customer payment behavior</h2>
         <p className="muted">
           Delay and on-time rates require three fully settled invoices. Late
           payments are not proof of fraud.
         </p>
-        <div className="table-scroll">
+        <div className="table-scroll customer-payment-behavior-desktop">
           <DataTable>
             <thead>
               <tr>
@@ -157,6 +157,39 @@ export function IntelligenceView({
               ))}
             </tbody>
           </DataTable>
+        </div>
+        <div className="customer-payment-behavior-mobile" aria-label="Customer payment summaries">
+          {data.customers.map((c: any) => (
+            <article className="customer-payment-record" key={c.customer_id}>
+              <h3>{c.name}</h3>
+              <dl>
+                <div>
+                  <dt>Invoiced</dt>
+                  <dd>{money(c.total_invoiced_minor, currency)}</dd>
+                </div>
+                <div>
+                  <dt>Outstanding</dt>
+                  <dd>{money(c.outstanding_minor, currency)}</dd>
+                </div>
+                <div>
+                  <dt>Observed delay</dt>
+                  <dd>
+                    {c.average_delay_days === null
+                      ? 'Limited data'
+                      : c.average_delay_days + ' days'}
+                  </dd>
+                </div>
+                <div>
+                  <dt>On-time</dt>
+                  <dd>
+                    {c.on_time_percent === null
+                      ? 'Limited data'
+                      : c.on_time_percent + '%'}
+                  </dd>
+                </div>
+              </dl>
+            </article>
+          ))}
         </div>
       </section>
       <div className="dashboard-columns">
