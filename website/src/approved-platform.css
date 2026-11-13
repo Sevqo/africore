@@ -366,3 +366,5 @@ html:has([data-platform-density]) {
 
 .business-shell[data-platform-density] .service-card>*{min-width:0}
 @media(max-width:1000px){.business-shell[data-platform-density] .service-marketplace .service-list-layout .service-card{grid-template-columns:36px minmax(0,1fr)}}
+
+@media(max-width:359px){.business-shell[data-platform-density] .finance-ring-layout{flex-wrap:wrap}.business-shell[data-platform-density] .finance-ring-layout svg{width:55%;margin:auto}.business-shell[data-platform-density] .finance-ring-layout ul{min-width:0;flex:1 1 100%}}
