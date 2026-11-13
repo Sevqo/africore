@@ -673,7 +673,7 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
           <section className="panel dashboard-recent-panel">
             <div className="section-heading"><div><span className="eyebrow">LATEST ACTIVITY</span><h2>Recent provider events</h2></div><button className="quiet-button" onClick={()=>setTab('Payments')}>View payments <Icon name="right"/></button></div>
             {data.events?.length ? (
-            <div className="table-scroll">
+            <div className="table-scroll dashboard-recent-desktop">
               <DataTable>
                 <thead>
                   <tr>
@@ -694,6 +694,26 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
                   ))}
                 </tbody>
               </DataTable>
+            </div>
+          ) : null}
+          {data.events?.length ? (
+            <div className="dashboard-recent-mobile" aria-label="Recent provider events">
+              {data.events.map((e: any) => (
+                <article className="provider-event-mobile-row" key={e.id}>
+                  <div className="provider-event-mobile-primary">
+                    <strong>{money(Number(e.amount_minor), e.currency)}</strong>
+                    <time dateTime={e.created_at}>
+                      {new Date(e.created_at).toLocaleString('en-KE', {
+                        timeZone: 'Africa/Nairobi',
+                      })}
+                    </time>
+                  </div>
+                  <details className="provider-event-mobile-reference">
+                    <summary title={e.provider_ref}>Reference: {e.provider_ref}</summary>
+                    <code>{e.provider_ref}</code>
+                  </details>
+                </article>
+              ))}
             </div>
           ) : (
             <Empty text="No verified payment activity yet. Create an invoice and test a checkout." />

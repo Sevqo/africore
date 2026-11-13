@@ -575,6 +575,93 @@
   .business-shell[data-platform-density] .workspace-launcher-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
 
+/* Recent provider events use a purpose-built mobile list; desktop keeps the table. */
+.business-shell[data-platform-density] .dashboard-recent-mobile { display: none; }
+
+@media (max-width: 560px) {
+  .business-shell[data-platform-density] .dashboard-recent-panel {
+    min-width: 0;
+    padding: 11px;
+  }
+  .business-shell[data-platform-density] .dashboard-recent-panel > .section-heading {
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .business-shell[data-platform-density] .dashboard-recent-panel > .section-heading h2 {
+    font-size: 15px;
+  }
+  .business-shell[data-platform-density] .dashboard-recent-panel > .section-heading > button {
+    min-height: 38px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .business-shell[data-platform-density] .dashboard-recent-desktop { display: none; }
+  .business-shell[data-platform-density] .dashboard-recent-mobile {
+    display: grid;
+    min-width: 0;
+    margin-top: 2px;
+  }
+  .business-shell[data-platform-density] .provider-event-mobile-row {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+    padding: 9px 1px;
+    border-bottom: 1px solid var(--workspace-line);
+  }
+  .business-shell[data-platform-density] .provider-event-mobile-row:last-child { border-bottom: 0; }
+  .business-shell[data-platform-density] .provider-event-mobile-primary {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+  }
+  .business-shell[data-platform-density] .provider-event-mobile-primary strong {
+    min-width: 0;
+    color: var(--workspace-ink);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.3;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  .business-shell[data-platform-density] .provider-event-mobile-primary time {
+    min-width: 0;
+    color: var(--workspace-muted);
+    font-size: 12px;
+    line-height: 1.35;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .business-shell[data-platform-density] .provider-event-mobile-reference {
+    min-width: 0;
+    color: var(--workspace-muted);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .business-shell[data-platform-density] .provider-event-mobile-reference summary {
+    display: block;
+    min-width: 0;
+    min-height: 30px;
+    padding: 5px 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .business-shell[data-platform-density] .provider-event-mobile-reference code {
+    display: block;
+    padding: 5px 0 2px;
+    color: var(--workspace-ink);
+    font: inherit;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+}
+
 /* The drawer and scrim are siblings inside the isolated workspace root. Keep
    the drawer above the scrim so touch hit-testing reaches its navigation. */
 @media (max-width: 1024px) {
