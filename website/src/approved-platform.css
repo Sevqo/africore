@@ -4,8 +4,9 @@ html:has([data-platform-density]) {
   --text:#17201c; --ink:#111815; --muted:#66716b; --line:#e2e7e3;
   --surface:#f5f7f6; --surface-alt:#edf1ee; --accent:#76b900;
   --accent-hover:#5b9400; --accent-text:#326b0b; --accent-light:#edf7df;
-  --workspace-border:#e2e7e3; --workspace-shadow:0 2px 5px #14251b04;
-  --app-panel:18px;
+  --workspace-border:#e2e7e3; --workspace-shadow:0 1px 2px #14251b08;
+  --app-panel:14px; --app-panel-compact:11px; --app-panel-large:16px;
+  --app-radius-card:12px; --app-radius-record:10px; --app-radius-large:14px;
 }
 .business-shell[data-platform-density].business-shell[data-platform-density],.focused-account[data-platform-density].focused-account[data-platform-density] {font-size:14px;line-height:1.5;background:var(--surface);color:var(--text)}
 .business-shell[data-platform-density] .sidebar,.focused-account[data-platform-density] .account-nav {
@@ -63,7 +64,7 @@ html:has([data-platform-density]) {
 .business-shell[data-platform-density] h1,.focused-account[data-platform-density] h1{font-size:28px;line-height:1.18;letter-spacing:-.035em;font-weight:720}
 .business-shell[data-platform-density] h2,.focused-account[data-platform-density] h2{font-size:20px;line-height:1.3;letter-spacing:-.025em}
 .business-shell[data-platform-density] h3,.focused-account[data-platform-density] h3{font-size:15px;line-height:1.4;letter-spacing:-.015em}
-.business-shell[data-platform-density] :is(.panel,.account-panel),.focused-account[data-platform-density] :is(.panel,.account-panel){border-color:var(--line);border-radius:9px;padding:18px;box-shadow:none;background:white}
+.business-shell[data-platform-density] :is(.panel,.account-panel),.focused-account[data-platform-density] :is(.panel,.account-panel){border-color:var(--line);border-radius:var(--app-radius-card);padding:var(--app-panel);box-shadow:none;background:white}
 .business-shell[data-platform-density] :is(button,.button,.secondary-button,.quiet-button),.focused-account[data-platform-density] :is(button,.button,.secondary-button,.quiet-button){min-height:36px;padding:7px 12px;font-size:13px;line-height:1.4}
 .business-shell[data-platform-density] .button,.focused-account[data-platform-density] .button{background:linear-gradient(#73b400,#589700);color:white;border-color:#589700;font-weight:650}
 .business-shell[data-platform-density] :is(.secondary-button,.quiet-button),.focused-account[data-platform-density] :is(.secondary-button,.quiet-button){color:var(--text)}
@@ -153,7 +154,7 @@ html:has([data-platform-density]) {
   .business-shell[data-platform-density] .apps-workspace:not([data-app-selected=true]) .app-directory-card>div{grid-column:2;grid-row:1}
   .business-shell[data-platform-density] .apps-workspace:not([data-app-selected=true]) .app-directory-card>button{grid-column:2;grid-row:2;justify-self:start}
   .focused-account[data-platform-density] .focused-mobile-header{margin:-18px -16px 18px;padding:10px 12px}
-  .business-shell[data-platform-density] :is(.panel,.account-panel),.focused-account[data-platform-density] :is(.panel,.account-panel){padding:16px}
+  .business-shell[data-platform-density] :is(.panel,.account-panel),.focused-account[data-platform-density] :is(.panel,.account-panel){padding:var(--app-panel)}
 }
 @media(prefers-reduced-motion:no-preference){
   .business-shell[data-platform-density] button,.focused-account[data-platform-density] button{transition:background-color 120ms,color 120ms,box-shadow 120ms}

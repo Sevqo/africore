@@ -33,7 +33,7 @@
 .app-directory-toolbar>.field{flex:1;max-width:440px;min-width:min(100%,200px)}
 .app-directory-toolbar>span{margin-left:auto;color:var(--muted);font-size:13px}
 .app-directory-toolbar .checkbox-field{display:flex;align-items:center;gap:8px;margin:0;min-height:44px}
-.app-directory-card{position:relative;grid-template-columns:44px minmax(0,1fr);gap:14px;padding:22px!important;box-shadow:var(--workspace-shadow);align-content:start}
+.app-directory-card{position:relative;grid-template-columns:40px minmax(0,1fr);gap:12px;padding:14px;box-shadow:none;align-content:start;border-radius:var(--app-radius-card,12px)}
 .app-directory-card .app-mark{width:44px;height:44px;border-radius:12px}
 .app-directory-card .app-mark .icon{width:23px;height:23px}
 .app-directory-card h2{font-size:19px!important;letter-spacing:-.025em;margin:0 0 8px}
@@ -124,11 +124,11 @@
 .stock-inspector>.section-heading{display:flex;align-items:start;justify-content:space-between;gap:16px}
 .stock-inspector h2{font-size:24px;letter-spacing:-.03em}
 .stock-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:24px 0}
-.stock-facts>div{padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.stock-facts>div{padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
 .stock-facts dt{font-size:12px;color:var(--muted)}
 .stock-facts dd{margin:8px 0 0;font-size:22px;font-weight:650;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .project-directory{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:20px 0}
-.project-directory-card{display:grid;grid-template-columns:36px minmax(0,1fr);gap:8px 12px;text-align:left;background:var(--white);border:1px solid var(--line);padding:18px!important;align-content:start;min-width:0}
+.project-directory-card{display:grid;grid-template-columns:36px minmax(0,1fr);gap:8px 12px;text-align:left;background:var(--white);border:1px solid var(--line);padding:12px;border-radius:var(--app-radius-record,10px);align-content:start;min-width:0}
 .project-directory-card:hover{border-color:var(--accent-text);background:var(--surface)}
 .project-directory-icon{grid-row:1/4;display:grid;place-items:center;width:36px;height:36px;background:var(--accent-light);color:var(--accent-text);font-weight:700;border-radius:8px}
 .project-directory-card strong{font-size:15px;overflow-wrap:anywhere}
@@ -166,7 +166,7 @@
 .accounting-start-form .checkbox-field,.accounting-start-form .alert{grid-column:1/-1}
 .accounting-start-form .button{grid-column:1/-1;justify-self:start}
 @media(max-width:640px){.accounting-start-form .form-fieldset{grid-template-columns:1fr}}
-.automations-workspace .app-metric-grid>article{padding:18px;box-shadow:var(--workspace-shadow)}
+.automations-workspace .app-metric-grid>article{padding:12px;border:1px solid var(--workspace-line,var(--line));border-radius:var(--app-radius-kpi,12px);box-shadow:none;min-height:0}
 .business-shell .apps-workspace[data-app-installed=true]>.app-section-tabs{display:none}
 @media(max-width:560px){.people-workspace .app-price-review{grid-template-columns:1fr}.people-workspace .app-price-review>button{grid-column:1;grid-row:auto;justify-self:start}.documents-workspace .form-grid{padding:12px}}
 @media(max-width:1100px){.project-directory{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -175,7 +175,7 @@
 @media(pointer:coarse){.crm-opportunity-title .crm-drag-handle{min-width:44px;min-height:44px}}
 @media(max-width:560px){.workspace-launcher{padding:18px}.workspace-launcher-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(min-width:1450px){.app-directory{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:767px){.app-directory{grid-template-columns:1fr}.app-directory-card{padding:18px!important}.app-identity{flex-wrap:wrap}.apps-workspace .app-title h1{font-size:24px}.app-identity>.app-mark{width:44px;height:44px}.app-identity>div{flex-basis:calc(100% - 64px)}.app-identity>button{width:100%}.apps-workspace .finance-toolbar>.field{flex:1}.finance-app-metrics>article{padding:16px!important}.finance-app-main>.panel,.finance-app-bottom>.panel{padding:16px}.apps-workspace .interactive-chart .chart-plot>svg{min-width:0;height:230px}.app-directory-toolbar>.field{max-width:none}.app-service-details .app-inclusions aside{border:0;padding:0}}
+@media(max-width:767px){.app-directory{grid-template-columns:1fr}.app-directory-card{padding:12px}.app-identity{flex-wrap:wrap}.apps-workspace .app-title h1{font-size:24px}.app-identity>.app-mark{width:44px;height:44px}.app-identity>div{flex-basis:calc(100% - 64px)}.app-identity>button{width:100%}.apps-workspace .finance-toolbar>.field{flex:1}.finance-app-metrics>article{padding:12px}.finance-app-main>.panel,.finance-app-bottom>.panel{padding:12px}.apps-workspace .interactive-chart .chart-plot>svg{min-width:0;height:230px}.app-directory-toolbar>.field{max-width:none}.app-service-details .app-inclusions aside{border:0;padding:0}}
 @media(prefers-reduced-motion:no-preference){.app-directory-card{transition:box-shadow 160ms ease,border-color 160ms ease}.app-directory-card:focus-within{box-shadow:0 3px 14px #1626190d;border-color:var(--accent-text)}}
 
 /* Keep financial columns intact; narrow ledgers scroll within their panel. */
