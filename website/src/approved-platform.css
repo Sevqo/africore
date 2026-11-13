@@ -375,4 +375,27 @@ html:has([data-platform-density]) {
 .business-shell[data-platform-density] .service-card>*{min-width:0}
 @media(max-width:1000px){.business-shell[data-platform-density] .service-marketplace .service-list-layout .service-card{grid-template-columns:36px minmax(0,1fr)}}
 
+/* Authenticated form layout: one compact rhythm shared by workspace forms. */
+:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) :is(.form-grid,.form-fieldset,.account-form,.account-inline-form,.work-editor form,.commerce-inline-form,.documents-workspace form,.accounting-start-form form) {
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 14px; min-width:0; align-content:start;
+}
+:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) :is(.form-grid,.form-fieldset,.account-form,.account-inline-form,.create-form,.work-editor form,.commerce-inline-form,.documents-workspace form,.accounting-start-form form) > * {min-width:0}
+:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) form.create-form {display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) .field {display:flex;flex-direction:column;gap:5px;min-width:0;margin:0}
+:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) .field > span {font-size:13px;line-height:1.35}
+:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) :is(input:not([type=checkbox]):not([type=radio]),select,textarea) {box-sizing:border-box;width:100%;max-width:100%;min-width:0;min-height:39px;padding:8px 11px;border-radius:9px;font-size:14px}
+:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) textarea {min-height:88px;line-height:1.45}
+:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) :is(.form-grid,.form-fieldset) > .field:has(textarea),
+:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) :is(.form-grid,.form-fieldset) > .field:has(input[type=file]) {grid-column:1/-1}
+:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) :is(.form-fieldset,.form-grid) .checkbox-field,
+:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) :is(.form-fieldset,.form-grid) .field:has(>input[type=checkbox]),
+:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) :is(.form-fieldset,.form-grid) .field:has(>input[type=radio]) {min-height:44px;padding-block:4px;align-self:center}
+:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) .form-actions {display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px;min-width:0;margin-top:8px}
+@media(max-width:767px) {
+  :is(.business-shell[data-platform-density],.focused-account[data-platform-density]) :is(.form-grid,.form-fieldset,.account-form,.account-inline-form,.work-editor form,.commerce-inline-form,.documents-workspace form,.accounting-start-form form) {grid-template-columns:minmax(0,1fr);gap:11px}
+  :is(.business-shell[data-platform-density],.focused-account[data-platform-density]) :is(input:not([type=checkbox]):not([type=radio]),select,textarea) {min-height:44px;padding-inline:12px;font-size:16px}
+  :is(.business-shell[data-platform-density],.focused-account[data-platform-density]) .field > span {font-size:14px}
+  :is(.business-shell[data-platform-density],.focused-account[data-platform-density]) .form-actions {justify-content:flex-start;gap:8px}
+}
+
 @media(max-width:359px){.business-shell[data-platform-density] .finance-ring-layout{flex-wrap:wrap}.business-shell[data-platform-density] .finance-ring-layout svg{width:55%;margin:auto}.business-shell[data-platform-density] .finance-ring-layout ul{min-width:0;flex:1 1 100%}}
