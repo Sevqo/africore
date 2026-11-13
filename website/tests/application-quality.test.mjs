@@ -27,9 +27,14 @@ test('the fourteen apps have unique visual identities and prerendered focused pa
  }
 });
 
-test('trust service launchers open their corresponding Business ID app section',()=>{
- const destinations={verification:'verification',credentials:'credentials',trust_network:'relationships',blockchain:'credentials'};
- for(const [id,section]of Object.entries(destinations))assert.deepEqual(serviceOpenDestination({id,tabs:[]}),{tab:'Apps',app:'business_id',section});
+test('trust service launchers open their own Passport section without requiring an app installation',()=>{
+ const destinations={passport:'Overview',verification:'Verification Requests',credentials:'Credentials',trust_network:'Business Network',blockchain:'Credentials'};
+ for(const [id,section]of Object.entries(destinations)){
+  const destination=serviceOpenDestination({id,tabs:[]});
+  assert.equal(destination.tab,'Business Passport');
+  assert.equal(destination.section,section);
+  assert.equal(destination.app,undefined);
+ }
  assert.deepEqual(serviceOpenDestination({id:'customers',tabs:['Customers']}),{tab:'Customers'});
 });
 

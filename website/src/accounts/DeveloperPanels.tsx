@@ -1,6 +1,7 @@
 import { type FormEvent } from "react";
 import { api } from "../lib/api-client";
 import { Field } from "./AccountUI";
+import { VerificationConsole } from "../marketplace/VerificationConsole";
 export function DeveloperPanels({
   tab,
   data,
@@ -208,7 +209,11 @@ export function DeveloperPanels({
             <Field label="Resource">
               <select name="resource">
                 <option value="customers">Customers</option>
+                <option value="orders">Orders</option>
                 <option value="invoices">Invoices</option>
+                <option value="transactions">Payment records</option>
+                <option value="integrations">Integration records</option>
+                <option value="applications">Applications</option>
               </select>
             </Field>
             <button className="button">Send sandbox request</button>
@@ -355,8 +360,9 @@ export function DeveloperPanels({
             business truth.
           </p>
           <a className="button" href="/verify-credential">
-            Open credential verifier
+            Open public credential verifier
           </a>
+          <VerificationConsole call={call} />
         </>
       )}
       {tab === "Support" && (

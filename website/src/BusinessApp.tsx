@@ -39,6 +39,9 @@ import { useFocusScope } from './components/useFocusScope';
 import { PassportWorkspace } from './trust/PassportWorkspace';
 import {MoneyTools} from './marketplace/MoneyTools';
 import {useMarketplace,Services,ServiceGate,marketTabs,visibleServiceTab,canReadServiceTab} from './marketplace/Services';
+import {businessTabs,directAppTabs} from './workspace-navigation';
+import {WebhooksConsole} from './marketplace/WebhooksConsole';
+import {VerificationConsole} from './marketplace/VerificationConsole';
 import {
   startDemo,
   isDemo,
@@ -185,52 +188,7 @@ export function Checkout() {
     </div>
   );
 }
-const navigation: { label: string; icon: IconName; items: string[] }[] = [
-  {
-    label: 'Workspace',
-    icon: 'grid',
-    items: ['Overview', 'Apps', 'My Services', 'Customer Relationships', 'Products', 'Inventory', 'Quotations', ...marketTabs, 'Customers', 'Orders', 'Invoices', 'Payments'],
-  },
-  {
-    label: 'Finance & intelligence',
-    icon: 'chart',
-    items: [
-      'Intelligence',
-      'Cash Flow',
-      'Expenses',
-      'Forecasts',
-      'Transactions',
-      'Reconciliation',
-      'Reports',
-      'Assistant',
-    ],
-  },
-  {
-    label: 'Operations',
-    icon: 'document',
-    items: [
-      'Automations',
-      'Notifications',
-      'Approvals',
-      'Fulfillment',
-      'Protected Payments',
-      'Disputes',
-    ],
-  },
-  {
-    label: 'Business trust',
-    icon: 'shield',
-    items: ['Business Passport', 'Risk Review'],
-  },
-  {
-    label: 'Build & connect',
-    icon: 'code',
-    items: ['Connect', 'Data', 'Integrations', 'Developers', 'Engineering'],
-  },
-  { label: 'Administration', icon: 'settings', items: ['Team', 'Settings'] },
-];
-const directAppTabs=['Point of Sale','Commerce','Procurement','Customer Relationships','Products','Inventory','Quotations','Work','Accounting','People','Documents'];
-const tabs = [...new Set([...navigation.flatMap((group) => group.items),...directAppTabs])];
+const tabs = businessTabs;
 export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:any}={}) {
   const [resolvingOrgs,setResolvingOrgs]=useState(true),[orgLoadError,setOrgLoadError]=useState('');
   const workspaceSwitch = useRef(0);
@@ -254,7 +212,9 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
     [creating, setCreating] = useState(false),
     [query, setQuery] = useState(''),
     [selected, setSelected] = useState<any>(null),
-    [documentCurrency, setDocumentCurrency] = useState('KES');
+    [documentCurrency, setDocumentCurrency] = useState('KES'),
+    [urlRevision, setUrlRevision] = useState(0);
+  const passportInitialTab = new URLSearchParams(location.search).get('section') || undefined;
   const [navOpen, setNavOpen] = useState(false);
   const market=useMarketplace(org,environment,'business',account?.service_catalog,isDemo());
   const [offset, setOffset] = useState(0),
@@ -286,10 +246,12 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
     const change = () => {
       const value = decodeURIComponent(location.hash.slice(1));
       setTab(tabs.includes(value) ? value : 'Overview');
+      setUrlRevision((revision) => revision + 1);
       setNavOpen(false);
     };
     window.addEventListener('popstate', change);
-    return () => window.removeEventListener('popstate', change);
+    window.addEventListener('africore:app-navigation', change);
+    return () => { window.removeEventListener('popstate', change); window.removeEventListener('africore:app-navigation', change); };
   }, []);
   useEffect(() => {
     if (decodeURIComponent(location.hash.slice(1)) !== tab)
@@ -1004,11 +966,12 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
               )}
               {tab === 'Business Passport' && (
                 <PassportWorkspace
-                  key={org + environment}
+                  key={org + environment + (passportInitialTab||'') + urlRevision}
                   org={org}
                   environment={environment}
                   role={organization?.role || 'viewer'}
                   serviceIds={market.catalog?.services.filter((s:any)=>s.status==='active').map((s:any)=>s.id)||[]}
+                  initialTab={passportInitialTab}
                 />
               )}
               {tab==='Customer Relationships'&&<CrmWorkspace admin={adminWritable} writable={!!writable} api={call} scope={org+'\0'+environment} navigate={setTab}/>}
@@ -1436,6 +1399,8 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
                       onNotice={setNotice}
                     />
                   )}
+                  {tab === 'Webhooks' && <WebhooksConsole key={org + environment} call={call} manager={['owner','admin'].includes(organization?.role)} />}
+                  {tab === 'Verification APIs' && <VerificationConsole key={org + environment} call={call} />}
                 </>
               )}
               {recordTabs.includes(tab) && (

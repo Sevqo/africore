@@ -22,6 +22,7 @@ import { DeveloperPanels } from "./DeveloperPanels";
 import {Overlay} from '../components/Overlay';
 import {Icon,type IconName} from '../components/Icon';
 import {useMarketplace,Services,ServiceGate,marketTabs,visibleServiceTab,canReadServiceTab} from '../marketplace/Services';
+import {personalTabs,developerTabs} from '../workspace-navigation';
 export function FocusedWorkspace({
   workspace: w,
   account,
@@ -33,43 +34,7 @@ export function FocusedWorkspace({
   const [selectedInvoice,setSelectedInvoice]=useState<any>(null);
   const [navigationOpen,setNavigationOpen]=useState(false);
   const [sidebarCollapsed,setSidebarCollapsed]=useState(()=>{try{return localStorage.getItem('africore-focused-sidebar-collapsed')==='true';}catch{return false;}});
-  const items = personal
-    ? [
-        "Overview",
-        "Apps",
-        "Notifications",
-        ...marketTabs,
-        "Assistant",
-        "Income",
-        "Expenses",
-        "Invoices",
-        "Clients",
-        "Payment Records",
-        "Cash Flow",
-        "Reports",
-        "Learn",
-        "Settings",
-      ]
-    : [
-        "Overview",
-        "Notifications",
-        "Products",
-        ...marketTabs,
-        "Assistant",
-        "Data",
-        "My Applications",
-        "API Keys",
-        "API Explorer",
-        "Sandbox",
-        "Webhooks",
-        "Request Logs",
-        "Usage & Limits",
-        "API Documentation",
-        "SDKs & Examples",
-        "Verification APIs",
-        "Settings",
-        "Support",
-      ];
+  const items = personal ? personalTabs : developerTabs;
   const [tab, setTab] = useState(
     items.includes(decodeURIComponent(location.hash.slice(1)))
       ? decodeURIComponent(location.hash.slice(1))

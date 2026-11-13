@@ -6,7 +6,8 @@ import {serviceCatalog,serviceForTab,foundationTabs} from '../../../src/marketpl
 import './services.css';
 import {allowanceLabel,formatUnits,planLabel,selectUsage} from './usage-presentation';
 import {serviceOpenDestination} from './service-open-destination';
-export const marketTabs=['My Services','Explore Services','Usage & Billing'];
+import {marketTabs,type WorkspaceKind} from '../workspace-navigation';
+export {marketTabs};
 export function useMarketplace(org:string,environment:string,kind:string,initial?:any,demo=false){
  const scope=org+'\0'+environment;
  const [state,setState]=useState<{scope:string;catalog:any;error:string;busy:boolean}>({scope,catalog:initial?.workspace_id===org&&initial?.environment===environment?initial:null,error:'',busy:false});
@@ -21,10 +22,12 @@ export function useMarketplace(org:string,environment:string,kind:string,initial
   return()=>{live=false;};
  },[org,environment,kind,revision,demo]);
  const current=state.scope===scope?state:{catalog:null,error:'',busy:true};
- return {...current,org,environment,demo,reload:()=>setRevision(n=>n+1)};
+ return {...current,org,environment,demo,kind,reload:()=>setRevision(n=>n+1)};
 }
 export type MarketplaceState=ReturnType<typeof useMarketplace>;
-const tabServices=(tab:string)=>['Customers','Clients'].includes(tab)?['customers','invoicing','orders']:[serviceForTab(tab)];
+const trustServices=['passport','verification','credentials','trust_network','blockchain'];
+const apiExplorerServices=['developer_api','customers','orders','invoicing','payments','reconciliation','connect','data'];
+const tabServices=(tab:string)=>['Customers','Clients'].includes(tab)?['customers','invoicing','orders']:tab==='Business Passport'?trustServices:tab==='API Explorer'?apiExplorerServices:[serviceForTab(tab)];
 export function favoriteTabs(m:MarketplaceState):string[]{return (m.catalog?.services||[]).filter((s:any)=>s.status==='active'&&s.entitlement?.favorite).sort((a:any,b:any)=>a.entitlement.position-b.entitlement.position||a.name.localeCompare(b.name)).flatMap((s:any)=>s.tabs.slice(0,1));}
 export function visibleServiceTab(m:MarketplaceState,tab:string){
  if(tab==='Apps'||foundationTabs.includes(tab)||marketTabs.includes(tab))return true;
@@ -56,7 +59,7 @@ export function Services({market,view,navigate,manager}:{market:MarketplaceState
  const goals:Record<string,string[]>={'Send invoices':['invoicing'],'Manage customers':['customers'],'Track money':['expenses','cash_flow'],'Receive payments':['payments'],'Automate work':['automations'],'Build business identity':['passport'],'Connect software':['developer_api']};
  async function action(fn:()=>Promise<unknown>){setBusy(true);setError('');setNotice('');try{await fn();}catch(e){setError((e as Error).message);}finally{market.reload();setBusy(false);}}
  const call=(suffix:string,method='POST',body:any={})=>api('/api/v1/organizations/'+market.org+suffix,method,body,market.environment);
- const open=(s:any)=>{setDetail(null);const destination=serviceOpenDestination(s);const url=new URL(location.href);url.searchParams.delete('service');if(destination.app){url.searchParams.set('app',destination.app);url.searchParams.set('section',destination.section||'');url.hash='Apps';}else{url.searchParams.delete('app');url.searchParams.delete('section');}history.replaceState(null,'',url.pathname+url.search+url.hash);dispatchEvent(new Event('africore:app-navigation'));navigate(destination.tab);};
+ const open=(s:any)=>{setDetail(null);const destination=serviceOpenDestination(s,(market.catalog?.kind||market.kind) as WorkspaceKind);const url=new URL(location.href);url.searchParams.delete('service');if(destination.app){url.searchParams.set('app',destination.app);url.searchParams.set('section',destination.section||'');}else{url.searchParams.delete('app');if(destination.section)url.searchParams.set('section',destination.section);else url.searchParams.delete('section');}url.hash=encodeURIComponent(destination.tab);history.pushState(null,'',url.pathname+url.search+url.hash);dispatchEvent(new Event('africore:app-navigation'));navigate(destination.tab);};
  const items=all.filter((s:any)=>(view==='Explore Services'||s.entitlement)&&[s.name,s.description,s.detail].join(' ').toLowerCase().includes(search.toLowerCase())&&(category==='all'||s.category===category)&&(pricing==='all'||pricing==='free'&&s.price?.model==='free'||pricing==='paid'&&s.price?.model!=='free'||pricing==='usage'&&['metered','allowance','tiered','hybrid'].includes(s.price?.model))).sort((a:any,b:any)=>Number(b.entitlement?.favorite||0)-Number(a.entitlement?.favorite||0)||(a.entitlement?.position||0)-(b.entitlement?.position||0)||a.name.localeCompare(b.name));
  if(view==='Usage & Billing')return <UsageBilling market={market} manager={manager}/>;
  return <div className="service-marketplace">
