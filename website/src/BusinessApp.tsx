@@ -1077,7 +1077,9 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
                         className={
                           tab === 'Invoices'
                             ? 'table-scroll invoice-table-desktop'
-                            : 'table-scroll'
+                            : tab === 'Orders'
+                              ? 'table-scroll order-table-desktop'
+                              : 'table-scroll'
                         }
                       >
                         <DataTable>
@@ -1279,6 +1281,67 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
                                   >
                                     Print / PDF
                                   </button>
+                                </div>
+                              </article>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {tab === 'Orders' && (
+                        <div className="orders-list-mobile" aria-label="Orders">
+                          {data.data.map((r: any) => {
+                            const totalMinor = r.total_minor ?? r.amount_minor,
+                              canRequestPayment =
+                                ['issued', 'awaiting_payment', 'partially_paid'].includes(r.status) &&
+                                writable &&
+                                market.catalog?.services.some(
+                                  (s: any) => s.id === 'payments' && s.status === 'active',
+                                );
+                            return (
+                              <article className="order-mobile-record" key={r.id}>
+                                <div className="order-mobile-heading">
+                                  <button
+                                    className="order-mobile-reference"
+                                    onClick={() => setSelected(r)}
+                                    aria-label={`Open order ${r.reference || 'details'}`}
+                                  >
+                                    {r.reference || 'Order'}
+                                  </button>
+                                  <span className="badge order-mobile-status">
+                                    {r.status || 'active'}
+                                  </span>
+                                </div>
+                                <div className="order-mobile-financials">
+                                  {totalMinor != null && (
+                                    <div className="order-mobile-total">
+                                      <span>Order total</span>
+                                      <strong>{money(totalMinor, r.currency)}</strong>
+                                    </div>
+                                  )}
+                                  {r.paid_minor != null && r.paid_minor > 0 && (
+                                    <div>
+                                      <span>Paid</span>
+                                      <b>{money(r.paid_minor, r.currency)}</b>
+                                    </div>
+                                  )}
+                                  {r.outstanding_minor != null && (
+                                    <div>
+                                      <span>Outstanding</span>
+                                      <b>{money(r.outstanding_minor, r.currency)}</b>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="order-mobile-actions">
+                                  <button className="quiet-button" onClick={() => setSelected(r)}>Details</button>
+                                  {r.status === 'draft' && writable && (
+                                    <button
+                                      className="quiet-button"
+                                      onClick={() => action(() => call('/records/orders/' + r.id, 'PATCH', { status: 'awaiting_payment' }))}
+                                    >Issue</button>
+                                  )}
+                                  {canRequestPayment && (
+                                    <button className="quiet-button" onClick={() => requestPayment(r)}>Payment link</button>
+                                  )}
                                 </div>
                               </article>
                             );

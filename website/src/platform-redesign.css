@@ -592,6 +592,24 @@
     overflow-wrap: anywhere;
   }
 }
+
+/* Orders keep their full desktop table and use a concise mobile record summary. */
+.business-shell[data-platform-density] .orders-list-mobile { display:none; }
+@media (max-width:560px) {
+  .business-shell[data-platform-density] .order-table-desktop { display:none; }
+  .business-shell[data-platform-density] .orders-list-mobile {display:grid;gap:8px;min-width:0}
+  .business-shell[data-platform-density] .order-mobile-record {min-width:0;padding:10px;border:1px solid var(--workspace-line);border-radius:10px;background:var(--white,#fff)}
+  .business-shell[data-platform-density] .order-mobile-heading {display:flex;align-items:flex-start;justify-content:space-between;gap:8px;min-width:0}
+  .business-shell[data-platform-density] .order-mobile-reference {min-width:0;max-width:100%;padding:2px 0;border:0;background:transparent;color:var(--workspace-ink);font-size:13px;font-weight:650;line-height:1.35;text-align:left;overflow-wrap:anywhere}
+  .business-shell[data-platform-density] .order-mobile-status {flex:none;max-width:48%;font-size:11px;line-height:1.3;overflow-wrap:anywhere}
+  .business-shell[data-platform-density] .order-mobile-financials {display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;min-width:0;margin-top:5px}
+  .business-shell[data-platform-density] .order-mobile-financials>div {display:flex;align-items:baseline;gap:5px;min-width:0}
+  .business-shell[data-platform-density] .order-mobile-financials span {color:var(--workspace-muted);font-size:12px}
+  .business-shell[data-platform-density] .order-mobile-financials strong {font-size:18px;line-height:1.3;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+  .business-shell[data-platform-density] .order-mobile-financials b {font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+  .business-shell[data-platform-density] .order-mobile-actions {display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:7px}
+  .business-shell[data-platform-density] .order-mobile-actions button {min-height:34px;padding:5px 9px;border-radius:8px;font-size:12px;white-space:nowrap}
+}
 @media (max-width: 400px) {
   .business-shell[data-platform-density] .workspace-launcher-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
