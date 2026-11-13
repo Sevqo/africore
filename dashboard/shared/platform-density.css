@@ -1,6 +1,4 @@
-/* Approved responsive density. Replaces the former .75 root zoom.
-   The target is approximately 15% larger than that rendered baseline;
-   dimensions are now native CSS pixels and respond to text/device size. */
+
 @media screen {
   html:has([data-platform-density]) { --platform-density: 1; --platform-viewport-height: 100dvh; }
   :is(.business-shell,.focused-account,[data-platform-density]) { font-size:14px; line-height:1.5; }
