@@ -157,7 +157,7 @@
 .dashboard-action-mark .icon,
 .dashboard-action-icon .icon { width: 16px; height: 16px; }
 .dashboard-quick-actions nav { display: grid; }
-.dashboard-quick-actions nav > button { display: grid; grid-template-columns: 30px minmax(0,1fr) 16px; align-items: center; gap: 9px; min-height: 48px; padding: 6px 2px; border: 0; border-bottom: 1px solid #edf0ed; border-radius: 0; background: transparent; text-align: left; font-size: 12px; }
+.dashboard-quick-actions nav > button { display: grid; grid-template-columns: 30px minmax(0,1fr) 16px; align-items: center; gap: 9px; min-height: 40px; padding: 5px 2px; border: 0; border-bottom: 1px solid #edf0ed; border-radius: 0; background: transparent; text-align: left; font-size: 12px; }
 .dashboard-quick-actions nav > button:last-child { border-bottom: 0; }
 .dashboard-quick-actions nav > button > .icon { width: 14px; height: 14px; color: #77807b; }
 .dashboard-quick-actions details { margin-top: auto; padding-top: 10px; font-size: 11px; color: var(--workspace-muted); }
@@ -203,7 +203,7 @@
 .business-shell .apps-workspace:not([data-app-selected=true]) .app-directory-card h2 { margin: 0 0 4px; font-size: 14px !important; letter-spacing: -.015em; }
 .business-shell .apps-workspace:not([data-app-selected=true]) .app-directory-card p { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; margin: 0 0 8px; color: var(--workspace-muted); font-size: 11px; line-height: 1.45; }
 .business-shell .apps-workspace:not([data-app-selected=true]) .app-directory-card .badge { font-size: 10px; }
-.business-shell .apps-workspace:not([data-app-selected=true]) .app-directory-card > button { grid-column: 1 / -1; align-self: start; justify-self: stretch; margin-top: 4px; min-height: 34px; }
+.business-shell .apps-workspace:not([data-app-selected=true]) .app-directory-card > button { grid-column: 2; grid-row: 2; align-self: start; justify-self: start; width: fit-content; max-width: 100%; margin-top: 4px; min-height: 34px; padding-inline: 10px; border-radius: 8px; }
 
 .business-shell .finance-workspace { gap: 12px; }
 .business-shell .finance-toolbar { padding: 4px 0 2px; align-items: end; }
@@ -400,6 +400,7 @@
   .business-shell .business-dashboard-secondary > .panel,
   .business-shell .finance-app-bottom > .finance-breakdown:last-child { grid-column: auto; }
   .business-shell .dashboard-quick-actions { order: 2; }
+  .business-shell .dashboard-quick-actions nav > button { min-height: 44px; }
   .business-shell .apps-workspace:not([data-app-selected=true]) .app-directory { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .business-shell .apps-workspace:not([data-app-selected=true]) .app-directory-card { min-height: 0; grid-template-columns: 32px minmax(0,1fr); gap: 8px; padding: 11px !important; }
   .business-shell .apps-workspace:not([data-app-selected=true]) .app-directory-card > .app-mark { width: 30px; height: 30px; }
@@ -440,7 +441,7 @@
   .business-shell[data-platform-density] .apps-workspace:not([data-app-selected=true]) .app-directory-card > div h2 { grid-column: 1; grid-row: 1; min-width: 0; font-size: 13px !important; }
   .business-shell[data-platform-density] .apps-workspace:not([data-app-selected=true]) .app-directory-card > div p { grid-column: 1/-1; grid-row: 2; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; margin: 0; font-size: 11px; line-height: 1.4; }
   .business-shell[data-platform-density] .apps-workspace:not([data-app-selected=true]) .app-directory-card > div .badge { grid-column: 2; grid-row: 1; white-space: nowrap; }
-  .business-shell[data-platform-density] .apps-workspace:not([data-app-selected=true]) .app-directory-card > button { grid-column: 3; grid-row: 1/3; justify-self: end; margin: 0; padding-inline: 8px; min-height: 36px; white-space: nowrap; }
+  .business-shell[data-platform-density] .apps-workspace:not([data-app-selected=true]) .app-directory-card > button { grid-column: 3; grid-row: 1/3; justify-self: end; width: fit-content; margin: 0; padding-inline: 9px; min-height: 36px; border-radius: 8px; white-space: nowrap; }
   .business-shell[data-platform-density] .workspace-launcher { padding: 16px; }
   .business-shell[data-platform-density] .workspace-launcher-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 4px; }
   .business-shell[data-platform-density] .workspace-launcher-app { padding: 10px 5px!important; }
