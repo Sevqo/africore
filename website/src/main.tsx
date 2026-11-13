@@ -6,6 +6,7 @@ import './education.css';
 import './experience.css';
 import '../../dashboard/shared/platform-density.css';
 import './approved-platform.css';
+import './platform-redesign.css';
 import { App } from './App';
 
 const container = document.getElementById('root')!;

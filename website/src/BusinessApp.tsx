@@ -10,7 +10,7 @@ import {WorkspaceSearch} from './apps/WorkspaceSearch';
 import {WorkspaceAppLauncher} from './apps/WorkspaceAppLauncher';
 import {WorkspaceAccountMenu} from './apps/WorkspaceAccountMenu';
 import {OrderDraftEditor} from './apps/OrderDraftEditor';
-import {useAppContext,AppContextNavigation} from './apps/AppNavigation';
+import {useAppContext,AppContextNavigation,WorkspaceAdminNavigation} from './apps/AppNavigation';
 import {CrmWorkspace} from './apps/lazy-workspaces';
 import {InventoryWorkspace} from './apps/lazy-workspaces';
 import {SalesWorkspace} from './apps/lazy-workspaces';
@@ -189,7 +189,7 @@ const navigation: { label: string; icon: IconName; items: string[] }[] = [
   {
     label: 'Workspace',
     icon: 'grid',
-    items: ['Overview', 'Apps', 'Customer Relationships', 'Products', 'Inventory', 'Quotations', ...marketTabs, 'Customers', 'Orders', 'Invoices', 'Payments'],
+    items: ['Overview', 'Apps', 'My Services', 'Customer Relationships', 'Products', 'Inventory', 'Quotations', ...marketTabs, 'Customers', 'Orders', 'Invoices', 'Payments'],
   },
   {
     label: 'Finance & intelligence',
@@ -618,79 +618,66 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
   function metricView() {
     if (!data) return null;
     const metrics = [
-      ['Confirmed inflows', data.confirmed_inflows_minor],
-      ['Outstanding invoices', data.outstanding_minor],
-      ['Overdue receivables', data.overdue_minor],
-      ['Recorded outflows', data.recorded_outflows_minor],
+      ['Confirmed inflows', data.confirmed_inflows_minor, 'payment'],
+      ['Receivables', data.outstanding_minor, 'document'],
+      ['Overdue', data.overdue_minor, 'document'],
+      ['Recorded outflows', data.recorded_outflows_minor, 'chart'],
     ];
     return (
-      <>
-        <div className="metric-grid">
-          {metrics.map(([label, value]) => (
-            <article key={label} className="panel">
-              <span>{label}</span>
+      <div className="business-dashboard" aria-label="Business dashboard">
+        <div className="metric-grid business-metric-strip">
+          {metrics.map(([label, value, icon]) => (
+            <article key={label} className="panel business-metric">
+              <span className="business-metric-icon"><Icon name={icon as IconName}/></span>
+              <span className="business-metric-label">{label}</span>
               <strong>{money(Number(value), data.currency)}</strong>
-              {environment==='sandbox'&&label==='Confirmed inflows'&&<small>Test payment events</small>}
+              <small>{environment==='sandbox'&&label==='Confirmed inflows'?'Test payment events':data.currency+' · covered records'}</small>
             </article>
           ))}
         </div>
-        <FinancialActivity
-          load={call}
-          scope={org + environment}
-          currency={data.currency}
-          filters={filterQuery}
-          testOnly={environment==='sandbox'}
-        />
-        <div className="dashboard-columns">
-          <section className="panel">
-            <h2>Receivables aging</h2>
-            {Object.entries(data.aging || {}).map(([label, value]) => (
-              <div className="aging-row" key={label}>
-                <span>{label.replaceAll('_', ' ')}</span>
-                <div
-                  style={{
-                    width:
-                      Math.max(
-                        2,
-                        Math.min(
-                          65,
-                          (Number(value) /
-                            Math.max(1, data.outstanding_minor)) *
-                            65,
-                        ),
-                      ) + '%',
-                  }}
-                />
-                <b>{money(Number(value), data.currency)}</b>
-              </div>
-            ))}
-            <p className="muted">
-              Issued invoices, less allocated payments and credit notes. Draft and void invoices
-              excluded.
-            </p>
-          </section>
-          <section className="panel">
-            <h2>Quick actions</h2>
-            <div className="quick-actions">
-              {['Customers', 'Orders', 'Invoices', 'Reports'].map((t) => (
-                <button key={t} onClick={() => setTab(t)}>
-                  {t} <Icon name="right" />
-                </button>
-              ))}
-            </div>
+        <div className="business-dashboard-main">
+          <FinancialActivity
+            load={call}
+            scope={org + environment}
+            currency={data.currency}
+            filters={filterQuery}
+            testOnly={environment==='sandbox'}
+          />
+          <section className="panel dashboard-quick-actions">
+            <div className="section-heading"><div><span className="eyebrow">WORKSPACE</span><h2>Quick actions</h2></div><span className="dashboard-action-mark"><Icon name="bolt"/></span></div>
+            <nav aria-label="Business quick actions">
+              {[
+                ['Invoices','Create or review invoices','document'],
+                ['Expenses','Record an expense','payment'],
+                ['Customers','Add a customer','users'],
+                ['Intelligence','Explore analytics','chart'],
+              ].map(([target,label,icon])=><button key={target} onClick={()=>setTab(target)}><span className="dashboard-action-icon"><Icon name={icon as IconName}/></span><span>{label}</span><Icon name="right"/></button>)}
+            </nav>
             <details><summary>Payment availability</summary><p>Live payment collection is not configured. Test payment events do not move real funds.</p></details>
           </section>
         </div>
-        <section className="panel">
-          <h2>Recent provider events</h2>
-          {data.events?.length ? (
+        <div className="business-dashboard-secondary">
+          <section className="panel dashboard-aging-panel">
+            <div className="section-heading"><div><span className="eyebrow">INVOICES</span><h2>Receivables aging</h2></div><button className="quiet-button" onClick={()=>setTab('Invoices')}>View invoices <Icon name="right"/></button></div>
+            <div className="aging-breakdown">
+            {Object.entries(data.aging || {}).map(([label, value]) => (
+              <div className="aging-row" key={label}>
+                <span>{label.replaceAll('_', ' ')}</span>
+                <div className="aging-bar"><i style={{width:Math.max(0,Math.min(100,(Number(value)/Math.max(1,data.outstanding_minor))*100))+'%'}}/></div>
+                <b>{money(Number(value), data.currency)}</b>
+              </div>
+            ))}
+            </div>
+            <p className="muted">Issued invoices, less allocated payments and credit notes. Draft and void invoices excluded.</p>
+          </section>
+          <section className="panel dashboard-recent-panel">
+            <div className="section-heading"><div><span className="eyebrow">LATEST ACTIVITY</span><h2>Recent provider events</h2></div><button className="quiet-button" onClick={()=>setTab('Payments')}>View payments <Icon name="right"/></button></div>
+            {data.events?.length ? (
             <div className="table-scroll">
               <DataTable>
                 <thead>
                   <tr>
-                    <th>Provider reference</th>
-                    <th>Amount</th>
-                    <th>When</th>
+                    <th>Provider reference</th><th>Amount</th><th>Recorded</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -711,9 +698,10 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
           ) : (
             <Empty text="No verified payment activity yet. Create an invoice and test a checkout." />
           )}
-        </section>
+          </section>
+        </div>
         <p className="methodology">{data.methodology}</p>
-      </>
+      </div>
     );
   }
   if(resolvingOrgs) return <main className="account-entry" role="status">Loading your Business workspace…</main>;
@@ -750,8 +738,9 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
         </div>
         <span className="workspace-label">Business workspace</span>
         <nav aria-label="Business navigation">
-          <div className="workspace-primary-nav">{([{tab:'Overview',label:'Home',icon:'home'},{tab:'Apps',label:'Apps',icon:'grid'},{tab:'My Services',label:'Services',icon:'network'},{tab:'Notifications',label:'Notifications',icon:'bell'},{tab:'Approvals',label:'Approvals',icon:'check'}] as const).map(item=><button key={item.tab} title={sidebarCollapsed?item.label:undefined} className={tab===item.tab&&(!appContext.app||item.tab==='Apps')?'active':''} aria-current={tab===item.tab&&(!appContext.app||item.tab==='Apps')?'page':undefined} onClick={()=>{const url=new URL(location.href);url.searchParams.delete('app');url.searchParams.delete('section');url.hash=encodeURIComponent(item.tab);history.pushState(null,'',url.pathname+url.search+url.hash);dispatchEvent(new Event('africore:app-navigation'));setTab(item.tab);setCreating(false);setNavOpen(false);}}><Icon name={item.icon}/><span>{item.label}</span></button>)}</div>
-          {appContext.app?<AppContextNavigation app={appContext.app} section={appContext.section} tab={tab} navigate={value=>{setTab(value);setCreating(false);setNavOpen(false);}}/>:<details className="workspace-nav-group workspace-admin-group" open={['Usage & Billing','Team','Settings'].includes(tab)||undefined}><summary title={sidebarCollapsed?'Workspace administration':undefined}><Icon name="settings"/><span>Workspace administration</span><Icon name="down"/></summary><div className="workspace-admin-links">{[{tab:'Usage & Billing',label:'Usage & billing'},{tab:'Team',label:'Team management'},{tab:'Settings',label:'Workspace settings'}].map(item=><button key={item.tab} title={sidebarCollapsed?item.label:undefined} className={tab===item.tab?'active':''} aria-current={tab===item.tab?'page':undefined} onClick={()=>{setTab(item.tab);setCreating(false);setNavOpen(false);}}><span>{item.label}</span></button>)}</div></details>}
+          <div className="workspace-primary-nav">{([{tab:'Overview',label:'Home',icon:'home'},{tab:'Apps',label:'Apps',icon:'grid'},{tab:'My Services',label:'Services',icon:'network'},{tab:'Intelligence',label:'Analytics',icon:'chart'},{tab:'Automations',label:'Automations',icon:'bolt'},{tab:'Notifications',label:'Notifications',icon:'bell'}] as const).map(item=><button key={item.tab} title={sidebarCollapsed?item.label:undefined} className={tab===item.tab&&(!appContext.app||item.tab==='Apps')?'active':''} aria-current={tab===item.tab&&(!appContext.app||item.tab==='Apps')?'page':undefined} onClick={()=>{const url=new URL(location.href);url.searchParams.delete('app');url.searchParams.delete('section');url.hash=encodeURIComponent(item.tab);history.pushState(null,'',url.pathname+url.search+url.hash);dispatchEvent(new Event('africore:app-navigation'));setTab(item.tab);setCreating(false);setNavOpen(false);}}><Icon name={item.icon}/><span>{item.label}</span></button>)}</div>
+          {appContext.app&&<AppContextNavigation app={appContext.app} section={appContext.section} tab={tab} navigate={value=>{setTab(value);setCreating(false);setNavOpen(false);}}/>}
+          <WorkspaceAdminNavigation tab={tab} navigate={value=>{setTab(value);setCreating(false);setNavOpen(false);}}/>
         </nav>
         <div className="sidebar-bottom">
           {!isDemo()&&<a href="/app/workspaces"><Icon name="grid"/><span>Workspace management</span></a>}

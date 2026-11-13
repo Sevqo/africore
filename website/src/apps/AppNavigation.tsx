@@ -18,11 +18,18 @@ export function useAppContext(api:API,scope:string,enabled=true){
 export function AppContextNavigation({app,section,tab,navigate}:{app:any;section:string;tab:string;navigate:(tab:string)=>void}){
  const direct:Record<string,string>={Invoices:'Invoices',Payments:'Payments',Expenses:'Expenses',Reconciliation:'Reconciliation',Reports:'Reports',Customers:'Customers',Orders:'Orders',Fulfillment:'Fulfillment',Intelligence:'Intelligence',Automations:'Automations',Approvals:'Approvals',products:'Products',quotations:'Quotations'};
  function open(value:string){const url=new URL(location.href);if(value==='all'){url.searchParams.delete('app');url.searchParams.delete('section');}else{url.searchParams.set('app',app.id);url.searchParams.set('section',value);}const target=value==='all'?'Apps':direct[value]||'Apps';url.hash=encodeURIComponent(target);history.pushState(null,'',url.pathname+url.search+url.hash);dispatchEvent(new Event(appNavigationEvent));navigate(target);}
- const sections=app.navigation.filter((item:any)=>!['Notifications','Approvals','My Services','Usage & Billing','Overview','Apps'].includes(item.section));
+ const sections=app.navigation.filter((item:any)=>!['Notifications','My Services','Usage & Billing','Overview','Apps'].includes(item.section));
  return <>
   <button className="app-nav-back" title="Back to all apps" onClick={()=>open('all')}><Icon name="left"/><span>Back to all apps</span></button>
-  <p className="workspace-label">{app.name}</p>
+  <p className="workspace-label app-context-label">{app.name}</p>
   <div className="app-context-links">{sections.map((n:any)=>{const active=direct[n.section]?tab===direct[n.section]:tab==='Apps'&&section===n.section,label=n.section==='dashboard'&&n.label==='Overview'?'Dashboard':n.label;return <button key={n.section} title={label} className={active?'active':''} aria-current={active?'page':undefined} onClick={()=>open(n.section)}><Icon name={/report|analytic|ledger|balance|statement/i.test(label)?'chart':/setting|policy/i.test(label)?'settings':/customer|people|team|supplier/i.test(label)?'users':/product|stock|inventory/i.test(label)?'box':/payment|cash/i.test(label)?'payment':'document'}/><span>{label}</span></button>;})}</div>
-  <details className="workspace-nav-group workspace-admin-group" open={['Usage & Billing','Team','Settings'].includes(tab)||undefined}><summary title="Workspace administration"><Icon name="settings"/><span>Workspace administration</span><Icon name="down"/></summary><div className="workspace-admin-links">{[{tab:'Usage & Billing',label:'Usage & billing'},{tab:'Team',label:'Team management'},{tab:'Settings',label:'Workspace settings'}].map(item=><button key={item.tab} title={item.label} className={tab===item.tab?'active':''} aria-current={tab===item.tab?'page':undefined} onClick={()=>navigate(item.tab)}><span>{item.label}</span></button>)}</div></details>
  </>;
+}
+
+export function WorkspaceAdminNavigation({tab,navigate}:{tab:string;navigate:(tab:string)=>void}){
+ const items=[{tab:'Usage & Billing',label:'Usage & billing'},{tab:'Team',label:'Team management'},{tab:'Settings',label:'Workspace settings'}];
+ return <details className="workspace-nav-group workspace-admin-group" open={items.some(item=>item.tab===tab)||undefined}>
+  <summary title="Workspace administration"><Icon name="settings"/><span>Workspace administration</span><Icon name="down"/></summary>
+  <div className="workspace-admin-links">{items.map(item=><button key={item.tab} title={item.label} className={tab===item.tab?'active':''} aria-current={tab===item.tab?'page':undefined} onClick={()=>navigate(item.tab)}><span>{item.label}</span></button>)}</div>
+ </details>;
 }
