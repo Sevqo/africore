@@ -15,13 +15,13 @@ import {AnalyticsWorkspace} from './lazy-workspaces';
 import {CrmWorkspace} from './lazy-workspaces';
 import {InventoryWorkspace} from './lazy-workspaces';
 import {useEffect,useState} from 'react';
-import {Icon,type IconName} from '../components/Icon';
+import {Icon} from '../components/Icon';
 import {Overlay} from '../components/Overlay';
 import {money,type API} from '../operations/UI';
 import {FinanceDashboard} from './lazy-workspaces';
+import {appIcons as icons} from './appIcons';
 import './apps.css';
 type Props={openRecord?:(tab:string,id:string)=>void;role?:string;services?:any[];api:API;scope:string;manager:boolean;navigate:(tab:string)=>void;onServicesChanged:()=>void};
-const icons:Record<string,IconName>={pos:'payment',commerce:'bag',procurement:'bag',documents:'document',people:'users',business_id:'shield',accounting:'document',work:'grid',finance:'chart',crm:'users',inventory:'box',sales:'bag',analytics:'chart',automations:'bolt'};
 export function AppsWorkspace({api:providedApi,scope,manager,navigate,onServicesChanged,services=[],role,openRecord}:Props){
  const api=useIdempotentAPI(providedApi,scope),writable=['owner','admin','finance','operations'].includes(role||''),financeWritable=['owner','admin','finance'].includes(role||'');
  const [catalog,setCatalog]=useState<any>(null),[selected,setSelectedState]=useState(()=>new URLSearchParams(location.search).get('app')||''),[review,setReview]=useState<any>(null),[optional,setOptional]=useState<string[]>([]),[error,setError]=useState(''),[busy,setBusy]=useState(false),[revision,setRevision]=useState(0),[section,setSection]=useState(()=>new URLSearchParams(location.search).get('section')||''),[remove,setRemove]=useState(false),[serviceAction,setServiceAction]=useState('keep');

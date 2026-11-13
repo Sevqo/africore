@@ -330,23 +330,36 @@
 @media (max-width: 900px) {
   .business-shell .app-header { grid-template-columns: minmax(120px, 1fr) minmax(40px, auto); gap: 8px; padding: 8px 14px; }
   .business-shell[data-platform-density] .app-header {
-    height: auto;
-    min-height: 0;
-    grid-template-columns: 44px minmax(0, 1fr) 44px;
-    grid-template-rows: repeat(2, 44px);
-    grid-auto-rows: 44px;
-    gap: 6px;
-    padding: 8px 12px;
+    box-sizing: border-box;
+    height: 60px;
+    min-height: 60px;
+    grid-template-columns: 44px 44px minmax(100px, 132px) minmax(44px, 1fr) auto;
+    grid-template-rows: 44px;
+    gap: 4px;
+    padding: 8px;
+    justify-content: stretch;
+    overflow: visible;
   }
-  .business-shell[data-platform-density] .app-header > .workspace-launcher-trigger { grid-column: 1; grid-row: 1; }
-  .business-shell[data-platform-density] .app-header > .app-nav-toggle { grid-column: 3; grid-row: 1; }
-  .business-shell[data-platform-density] .app-header > div:first-of-type { grid-column: 2; grid-row: 1; min-width: 0; }
-  .business-shell[data-platform-density] .app-header > .workspace-search-trigger { grid-column: 1; grid-row: 2; }
-  .business-shell[data-platform-density] .app-header > div:last-child { grid-column: 2 / 4; grid-row: 2; justify-self: end; min-width: 0; }
-  .business-shell[data-platform-density] .app-header:not(:has(.workspace-launcher-trigger)) > .app-nav-toggle { grid-column: 1; }
-  .business-shell .app-header .workspace-search-trigger { width: 40px; min-width: 40px; justify-content: center; padding: 8px; }
+  .business-shell[data-platform-density] .app-header > .app-nav-toggle { grid-column: 1; grid-row: 1; }
+  .business-shell[data-platform-density] .app-header > .workspace-launcher-trigger { grid-column: 2; grid-row: 1; }
+  .business-shell[data-platform-density] .app-header > div:first-of-type { grid-column: 3; grid-row: 1; min-width: 0; width: 100%; }
+  .business-shell[data-platform-density] .app-header > .workspace-search-trigger { grid-column: 4; grid-row: 1; justify-self: end; }
+  .business-shell[data-platform-density] .app-header > div:last-child { grid-column: 5; grid-row: 1; justify-self: end; min-width: 0; width: max-content; }
+  .business-shell[data-platform-density] .app-header:not(:has(.workspace-launcher-trigger)) { grid-template-columns: 44px minmax(100px, 132px) minmax(44px, 1fr) auto; }
+  .business-shell[data-platform-density] .app-header:not(:has(.workspace-launcher-trigger)) > div:first-of-type { grid-column: 2; }
+  .business-shell[data-platform-density] .app-header:not(:has(.workspace-launcher-trigger)) > .workspace-search-trigger { grid-column: 3; }
+  .business-shell[data-platform-density] .app-header:not(:has(.workspace-launcher-trigger)) > div:last-child { grid-column: 4; }
+  .business-shell[data-platform-density] .app-header :is(.app-nav-toggle,.workspace-launcher-trigger,.workspace-search-trigger,.notification-bell) { width: 44px; height: 44px; min-width: 44px; min-height: 44px; padding: 10px; }
+  .business-shell[data-platform-density] .app-header > div:first-of-type select { width: 100%; min-width: 0; max-width: 132px; height: 40px; min-height: 40px; padding: 6px 24px 6px 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .business-shell[data-platform-density] .app-header > div:last-child { gap: 4px; }
+  .business-shell[data-platform-density] .app-header .workspace-account-button { width: 44px; height: 44px; min-width: 44px; justify-content: center; padding: 5px; }
+  .business-shell[data-platform-density] .app-header .workspace-account-button .initial-avatar { width: 34px; height: 34px; }
+  .business-shell[data-platform-density] .app-header .workspace-account-button>.icon { display: none; }
+  .business-shell[data-platform-density] .app-header .workspace-search-trigger { width: 44px; min-width: 44px; justify-content: center; padding: 10px; }
   .business-shell .app-header .workspace-search-trigger span,
   .business-shell .app-header .workspace-search-trigger kbd { display: none; }
+  .business-shell[data-platform-density] .sidebar.is-open { z-index: 200; pointer-events: auto; }
+  .business-shell[data-platform-density] .nav-scrim { z-index: 190; pointer-events: auto; }
   .business-shell .business-dashboard-main { grid-template-columns: minmax(0, 1.5fr) minmax(190px, .8fr); }
   .business-shell .business-dashboard-secondary { grid-template-columns: minmax(210px, .8fr) minmax(0, 1.4fr); }
   .business-shell .finance-app-main { grid-template-columns: minmax(0, 1.5fr) minmax(190px, .8fr); }
@@ -380,12 +393,41 @@
 }
 @media (max-width: 380px) {
   .business-shell .business-metric-strip,
-  .business-shell .finance-app-metrics { grid-template-columns: 1fr 1fr; gap: 7px; }
+  .business-shell .finance-app-metrics,
+  .business-shell .apps-workspace[data-app-selected="true"] .app-metric-grid,
+  .business-shell .commerce-overview .commerce-metrics { grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .business-shell .business-metric-strip .business-metric { grid-template-columns: 25px minmax(0,1fr); gap: 3px 7px; padding: 9px; }
   .business-shell .business-metric-icon { width: 25px; height: 25px; }
-  .business-shell .business-metric strong { font-size: 17px; }
+  .business-shell .business-metric strong { min-width: 0; font-size: 18px; overflow-wrap: anywhere; }
+  .business-shell[data-platform-density] .app-header { grid-template-columns: 44px minmax(100px, 1fr) 44px auto; }
+  .business-shell[data-platform-density] .app-header > .workspace-launcher-trigger { display: none; }
+  .business-shell[data-platform-density] .app-header:not(:has(.workspace-launcher-trigger)) { grid-template-columns: 44px minmax(100px, 1fr) 44px auto; }
+  .business-shell[data-platform-density] .app-header > div:first-of-type { grid-column: 2; }
+  .business-shell[data-platform-density] .app-header > .workspace-search-trigger { grid-column: 3; }
+  .business-shell[data-platform-density] .app-header > div:last-child { grid-column: 4; }
   .business-shell .apps-workspace:not([data-app-selected=true]) .app-directory-card { grid-template-columns: 1fr; }
   .business-shell .apps-workspace:not([data-app-selected=true]) .app-directory-card > .app-mark,
   .business-shell .apps-workspace:not([data-app-selected=true]) .app-directory-card > div { grid-column: 1; }
   .business-shell .apps-workspace:not([data-app-selected=true]) .app-directory-card > button { grid-column: 1; }
+}
+
+@media (max-width: 600px) {
+  :is(.business-shell[data-platform-density],.focused-account[data-platform-density]) :is(.metric-grid,.app-metric-grid,.finance-app-metrics,.commerce-metrics,.account-metrics) > * { min-width: 0; }
+  :is(.business-shell[data-platform-density],.focused-account[data-platform-density]) :is(.metric-grid,.app-metric-grid,.finance-app-metrics,.commerce-metrics,.account-metrics) strong { max-width: 100%; font-size: clamp(17px, 4.2vw, 22px); line-height: 1.2; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  :is(.business-shell[data-platform-density],.focused-account[data-platform-density]) table.stackable tbody tr { padding-block: 6px; }
+  :is(.business-shell[data-platform-density],.focused-account[data-platform-density]) table.stackable td { grid-template-columns: minmax(84px,.75fr) minmax(0,1fr); gap: 8px; padding-block: 5px; font-size: 13px; overflow-wrap: anywhere; }
+  .business-shell[data-platform-density] .business-metric { min-width: 0; padding: 10px; }
+  .business-shell[data-platform-density] .workspace-launcher { padding: 16px; }
+  .business-shell[data-platform-density] .workspace-launcher-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 4px; }
+  .business-shell[data-platform-density] .workspace-launcher-app { padding: 10px 5px!important; }
+}
+@media (max-width: 400px) {
+  .business-shell[data-platform-density] .workspace-launcher-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+
+/* The drawer and scrim are siblings inside the isolated workspace root. Keep
+   the drawer above the scrim so touch hit-testing reaches its navigation. */
+@media (max-width: 1024px) {
+  .business-shell[data-platform-density] .nav-scrim { z-index: 190; }
+  .business-shell[data-platform-density] .sidebar.is-open { z-index: 200; }
 }

@@ -758,7 +758,7 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
           </button>
         </div>
       </aside>
-      <div className="app-main">
+      <div className="app-main" inert={navOpen||undefined}>
         <header className="app-header">
           {!isDemo()&&org&&<WorkspaceAppLauncher api={call} scope={org+'\0'+environment} navigate={setTab}/>}
           <button
