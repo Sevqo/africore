@@ -27,6 +27,7 @@ jobs:
       - run: npm test && npm run validate:openapi && npm run validate:platform
       - run: npm --prefix website run build && npm --prefix deploy/cloudflare test && npm --prefix deploy/cloudflare run check
       - name: Deploy Cloudflare frontend and gateway
+        id: cloudflare_deploy
         working-directory: deploy/cloudflare
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -35,6 +36,7 @@ jobs:
           test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Configure a scoped evaluation Cloudflare API token.'; exit 1; }
           npm run deploy
       - name: Trigger existing Render backend deployment
+        if: ${{ success() || steps.cloudflare_deploy.outcome == 'failure' }}
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
