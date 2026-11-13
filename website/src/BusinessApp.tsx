@@ -1052,7 +1052,14 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
                   </div>
                   <section className="panel record-panel">
                     {data?.data?.length ? (
-                      <div className="table-scroll">
+                      <>
+                      <div
+                        className={
+                          tab === 'Invoices'
+                            ? 'table-scroll invoice-table-desktop'
+                            : 'table-scroll'
+                        }
+                      >
                         <DataTable>
                           <thead>
                             <tr>
@@ -1150,6 +1157,115 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
                           </tbody>
                         </DataTable>
                       </div>
+                      {tab === 'Invoices' && (
+                        <div className="invoice-list-mobile" aria-label="Invoices">
+                          {data.data.map((r: any) => {
+                            const totalMinor =
+                                r.total_minor ?? r.amount_minor ?? 0,
+                              paidMinor = r.paid_minor ?? 0,
+                              outstandingMinor =
+                                r.outstanding_minor ??
+                                Math.max(0, totalMinor - paidMinor),
+                              canRequestPayment =
+                                ['issued', 'awaiting_payment', 'partially_paid'].includes(
+                                  r.status,
+                                ) &&
+                                outstandingMinor > 0 &&
+                                writable &&
+                                market.catalog?.services.some(
+                                  (s: any) =>
+                                    s.id === 'payments' && s.status === 'active',
+                                );
+                            return (
+                              <article className="invoice-mobile-record" key={r.id}>
+                                <div className="invoice-mobile-heading">
+                                  <button
+                                    className="invoice-mobile-reference"
+                                    onClick={() => setSelected(r)}
+                                    aria-label={`Open invoice ${r.reference || 'details'}`}
+                                  >
+                                    {r.reference || 'Invoice'}
+                                  </button>
+                                  <span className="badge invoice-mobile-status">
+                                    {r.status || 'active'}
+                                  </span>
+                                </div>
+                                <div className="invoice-mobile-amounts">
+                                  <div>
+                                    <span>Invoice total</span>
+                                    <strong>{money(totalMinor, r.currency)}</strong>
+                                  </div>
+                                  <div className="invoice-mobile-secondary-amount">
+                                    <span>
+                                      {paidMinor > 0 ? 'Paid' : 'Outstanding'}
+                                    </span>
+                                    <b>
+                                      {paidMinor > 0
+                                        ? money(paidMinor, r.currency)
+                                        : money(outstandingMinor, r.currency)}
+                                    </b>
+                                  </div>
+                                  {paidMinor > 0 && outstandingMinor > 0 && (
+                                    <div className="invoice-mobile-balance">
+                                      <span>Remaining</span>
+                                      <b>{money(outstandingMinor, r.currency)}</b>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="invoice-mobile-actions">
+                                  <button
+                                    className="quiet-button"
+                                    onClick={() => setSelected(r)}
+                                  >
+                                    Details
+                                  </button>
+                                  {r.status === 'draft' && writable && (
+                                    <button
+                                      className="quiet-button"
+                                      onClick={() =>
+                                        action(() =>
+                                          call(
+                                            '/records/invoices/' + r.id,
+                                            'PATCH',
+                                            { status: 'issued' },
+                                          ),
+                                        )
+                                      }
+                                    >
+                                      Issue
+                                    </button>
+                                  )}
+                                  {canRequestPayment && (
+                                    <button
+                                      className="quiet-button"
+                                      onClick={() => requestPayment(r)}
+                                    >
+                                      Payment link
+                                    </button>
+                                  )}
+                                  <button
+                                    className="quiet-button"
+                                    onClick={async () => {
+                                      try {
+                                        const fresh = await call(
+                                          '/records/invoices/' + r.id,
+                                        );
+                                        setSelected(fresh);
+                                        setTimeout(() => window.print(), 100);
+                                      } catch (e) {
+                                        setError((e as Error).message);
+                                      }
+                                    }}
+                                  >
+                                    Print / PDF
+                                  </button>
+                                </div>
+                              </article>
+                            );
+                          })}
+                        </div>
+                      )}
+                      </>
                     ) : (
                       !busy && (
                         <Empty
@@ -1439,6 +1555,9 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
                     <h2>{selected.reference || selected.name}</h2>
                     {selected.kind === 'invoices' ? (
                       <>
+                        <small className="record-id">
+                          Record ID: {selected.id}
+                        </small>
                         <p>
                           {organization?.name} · {profile?.email}
                         </p>
