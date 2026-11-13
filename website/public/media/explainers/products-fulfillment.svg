@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 520" role="img" aria-labelledby="title desc">
+  <title id="title">Fulfillment records track delivery milestones and evidence</title>
+  <desc id="desc">A three-step illustration: select an accepted order, record a shipment and dispatch, then retain delivery milestones and supporting evidence.</desc>
+  <rect width="960" height="520" rx="24" fill="#f7f7f7"/>
+  <text x="64" y="74" fill="#426900" font-family="Arial,sans-serif" font-size="18" font-weight="700" letter-spacing="2">FULFILLMENT AND DELIVERY</text>
+  <text x="64" y="116" fill="#111" font-family="Arial,sans-serif" font-size="31" font-weight="700">Follow the work after an order</text>
+  <g font-family="Arial,sans-serif">
+    <rect x="64" y="168" width="232" height="246" rx="18" fill="#fff" stroke="#d1d1d1" stroke-width="2"/>
+    <circle cx="112" cy="218" r="24" fill="#eaf3db"/><path d="M102 207h20v22h-20zM106 213h12M106 219h12M106 225h8" fill="none" stroke="#426900" stroke-width="2.2" stroke-linejoin="round"/>
+    <text x="96" y="278" fill="#426900" font-size="15" font-weight="700">01 · SELECT</text>
+    <text x="96" y="315" fill="#111" font-size="21" font-weight="700">Accepted order</text>
+    <text x="96" y="352" fill="#555" font-size="16">Choose the order and</text><text x="96" y="376" fill="#555" font-size="16">eligible quantities.</text>
+    <path d="M314 290h40m-12-12 12 12-12 12" fill="none" stroke="#426900" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="364" y="168" width="232" height="246" rx="18" fill="#fff" stroke="#d1d1d1" stroke-width="2"/>
+    <circle cx="412" cy="218" r="24" fill="#eaf3db"/><path d="m401 214 11-7 11 7v13h-22zM401 214l11 7 11-7M412 221v7" fill="none" stroke="#426900" stroke-width="2.2" stroke-linejoin="round"/>
+    <text x="396" y="278" fill="#426900" font-size="15" font-weight="700">02 · RECORD</text>
+    <text x="396" y="315" fill="#111" font-size="21" font-weight="700">Shipment event</text>
+    <text x="396" y="352" fill="#555" font-size="16">Record dispatch and</text><text x="396" y="376" fill="#555" font-size="16">supported milestones.</text>
+    <path d="M614 290h40m-12-12 12 12-12 12" fill="none" stroke="#426900" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="664" y="168" width="232" height="246" rx="18" fill="#fff" stroke="#d1d1d1" stroke-width="2"/>
+    <circle cx="712" cy="218" r="24" fill="#eaf3db"/><path d="m702 219 7 7 14-16" fill="none" stroke="#426900" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="696" y="278" fill="#426900" font-size="15" font-weight="700">03 · RETAIN</text>
+    <text x="696" y="315" fill="#111" font-size="21" font-weight="700">Evidence + status</text>
+    <text x="696" y="352" fill="#555" font-size="16">Keep milestones and</text><text x="696" y="376" fill="#555" font-size="16">supporting evidence.</text>
+  </g>
+  <text x="64" y="466" fill="#666" font-family="Arial,sans-serif" font-size="15">Recorded delivery is not live courier tracking or provider confirmation.</text>
+</svg>

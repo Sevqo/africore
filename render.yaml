@@ -3,7 +3,7 @@ services:
   - type: web
     name: africore-api
     runtime: docker
-    repo: https://github.com/Sevqo/afriscore
+    repo: https://github.com/Sevqo/africore
     branch: main
     plan: free
     numInstances: 1

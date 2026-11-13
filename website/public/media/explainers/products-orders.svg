@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 520" role="img" aria-labelledby="title desc">
+  <title id="title">An agreed order stays separate from payment and delivery</title>
+  <desc id="desc">A three-step illustration: select a customer and items, review the agreed order, and follow separate invoice, payment and delivery records.</desc>
+  <rect width="960" height="520" rx="24" fill="#f7f7f7"/>
+  <text x="64" y="74" fill="#426900" font-family="Arial,sans-serif" font-size="18" font-weight="700" letter-spacing="2">SALES AND ORDERS</text>
+  <text x="64" y="116" fill="#111" font-family="Arial,sans-serif" font-size="31" font-weight="700">Keep the agreement distinct</text>
+  <g font-family="Arial,sans-serif">
+    <rect x="64" y="168" width="232" height="246" rx="18" fill="#fff" stroke="#d1d1d1" stroke-width="2"/>
+    <circle cx="112" cy="218" r="24" fill="#eaf3db"/><path d="M102 217a10 10 0 1 1 20 0M99 231c2-7 6-10 13-10s11 3 13 10" fill="none" stroke="#426900" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="96" y="278" fill="#426900" font-size="15" font-weight="700">01 · PREPARE</text>
+    <text x="96" y="315" fill="#111" font-size="21" font-weight="700">Customer + items</text>
+    <text x="96" y="352" fill="#555" font-size="16">Choose the customer,</text><text x="96" y="376" fill="#555" font-size="16">products and quantities.</text>
+    <path d="M314 290h40m-12-12 12 12-12 12" fill="none" stroke="#426900" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="364" y="168" width="232" height="246" rx="18" fill="#fff" stroke="#d1d1d1" stroke-width="2"/>
+    <circle cx="412" cy="218" r="24" fill="#eaf3db"/><path d="M402 207h20v22h-20zM406 213h12M406 218h12M406 223h8" fill="none" stroke="#426900" stroke-width="2.2" stroke-linejoin="round"/>
+    <text x="396" y="278" fill="#426900" font-size="15" font-weight="700">02 · REVIEW</text>
+    <text x="396" y="315" fill="#111" font-size="21" font-weight="700">Agreed order</text>
+    <text x="396" y="352" fill="#555" font-size="16">Review terms and</text><text x="396" y="376" fill="#555" font-size="16">confirm the agreement.</text>
+    <path d="M614 290h40m-12-12 12 12-12 12" fill="none" stroke="#426900" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="664" y="168" width="232" height="246" rx="18" fill="#fff" stroke="#d1d1d1" stroke-width="2"/>
+    <circle cx="712" cy="218" r="24" fill="#eaf3db"/><path d="M702 210h20v16h-20zM707 207h10M707 216h10M707 221h6" fill="none" stroke="#426900" stroke-width="2.2" stroke-linejoin="round"/>
+    <text x="696" y="278" fill="#426900" font-size="15" font-weight="700">03 · FOLLOW</text>
+    <text x="696" y="315" fill="#111" font-size="21" font-weight="700">Separate records</text>
+    <text x="696" y="352" fill="#555" font-size="16">Invoice, payment and</text><text x="696" y="376" fill="#555" font-size="16">delivery are distinct.</text>
+  </g>
+  <text x="64" y="466" fill="#666" font-family="Arial,sans-serif" font-size="15">An order records agreement; it does not confirm payment or delivery.</text>
+</svg>

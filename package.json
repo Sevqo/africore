@@ -1,7 +1,7 @@
 {
-  "name": "afriscore-platform",
+  "name": "africore-platform",
   "version": "0.1.0",
-  "description": "AfriScore programmable business infrastructure for African markets",
+  "description": "AfriCore modular business operations platform",
   "main": "dist/index.js",
   "type": "commonjs",
   "scripts": {

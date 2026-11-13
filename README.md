@@ -1,18 +1,14 @@
-# AfriScore
+# AfriCore
 
-Programmable business and financial infrastructure for African
-markets, starting in Kenya. The goal is to be the layer other
-companies build on — the way Stripe is for payments or Plaid is for
-financial connectivity — not another standalone fintech app.
+AfriCore is a modular business operations workspace for African SMEs, starting in Kenya. Fourteen focused apps cover finance, accounting, customers, sales, stock, purchasing, people, documents, identity and trust, insight, and automations on shared business records.
 
-Kenyan businesses run across fragmented systems: M-Pesa, banks, POS,
-government tax and registration systems, spreadsheets, WhatsApp.
-Every lender, marketplace, or fintech that wants to understand a
-business currently has to integrate with all of them separately, or
-just guess. AfriScore is building a layer that can normalize authorized
-source data into one consistent schema and expose useful capabilities
-through a consent-gated API. Current provider connectors are synthetic;
-live institutional connections are not yet available.
+The public app portfolio lives at `/apps`; `/products` remains the service directory. Apps group related work. Each service keeps its own availability, permissions, provider requirements and usage rules.
+
+The platform includes a React/TypeScript website, a TypeScript/Node API, and Cloudflare/Render deployment targets. Provider and payment workflows remain subject to each service's current qualification; sandbox activity does not move real funds, and a listed app does not imply a live integration.
+
+## Historical architecture notes
+
+The detailed sections below preserve an earlier AfriScore architecture overview and endpoint examples. Treat them as background; use the current app/service catalogs, deployment configuration and tests as the source of truth for shipped behavior and readiness.
 
 ## What it does
 

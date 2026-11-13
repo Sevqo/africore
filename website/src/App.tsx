@@ -1,5 +1,6 @@
 import {lazy,Suspense} from "react";
 import {PublicDiscovery} from "./education/PublicDiscovery";
+import { AppsPortfolio } from './apps/AppsPortfolio';
 import {discoveryPages} from "./education/discoveryPages";
 import {ServiceEducationPage} from "./education/ServiceEducationPage";
 import {serviceEducation} from "./education/serviceEducation";
@@ -170,7 +171,7 @@ function Application() {
   if (path.startsWith('/trust/share/')) return <TrustPublic mode="share" />;
   if (path.startsWith('/passport/')) return <TrustPublic mode="profile" />;
   if (path.startsWith('/buyer/')) return <BuyerPortal />;
-  if (path.startsWith('/app')||path==='/auth/callback') return <AccountApp />;
+  if (path === '/app' || path.startsWith('/app/') || path==='/auth/callback') return <AccountApp />;
   if(path==='/get-started'||path==='/signup') return <AccountChooser/>;
   if(path.startsWith('/sign-up/')) return ['personal','business','developer'].includes(path.split('/')[2]) ? <AuthPage mode="signup" kind={path.split('/')[2]}/> : <AccountChooser/>;
   if(path==='/login') return <AuthPage mode="signin"/>;
@@ -194,7 +195,7 @@ function Application() {
       </a>
       <Header />
       <main id="main">
-        {discoveryPages[path]?<PublicDiscovery path={path}/>:educationService ? <ServiceEducationPage id={educationService}/> : path === '/' ? (
+        {path === '/apps' || path.startsWith('/apps/') ? <AppsPortfolio path={path}/> : discoveryPages[path]?<PublicDiscovery path={path}/>:educationService ? <ServiceEducationPage id={educationService}/> : path === '/' ? (
           <Home />
         ) : path === '/learn' || path.startsWith('/learn/') ? (
           <Learn slug={path.split('/')[2]} />

@@ -3,6 +3,55 @@ import assert from 'node:assert/strict';
 import {providerSessions} from '../src/accounts/security-sessions.ts';
 import {describeSession,sessionDate} from '../src/accounts/session-presentation.ts';
 import {allowanceLabel,selectUsage} from '../src/marketplace/usage-presentation.ts';
+import fs from 'node:fs';
+import path from 'node:path';
+import {appIcons} from '../src/apps/appIcons.ts';
+import {appPortfolioPath} from '../src/apps/app-portfolio-path.ts';
+import {serviceOpenDestination} from '../src/marketplace/service-open-destination.ts';
+
+test('the fourteen apps have unique visual identities and prerendered focused pages',()=>{
+ const appIds=Object.keys(appIcons);
+ assert.equal(appIds.length,14);
+ assert.equal(new Set(Object.values(appIcons)).size,appIds.length);
+ const manifest=JSON.parse(fs.readFileSync('../deploy/cloudflare/public-paths.json','utf8'));
+ assert.ok(manifest.includes('/apps'));
+ assert.equal(manifest.filter(route=>route.startsWith('/apps/')).length,appIds.length,'every catalog app must receive an app route');
+ const index=fs.readFileSync('dist/apps/index.html','utf8');
+ assert.ok(index.includes('One app for each kind of work.'));
+ for(const id of appIds){
+  const route=appPortfolioPath(id),html=fs.readFileSync(path.join('dist',route.slice(1),'index.html'),'utf8');
+  assert.ok(manifest.includes(route),route+' missing from deployment route manifest');
+  assert.ok(html.includes('Setup and limitations'),route+' missing readiness details');
+  assert.match(html,/<title>[^<]+ \| AfriCore apps<\/title>/,route+' missing route-specific metadata');
+  assert.ok(index.includes('href="'+route+'"'),'portfolio missing '+id);
+ }
+});
+
+test('trust service launchers open their corresponding Business ID app section',()=>{
+ const destinations={verification:'verification',credentials:'credentials',trust_network:'relationships',blockchain:'credentials'};
+ for(const [id,section]of Object.entries(destinations))assert.deepEqual(serviceOpenDestination({id,tabs:[]}),{tab:'Apps',app:'business_id',section});
+ assert.deepEqual(serviceOpenDestination({id:'customers',tabs:['Customers']}),{tab:'Customers'});
+});
+
+test('the previously broken service-detail illustration routes resolve to accessible original SVG artwork',()=>{
+ for(const route of ['/products/customers','/products/orders','/products/fulfillment']){
+  const file=route.slice(1).replaceAll('/','-')+'.svg';
+  const svg=fs.readFileSync(path.join('public/media/explainers',file),'utf8');
+  assert.match(svg,/<title id="title">/,route+' title');
+  assert.match(svg,/<desc id="desc">/,route+' description');
+ }
+});
+
+test('service guides link back to relevant apps and app pages stay separate from the service directory',()=>{
+ const customers=fs.readFileSync('dist/products/customers/index.html','utf8');
+ assert.ok(customers.includes('Apps that use this service'));
+ assert.ok(customers.includes('href="/apps/crm"'));
+ assert.ok(customers.includes('href="/apps/sales"'));
+ const home=fs.readFileSync('dist/index.html','utf8');
+ assert.ok(home.includes('href="/apps"'));
+ assert.ok(home.includes('Browse apps'));
+});
+
 test('session cards distinguish browser hints without leaking headers or inventing models',()=>{
  assert.equal(describeSession('Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605 Safari/604.1'),'iPhone · Safari');
  assert.equal(describeSession('Mozilla Windows Chrome/120 Edg/120'),'Windows device · Edge');

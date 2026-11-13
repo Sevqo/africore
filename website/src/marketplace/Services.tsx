@@ -5,6 +5,7 @@ import {Icon} from '../components/Icon';
 import {serviceCatalog,serviceForTab,foundationTabs} from '../../../src/marketplace/catalog';
 import './services.css';
 import {allowanceLabel,formatUnits,planLabel,selectUsage} from './usage-presentation';
+import {serviceOpenDestination} from './service-open-destination';
 export const marketTabs=['My Services','Explore Services','Usage & Billing'];
 export function useMarketplace(org:string,environment:string,kind:string,initial?:any,demo=false){
  const scope=org+'\0'+environment;
@@ -55,7 +56,7 @@ export function Services({market,view,navigate,manager}:{market:MarketplaceState
  const goals:Record<string,string[]>={'Send invoices':['invoicing'],'Manage customers':['customers'],'Track money':['expenses','cash_flow'],'Receive payments':['payments'],'Automate work':['automations'],'Build business identity':['passport'],'Connect software':['developer_api']};
  async function action(fn:()=>Promise<unknown>){setBusy(true);setError('');setNotice('');try{await fn();}catch(e){setError((e as Error).message);}finally{market.reload();setBusy(false);}}
  const call=(suffix:string,method='POST',body:any={})=>api('/api/v1/organizations/'+market.org+suffix,method,body,market.environment);
- const open=(s:any)=>{setDetail(null);const url=new URL(location.href);url.searchParams.delete('app');url.searchParams.delete('section');history.replaceState(null,'',url.pathname+url.search+url.hash);dispatchEvent(new Event('africore:app-navigation'));navigate(s.tabs[0]||'Business Passport');};
+ const open=(s:any)=>{setDetail(null);const destination=serviceOpenDestination(s);const url=new URL(location.href);url.searchParams.delete('service');if(destination.app){url.searchParams.set('app',destination.app);url.searchParams.set('section',destination.section||'');url.hash='Apps';}else{url.searchParams.delete('app');url.searchParams.delete('section');}history.replaceState(null,'',url.pathname+url.search+url.hash);dispatchEvent(new Event('africore:app-navigation'));navigate(destination.tab);};
  const items=all.filter((s:any)=>(view==='Explore Services'||s.entitlement)&&[s.name,s.description,s.detail].join(' ').toLowerCase().includes(search.toLowerCase())&&(category==='all'||s.category===category)&&(pricing==='all'||pricing==='free'&&s.price?.model==='free'||pricing==='paid'&&s.price?.model!=='free'||pricing==='usage'&&['metered','allowance','tiered','hybrid'].includes(s.price?.model))).sort((a:any,b:any)=>Number(b.entitlement?.favorite||0)-Number(a.entitlement?.favorite||0)||(a.entitlement?.position||0)-(b.entitlement?.position||0)||a.name.localeCompare(b.name));
  if(view==='Usage & Billing')return <UsageBilling market={market} manager={manager}/>;
  return <div className="service-marketplace">

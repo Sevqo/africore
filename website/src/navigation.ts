@@ -1,5 +1,6 @@
 export const groups: Record<string, [string, string][]> = {
   Products: [
+    ["Browse apps", "/apps"],
     ["Browse services", "/products"],
     ["Customers & clients", "/products/customers"],
     ["Orders", "/products/orders"],

@@ -14,6 +14,8 @@ export type IconName =
   | 'document'
   | 'payment'
   | 'shield'
+  | 'calculator'
+  | 'tag'
   | 'code'
   | 'settings'
   | 'network'
@@ -42,6 +44,8 @@ const paths: Record<IconName, string> = {
   document: 'M14 2H5v20h14V7zM14 2v6h5M8 12h8M8 16h6',
   payment: 'M3 5h18v14H3zM3 10h18M7 15h3',
   shield: 'm12 2 9 4v6c0 5-9 10-9 10S3 17 3 12V6zM8 12l3 3 5-6',
+  calculator: 'M5 3h14v18H5zM8 7h8M8 11h2m4 0h2m-8 4h2m4 0h2m-8 4h2m4 0h2',
+  tag: 'M20 12l-8 8-9-9V3h8zM7 7h.01',
   code: 'm8 6-6 6 6 6m8-12 6 6-6 6m-3-15-2 18',
   settings: 'M4 6h16M4 12h16M4 18h16M8 3v6M16 9v6M10 15v6',
   network: 'M12 4v6M5 18l7-8 7 8M9 2h6v5H9zM2 17h6v5H2zM16 17h6v5h-6z',
