@@ -23,6 +23,31 @@ html:has([data-platform-density]) {
 .business-shell[data-platform-density] .sidebar nav button:hover,.focused-account[data-platform-density] .account-nav nav a:hover{background:#30393b}
 .business-shell[data-platform-density] .sidebar nav button.active,.focused-account[data-platform-density] .account-nav nav a[aria-current=page]{background:linear-gradient(100deg,#438400,#68a900);color:white;font-weight:650}
 .business-shell[data-platform-density] .workspace-primary-nav{display:grid;gap:5px;padding-bottom:16px;margin-bottom:14px;border-bottom:1px solid #3b4547}
+.business-shell[data-platform-density] .workspace-primary-nav button{justify-content:flex-start}
+.business-shell[data-platform-density] .workspace-nav-group summary{display:flex;align-items:center;gap:9px;cursor:pointer}
+.business-shell[data-platform-density] .workspace-nav-group summary>.icon:last-child{margin-left:auto}
+.business-shell[data-platform-density] .workspace-admin-links,.business-shell[data-platform-density] .app-context-links{display:grid;gap:3px}
+.business-shell[data-platform-density] .workspace-admin-links button{padding-left:38px!important}
+.business-shell[data-platform-density] .app-context-links{padding-bottom:14px}
+.business-shell[data-platform-density] .app-context-links button{padding-left:12px!important}
+.business-shell[data-platform-density] .sidebar-brand .sidebar-collapse-toggle{display:inline-flex;color:#bdc9c1}
+.business-shell[data-platform-density] .sidebar-brand .sidebar-collapse-toggle:hover{background:#30393b}
+.business-shell[data-platform-density] .app-nav-back{margin-top:4px}
+.business-shell[data-platform-density] .sidebar-bottom a,.business-shell[data-platform-density] .sidebar-bottom button{display:flex;align-items:center;gap:10px}
+.business-shell[data-platform-density] .sidebar-bottom .icon{width:16px;height:16px;flex:none}
+.business-shell[data-platform-density] .workspace-breadcrumbs{display:flex;align-items:center;gap:8px;min-height:24px;margin:0 0 12px;color:#66716b;font-size:12px}
+.business-shell[data-platform-density] .workspace-breadcrumbs button{min-height:24px;padding:0;border:0;background:transparent;color:#426900;font-size:12px}
+.business-shell[data-platform-density] .workspace-breadcrumbs button:hover{text-decoration:underline}
+.business-shell[data-platform-density] .workspace-breadcrumbs [aria-current=page]{color:#66716b}
+.business-shell[data-platform-density] .sidebar.is-collapsed{width:72px;flex-basis:72px;padding:18px 9px}
+.business-shell[data-platform-density] .sidebar.is-collapsed .sidebar-brand{justify-content:center}
+.business-shell[data-platform-density] .sidebar.is-collapsed .sidebar-brand>.logo,.business-shell[data-platform-density] .sidebar.is-collapsed>.workspace-label,.business-shell[data-platform-density] .sidebar.is-collapsed .workspace-primary-nav button>span,.business-shell[data-platform-density] .sidebar.is-collapsed .workspace-nav-group summary>span,.business-shell[data-platform-density] .sidebar.is-collapsed .workspace-nav-group summary>.icon:last-child,.business-shell[data-platform-density] .sidebar.is-collapsed .workspace-admin-links,.business-shell[data-platform-density] .sidebar.is-collapsed .app-context-links button>span,.business-shell[data-platform-density] .sidebar.is-collapsed .app-context-links .workspace-label,.business-shell[data-platform-density] .sidebar.is-collapsed .sidebar-bottom span,.business-shell[data-platform-density] .sidebar.is-collapsed .sidebar-bottom a>.icon:last-child{display:none}
+.business-shell[data-platform-density] .sidebar.is-collapsed .sidebar-brand .sidebar-collapse-toggle{display:inline-flex}
+.business-shell[data-platform-density] .sidebar.is-collapsed .workspace-primary-nav button,.business-shell[data-platform-density] .sidebar.is-collapsed .workspace-admin-group summary,.business-shell[data-platform-density] .sidebar.is-collapsed .app-context-links button,.business-shell[data-platform-density] .sidebar.is-collapsed .app-nav-back,.business-shell[data-platform-density] .sidebar.is-collapsed .sidebar-bottom :is(a,button){justify-content:center;padding:8px!important}
+.business-shell[data-platform-density] .sidebar.is-collapsed .workspace-nav-group summary>.icon:first-child,.business-shell[data-platform-density] .sidebar.is-collapsed .sidebar-bottom .icon{display:block;margin:0}
+.business-shell[data-platform-density] .sidebar.is-collapsed .sidebar-bottom{padding:12px 0 0}
+.business-shell[data-platform-density] .sidebar.is-collapsed .workspace-nav-group[open] .workspace-admin-links{display:none}
+.business-shell[data-platform-density] .sidebar.is-collapsed .app-context-links{padding-bottom:8px}
 .business-shell[data-platform-density] .workspace-nav-group summary{color:#aab5af;padding:9px 10px;font-size:11px;letter-spacing:.025em}
 .business-shell[data-platform-density] .workspace-nav-group button{padding-left:36px!important}
 .business-shell[data-platform-density] .sidebar-bottom{border-color:#3b4547;margin-top:auto;padding-top:18px}
@@ -55,6 +80,30 @@ html:has([data-platform-density]) {
 .focused-account[data-platform-density] .focused-mobile-header{display:flex;position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid var(--line);margin:-24px -28px 24px;padding:12px 28px;align-items:center;justify-content:space-between;min-height:68px}
 .focused-account[data-platform-density] .focused-mobile-header>.quiet-button{display:none}
 .focused-account[data-platform-density] .focused-user-actions{display:flex;gap:12px;align-items:center}
+.focused-account[data-platform-density] .account-nav{display:flex;flex-direction:column;gap:8px;overflow-y:auto}
+.focused-account[data-platform-density] .account-nav>.logo{margin-bottom:2px}
+.focused-account[data-platform-density] .account-nav .sidebar-brand{margin-bottom:2px}
+.focused-account[data-platform-density] .sidebar-brand .sidebar-collapse-toggle{display:inline-flex;color:#bdc9c1}
+.focused-account[data-platform-density] .sidebar-brand .sidebar-collapse-toggle:hover{background:#30393b}
+.focused-account[data-platform-density] .account-nav>p{margin:8px 10px 10px}
+.focused-account[data-platform-density] .focused-primary-nav,.focused-account[data-platform-density] .focused-nav-group nav{display:grid;gap:4px}
+.focused-account[data-platform-density] .focused-primary-nav{padding-bottom:14px;border-bottom:1px solid #3b4547}
+.focused-account[data-platform-density] .focused-primary-nav a{justify-content:flex-start}
+.focused-account[data-platform-density] .focused-primary-nav .icon{width:18px;height:18px;flex:none}
+.focused-account[data-platform-density] .focused-nav-group{margin:4px 0}
+.focused-account[data-platform-density] .focused-nav-group>summary{display:flex;align-items:center;gap:8px;padding:9px 10px;color:#aab5af;font-size:11px;cursor:pointer}
+.focused-account[data-platform-density] .focused-nav-group>summary>.icon:last-child{margin-left:auto}
+.focused-account[data-platform-density] .focused-nav-group nav a{min-height:34px;padding:7px 12px 7px 24px}
+.focused-account[data-platform-density] .focused-nav-group nav a .icon{width:16px;height:16px;flex:none}
+.focused-account[data-platform-density] .focused-nav-group nav a span{min-width:0}
+.focused-account[data-platform-density] .account-nav.is-collapsed{width:72px;flex-basis:72px;padding:18px 9px}
+.focused-account[data-platform-density] .account-nav.is-collapsed .sidebar-brand{justify-content:center}
+.focused-account[data-platform-density] .account-nav.is-collapsed .sidebar-brand>.logo,.focused-account[data-platform-density] .account-nav.is-collapsed>p,.focused-account[data-platform-density] .account-nav.is-collapsed .focused-primary-nav span,.focused-account[data-platform-density] .account-nav.is-collapsed .focused-nav-group summary>span,.focused-account[data-platform-density] .account-nav.is-collapsed .focused-nav-group summary>.icon:last-child,.focused-account[data-platform-density] .account-nav.is-collapsed .focused-nav-group nav a span,.focused-account[data-platform-density] .account-nav.is-collapsed>a{display:none}
+.focused-account[data-platform-density] .account-nav.is-collapsed .focused-primary-nav a,.focused-account[data-platform-density] .account-nav.is-collapsed .focused-nav-group summary,.focused-account[data-platform-density] .account-nav.is-collapsed .focused-nav-group nav a{justify-content:center;padding:8px!important}
+.focused-account[data-platform-density] .account-nav.is-collapsed .focused-nav-group nav a .icon{display:block}
+.focused-account[data-platform-density] .account-nav.is-collapsed .sidebar-brand .sidebar-collapse-toggle{display:inline-flex}
+.focused-account[data-platform-density] .account-nav> a{margin-top:auto;border-top:1px solid #3b4547;padding-top:14px}
+.focused-account[data-platform-density] .account-nav>button{background:transparent;border:0;text-align:left;padding:8px 10px}
 .business-shell[data-platform-density] :is(.metric-grid strong,.account-metrics strong),.focused-account[data-platform-density] .account-metrics strong{font-size:25px;letter-spacing:-.035em}
 .business-shell[data-platform-density] :is(.account-form,.form-grid),.focused-account[data-platform-density] :is(.account-form,.form-grid){gap:14px}
 .business-shell[data-platform-density] .panel>.panel,.focused-account[data-platform-density] .panel>.panel{box-shadow:none}
@@ -75,6 +124,12 @@ html:has([data-platform-density]) {
 @media(max-width:1024px){
   .business-shell[data-platform-density] .sidebar:not(.is-open){display:none}
   .business-shell[data-platform-density] .sidebar.is-open{position:fixed;inset:0 auto 0 0;display:flex;width:min(290px,88vw);z-index:100}
+  .business-shell[data-platform-density] .sidebar.is-open.is-collapsed{width:min(290px,88vw);padding:22px 14px}
+  .business-shell[data-platform-density] .sidebar.is-open.is-collapsed .sidebar-brand{justify-content:space-between}
+  .business-shell[data-platform-density] .sidebar.is-open.is-collapsed .sidebar-brand>.logo,.business-shell[data-platform-density] .sidebar.is-open.is-collapsed>.workspace-label,.business-shell[data-platform-density] .sidebar.is-open.is-collapsed .workspace-primary-nav button>span,.business-shell[data-platform-density] .sidebar.is-open.is-collapsed .workspace-nav-group summary>span,.business-shell[data-platform-density] .sidebar.is-open.is-collapsed .workspace-nav-group summary>.icon:last-child,.business-shell[data-platform-density] .sidebar.is-open.is-collapsed .workspace-admin-links,.business-shell[data-platform-density] .sidebar.is-open.is-collapsed .app-context-links button>span,.business-shell[data-platform-density] .sidebar.is-open.is-collapsed .app-context-links .workspace-label,.business-shell[data-platform-density] .sidebar.is-open.is-collapsed .sidebar-bottom span{display:initial}
+  .business-shell[data-platform-density] .sidebar.is-open.is-collapsed .sidebar-brand .sidebar-collapse-toggle{display:none}
+  .business-shell[data-platform-density] .sidebar.is-open.is-collapsed .workspace-primary-nav button,.business-shell[data-platform-density] .sidebar.is-open.is-collapsed .workspace-admin-group summary,.business-shell[data-platform-density] .sidebar.is-open.is-collapsed .app-context-links button,.business-shell[data-platform-density] .sidebar.is-open.is-collapsed .app-nav-back,.business-shell[data-platform-density] .sidebar.is-open.is-collapsed .sidebar-bottom :is(a,button){justify-content:flex-start;padding:8px 12px!important}
+  .business-shell[data-platform-density] .sidebar.is-open.is-collapsed .workspace-admin-links{display:grid}
   .business-shell[data-platform-density] .app-nav-toggle{display:inline-flex}
   .focused-account[data-platform-density]>.account-nav{display:none}
   .focused-account[data-platform-density] .focused-mobile-header>.quiet-button{display:inline-flex}

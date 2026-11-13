@@ -20,8 +20,8 @@ import { managedSignOut } from "./auth";
 import { money, amount, today, Field, Alert, Currency } from "./AccountUI";
 import { DeveloperPanels } from "./DeveloperPanels";
 import {Overlay} from '../components/Overlay';
-import {Icon} from '../components/Icon';
-import {useMarketplace,Services,ServiceGate,marketTabs,visibleServiceTab,canReadServiceTab,favoriteTabs} from '../marketplace/Services';
+import {Icon,type IconName} from '../components/Icon';
+import {useMarketplace,Services,ServiceGate,marketTabs,visibleServiceTab,canReadServiceTab} from '../marketplace/Services';
 export function FocusedWorkspace({
   workspace: w,
   account,
@@ -32,6 +32,7 @@ export function FocusedWorkspace({
   const personal = w.kind === "personal";
   const [selectedInvoice,setSelectedInvoice]=useState<any>(null);
   const [navigationOpen,setNavigationOpen]=useState(false);
+  const [sidebarCollapsed,setSidebarCollapsed]=useState(()=>{try{return localStorage.getItem('africore-focused-sidebar-collapsed')==='true';}catch{return false;}});
   const items = personal
     ? [
         "Overview",
@@ -80,7 +81,11 @@ export function FocusedWorkspace({
     [to, setTo] = useState("");
   useEffect(()=>{history.replaceState(null,'',location.pathname+location.search+'#'+encodeURIComponent(tab));},[tab]);
   const market=useMarketplace(w.id,environment,w.kind,account?.service_catalog);
-  const pins=favoriteTabs(market),visibleItems=[...new Set([...items.filter(t=>['Overview',...marketTabs].includes(t)),...pins,...items])].filter(t=>visibleServiceTab(market,t));
+  const visibleItems=[...new Set(items)].filter(t=>visibleServiceTab(market,t));
+  const primaryItems=[...(personal?[{tab:'Apps',label:'Apps',icon:'grid'}]:[]),{tab:'Overview',label:'Home',icon:'home'},{tab:'My Services',label:'Services',icon:'network'},{tab:'Notifications',label:'Notifications',icon:'bell'}] as const;
+  const excluded=new Set([...primaryItems.map(item=>item.tab),'Explore Services','Usage & Billing','Settings','Support']);
+  const toolItems=visibleItems.filter(item=>!excluded.has(item));
+  const adminItems=['Usage & Billing','Settings',...(!personal?['Support']:[])].filter(item=>visibleItems.includes(item));
   const [data, setData] = useState<any>({}),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -245,52 +250,18 @@ export function FocusedWorkspace({
       );
   const notificationNavigate=(target:string)=>setTab(personal?(({Customers:'Clients',Payments:'Payment Records',Reconciliation:'Payment Records',Approvals:'Notifications',Automations:'Notifications'} as Record<string,string>)[target]||target):(items.includes(target)?target:'Notifications'));
   const navigation=<>
-        <Logo />
+        <div className="sidebar-brand"><Logo/><button className="icon-button sidebar-collapse-toggle" aria-label={sidebarCollapsed?'Expand navigation':'Collapse navigation'} aria-pressed={sidebarCollapsed} onClick={()=>setSidebarCollapsed(value=>{try{localStorage.setItem('africore-focused-sidebar-collapsed',String(!value));}catch{}return !value;})}><Icon name="menu"/></button></div>
         <p>{personal ? "PERSONAL WORKSPACE" : "DEVELOPER CONSOLE"}</p>
-        <nav aria-label={personal?'Personal navigation':'Developer navigation'}>{visibleItems.map(t=><a key={t} href={t==='Settings'?'/app/account':t==='Learn'?'/learn':'#'+encodeURIComponent(t)} aria-current={tab===t?'page':undefined} onClick={()=>{setTab(t);setNavigationOpen(false);}}>{t}</a>)}</nav>
+        <nav aria-label={personal?'Personal navigation':'Developer navigation'} className="focused-primary-nav">{primaryItems.filter(item=>visibleItems.includes(item.tab)).map(item=><a key={item.tab} href={'#'+encodeURIComponent(item.tab)} aria-current={tab===item.tab?'page':undefined} onClick={()=>{setTab(item.tab);setNavigationOpen(false);}}><Icon name={item.icon as IconName}/><span>{item.label}</span></a>)}</nav>
+        {toolItems.length>0&&<details className="focused-nav-group" open={toolItems.includes(tab)||undefined}><summary><Icon name={personal?'users':'code'}/><span>{personal?'Personal tools':'Developer tools'}</span><Icon name="down"/></summary><nav aria-label={personal?'Personal tools':'Developer tools'}>{toolItems.map(t=><a key={t} title={t} href={t==='Learn'?'/learn':'#'+encodeURIComponent(t)} aria-current={tab===t?'page':undefined} onClick={()=>{setTab(t);setNavigationOpen(false);}}><Icon name={/report|cash|income|expense/i.test(t)?'chart':/customer|client|people/i.test(t)?'users':/invoice|payment/i.test(t)?'payment':/api|webhook|developer|request|sandbox/i.test(t)?'code':'document'}/><span>{t}</span></a>)}</nav></details>}
+        {adminItems.length>0&&<details className="focused-nav-group"><summary><Icon name="settings"/><span>Workspace administration</span><Icon name="down"/></summary><nav aria-label="Workspace administration">{adminItems.map(t=><a key={t} title={t} href={t==='Settings'?'/app/account':'#'+encodeURIComponent(t)} aria-current={tab===t?'page':undefined} onClick={()=>{setTab(t);setNavigationOpen(false);}}><Icon name={t==='Usage & Billing'?'chart':t==='Settings'?'settings':'document'}/><span>{t==='Settings'?'Account & security':t}</span></a>)}</nav></details>}
         <a href="/app/workspaces">Switch or add workspace</a>
         <button onClick={async()=>{try{await managedSignOut();location.href='/login';}catch(e){setError((e as Error).message);}}}>Sign out</button>
       </>;
   return (
     <div className="focused-account" data-platform-density data-workspace-kind={personal?'personal':'developer'}>
       <a className="workspace-skip" href="#focused-workspace-main" onClick={event=>{event.preventDefault();document.getElementById('focused-workspace-main')?.focus();}}>Skip to workspace content</a>
-      <aside className="account-nav">
-        <Logo />
-        <p>{personal ? "PERSONAL WORKSPACE" : "DEVELOPER CONSOLE"}</p>
-        <nav
-          aria-label={personal ? "Personal navigation" : "Developer navigation"}
-        >
-          {visibleItems.map((t) => (
-            <a
-              key={t}
-              href={
-                t === "Settings"
-                  ? "/app/account"
-                  : t === "Learn"
-                    ? "/learn"
-                    : "#" + encodeURIComponent(t)
-              }
-              aria-current={tab === t ? "page" : undefined}
-              onClick={() => setTab(t)}
-            >
-              {t}
-            </a>
-          ))}
-        </nav>
-        <a href="/app/workspaces">Switch or add workspace</a>
-        <button
-          onClick={async () => {
-            try {
-              await managedSignOut();
-              location.href = "/login";
-            } catch (e) {
-              setError((e as Error).message);
-            }
-          }}
-        >
-          Sign out
-        </button>
-      </aside>
+      <aside className={'account-nav'+(sidebarCollapsed?' is-collapsed':'')}>{navigation}</aside>
       <main className="account-content" id="focused-workspace-main" tabIndex={-1}>
         <div className="focused-mobile-header"><button className="quiet-button" aria-label={'Open '+(personal?'Personal':'Developer')+' navigation'} aria-expanded={navigationOpen} onClick={()=>setNavigationOpen(true)}><Icon name="menu"/></button><span>{w.name}</span><div className="focused-user-actions"><NotificationBell kind={w.kind} api={call} scope={w.id+'\0'+environment} navigate={notificationNavigate}/><WorkspaceAccountMenu name={account.profile?.display_name} email={account.user?.email} role={w.role}/></div></div>
         {navigationOpen&&<Overlay onClose={()=>setNavigationOpen(false)}><aside role="dialog" aria-modal="true" aria-label="Workspace navigation" className="account-nav focused-drawer"><button onClick={()=>setNavigationOpen(false)}>Close menu <Icon name="close"/></button>{navigation}</aside></Overlay>}

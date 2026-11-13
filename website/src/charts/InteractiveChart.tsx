@@ -67,6 +67,9 @@ export function InteractiveChart({
     [points, range, forecast, series, asOfDate],
   );
   const visible = series.filter((s) => !hidden.includes(s.key));
+  // Sparse observations are shown as individual points. Connecting only two or
+  // three records makes the straight interpolation look like measured trend.
+  const sparse = shown.length < 4;
   const prior = useMemo(()=>forecast ? null : previousPeriod(points.filter(p=>series.every(s=>Number.isFinite(Number(p[s.key])))), range, asOfDate),[points,series,forecast,range,asOfDate]);
   const comparison = compare ? prior : null;
   const [min, max] = chartDomain(
@@ -219,8 +222,8 @@ export function InteractiveChart({
               onPointerCancel={() => setActive(null)}
             >
               <defs>{visible.map(s=><linearGradient key={s.key} id={`${id}-${s.key}-fill`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={s.color} stopOpacity=".16"/><stop offset="100%" stopColor={s.color} stopOpacity="0"/></linearGradient>)}</defs>
-              {variant==='area'&&shown.length>1&&visible.map(s=><path key={s.key} d={`M ${x(0)} ${y(0)} ${shown.map((p,i)=>`L ${x(i)} ${y(Number(p[s.key]))}`).join(' ')} L ${x(shown.length-1)} ${y(0)} Z`} fill={`url(#${id}-${s.key}-fill)`} aria-hidden="true"/>)}
-              {comparison&&visible.map(s=>{let connected=false;const path=shown.map((point,i)=>{const previous=comparison.byAlignedDate.get(point.date);if(!previous){connected=false;return '';}const command=connected?'L':'M';connected=true;return `${command} ${x(i)} ${y(Number(previous[s.key]))}`;}).join(' ');return <g key={'prior-'+s.key} aria-hidden="true"><path d={path} fill="none" stroke={s.color} strokeWidth="2" strokeDasharray="4 5" opacity=".65" vectorEffect="non-scaling-stroke"/>{shown.map((point,i)=>{const previous=comparison.byAlignedDate.get(point.date);return previous?<circle key={point.date} cx={x(i)} cy={y(Number(previous[s.key]))} r="3" fill="white" stroke={s.color} strokeWidth="1.5" vectorEffect="non-scaling-stroke"/>:null;})}</g>;})}
+              {variant==='area'&&!sparse&&visible.map(s=><path key={s.key} d={`M ${x(0)} ${y(0)} ${shown.map((p,i)=>`L ${x(i)} ${y(Number(p[s.key]))}`).join(' ')} L ${x(shown.length-1)} ${y(0)} Z`} fill={`url(#${id}-${s.key}-fill)`} aria-hidden="true"/>)}
+              {comparison&&visible.map(s=>{let connected=false;const path=sparse?'':shown.map((point,i)=>{const previous=comparison.byAlignedDate.get(point.date);if(!previous){connected=false;return '';}const command=connected?'L':'M';connected=true;return `${command} ${x(i)} ${y(Number(previous[s.key]))}`;}).join(' ');return <g key={'prior-'+s.key} aria-hidden="true"><path d={path} fill="none" stroke={s.color} strokeWidth="2" strokeDasharray="4 5" opacity=".65" vectorEffect="non-scaling-stroke"/>{shown.map((point,i)=>{const previous=comparison.byAlignedDate.get(point.date);return previous?<circle key={point.date} cx={x(i)} cy={y(Number(previous[s.key]))} r="3" fill="white" stroke={s.color} strokeWidth="1.5" vectorEffect="non-scaling-stroke"/>:null;})}</g>;})}
               {[max, (max + min) / 2, min].map((n, i) => (
                 <g key={i}>
                   <line
@@ -249,7 +252,7 @@ export function InteractiveChart({
               {visible.map((s) => (
                 <g key={s.key}>
                   <path
-                    d={shown
+                    d={sparse?'':shown
                       .map(
                         (p, i) =>
                           (i ? "L" : "M") + x(i) + "," + y(Number(p[s.key])),
@@ -263,14 +266,7 @@ export function InteractiveChart({
                     strokeDasharray={s.dashed ? "7 5" : undefined}
                     vectorEffect="non-scaling-stroke"
                   />
-                  {shown.length === 1 && (
-                    <circle
-                      cx={x(0)}
-                      cy={y(Number(shown[0][s.key]))}
-                      r="5"
-                      fill={s.color}
-                    />
-                  )}
+                  {sparse&&shown.map((point,i)=><circle key={point.date} cx={x(i)} cy={y(Number(point[s.key]))} r={active===i?5:4} fill={s.color} stroke="white" strokeWidth="1.5" vectorEffect="non-scaling-stroke"/>)}
                 </g>
               ))}
               {active !== null && shown[active] && (
@@ -361,8 +357,8 @@ export function InteractiveChart({
         ))}
       </div>}
       <p className="chart-description">
-        {shown.length === 1
-          ? "Only one recorded date is available; it does not establish a trend. "
+        {shown.length > 0 && shown.length < 4
+          ? "Sparse recorded dates are shown as individual points; no trend line is drawn between them. "
           : ""}
         {description}{" "}
         {forecast

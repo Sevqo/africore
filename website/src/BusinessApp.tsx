@@ -38,7 +38,7 @@ import { useRef } from 'react';
 import { useFocusScope } from './components/useFocusScope';
 import { PassportWorkspace } from './trust/PassportWorkspace';
 import {MoneyTools} from './marketplace/MoneyTools';
-import {useMarketplace,Services,ServiceGate,marketTabs,visibleServiceTab,canReadServiceTab,favoriteTabs} from './marketplace/Services';
+import {useMarketplace,Services,ServiceGate,marketTabs,visibleServiceTab,canReadServiceTab} from './marketplace/Services';
 import {
   startDemo,
   isDemo,
@@ -236,6 +236,7 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
   const workspaceSwitch = useRef(0);
   const creationKeys=useRef(new Map<string,string>());
   const [reportFilters]=useState({from:'',to:'',currency:'KES'});
+  const [sidebarCollapsed,setSidebarCollapsed]=useState(()=>{try{return localStorage.getItem('africore-business-sidebar-collapsed')==='true';}catch{return false;}});
 
   const [me, setMe] = useState<any>(null),
     [orgs, setOrgs] = useState<any[]>([]),
@@ -728,7 +729,7 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
         />
       )}
       <aside
-        className={'sidebar ' + (navOpen ? 'is-open' : '')}
+        className={'sidebar ' + (navOpen ? 'is-open ' : '')+(sidebarCollapsed?'is-collapsed':'')}
         ref={navRef}
         role={navOpen ? 'dialog' : undefined}
         aria-modal={navOpen ? true : undefined}
@@ -737,6 +738,7 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
       >
         <div className="sidebar-brand">
           <Logo />
+          <button className="icon-button sidebar-collapse-toggle" aria-label={sidebarCollapsed?'Expand navigation':'Collapse navigation'} aria-pressed={sidebarCollapsed} onClick={()=>setSidebarCollapsed(value=>{try{localStorage.setItem('africore-business-sidebar-collapsed',String(!value));}catch{}return !value;})}><Icon name="menu"/></button>
           <button
             data-autofocus
             className="icon-button app-nav-close"
@@ -748,41 +750,13 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
         </div>
         <span className="workspace-label">Business workspace</span>
         <nav aria-label="Business navigation">
-          <div className="workspace-primary-nav">{([{tab:'Overview',label:'Home',icon:'home'},{tab:'Apps',label:'Apps',icon:'grid'},{tab:'My Services',label:'Services',icon:'network'}] as const).map(item=><button key={item.tab} className={tab===item.tab&&!appContext.app?'active':''} aria-current={tab===item.tab&&!appContext.app?'page':undefined} onClick={()=>{const url=new URL(location.href);url.searchParams.delete('app');url.searchParams.delete('section');url.hash=encodeURIComponent(item.tab);history.pushState(null,'',url.pathname+url.search+url.hash);dispatchEvent(new Event('africore:app-navigation'));setTab(item.tab);setCreating(false);setNavOpen(false);}}><Icon name={item.icon}/>{item.label}</button>)}</div>
-          {appContext.app?<AppContextNavigation app={appContext.app} section={appContext.section} tab={tab} navigate={value=>{setTab(value);setCreating(false);setNavOpen(false);}}/>:[{label:'Pinned services',icon:'grid' as IconName,items:favoriteTabs(market)},...navigation].map(group=>({...group,items:group.items.filter(t=>visibleServiceTab(market,t))})).filter(group=>group.items.length).map((group) => (
-            <details
-              key={group.label}
-              className="workspace-nav-group"
-              open={group.items.includes(tab) || undefined}
-            >
-              <summary>
-                <Icon name={group.icon} />
-                {group.label}
-                <Icon name="down" />
-              </summary>
-              {group.items.map((t) => (
-                <button
-                  className={tab === t ? 'active' : ''}
-                  key={t}
-                  aria-current={tab === t ? 'page' : undefined}
-                  onPointerEnter={()=>{const path=({Overview:'/report',Payments:'/payments',Invoices:'/records/invoices?limit=25&offset=0&q='} as Record<string,string>)[t];if(org&&path)void call(path).catch(()=>{});}}
-                  onFocus={()=>{if(org&&t==='Payments')void call('/payments').catch(()=>{});}}
-                  onClick={() => {
-                    setTab(t);
-                    setCreating(false);
-                    setNavOpen(false);
-                  }}
-                >
-                  {t}
-                </button>
-              ))}
-            </details>
-          ))}
+          <div className="workspace-primary-nav">{([{tab:'Overview',label:'Home',icon:'home'},{tab:'Apps',label:'Apps',icon:'grid'},{tab:'My Services',label:'Services',icon:'network'},{tab:'Notifications',label:'Notifications',icon:'bell'},{tab:'Approvals',label:'Approvals',icon:'check'}] as const).map(item=><button key={item.tab} title={sidebarCollapsed?item.label:undefined} className={tab===item.tab&&(!appContext.app||item.tab==='Apps')?'active':''} aria-current={tab===item.tab&&(!appContext.app||item.tab==='Apps')?'page':undefined} onClick={()=>{const url=new URL(location.href);url.searchParams.delete('app');url.searchParams.delete('section');url.hash=encodeURIComponent(item.tab);history.pushState(null,'',url.pathname+url.search+url.hash);dispatchEvent(new Event('africore:app-navigation'));setTab(item.tab);setCreating(false);setNavOpen(false);}}><Icon name={item.icon}/><span>{item.label}</span></button>)}</div>
+          {appContext.app?<AppContextNavigation app={appContext.app} section={appContext.section} tab={tab} navigate={value=>{setTab(value);setCreating(false);setNavOpen(false);}}/>:<details className="workspace-nav-group workspace-admin-group" open={['Usage & Billing','Team','Settings'].includes(tab)||undefined}><summary title={sidebarCollapsed?'Workspace administration':undefined}><Icon name="settings"/><span>Workspace administration</span><Icon name="down"/></summary><div className="workspace-admin-links">{[{tab:'Usage & Billing',label:'Usage & billing'},{tab:'Team',label:'Team management'},{tab:'Settings',label:'Workspace settings'}].map(item=><button key={item.tab} title={sidebarCollapsed?item.label:undefined} className={tab===item.tab?'active':''} aria-current={tab===item.tab?'page':undefined} onClick={()=>{setTab(item.tab);setCreating(false);setNavOpen(false);}}><span>{item.label}</span></button>)}</div></details>}
         </nav>
         <div className="sidebar-bottom">
-          {!isDemo()&&<a href="/app/workspaces">All workspaces</a>}
+          {!isDemo()&&<a href="/app/workspaces"><Icon name="grid"/><span>Workspace management</span></a>}
           <a href="/docs">
-            Developer docs <Icon name="right" />
+            <span>Developer docs</span> <Icon name="right" />
           </a>
           <button
             onClick={() =>
@@ -791,7 +765,7 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
               ).catch(e=>setError((e as Error).message))
             }
           >
-            Sign out
+            <Icon name="close"/><span>Sign out</span>
           </button>
         </div>
       </aside>
@@ -854,6 +828,7 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
           </div>
         </header>
         <main className="workspace-content" id="workspace-main" tabIndex={-1}>
+          <nav className="workspace-breadcrumbs" aria-label="Breadcrumb"><button onClick={()=>{const url=new URL(location.href);url.searchParams.delete('app');url.searchParams.delete('section');url.hash='Overview';history.pushState(null,'',url.pathname+url.search+url.hash);dispatchEvent(new Event('africore:app-navigation'));setTab('Overview');setCreating(false);}}>Home</button>{appContext.app&&<><span aria-hidden="true">/</span><button onClick={()=>setTab('Apps')}>{appContext.app.name}</button><span aria-hidden="true">/</span><span aria-current="page">{(()=>{const label=appContext.app.navigation.find((item:any)=>item.section===appContext.section)?.label||tab;return appContext.section==='dashboard'&&label==='Overview'?'Dashboard':label;})()}</span></>}</nav>
           <div className="workspace-title">
             <div>
               <span className="eyebrow">
