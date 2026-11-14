@@ -229,6 +229,28 @@ html:has([data-platform-density]) {
 .business-shell[data-platform-density] .commerce-configuration.commerce-view-inventory>[data-commerce-panel=storefront]{display:none}
 .business-shell[data-platform-density] .commerce-listing{padding:18px 0;border-bottom:1px solid var(--line)}
 .business-shell[data-platform-density] .commerce-listing>form{margin-top:14px}
+.business-shell[data-platform-density] .commerce-merchant{display:grid;gap:18px;min-width:0}
+.business-shell[data-platform-density] .commerce-merchant-context{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,280px) auto;gap:12px 20px;align-items:end;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.business-shell[data-platform-density] .commerce-merchant-context h2{margin:4px 0;font-size:24px}
+.business-shell[data-platform-density] .commerce-merchant-context p{margin:0;font-size:12px;color:var(--muted)}
+.business-shell[data-platform-density] .commerce-merchant-context .field{margin:0}
+.business-shell[data-platform-density] .commerce-merchant-context .form-actions{margin:0;align-self:end}
+.business-shell[data-platform-density] .commerce-merchant-tabs{display:flex;gap:6px;overflow-x:auto;border-bottom:1px solid var(--line);padding-bottom:2px}
+.business-shell[data-platform-density] .commerce-merchant-tabs>button{white-space:nowrap;border:0;border-radius:0;background:transparent;font-size:13px;padding:9px 12px;color:var(--muted)}
+.business-shell[data-platform-density] .commerce-merchant-tabs>button[aria-current=page]{color:#397e0a;background:#edf7e3;border-bottom:2px solid #519b11}
+.business-shell[data-platform-density] .commerce-merchant-overview,.business-shell[data-platform-density] .commerce-merchant-section{display:grid;gap:16px;min-width:0}
+.business-shell[data-platform-density] .commerce-merchant-metrics article{padding:16px;gap:8px}
+.business-shell[data-platform-density] .commerce-merchant-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.business-shell[data-platform-density] .commerce-merchant-queue{display:grid;gap:8px;margin:10px 0;padding-left:18px;font-size:13px}
+.business-shell[data-platform-density] .commerce-merchant-queue>li{padding-left:2px}
+.business-shell[data-platform-density] .commerce-merchant-links{display:grid;margin-top:10px}
+.business-shell[data-platform-density] .commerce-merchant-links>button{display:flex;align-items:center;justify-content:space-between;width:100%;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:11px 0;min-height:46px;text-align:left;background:transparent}
+.business-shell[data-platform-density] .commerce-merchant-facts{display:grid;gap:0;margin:10px 0}
+.business-shell[data-platform-density] .commerce-merchant-facts>div{display:grid;grid-template-columns:minmax(120px,0.8fr) minmax(0,1.2fr);gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
+.business-shell[data-platform-density] .commerce-merchant-facts dt{color:var(--muted)}
+.business-shell[data-platform-density] .commerce-merchant-facts dd{margin:0;overflow-wrap:anywhere}
+.business-shell[data-platform-density] .commerce-merchant-toolbar{display:grid;grid-template-columns:minmax(0,2fr) minmax(160px,1fr);gap:12px;align-items:end}
+@media(max-width:900px){.business-shell[data-platform-density] .commerce-merchant-context{grid-template-columns:1fr}.business-shell[data-platform-density] .commerce-merchant-grid,.business-shell[data-platform-density] .commerce-merchant-toolbar{grid-template-columns:1fr}}
 @media(max-width:1000px){:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) .notifications-toolbar{flex-wrap:wrap}:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) .notification-search{width:100%;margin-bottom:12px}:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) .notification-item{grid-template-columns:40px 8px minmax(0,1fr)}:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) .notification-item>.form-actions{grid-column:3;justify-content:flex-start;max-width:none}:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) .commerce-overview-main{grid-template-columns:1fr}}
 @media(max-width:600px){:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) .notifications-heading{flex-direction:column}:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) .notification-item{gap:10px;padding:16px 8px;grid-template-columns:36px 6px minmax(0,1fr)}:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) .notification-type{width:36px;height:36px;border-radius:8px}:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) .notifications-toolbar nav{width:100%}:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) .commerce-store-identity{grid-template-columns:1fr}:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) .commerce-store-identity .commerce-view-store{grid-column:1;grid-row:auto;justify-self:start}:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) .commerce-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}:is(.business-shell[data-platform-density],.focused-account[data-platform-density]) .commerce-preview-browser>div{padding:24px}}
 .business-shell[data-platform-density] .app-directory{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}

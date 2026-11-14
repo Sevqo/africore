@@ -1,11 +1,12 @@
 import {useEffect,useState} from 'react';
 import {Icon} from '../components/Icon';
 import type {API} from '../operations/UI';
+import {appSectionActive,appSectionTarget} from '../workspace-navigation';
 export const appNavigationEvent='africore:app-navigation';
 export function AppSectionTabs({app,section,navigate}:{app:any;section:string;navigate:(tab:string)=>void}){
  const direct:Record<string,string>={Invoices:'Invoices',Payments:'Payments',Expenses:'Expenses',Reconciliation:'Reconciliation',Reports:'Reports',Customers:'Customers',Orders:'Orders',Fulfillment:'Fulfillment',Intelligence:'Intelligence',Automations:'Automations',Approvals:'Approvals',products:'Products',quotations:'Quotations'};
  return <nav className="app-section-tabs" aria-label={app.name+' sections'}>{app.navigation.map((item:any)=><button type="button" key={item.section} aria-current={section===item.section?'page':undefined} onClick={()=>{
-   const url=new URL(location.href);url.searchParams.set('app',app.id);url.searchParams.set('section',item.section);const target=direct[item.section]||'Apps';url.hash=encodeURIComponent(target);history.pushState(null,'',url.pathname+url.search+url.hash);dispatchEvent(new Event(appNavigationEvent));navigate(target);
+   const url=new URL(location.href);url.searchParams.set('app',app.id);url.searchParams.set('section',item.section);const target=appSectionTarget(app,item.section,direct);url.hash=encodeURIComponent(target);history.pushState(null,'',url.pathname+url.search+url.hash);dispatchEvent(new Event(appNavigationEvent));navigate(target);
  }}>{item.label}</button>)}</nav>;
 }
 export function useAppContext(api:API,scope:string,enabled=true){
@@ -17,12 +18,12 @@ export function useAppContext(api:API,scope:string,enabled=true){
 }
 export function AppContextNavigation({app,section,tab,navigate}:{app:any;section:string;tab:string;navigate:(tab:string)=>void}){
  const direct:Record<string,string>={Invoices:'Invoices',Payments:'Payments',Expenses:'Expenses',Reconciliation:'Reconciliation',Reports:'Reports',Customers:'Customers',Orders:'Orders',Fulfillment:'Fulfillment',Intelligence:'Intelligence',Automations:'Automations',Approvals:'Approvals',products:'Products',quotations:'Quotations'};
- function open(value:string){const url=new URL(location.href);if(value==='all'){url.searchParams.delete('app');url.searchParams.delete('section');}else{url.searchParams.set('app',app.id);url.searchParams.set('section',value);}const target=value==='all'?'Apps':direct[value]||'Apps';url.hash=encodeURIComponent(target);history.pushState(null,'',url.pathname+url.search+url.hash);dispatchEvent(new Event(appNavigationEvent));navigate(target);}
+ function open(value:string){const url=new URL(location.href);if(value==='all'){url.searchParams.delete('app');url.searchParams.delete('section');}else{url.searchParams.set('app',app.id);url.searchParams.set('section',value);}const target=value==='all'?'Apps':appSectionTarget(app,value,direct);url.hash=encodeURIComponent(target);history.pushState(null,'',url.pathname+url.search+url.hash);dispatchEvent(new Event(appNavigationEvent));navigate(target);}
  const sections=app.navigation.filter((item:any)=>!['Notifications','My Services','Usage & Billing','Overview','Apps'].includes(item.section));
  return <>
   <button className="app-nav-back" title="Back to all apps" onClick={()=>open('all')}><Icon name="left"/><span>Back to all apps</span></button>
   <p className="workspace-label app-context-label">{app.name}</p>
-  <div className="app-context-links">{sections.map((n:any)=>{const active=direct[n.section]?tab===direct[n.section]:tab==='Apps'&&section===n.section,label=n.section==='dashboard'&&n.label==='Overview'?'Dashboard':n.label;return <button key={n.section} title={label} className={active?'active':''} aria-current={active?'page':undefined} onClick={()=>open(n.section)}><Icon name={/report|analytic|ledger|balance|statement/i.test(label)?'chart':/setting|policy/i.test(label)?'settings':/customer|people|team|supplier/i.test(label)?'users':/product|stock|inventory/i.test(label)?'box':/payment|cash/i.test(label)?'payment':'document'}/><span>{label}</span></button>;})}</div>
+  <div className="app-context-links">{sections.map((n:any)=>{const active=appSectionActive(app,n.section,tab,section,direct),label=n.section==='dashboard'&&n.label==='Overview'?'Dashboard':n.label;return <button key={n.section} title={label} className={active?'active':''} aria-current={active?'page':undefined} onClick={()=>open(n.section)}><Icon name={/report|analytic|ledger|balance|statement/i.test(label)?'chart':/setting|policy/i.test(label)?'settings':/customer|people|team|supplier/i.test(label)?'users':/product|stock|inventory/i.test(label)?'box':/payment|cash/i.test(label)?'payment':'document'}/><span>{label}</span></button>;})}</div>
  </>;
 }
 

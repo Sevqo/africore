@@ -12,6 +12,7 @@ function workspace<P extends object>(load:()=>Promise<{default:ComponentType<P>}
   return function Workspace(props:P){return <WorkspaceLoadBoundary scope={'scope' in props?String(props.scope):''}><Suspense fallback={<section className="panel workspace-loading" role="status"><span className="workspace-loading-mark" aria-hidden="true"/><strong>Opening workspace…</strong><p>Your authorized records will appear here.</p></section>}><Screen {...props}/></Suspense></WorkspaceLoadBoundary>;};
 }
 export const CommerceWorkspace=workspace<Parameters<typeof import('../commerce/CommerceWorkspace')['CommerceWorkspace']>[0]>(()=>import('../commerce/CommerceWorkspace').then(m=>({default:m.CommerceWorkspace})));
+export const CommerceMerchantWorkspace=workspace<Parameters<typeof import('../commerce/CommerceMerchantWorkspace')['CommerceMerchantWorkspace']>[0]>(()=>import('../commerce/CommerceMerchantWorkspace').then(m=>({default:m.CommerceMerchantWorkspace})));
 export const POSWorkspace=workspace<Parameters<typeof import('../pos/POSWorkspace')['POSWorkspace']>[0]>(()=>import('../pos/POSWorkspace').then(m=>({default:m.POSWorkspace})));
 export const ProcurementWorkspace=workspace<Parameters<typeof import('./ProcurementWorkspace')['ProcurementWorkspace']>[0]>(()=>import('./ProcurementWorkspace').then(m=>({default:m.ProcurementWorkspace})));
 export const DocumentsWorkspace=workspace<Parameters<typeof import('./DocumentsWorkspace')['DocumentsWorkspace']>[0]>(()=>import('./DocumentsWorkspace').then(m=>({default:m.DocumentsWorkspace})));
