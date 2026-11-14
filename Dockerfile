@@ -48,6 +48,8 @@ COPY dashboard/shared /app/dashboard/shared
 COPY src/platform/password-strength.ts /app/src/platform/password-strength.ts
 COPY src/marketplace/catalog.ts /app/src/marketplace/catalog.ts
 COPY src/apps/catalog.ts /app/src/apps/catalog.ts
+COPY src/erp/routes.ts /app/src/erp/routes.ts
+COPY src/erp/accounting.ts /app/src/erp/accounting.ts
 COPY src/inventory/quantity.ts /app/src/inventory/quantity.ts
 COPY src/finance/money.ts /app/src/finance/money.ts
 COPY src/common /app/src/common
