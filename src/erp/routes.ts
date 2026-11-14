@@ -19,7 +19,7 @@ import {accountingSourceList} from './accounting-source-list';
 import {z} from 'zod';
 import {route,access} from '../platform/auth';
 import {myWork,workTarget,workProjects,workProject,createProject,editProject,saveTask,moveTask,addWorkMessage,workHistory} from './work';
-import {accountingConfiguration,setupAccounting,saveAccount,createPeriod,setPeriodState,accountingEntries,accountingEntry,saveJournalEntry,requestJournalReview,postJournalEntry,reverseJournalEntry,accountingReport} from './accounting';
+import {accountingConfiguration,setupAccounting,saveAccount,saveJournal,createPeriod,setPeriodState,accountingEntries,accountingEntry,saveJournalEntry,requestJournalReview,postJournalEntry,reverseJournalEntry,accountingReport} from './accounting';
 export const erp=Router();
 const key=(req:any)=>z.string().min(8).max(200).parse(req.headers['idempotency-key']);
 erp.get('/organizations/:org/accounting/sources',route(async(req,res)=>res.json(await accountingSourceList(await access(req),req.query))));
@@ -28,6 +28,8 @@ erp.get('/organizations/:org/accounting/configuration',route(async(req,res)=>res
 erp.post('/organizations/:org/accounting/setup',route(async(req,res)=>res.json(await setupAccounting(await access(req,'admin'),req.body,key(req)))));
 erp.post('/organizations/:org/accounting/accounts',route(async(req,res)=>res.status(201).json(await saveAccount(await access(req,'finance'),null,req.body,key(req)))));
 erp.put('/organizations/:org/accounting/accounts/:id',route(async(req,res)=>res.json(await saveAccount(await access(req,'finance'),String(req.params.id),req.body,key(req)))));
+erp.post('/organizations/:org/accounting/journals',route(async(req,res)=>res.status(201).json(await saveJournal(await access(req,'finance'),null,req.body,key(req)))));
+erp.put('/organizations/:org/accounting/journals/:id',route(async(req,res)=>res.json(await saveJournal(await access(req,'finance'),String(req.params.id),req.body,key(req)))));
 erp.post('/organizations/:org/accounting/periods',route(async(req,res)=>res.status(201).json(await createPeriod(await access(req,'finance'),req.body,key(req)))));
 erp.put('/organizations/:org/accounting/periods/:id/state',route(async(req,res)=>res.json(await setPeriodState(await access(req,'admin'),String(req.params.id),req.body,key(req)))));
 erp.get('/organizations/:org/accounting/entries',route(async(req,res)=>res.json(await accountingEntries(await access(req),req.query))));

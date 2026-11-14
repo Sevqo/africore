@@ -61,7 +61,7 @@ export const workspaceTabs: Record<WorkspaceKind, string[]> = {
 // Installed apps normally share canonical service tabs, but an app with its own
 // operational sections (Commerce, Sales) must keep sidebar navigation inside
 // the app workspace instead of leaving for the standalone service.
-const appOwnedWorkspaces = new Set(['commerce', 'sales', 'inventory']);
+const appOwnedWorkspaces = new Set(['commerce', 'sales', 'inventory', 'procurement', 'accounting']);
 
 export function appSectionTarget(app: { id: string }, section: string, direct: Record<string, string>): string {
   return appOwnedWorkspaces.has(app.id) ? 'Apps' : direct[section] || 'Apps';

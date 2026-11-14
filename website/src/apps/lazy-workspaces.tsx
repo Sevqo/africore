@@ -15,10 +15,12 @@ export const CommerceWorkspace=workspace<Parameters<typeof import('../commerce/C
 export const CommerceMerchantWorkspace=workspace<Parameters<typeof import('../commerce/CommerceMerchantWorkspace')['CommerceMerchantWorkspace']>[0]>(()=>import('../commerce/CommerceMerchantWorkspace').then(m=>({default:m.CommerceMerchantWorkspace})));
 export const POSWorkspace=workspace<Parameters<typeof import('../pos/POSWorkspace')['POSWorkspace']>[0]>(()=>import('../pos/POSWorkspace').then(m=>({default:m.POSWorkspace})));
 export const ProcurementWorkspace=workspace<Parameters<typeof import('./ProcurementWorkspace')['ProcurementWorkspace']>[0]>(()=>import('./ProcurementWorkspace').then(m=>({default:m.ProcurementWorkspace})));
+export const ProcurementAppWorkspace=workspace<Parameters<typeof import('./ProcurementAppWorkspace')['ProcurementAppWorkspace']>[0]>(()=>import('./ProcurementAppWorkspace').then(m=>({default:m.ProcurementAppWorkspace})));
 export const DocumentsWorkspace=workspace<Parameters<typeof import('./DocumentsWorkspace')['DocumentsWorkspace']>[0]>(()=>import('./DocumentsWorkspace').then(m=>({default:m.DocumentsWorkspace})));
 export const PeopleWorkspace=workspace<Parameters<typeof import('./PeopleWorkspace')['PeopleWorkspace']>[0]>(()=>import('./PeopleWorkspace').then(m=>({default:m.PeopleWorkspace})));
 export const WorkWorkspace=workspace<Parameters<typeof import('./WorkWorkspace')['WorkWorkspace']>[0]>(()=>import('./WorkWorkspace').then(m=>({default:m.WorkWorkspace})));
 export const AccountingWorkspace=workspace<Parameters<typeof import('./AccountingWorkspace')['AccountingWorkspace']>[0]>(()=>import('./AccountingWorkspace').then(m=>({default:m.AccountingWorkspace})));
+export const AccountingAppWorkspace=workspace<Parameters<typeof import('./AccountingAppWorkspace')['AccountingAppWorkspace']>[0]>(()=>import('./AccountingAppWorkspace').then(m=>({default:m.AccountingAppWorkspace})));
 export const BusinessIDWorkspace=workspace<Parameters<typeof import('./BusinessIDWorkspace')['BusinessIDWorkspace']>[0]>(()=>import('./BusinessIDWorkspace').then(m=>({default:m.BusinessIDWorkspace})));
 export const AutomationsWorkspace=workspace<Parameters<typeof import('./AutomationsWorkspace')['AutomationsWorkspace']>[0]>(()=>import('./AutomationsWorkspace').then(m=>({default:m.AutomationsWorkspace})));
 export const SalesWorkspace=workspace<Parameters<typeof import('./SalesWorkspace')['SalesWorkspace']>[0]>(()=>import('./SalesWorkspace').then(m=>({default:m.SalesWorkspace})));

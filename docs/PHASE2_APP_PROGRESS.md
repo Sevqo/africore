@@ -1,6 +1,6 @@
 # Phase 2 — Applications Progress
 
-Current checkpoint: **2.4 Inventory app rebuild** — implemented and verified at build/test level.
+Current checkpoint: **2.7 Accounting app rebuild** — implemented and verified at build/test level.
 
 Source checkpoint: Phase 1 committed by the founder; this work is uncommitted by design.
 Hard limits observed: no commits, pushes, deployments, production data or provider changes.
@@ -14,8 +14,8 @@ Hard limits observed: no commits, pushes, deployments, production data or provid
 | 2.3 | Sales | Implemented (Odoo-style document workspace); build/tests green; browser click-through not executed |
 | 2.4 | Inventory | Implemented (Odoo-style warehouse workspace); build/tests green; browser click-through not executed |
 | 2.5 | CRM | Not started |
-| 2.6 | Procurement | Not started |
-| 2.7 | Accounting | Not started |
+| 2.6 | Procurement | Implemented (Odoo-style purchasing workspace); build/tests green; browser click-through not executed |
+| 2.7 | Accounting | Implemented (Odoo-style ledger workspace); build/tests green; browser click-through not executed |
 | 2.8 | POS | Not started |
 | 2.9 | Work | Not started |
 | 2.10 | People | Not started |
@@ -162,6 +162,200 @@ Odoo states. Physical counts are one product at a time; there is no bulk apply, 
 operation-type CRUD or inventory valuation. The receipt flow only supports a full-plan receipt.
 Filters and reports operate on the latest authorized API page (100 movements / 1,000 products).
 
+## Checkpoint 2.6 — Procurement app rebuild
+
+**What was wrong.** The installed Procurement app dispatched to `ProcurementWorkspace`, the same
+generic register the independent service renders. Its sections (`request`, `rfq`, `order`, `receipt`,
+`bill`, `payment`, `credit`, `supplier`) mirrored backend record types rather than a purchasing
+workflow, so the app could not be distinguished from `My Services → Procurement`.
+
+**Architecture change.** `AppsWorkspace` now dispatches `app.id === 'procurement'` to a dedicated,
+lazily loaded `ProcurementAppWorkspace`; the independent service keeps `ProcurementWorkspace`
+unchanged. App navigation is registry driven: Purchase, Orders, Products, Reporting, Configuration.
+The view is URL-backed (`?app=procurement&section=…&view=…`, plus `?doc=<type>:<id>`), so refresh,
+Back/Forward and workspace changes restore the same purchasing screen. Procurement was added to
+`appOwnedWorkspaces` so its Products/Reporting sidebar sections stay inside the installed app.
+
+**Implemented purchasing interface.**
+- Purchase dashboard: RFQ-first landing page with compact activity counters (new RFQs, accepted
+  offers, awaiting approval, late receipts, confirmed orders), confirmed purchase value separated by
+  currency, search, status filter, list/kanban, pagination and a dense RFQ table with vendor, buyer,
+  source request, expected arrival, total, status and linked order. Counters are shortcuts into the
+  relevant queue; unsupported counts are not invented.
+- Orders: Purchase Requests, Requests for Quotation, Purchase Orders, Awaiting Approval, Receipts,
+  Vendor Bills, Payment Observations, Supplier Credits and Vendors. Requests are visible as soon as
+  they are approved so they can be offered to suppliers.
+- RFQ document: backend-accurate pipeline, vendor context, metadata, editable-product requirements
+  through the existing editor, version-bound Save/Revise, Send RFQ (marks the offer for supplier
+  response without claiming email delivery), Preview, Accept, Cancel and Create purchase order from
+  an accepted offer. Totals are integer minor units from canonical lines.
+- Purchase order document: ordered/received/outstanding quantities, smart links to receipts and
+  vendor bills, supplier confirmation, cancellation rules, revision history and attachments.
+- Approvals: separate reviewer queue across requests, offers, orders, bills and credits; decision
+  forms carry a reason and `expected_version`, and the backend still enforces that the current actor
+  cannot approve their own request.
+- Supplier comparison: multiple RFQs linked to one approved request are compared by product with
+  vendor, unit price, quantity, tax, expected arrival and selection. There is no separate
+  alternatives table and no automatic lowest-price selection.
+- Vendors: canonical contact identity with purchasing terms, lead time, history and outstanding
+  orders; no procurement-owned contact database.
+- Products and replenishment: canonical product list with purchase history; inventory replenishment
+  requirements reuse the existing Procurement replenishment component to create requests only.
+- Reporting: purchase analysis, by vendor, by product, approval performance and receipt performance
+  from loaded authoritative records, with explicit loaded-page coverage and separated currencies.
+- Configuration: purchasing settings and approval rules described from backend policy; unsupported
+  Odoo controls are listed rather than rendered as working settings.
+
+**Authoritative workflow and integrations.** Request approval, offer acceptance, order approval,
+issuing and supplier confirmation, receiving, supplier bills, credits and manual payments all use the
+existing `/procurement` endpoints with `expected_version`. Order issue creates Inventory incoming
+plans but no physical stock; receiving records accepted/rejected quantities against the order and
+posts stock only for accepted tracked quantities. Multiple partial inspections are supported. Vendor
+bills are validated against received quantities and create the canonical bill/credit/payment records
+used by Accounting; Procurement does not create a second ledger. Payments are explicitly manual,
+unverified observations and never claim bank settlement. No outbound email or supplier portal exists.
+
+**Files.** `src/apps/catalog.ts`; `website/src/apps/ProcurementAppWorkspace.tsx` (new);
+`website/src/apps/procurement-app-model.ts` (new); `website/src/apps/AppsWorkspace.tsx`;
+`website/src/apps/lazy-workspaces.tsx`; `website/src/apps/ProcurementEditor.tsx`;
+`website/src/workspace-navigation.ts`; `website/src/approved-platform.css`;
+`website/tests/procurement-app.test.mjs` (new).
+
+**Known limitations.** Vendor pricelists and purchase agreements have no backend model and are
+explicitly unsupported. Supplier comparison uses multiple offers under one request rather than a
+dedicated alternatives relation. Receipts are posted purchase-receipt inspections, not draft or
+backorder documents. There is no automatic email/PO transmission, supplier portal, bank payment,
+statutory filing or three-way matching beyond the backend's received-quantity bill validation.
+Reports and counters cover the latest loaded page (50 records per register); averages and on-time
+percentages appear only where derivable from loaded dates. Browser/visual acceptance was not
+performed.
+
+## Checkpoint 2.7 — Accounting app rebuild
+
+The installed Accounting app previously rendered the same `AccountingWorkspace` used by the service.
+The app is now a separate `AccountingAppWorkspace` with Odoo-style module navigation:
+Dashboard, Customers, Vendors, Accounting, Review, Reporting, Configuration. The independent service
+still opens its own journals workspace and remains usable without the app.
+
+### Existing architecture and dependencies
+
+The authoritative ledger is `src/erp/accounting.ts`: accounts, periods, journals, entries and lines
+are stored in `ac_accounting_*` tables. Posted entries and lines are immutable at database-trigger
+level, and posting requires a balanced entry plus an approved review of the exact version by a
+different owner/administrator. Customer invoices come from the canonical Invoicing ledger; supplier
+bills come from Procurement; payment evidence comes from Payments/Reconciliation. Accounting does not
+create a second invoice, bill, payment or ledger.
+
+| Area | Existing authority | Required configuration | App treatment |
+| --- | --- | --- | --- |
+| Chart of Accounts | Accounting accounts | Setup or an explicit account | List, search, create, edit, activate/deactivate |
+| Journals | Accounting journals | A journal code/name; type is derived | List, create, edit; type/default accounts are not stored |
+| Journal entries | Accounting entries/lines | Open period, active journal and accounts | Full-page document, balanced lines, review, post, reverse |
+| Customer invoices | Invoicing records | Invoicing service | Read-only canonical list and detail; opens Invoicing |
+| Vendor bills | Procurement supplier bills | Procurement service | Read-only canonical list and detail; opens Procurement |
+| Payments | Payments/Reconciliation | Payment service | Evidence list; links to canonical payment/reconciliation |
+| Reports | Posted ledger | Posted entries for the selected currency/period | P&L, balance sheet, trial balance, general ledger, aging |
+
+### Service gaps fixed
+
+- Added `saveJournal` plus `POST /accounting/journals` and `PUT /accounting/journals/:id` so journals
+  can be configured through the UI. Codes are unique per workspace/environment; updates use the
+  journal version for optimistic concurrency and require finance authority.
+- Added the journal `version` column with an additive `ALTER TABLE` guard for existing databases.
+- Registered both journal routes in the ERP route-policy map so the workspace route guard accepts them.
+- No ledger, invoice, bill or payment authority was duplicated.
+
+### Screens and behavior
+
+- **Dashboard:** journal cards derived from the real configured journals, with draft/posted counts and
+  links; customer/vendor/accounting queues; recent entries. No invented balances or trends.
+- **Customers:** canonical invoices with search/status filters, amounts, outstanding and a full-page
+  invoice detail (lines, dates, totals, linked order). Credit notes and customer payments link to the
+  canonical services instead of creating competing records.
+- **Vendors:** canonical Procurement bills with a full-page detail (lines, ordered/received/billed
+  quantities, totals). Payment records remain outside Accounting.
+- **Accounting:** journal entry register and document, exact-version review request with a real
+  reviewer selector, posting only with an unconsumed approval for the same version, and reversal drafts.
+  Chart of Accounts and Journals provide inline create/edit forms with backend-required fields.
+  Periods can be created and locked/reopened with a reason.
+- **Review:** pending drafts, awaiting-review entries, unmatched payment evidence and closing checks.
+- **Reporting:** period/currency report controls backed by `/accounting/report`; profit and loss,
+  balance sheet with a visible balance check, trial balance totals, general ledger with account filter,
+  and aged receivables/payables through the existing aging view.
+- **Bank/Cash:** configured cash/bank journals and payment evidence; internal records only, with no
+  live bank provider, statement import or externally verified balance.
+- **Configuration:** existing setup/readiness workspace, accounts, journals, periods, tax codes and
+  explicit unsupported-state notices.
+- Readiness banners disclose a missing open period, a period that does not cover today, or inactive
+  journals/accounts, with direct links to configuration. Journal entry creation remains server-validated.
+
+### Form completeness audit
+
+| Form | Required inputs | Option source | Prerequisite handling | Ready |
+| --- | --- | --- | --- | --- |
+| Account create/edit | code, name, type | Local enums | Duplicate code and version errors surfaced | Yes |
+| Journal create/edit | code, name, active | Local form | Duplicate code, version conflicts surfaced; type/default account not stored | Partial |
+| Journal entry | journal, date, currency, description, ≥2 lines | Configured journals/accounts | Missing period/accounts/journals banner; balanced total shown | Yes, subject to open period |
+| Posting | exact entry version + approval | Business approvals | Reviewer selector; no self-approval path | Yes |
+| Reversal | date, reason | Local form | Posted history stays immutable | Yes |
+| Period | name, start, end; lock reason | Local form | Reason required for state change | Yes |
+| Invoice/bill detail | none (canonical records) | Invoicing/Procurement | Read-only disclosure and service link | Yes |
+| Payment/reconciliation | none in Accounting | Payments/Reconciliation | Links to the authoritative workspace | Partial by design |
+
+### Verification
+
+| Check | Result |
+| --- | --- |
+| `website: npm run typecheck` | Pass |
+| `node --test tests/accounting-app.test.mjs` | 7/7 pass |
+| Accounting + Procurement + Inventory + Sales + Commerce + navigation + application-quality | 44/44 pass |
+| Root `npm run lint` | Pass (189 frontend modules, no static import cycles) |
+| Root `npm run build` | Pass |
+| `dist/__tests__/accounting.test.js` | 17/17 pass |
+| `website: npm run build` (Vite, prerender 82 pages, content tests) | 107/107 pass |
+| Full backend regression `npm test` | 446 tests, 445 pass, 0 fail, 1 skipped (21 suites) |
+| `npm run validate:openapi` | Pass: 59/59 mounted legacy operations documented |
+| `npm run validate:platform` | Pass: 430 workspace operations validated after regeneration |
+
+### Limitations
+
+- No live bank provider or statement import; no claimed external balance or external reconciliation.
+- Reconciliation is handled by the canonical Payments/Reconciliation workspace, not a second matcher.
+- Journal type and default accounts are derived from the journal code; the backend has no stored
+  type/default-account/payment-method mapping.
+- Vendor bills are created and approved in Procurement; Accounting is a payable view, not a duplicate
+  bill editor. Invoices remain canonical Invoicing records.
+- No automatic invoice/bill-to-journal posting screen; source-linked postings remain governed by the
+  existing accounting source policy.
+- No fiscal localization, eTIMS, withholding filing, cash-flow statement, statutory tax return or
+  currency conversion.
+- Reports use posted accrual entries only; general ledger pages 100 lines. Opening balances and
+  posted-history immutability follow the existing policy.
+- Visual fidelity is a source-level structural approximation of the eight references. No authenticated
+  browser session or screenshot comparison was available in this session.
+
+### Founder manual checklist
+
+1. Open the installed Accounting app; confirm the journal dashboard differs from the independent
+   Accounting service.
+2. Review Dashboard cards and open a count-filtered list.
+3. Open Chart of Accounts; create an account; confirm a duplicate code is rejected.
+4. Open Journals; create a journal; confirm it appears in the journal-entry selector.
+5. Create a period covering today; confirm the readiness warning clears.
+6. Create a balanced journal entry; save, reopen and request review from a different owner/admin.
+7. Post the exact approved version; confirm it appears in General Ledger and cannot be edited.
+8. Open Customer invoices and a canonical invoice detail; confirm no second invoice is created.
+9. Open Vendor bills and a bill detail; confirm the Procurement link and received/billed quantities.
+10. Open Bank/Cash and Review; confirm payment evidence and the Reconciliation handoff.
+11. Open Profit and Loss, Balance Sheet and Trial Balance; verify period/currency and totals.
+12. Refresh and confirm persistence; test a read-only/non-finance role and a missing-period state.
+13. Confirm the independent Accounting service still works.
+
+### Status
+
+Implemented and verified at engineering level. Manual browser, screenshot comparison, PostgreSQL and
+physical-device acceptance were **not executed**. Checkpoint 2.8 POS was not started.
+
 ## Verification
 
 | Check | Result |
@@ -181,6 +375,13 @@ Filters and reports operate on the latest authorized API page (100 movements / 1
 | Inventory: Root `npm run build` | Pass |
 | Inventory: backend `business-app-workflows`, `app-installations`, `marketplace` suites | 47/47 pass |
 | Full backend regression `npm test` | 435 tests, 434 pass, 0 fail, 1 skipped (21 suites) |
+| Procurement: `website: npm run typecheck` | Pass |
+| Procurement: `node --test tests/procurement-app.test.mjs` | 7/7 pass |
+| Procurement + Inventory + Sales + Commerce + navigation + application-quality | 37/37 pass |
+| Procurement: `website: npm run build` (Vite 498 modules, prerender 82 pages, content tests) | 100/100 pass |
+| Procurement: Root `npm run lint` | Pass (187 frontend modules, no static import cycles) |
+| Procurement: Root `npm run build` | Pass |
+| Procurement: backend `procurement`, `app-installations` suites | 17/17 pass |
 
 Browser click-through: **not executed**. No authenticated local workspace/browser control is
 available to this session; demo mode has no `/apps` transport, so it cannot install the app.
@@ -195,8 +396,8 @@ Do not present screenshots or live-flow evidence as completed.
 | Sales | customers, products, sales, orders, invoicing, fulfillment | Dedicated Odoo-style sales workspace (new) | Service editor remains separate | Verify with an installed app and browser session |
 | Inventory | products, inventory | Dedicated Odoo-style warehouse workspace (new) | Service register remains independent; no document/draft states invented | Verify operation cards and receipts/deliveries with an installed app |
 | CRM | customers, crm | `CrmWorkspace` | Medium: pipeline exists; Customers duplicates service | Pipeline-first composition, shared customer detail |
-| Procurement | customers, products, procurement | `ProcurementWorkspace` | Medium: app tabs mirror procurement stages | Buying desk overview; approval/delivery exceptions |
-| Accounting | accounting | `AccountingWorkspace` | High: app opens same journals workspace | Period-close and review overview, not a second ledger |
+| Procurement | customers, products, procurement (+ inventory, accounting, documents) | Dedicated Odoo-style purchasing workspace (new) | Service register remains independent; vendor pricing/agreements unsupported by backend | Verify RFQ → approval → order → receipt → bill flow with an installed app |
+| Accounting | accounting | Dedicated Odoo-style ledger workspace (new) | Service journals screen remains independent; no second ledger | Verify forms and reports in an installed browser session |
 | POS | products, orders, invoicing, cash_flow, pos | `POSWorkspace` | High: the counter is the app | Keep counter; add shift/cash overview distinct from register |
 | Work | work | `WorkWorkspace` | High | Portfolio/board composition distinct from project service |
 | People | people | `PeopleWorkspace` | High | HR overview; preserve private access rules |
@@ -216,8 +417,8 @@ Do not present screenshots or live-flow evidence as completed.
 
 ## Next step
 
-Checkpoint 2.4 is complete pending founder acceptance. The remaining apps continue in separate
-checkpoints; the next suggested app is CRM. Do not start it without authorization.
+Checkpoint 2.7 is complete pending founder acceptance. The remaining apps continue in separate
+checkpoints; the next suggested app is POS. Do not start it without authorization.
 
 ## Checkpoint 2.5 — CRM implementation in progress (14 November 2026)
 
