@@ -16,3 +16,15 @@ export async function crmReport(a:Access,input:unknown){
  const group=(key:string)=>[...new Set(records.map(r=>r[key]||'unassigned'))].map(id=>{const rows=records.filter(r=>(r[key]||'unassigned')===id),open=rows.filter(r=>!['won','lost'].includes(r.stage));return {id,count:rows.length,won:rows.filter(r=>r.stage==='won').length,lost:rows.filter(r=>r.stage==='lost').length,open_amount_minor:sumMinor(open.map(r=>r.amount_minor)),weighted_open_minor:sumMinor(open.filter(r=>r.probability_bps!==null&&r.probability_bps!==undefined).map(r=>basisPoints(r.amount_minor,r.probability_bps))),without_probability:open.filter(r=>r.probability_bps===null||r.probability_bps===undefined).length};});
  return {truncated:raw.length>10000,covered_records:records.length,period:{from:q.from,to:q.to},currency:q.currency,timezone:'Africa/Nairobi',by_team:group('team_id'),by_assignee:group('assigned_to'),records,as_of:new Date().toISOString(),definition:'Opportunities created in the selected Nairobi dates, excluding archived/cancelled records. At most 10,000 filtered records are covered; truncation is explicit. Open value excludes won/lost; weighted amounts use only explicitly recorded probabilities. Opportunity values are not recognized revenue.',source:'canonical CRM entries',permission:'Current workspace membership and CRM read entitlement'};
 }
+
+/** Follow-up counts use creation dates in Nairobi time and retain completed/cancelled records. */
+export async function crmActivityReport(a:Access,input:unknown){
+ const q=z.object({from:z.string().date().default(addDays(day(),-89)),to:z.string().date().default(day()),assignee:z.string().uuid().optional()}).strict().parse(input);
+ if(q.from>q.to||Date.parse(q.to)-Date.parse(q.from)>366*86400000)fail(400,'Choose an ordered date range of at most one year');
+ const from=new Date(q.from+'T00:00:00+03:00').toISOString(),to=new Date(addDays(q.to,1)+'T00:00:00+03:00').toISOString();
+ const raw=await dbAll("SELECT id,data,status,assigned_to,due_at,created_at FROM ac_crm_entries WHERE org_id=? AND environment=? AND kind='follow_up' AND created_at>=? AND created_at<?"+(q.assignee?' AND assigned_to=?':'')+' ORDER BY created_at,id LIMIT 10001',[a.org,a.environment,from,to,...(q.assignee?[q.assignee]:[])]);
+ const rows=raw.slice(0,10000),asOf=new Date().toISOString();
+ const ids=[...new Set(rows.map(r=>r.assigned_to||'unassigned'))];
+ const by_assignee=ids.map(id=>{const items=rows.filter(r=>(r.assigned_to||'unassigned')===id);return {id,total:items.length,open:items.filter(r=>r.status==='open').length,completed:items.filter(r=>r.status==='completed').length,cancelled:items.filter(r=>r.status==='cancelled').length,overdue:items.filter(r=>r.status==='open'&&r.due_at&&r.due_at<asOf).length};});
+ return {period:q,as_of:asOf,timezone:'Africa/Nairobi',truncated:raw.length>10000,covered_records:rows.length,by_assignee,definition:'Follow-ups created in the selected Nairobi dates, grouped by assignee. Overdue counts are open items due before the report observation time. At most 10,000 records are covered.'};
+}

@@ -1,6 +1,6 @@
 import {approvalQueue} from '../erp/approval-privacy';
 import {salesTemplates,saveSalesTemplate,priceLists,savePriceList,pricingPreview} from './sales-pricing';
-import {crmReport} from './crm-report';
+import {crmReport,crmActivityReport} from './crm-report';
 import {crmConfiguration,saveCrmConfiguration} from './crm-configuration';
 import {replenishmentSuggestions,reviewReplenishment} from '../inventory/replenishment';
 import {financialOperation} from '../finance/service';
@@ -53,6 +53,7 @@ business.get('/organizations/:org/inventory/incoming',route(async(req,res)=>{con
 business.post('/organizations/:org/inventory/incoming',route(async(req,res)=>res.status(201).json(await planIncoming(await access(req,'operations'),req.body,key(req)))));
 business.post('/organizations/:org/inventory/incoming/:id/action',route(async(req,res)=>res.json(await resolveIncoming(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
 business.post('/organizations/:org/inventory/adjustment-approvals',route(async(req,res)=>{const a=await access(req,'operations'),d=z.object({approver:z.string().uuid(),movement:movementInput.omit({approval_id:true})}).strict().parse(req.body);res.status(201).json(await financialOperation(a,'stock.approval.request',key(req),d,()=>requestApproval(a,{approver:d.approver,action:'stock_adjustment',resource_id:d.movement.product_id,parameters:{movement:d.movement}})));}));
+business.get('/organizations/:org/crm/activity-report',route(async(req,res)=>res.json(await crmActivityReport(await access(req),req.query))));
 business.get('/organizations/:org/crm/report',route(async(req,res)=>res.json(await crmReport(await access(req),req.query))));
 business.get('/organizations/:org/crm/export',route(async(req,res)=>{const report=await crmReport(await access(req),req.query);res.type('text/csv').attachment('africore-opportunities.csv').send(safeCSV([['id','customer_id','title','stage','amount_minor','currency','probability_bps','expected_close_on','assigned_to','team_id'],...report.records.map(r=>[r.id,r.customer_id,r.title,r.stage,r.amount_minor,r.currency,r.probability_bps,r.expected_close_on,r.assigned_to,r.team_id])]));}));
 business.post('/organizations/:org/crm/import',route(async(req,res)=>res.json(await importCrmEntries(await access(req,'operations'),req.body,key(req)))));
@@ -60,7 +61,7 @@ business.get('/organizations/:org/crm/configuration',route(async(req,res)=>res.j
 business.put('/organizations/:org/crm/configuration',route(async(req,res)=>res.json(await saveCrmConfiguration(await access(req,'admin'),req.body,key(req)))));
 business.get('/organizations/:org/crm/entries/:id/history',route(async(req,res)=>res.json(await crmEntryHistory(await access(req),String(req.params.id)))));
 business.get('/organizations/:org/crm',route(async(req,res)=>res.json(await crmOverview(await access(req)))));
-business.get('/organizations/:org/crm/entries',route(async(req,res)=>{const a=await access(req),kind=z.enum(['lead','opportunity','follow_up','interaction']).optional().parse(req.query.kind);res.json({data:await crmEntries(a,kind),limit:200});}));
+business.get('/organizations/:org/crm/entries',route(async(req,res)=>{const a=await access(req),kind=z.enum(['lead','opportunity','follow_up','interaction']).optional().parse(req.query.kind),cursor=z.object({created_at:z.string().datetime({offset:true}),id:z.string().uuid()}).optional().parse(req.query.before_created_at||req.query.before_id?{created_at:req.query.before_created_at,id:req.query.before_id}:undefined);res.json({data:await crmEntries(a,kind,undefined,cursor),limit:200});}));
 business.post('/organizations/:org/crm/entries',route(async(req,res)=>res.status(201).json(await createCrmEntry(await access(req,'operations'),req.body,key(req)))));
 business.patch('/organizations/:org/crm/entries/:id',route(async(req,res)=>res.json(await editCrmEntry(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
 business.post('/organizations/:org/crm/entries/:id/convert',route(async(req,res)=>res.json(await convertCrmLead(await access(req,'operations'),String(req.params.id),req.body,key(req)))));

@@ -22,7 +22,9 @@ export const AccountingWorkspace=workspace<Parameters<typeof import('./Accountin
 export const BusinessIDWorkspace=workspace<Parameters<typeof import('./BusinessIDWorkspace')['BusinessIDWorkspace']>[0]>(()=>import('./BusinessIDWorkspace').then(m=>({default:m.BusinessIDWorkspace})));
 export const AutomationsWorkspace=workspace<Parameters<typeof import('./AutomationsWorkspace')['AutomationsWorkspace']>[0]>(()=>import('./AutomationsWorkspace').then(m=>({default:m.AutomationsWorkspace})));
 export const SalesWorkspace=workspace<Parameters<typeof import('./SalesWorkspace')['SalesWorkspace']>[0]>(()=>import('./SalesWorkspace').then(m=>({default:m.SalesWorkspace})));
+export const SalesAppWorkspace=workspace<Parameters<typeof import('./SalesAppWorkspace')['SalesAppWorkspace']>[0]>(()=>import('./SalesAppWorkspace').then(m=>({default:m.SalesAppWorkspace})));
 export const AnalyticsWorkspace=workspace<Parameters<typeof import('./AnalyticsWorkspace')['AnalyticsWorkspace']>[0]>(()=>import('./AnalyticsWorkspace').then(m=>({default:m.AnalyticsWorkspace})));
 export const CrmWorkspace=workspace<Parameters<typeof import('./CrmWorkspace')['CrmWorkspace']>[0]>(()=>import('./CrmWorkspace').then(m=>({default:m.CrmWorkspace})));
 export const InventoryWorkspace=workspace<Parameters<typeof import('./InventoryWorkspace')['InventoryWorkspace']>[0]>(()=>import('./InventoryWorkspace').then(m=>({default:m.InventoryWorkspace})));
+export const InventoryAppWorkspace=workspace<Parameters<typeof import('./InventoryAppWorkspace')['InventoryAppWorkspace']>[0]>(()=>import('./InventoryAppWorkspace').then(m=>({default:m.InventoryAppWorkspace})));
 export const FinanceDashboard=workspace<Parameters<typeof import('./FinanceDashboard')['FinanceDashboard']>[0]>(()=>import('./FinanceDashboard').then(m=>({default:m.FinanceDashboard})));

@@ -23,6 +23,7 @@ export const stage2Events = [
   'product.created',
   'product.updated',
   'crm.entry_created',
+  'crm.followup_due',
   'crm.stage_changed',
   'quotation.created',
   'quotation.mark_shared',

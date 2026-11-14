@@ -2203,6 +2203,15 @@
               ],
               "additionalProperties": false
             }
+          },
+          "lost_reasons": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            }
           }
         },
         "required": [
@@ -2364,6 +2373,19 @@
                   "type": "integer",
                   "minimum": 0,
                   "maximum": 1000000000
+                },
+                "parent_entry_id": {
+                  "default": null,
+                  "nullable": true,
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "priority": {
+                  "default": 0,
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 3
                 }
               },
               "required": [
@@ -2385,7 +2407,9 @@
                 "tags",
                 "outcome_reason",
                 "activity_type",
-                "position"
+                "position",
+                "parent_entry_id",
+                "priority"
               ],
               "additionalProperties": false
             }
@@ -2537,6 +2561,19 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 1000000000
+          },
+          "parent_entry_id": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "priority": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
           }
         },
         "required": [
@@ -2558,7 +2595,9 @@
           "tags",
           "outcome_reason",
           "activity_type",
-          "position"
+          "position",
+          "parent_entry_id",
+          "priority"
         ],
         "additionalProperties": false
       },
@@ -2570,6 +2609,81 @@
             "minimum": 0,
             "exclusiveMinimum": true,
             "maximum": 9007199254740991
+          },
+          "assigned_to": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "team_id": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "new_customer": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "type": {
+                "default": "individual",
+                "type": "string",
+                "enum": [
+                  "individual",
+                  "business"
+                ]
+              },
+              "email": {
+                "default": "",
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      ""
+                    ]
+                  }
+                ]
+              },
+              "phone": {
+                "default": "",
+                "type": "string",
+                "maxLength": 50
+              },
+              "address": {
+                "default": "",
+                "type": "string",
+                "maxLength": 1000
+              },
+              "notes": {
+                "default": "",
+                "type": "string",
+                "maxLength": 3000
+              }
+            },
+            "required": [
+              "name",
+              "type",
+              "email",
+              "phone",
+              "address",
+              "notes"
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -25069,6 +25183,83 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/organizations/{org}/crm/activity-report": {
+      "get": {
+        "summary": "GET /organizations/:org/crm/activity-report",
+        "operationId": "workspace_get__organizations__org_crm_activity_report",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ]
       }
     },
     "/api/v1/organizations/{org}/crm/report": {

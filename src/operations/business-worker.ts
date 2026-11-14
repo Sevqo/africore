@@ -3,10 +3,10 @@ import {emit} from './events';
 import {dbAll,dbGet,dbRun} from '../db/adapter';
 import {type Access} from '../platform/auth';
 import {now} from '../platform/crypto';
-import {atomic,day} from './store';
+import {atomic,day,addDays} from './store';
 import {notify,expireApprovals} from './automation';
 import {product,stockBalance} from '../inventory/service';
-const types=['approval.decided','approval.expired','customer.created','order.confirmed','order.cancelled','invoice.issued','invoice.paid','payment.succeeded','reconciliation.exception_created','draft_invoice.prepared','stock.receipt','stock.adjustment','stock.dispatch','stock.return','crm.entry_created','crm.stage_changed','automation.run_failed'];
+const types=['approval.decided','approval.expired','customer.created','order.confirmed','order.cancelled','invoice.issued','invoice.paid','payment.succeeded','reconciliation.exception_created','draft_invoice.prepared','stock.receipt','stock.adjustment','stock.dispatch','stock.return','crm.entry_created','crm.followup_due','crm.stage_changed','automation.run_failed'];
 /** Consume existing durable scoped events. Receipt and notification commit together; no second queue. */
 export async function processBusinessEvents(a:Access){return atomic(a,async()=>{
  const kind=await workspaceKind(a.org);await expireApprovals(a);
@@ -20,6 +20,7 @@ export async function processBusinessEvents(a:Access){return atomic(a,async()=>{
   if(event.event_type.startsWith('stock.')&&payload.product_id){const p=await product(a,payload.product_id),balance=await stockBalance(a,p.id);if(p.track_inventory&&balance.available_milli<=p.reorder_point_milli)input={category:'inventory',title:balance.available_milli===0?'Product is out of available stock':'Product reached its reorder point',body:'Review available quantities and incoming plans before replenishing. No supplier order was placed.',resource_id:p.id,key:'stock.low:'+p.id+':'+day(),capability:'operations',severity:'warning',action_data:{app_id:'inventory',section:'replenishment',record_id:p.id}};}
   if(event.event_type==='customer.created')input={category:'crm',title:kind==='personal'?'Client created':'Customer created',body:kind==='personal'?'The client is available for your personal invoicing records.':'The shared customer can be selected by authorized Sales and Finance workflows.',resource_id:id,key:'business:'+event.id,capability:'operations',action_data:{app_id:kind==='personal'?'finance':'crm',section:'Customers',record_id:id}};
   if(event.event_type==='crm.stage_changed')input={category:'crm',title:'CRM stage changed',body:'Review the current opportunity and its revision history. Recorded opportunity values are not revenue.',resource_id:id,key:'business:'+event.id,capability:'operations',user_id:payload.assigned_to||undefined,action_data:{app_id:'crm',section:'pipeline',record_id:id}};
+  if(event.event_type==='crm.followup_due'){const task=await dbGet("SELECT status,assigned_to,due_at FROM ac_crm_entries WHERE id=? AND org_id=? AND environment=? AND kind='follow_up'",[id,a.org,a.environment]);const end=new Date(addDays(day(),1)+'T00:00:00+03:00').toISOString(),active=await dbGet("SELECT e.service_id FROM ac_service_entitlements e JOIN ac_services s ON s.id=e.service_id WHERE e.org_id=? AND e.environment=? AND e.service_id='crm' AND e.status='active' AND s.enabled=1",[a.org,a.environment]);if(active&&task&&task.status==='open'&&task.assigned_to===payload.assigned_to&&task.due_at&&task.due_at<end){const overdue=task.due_at<now();input={category:'crm',title:overdue?'Follow-up overdue':'Follow-up due today',body:'Review the scheduled CRM activity and update it when complete.',resource_id:id,key:'business:'+event.id,capability:'operations',user_id:task.assigned_to,severity:overdue?'warning':'informational',action_data:{app_id:'crm',section:'followups',record_id:id}};}}
   if(event.event_type==='crm.entry_created'&&payload.kind==='follow_up')input={category:'crm',title:'Follow-up task created',body:'Review the task and its due date in CRM.',resource_id:id,key:'business:'+event.id,capability:'operations',user_id:payload.assigned_to||undefined,action_data:{app_id:'crm',section:'followups',record_id:id}};
   if(event.event_type==='automation.run_failed')input={category:'automation_failures',title:'Workflow execution needs attention',body:'Inspect the durable execution history before retrying the supported action.',resource_id:id,key:'business:'+event.id,capability:'finance',severity:'action_required',action_data:{app_id:'automations',section:'runs'}};
   if(input)notifications+=(await notify(a,input)).inserted;
@@ -28,3 +29,10 @@ export async function processBusinessEvents(a:Access){return atomic(a,async()=>{
  }
  return {processed:events.length,notifications};
  });}
+
+/** Emit at most one durable daily reminder per assigned open follow-up. Unprocessed rows remain eligible for later worker passes. */
+export async function processCrmDueReminders(a:Access,at=new Date()){
+ const today=day(at),end=new Date(addDays(today,1)+'T00:00:00+03:00').toISOString(),prefix='crm.followup_due:'+today+':';
+ return atomic(a,async()=>{const rows=await dbAll("SELECT c.id,c.assigned_to,c.due_at FROM ac_crm_entries c JOIN ac_memberships m ON m.org_id=c.org_id AND m.user_id=c.assigned_to WHERE c.org_id=? AND c.environment=? AND c.kind='follow_up' AND c.status='open' AND c.due_at<? AND NOT EXISTS (SELECT 1 FROM ac2_events e WHERE e.org_id=c.org_id AND e.environment=c.environment AND e.dedupe_key=? || c.id || ':' || c.assigned_to) ORDER BY c.due_at,c.id LIMIT 100",[a.org,a.environment,end,prefix]);
+ for(const row of rows)await emit(a,'crm.followup_due',{id:row.id,assigned_to:row.assigned_to,overdue:row.due_at<at.toISOString(),schema_version:1},{key:prefix+row.id+':'+row.assigned_to});return {processed:rows.length};});
+}

@@ -59,10 +59,12 @@ export const workspaceTabs: Record<WorkspaceKind, string[]> = {
 };
 
 // Installed apps normally share canonical service tabs, but an app with its own
-// operational sections (currently Commerce) must keep sidebar navigation inside
+// operational sections (Commerce, Sales) must keep sidebar navigation inside
 // the app workspace instead of leaving for the standalone service.
+const appOwnedWorkspaces = new Set(['commerce', 'sales', 'inventory']);
+
 export function appSectionTarget(app: { id: string }, section: string, direct: Record<string, string>): string {
-  return app.id === 'commerce' ? 'Apps' : direct[section] || 'Apps';
+  return appOwnedWorkspaces.has(app.id) ? 'Apps' : direct[section] || 'Apps';
 }
 
 export function appSectionActive(
@@ -72,6 +74,6 @@ export function appSectionActive(
   selectedSection: string,
   direct: Record<string, string>,
 ): boolean {
-  if (app.id === 'commerce') return tab === 'Apps' && selectedSection === section;
+  if (appOwnedWorkspaces.has(app.id)) return tab === 'Apps' && selectedSection === section;
   return direct[section] ? tab === direct[section] : tab === 'Apps' && selectedSection === section;
 }

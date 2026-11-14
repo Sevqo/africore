@@ -9,7 +9,7 @@ import {migrate,dbAll,dbGet,dbRun,closeDb} from '../db';
 import {createApp} from '../app';
 import {stockBalance} from '../inventory/service';
 import {processProviderResult} from '../platform/payments';
-import {processBusinessEvents} from '../operations/business-worker';
+import {processBusinessEvents,processCrmDueReminders} from '../operations/business-worker';
 import {runAutomations,notify} from '../operations/automation';
 import {quantityMilli} from '../inventory/quantity';
 import {day,addDays} from '../operations/store';
@@ -344,4 +344,104 @@ test('legacy completed CRM creation remains replayable after adding defaulted op
 test('quotation templates retain reusable terms without creating customer documents and workflow creation replays safely',async()=>{
  const template=await api(path('/sales/templates'),'POST',{expected_version:0,name:'Synthetic reusable service offer',active:true,configuration:{...document(1),due_days:14,valid_days:7}});assert.equal(template.status,201,JSON.stringify(template.data));assert.ok(!('customer_id'in template.data.configuration));assert.equal(template.data.configuration.due_days,14);assert.equal((await api(path('/sales/templates/'+template.data.id),'PUT',{expected_version:0,name:'Stale template change',active:false,configuration:template.data.configuration})).status,409);
  const key=randomUUID(),body={name:'Synthetic idempotent workflow setup',template:'daily_summary',enabled:false},first=await api(path('/automations'),'POST',body,cookie,key),second=await api(path('/automations'),'POST',body,cookie,key);assert.equal(first.status,201);assert.equal(second.data.id,first.data.id);
+});
+
+test('opportunity activities retain scoped customer linkage and completed history',async()=>{
+ const parent=await api(path('/crm/entries'),'POST',{kind:'opportunity',customer_id:customerId,title:'Linked follow-up opportunity'});assert.equal(parent.status,201);
+ const body={kind:'follow_up',customer_id:customerId,parent_entry_id:parent.data.id,title:'Synthetic call',activity_type:'call',due_at:'2026-12-01T09:00:00.000Z',assigned_to:actor};
+ const activity=await api(path('/crm/entries'),'POST',body);assert.equal(activity.status,201,JSON.stringify(activity.data));assert.equal(activity.data.parent_entry_id,parent.data.id);
+ const {id,version,created_at,updated_at,...record}=activity.data;
+ const done=await api(path('/crm/entries/'+id),'PATCH',{expected_version:version,entry:{...record,status:'completed',notes:'Call completed'}});assert.equal(done.status,200,JSON.stringify(done.data));
+ assert.equal((await api(path('/crm/entries/'+id+'/history'))).data.data.at(-1).snapshot.status,'completed');
+ assert.equal((await api(path('/crm/entries'),'POST',{...body,parent_entry_id:randomUUID()})).status,400);
+ assert.equal((await api(path('/crm/entries'),'POST',{...body,kind:'opportunity'})).status,400);
+ assert.equal((await api(path('/crm/entries/'+id),'PATCH',{expected_version:2,entry:{...record,status:'completed',parent_entry_id:null}})).status,400);
+});
+
+
+test('lead conversion validates and persists assignment without changing the customer',async()=>{
+ const lead=await api(path('/crm/entries'),'POST',{kind:'lead',customer_id:customerId,title:'Assignment conversion fixture'});assert.equal(lead.status,201);
+ assert.equal((await api(path('/crm/entries/'+lead.data.id+'/convert'),'POST',{expected_version:1,assigned_to:randomUUID()})).status,400);
+ const converted=await api(path('/crm/entries/'+lead.data.id+'/convert'),'POST',{expected_version:1,assigned_to:actor,team_id:null});assert.equal(converted.status,200,JSON.stringify(converted.data));assert.equal(converted.data.assigned_to,actor);assert.equal(converted.data.customer_id,customerId);
+ assert.equal((await api(path('/crm/entries/'+lead.data.id+'/convert'),'POST',{expected_version:2,assigned_to:actor})).status,409);
+});
+
+
+test('CRM cursor continues after a stable record even when newer records arrive',async()=>{
+ const initial=await api(path('/crm/entries'));assert.equal(initial.status,200);assert.ok(initial.data.data.length>1);
+ const first=initial.data.data[0],expected=initial.data.data.slice(1).map((e:any)=>e.id);
+ await api(path('/crm/entries'),'POST',{kind:'lead',customer_id:customerId,title:'Newer pagination fixture'});
+ const query=new URLSearchParams({before_created_at:first.created_at,before_id:first.id});const next=await api(path('/crm/entries?'+query));
+ assert.equal(next.status,200);assert.deepEqual(next.data.data.map((e:any)=>e.id),expected);
+ assert.equal((await api(path('/crm/entries?before_id='+first.id))).status,400);
+});
+
+test('CRM priority is bounded, persists and retains legacy replay behavior',async()=>{
+ const body={kind:'opportunity',customer_id:customerId,title:'Priority fixture'},key=randomUUID();
+ const created=await api(path('/crm/entries'),'POST',body,cookie,key);assert.equal(created.status,201);assert.equal(created.data.priority,0);
+ assert.deepEqual((await api(path('/crm/entries'),'POST',body,cookie,key)).data,created.data);
+ const {id,version,created_at,updated_at,...entry}=created.data;
+ const changed=await api(path('/crm/entries/'+id),'PATCH',{expected_version:version,entry:{...entry,priority:3}});assert.equal(changed.status,200);assert.equal(changed.data.priority,3);
+ assert.equal((await api(path('/crm/entries/'+id),'PATCH',{expected_version:2,entry:{...entry,priority:4}})).status,400);
+});
+
+test('CRM quotation links require the same canonical customer',async()=>{
+ const opportunity=await api(path('/crm/entries'),'POST',{kind:'opportunity',customer_id:customerId,title:'Quotation link fixture'});assert.equal(opportunity.status,201);
+ const quote=await api(path('/sales/quotations'),'POST',document(1));assert.equal(quote.status,201);
+ const {id,version,created_at,updated_at,...entry}=opportunity.data;
+ const linked=await api(path('/crm/entries/'+id),'PATCH',{expected_version:version,entry:{...entry,quotation_id:quote.data.id}});assert.equal(linked.status,200);assert.equal(linked.data.quotation_id,quote.data.id);
+ const other=await api(path('/records/customers'),'POST',{name:'Synthetic unrelated quotation customer'});assert.equal(other.status,201);
+ const otherOpportunity=await api(path('/crm/entries'),'POST',{kind:'opportunity',customer_id:other.data.id,title:'Different customer fixture'});const {id:otherId,version:otherVersion,created_at:otherCreated,updated_at:otherUpdated,...otherEntry}=otherOpportunity.data;
+ assert.equal((await api(path('/crm/entries/'+otherId),'PATCH',{expected_version:otherVersion,entry:{...otherEntry,quotation_id:quote.data.id}})).status,400);
+});
+
+test('lead conversion links an explicitly selected canonical customer in the same workspace',async()=>{
+ const other=await api(path('/records/customers'),'POST',{name:'Synthetic conversion customer'});assert.equal(other.status,201);
+ const lead=await api(path('/crm/entries'),'POST',{kind:'lead',customer_id:customerId,title:'Customer reassignment fixture'});assert.equal(lead.status,201);
+ assert.equal((await api(path('/crm/entries/'+lead.data.id+'/convert'),'POST',{expected_version:1,customer_id:randomUUID()})).status,404);
+ const converted=await api(path('/crm/entries/'+lead.data.id+'/convert'),'POST',{expected_version:1,customer_id:other.data.id});assert.equal(converted.status,200,JSON.stringify(converted.data));assert.equal(converted.data.customer_id,other.data.id);
+ const history=await api(path('/crm/entries/'+lead.data.id+'/history'));assert.equal(history.data.data[0].snapshot.customer_id,customerId);
+});
+
+test('lead conversion creates a customer atomically and blocks matching contact details',async()=>{
+ const lead=await api(path('/crm/entries'),'POST',{kind:'lead',customer_id:customerId,title:'New customer conversion fixture'});assert.equal(lead.status,201);
+ const candidate={name:'Synthetic new conversion customer',type:'business',email:randomUUID()+'@example.test',phone:''};
+ const before=Number((await dbGet("SELECT COUNT(*) AS n FROM ac_records WHERE org_id=? AND environment='sandbox' AND kind='customers'",[org])).n);
+ assert.equal((await api(path('/crm/entries/'+lead.data.id+'/convert'),'POST',{expected_version:1,new_customer:candidate,assigned_to:randomUUID()})).status,400);
+ assert.equal(Number((await dbGet("SELECT COUNT(*) AS n FROM ac_records WHERE org_id=? AND environment='sandbox' AND kind='customers'",[org])).n),before);
+ const key=randomUUID(),body={expected_version:1,new_customer:candidate};const converted=await api(path('/crm/entries/'+lead.data.id+'/convert'),'POST',body,cookie,key);assert.equal(converted.status,200,JSON.stringify(converted.data));assert.notEqual(converted.data.customer_id,customerId);
+ assert.deepEqual((await api(path('/crm/entries/'+lead.data.id+'/convert'),'POST',body,cookie,key)).data,converted.data);
+ const second=await api(path('/crm/entries'),'POST',{kind:'lead',customer_id:customerId,title:'Duplicate conversion customer fixture'});
+ assert.equal((await api(path('/crm/entries/'+second.data.id+'/convert'),'POST',{expected_version:1,new_customer:candidate})).status,409);
+});
+
+test('CRM lost reasons are administrator-managed and retained when legacy configuration clients omit them',async()=>{
+ const old=await api(path('/crm/configuration'));assert.equal(old.status,200);
+ const body={expected_version:old.data.version,stages:old.data.stages,teams:old.data.teams,lost_reasons:['Synthetic price','Synthetic timing']};
+ const saved=await api(path('/crm/configuration'),'PUT',body);assert.equal(saved.status,200,JSON.stringify(saved.data));assert.deepEqual(saved.data.lost_reasons,body.lost_reasons);
+ assert.equal((await api(path('/crm/configuration'),'PUT',{...body,expected_version:saved.data.version,lost_reasons:['Same','same']})).status,400);
+ const legacy=await api(path('/crm/configuration'),'PUT',{expected_version:saved.data.version,stages:body.stages,teams:body.teams});assert.equal(legacy.status,200);assert.deepEqual(legacy.data.lost_reasons,body.lost_reasons);
+});
+
+test('CRM activity reporting isolates assignment and retains completed follow-ups',async()=>{
+ const created=await api(path('/crm/entries'),'POST',{kind:'follow_up',customer_id:customerId,title:'Activity report fixture',assigned_to:actor,due_at:'2020-01-01T00:00:00.000Z'});assert.equal(created.status,201);
+ const from=new Date().toLocaleDateString('en-CA',{timeZone:'Africa/Nairobi'});const query=new URLSearchParams({from,to:from,assignee:actor});
+ const before=await api(path('/crm/activity-report?'+query));assert.equal(before.status,200,JSON.stringify(before.data));assert.ok(before.data.by_assignee.some((r:any)=>r.id===actor&&r.overdue>0));
+ const {id,version,created_at,updated_at,...entry}=created.data;assert.equal((await api(path('/crm/entries/'+id),'PATCH',{expected_version:version,entry:{...entry,status:'completed'}})).status,200);
+ const after=await api(path('/crm/activity-report?'+query));assert.equal(after.status,200);const prior=before.data.by_assignee.find((r:any)=>r.id===actor),next=after.data.by_assignee.find((r:any)=>r.id===actor);assert.equal(next.completed,prior.completed+1);assert.equal(next.overdue,prior.overdue-1);
+ const outsider=await api('/api/auth/signup','POST',{email:randomUUID()+'@example.test',password:'Synthetic-activity-outsider-2026!'});assert.equal((await api(path('/crm/activity-report?'+query),'GET',undefined,outsider.cookie)).status,403);
+});
+
+
+
+test('due follow-up reminders deduplicate and do not notify for completed activities',async()=>{
+ const item=await api(path('/crm/entries'),'POST',{kind:'follow_up',customer_id:customerId,title:'Synthetic due reminder',assigned_to:actor,due_at:'2020-01-01T00:00:00.000Z'});assert.equal(item.status,201);
+ await processCrmDueReminders(a());await processCrmDueReminders(a());
+ const events=await dbAll("SELECT id FROM ac2_events WHERE org_id=? AND environment='sandbox' AND event_type='crm.followup_due' AND resource_id=?",[org,item.data.id]);assert.equal(events.length,1);
+ for(let i=0;i<5;i++)await processBusinessEvents(a());
+ assert.equal(Number((await dbGet("SELECT COUNT(*) AS n FROM ac2_notifications WHERE org_id=? AND user_id=? AND resource_id=? AND title='Follow-up overdue'",[org,actor,item.data.id])).n),1);
+ const {id:reassignedId,version:reassignedVersion,created_at:reassignedCreated,updated_at:reassignedUpdated,...reassignedEntry}=item.data;assert.equal((await api(path('/crm/entries/'+reassignedId),'PATCH',{expected_version:reassignedVersion,entry:{...reassignedEntry,assigned_to:approverId}})).status,200);await processCrmDueReminders(a());for(let i=0;i<5;i++)await processBusinessEvents(a());assert.equal(Number((await dbGet("SELECT COUNT(*) AS n FROM ac2_notifications WHERE org_id=? AND user_id=? AND resource_id=? AND title='Follow-up overdue'",[org,approverId,item.data.id])).n),1);
+ const finished=await api(path('/crm/entries'),'POST',{kind:'follow_up',customer_id:customerId,title:'Finished reminder fixture',assigned_to:actor,due_at:'2020-01-01T00:00:00.000Z',status:'completed'});assert.equal(finished.status,201);
+ await processCrmDueReminders(a());assert.equal(Number((await dbGet("SELECT COUNT(*) AS n FROM ac2_events WHERE org_id=? AND event_type='crm.followup_due' AND resource_id=?",[org,finished.data.id])).n),0);
+ const stale=await api(path('/crm/entries'),'POST',{kind:'follow_up',customer_id:customerId,title:'Stale reminder fixture',assigned_to:actor,due_at:'2020-01-01T00:00:00.000Z'});await processCrmDueReminders(a());const {id:staleId,version:staleVersion,created_at:staleCreated,updated_at:staleUpdated,...staleEntry}=stale.data;await api(path('/crm/entries/'+staleId),'PATCH',{expected_version:staleVersion,entry:{...staleEntry,status:'completed'}});for(let i=0;i<5;i++)await processBusinessEvents(a());assert.equal(Number((await dbGet("SELECT COUNT(*) AS n FROM ac2_notifications WHERE org_id=? AND resource_id=? AND title='Follow-up overdue'",[org,staleId])).n),0);
 });
