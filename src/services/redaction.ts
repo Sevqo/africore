@@ -1,4 +1,4 @@
-import { LedgerEntry } from "./ledgerService";
+import { LedgerEntry } from './ledgerService';
 
 /**
  * Trust-record endpoints are gated by the `trust_score` scope. That scope
@@ -9,11 +9,11 @@ import { LedgerEntry } from "./ledgerService";
  * never returned at all (only present/absent booleans).
  */
 const SAFE_EVENT_DATA: Record<string, string[]> = {
-  "verification.checks_run": ["checks"],
-  "verification.status_changed": ["from", "to"],
-  "score.updated": ["trust_score"],
-  "consent.granted": ["grantee", "purpose", "scope"],
-  "consent.revoked": ["grantee"],
+  'verification.checks_run': ['checks'],
+  'verification.status_changed': ['from', 'to'],
+  'score.updated': ['trust_score'],
+  'consent.granted': ['grantee', 'purpose', 'scope'],
+  'consent.revoked': ['grantee'],
 };
 
 export interface RedactedLedgerEvent {

@@ -1,56 +1,418 @@
-import {pricingPreview} from './sales-pricing';
-import {create as createObject} from './store';
-import {randomUUID} from 'node:crypto';
-import {z} from 'zod';
-import {dbAll,dbGet,dbRun} from '../db/adapter';
-import {type Access,audit,fail} from '../platform/auth';
-import {now,hash} from '../platform/crypto';
-import {documentSchema,totals,permitted} from '../platform/domain';
-import {record,save,update,enqueue} from '../platform/payments';
-import {financialOperation} from '../finance/service';
-import {basisPoints} from '../finance/money';
-import {requireServices,checkLimits,recordUsage} from '../marketplace/engine';
-import {emit} from './events';
-import {day} from './store';
-import {businessPolicyFor} from './business-policy';
-import {reserveOrderStock,releaseOrderStock,dispatchOrderStock,snapshotCatalogItems} from '../inventory/service';
-export const quotationInput=documentSchema.extend({valid_until:z.string().date().nullable().default(null),price_list_id:z.string().uuid().nullable().default(null),expected_price_list_version:z.number().int().positive().nullable().default(null)});
-function quotationFingerprint(d:z.infer<typeof quotationInput>){const {valid_until,price_list_id,expected_price_list_version,...legacy}=d;return !valid_until&&!price_list_id&&!expected_price_list_version?legacy:d;}
-async function quoteRevision(a:Access,q:any,action:string,reason=''){const id='quotation.revision:'+a.org+':'+a.environment+':'+q.id+':'+q.version;if(!await dbGet('SELECT id FROM ac2_objects WHERE id=? AND org_id=? AND environment=?',[id,a.org,a.environment]))await createObject(a,'quotation_revision',{quotation_id:q.id,quotation_version:q.version,snapshot:q,action,reason,actor:a.actor},id);}
-export async function quotationHistory(a:Access,id:string){const current=await quote(a,id);return {quotation:current,data:(await dbAll("SELECT data,created_at FROM ac2_objects WHERE org_id=? AND environment=? AND kind='quotation_revision' AND id LIKE ? ORDER BY created_at,id LIMIT 500",[a.org,a.environment,'quotation.revision:'+a.org+':'+a.environment+':'+id+':%'])).map(r=>({...JSON.parse(r.data),recorded_at:r.created_at})).sort((a,b)=>a.quotation_version-b.quotation_version),coverage:'Saved snapshots since version-history support; a captured baseline does not reconstruct older changes.'};}
-export async function quote(a:Access,id:string){const row=await dbGet('SELECT * FROM ac_sales_quotes WHERE id=? AND org_id=? AND environment=?',[id,a.org,a.environment]);if(!row)fail(404,'Quotation not found');return {...JSON.parse(row.data),id:row.id,status:row.status,version:Number(row.version),order_id:row.order_id,created_at:row.created_at,updated_at:row.updated_at};}
-async function quoteDocument(a:Access,input:unknown){const d=quotationInput.parse(input);if(d.valid_until&&d.valid_until<d.issue_date)fail(400,'Quotation validity must follow its issue date');let price_list_snapshot:any=null;if(d.price_list_id){const priced=await pricingPreview(a,{price_list_id:d.price_list_id,document:d});if(d.expected_price_list_version!==Number(priced.price_list.version)||priced.document.items.some((item,index)=>item.unit_price_minor!==d.items[index].unit_price_minor))fail(409,'Price list changed or prices differ; review current pricing again');price_list_snapshot=priced.price_list;}if(d.order_id)fail(400,'A quotation cannot link an existing order');const customer=await record(a,d.customer_id,'customers');if(customer.status==='archived')fail(409,'Choose an active customer');const items=await snapshotCatalogItems(a,d.items);for(const item of items)if(item.product_id){const row=await dbGet('SELECT data FROM ac_products WHERE id=? AND org_id=? AND environment=?',[item.product_id,a.org,a.environment]);if(JSON.parse(row.data).currency!==d.currency)fail(400,'Product and quotation currency must match; no implicit conversion');}return {...d,items,price_list_snapshot,customer_snapshot:{name:customer.name,email:customer.email||'',phone:customer.phone||'',address:customer.address||''},...totals(d)};}
-export async function createQuote(a:Access,input:unknown,key:string){return financialOperation(a,'quote.create',key,input,async()=>{await requireServices(a,['sales']);await checkLimits(a,'sales',1);const d=await quoteDocument(a,input),id=randomUUID(),at=now(),reference='QUO-'+randomUUID().slice(0,12).toUpperCase();await dbRun("INSERT INTO ac_sales_quotes(id,org_id,environment,customer_id,status,currency,data,actor,created_at,updated_at) VALUES (?,?,?,?,'draft',?,?,?,?,?)",[id,a.org,a.environment,d.customer_id,d.currency,JSON.stringify({...d,reference}),a.actor,at,at]);await recordUsage(a,'sales','quotation:'+id,1,'quotation.created');await audit(a.org,a.actor,'quotation.created',id);await emit(a,'quotation.created',{id,customer_id:d.customer_id,schema_version:1},{key:'quotation.created:'+id});const result=await quote(a,id);await quoteRevision(a,result,'created');return result;});}
-export async function editQuote(a:Access,id:string,input:unknown,key:string){const d=z.object({expected_version:z.number().int().positive(),document:quotationInput}).strict().parse(input);return financialOperation(a,'quote.edit:'+id,key,{expected_version:d.expected_version,document:quotationFingerprint(d.document)},async()=>{await requireServices(a,['sales']);const old=await quote(a,id);if(old.version!==d.expected_version||old.status!=='draft')fail(409,'Only the current draft quotation can be edited');const doc=await quoteDocument(a,d.document);await quoteRevision(a,old,'baseline');await dbRun('UPDATE ac_sales_quotes SET customer_id=?,currency=?,data=?,version=version+1,updated_at=? WHERE id=? AND org_id=? AND environment=? AND version=?',[doc.customer_id,doc.currency,JSON.stringify({...doc,reference:old.reference}),now(),id,a.org,a.environment,d.expected_version]);await audit(a.org,a.actor,'quotation.updated',id);const result=await quote(a,id);await quoteRevision(a,result,'updated');return result;});}
-export const quoteActionInput=z.object({action:z.enum(['mark_shared','accept','convert','cancel','revise']),expected_version:z.number().int().positive(),approval_id:z.string().uuid().optional(),reason:z.string().max(1000).default('')}).strict();
-export async function quoteAction(a:Access,id:string,input:unknown,key:string){const d=quoteActionInput.parse(input);return financialOperation(a,'quote.action:'+id,key,d.reason?d:(({reason:_,...legacy})=>legacy)(d),async()=>{
- await requireServices(a,['sales']);const old=await quote(a,id);if(old.version!==d.expected_version)fail(409,'Quotation changed; reload before this action');let status=old.status,orderId=old.order_id;await quoteRevision(a,old,'baseline');
- if(d.action==='revise'){if(!['shared','accepted'].includes(old.status)||d.reason.trim().length<8)fail(409,'Give a revision reason for a shared or accepted quotation');status='draft';}
- if(d.action==='mark_shared'){if(old.status!=='draft')fail(409,'Only a draft can be marked shared');status='shared';}
- if(d.action==='accept'){if(old.valid_until&&old.valid_until<day())fail(409,'Quotation has expired; revise it before accepting');if(!['draft','shared'].includes(old.status))fail(409,'Quotation is not open for acceptance');const policy=await businessPolicyFor(a);if(old.discount_minor>basisPoints(old.subtotal_minor,policy.configuration.discount_approval_bps)){const {requireApproval}=await import('./automation');await requireApproval(a,d.approval_id,'sales_discount',id,{sales_discount:{quote_version:old.version,discount_minor:old.discount_minor}});}status='accepted';}
- if(d.action==='cancel'){if(!['draft','shared','accepted'].includes(old.status))fail(409,'Converted quotations must be managed through the order');status='cancelled';}
- if(d.action==='convert'){if(old.status!=='accepted'||orderId)fail(409,'Accept the quotation before converting it once');await requireServices(a,['orders']);const customer=await record(a,old.customer_id,'customers');if(customer.status==='archived')fail(409,'Customer is archived');const doc=documentSchema.parse({...old,order_id:undefined});const order=await save(a,'orders',{...doc,reference:'ORD-'+randomUUID().slice(0,12).toUpperCase(),...totals(doc),status:'draft',paid_minor:0,fulfillment_status:'unfulfilled',payment_status:'unpaid',quotation_id:id});orderId=order.id;status='converted';const {checkLimits,recordUsage}=await import('../marketplace/engine');await checkLimits(a,'orders',1);await recordUsage(a,'orders','quotation.order:'+id,1,'quotation_conversion');}
- await dbRun('UPDATE ac_sales_quotes SET status=?,order_id=?,version=version+1,updated_at=? WHERE id=? AND org_id=? AND environment=? AND version=?',[status,orderId,now(),id,a.org,a.environment,d.expected_version]);await audit(a.org,a.actor,'quotation.'+d.action,id);await emit(a,'quotation.'+d.action,{id,order_id:orderId,customer_id:old.customer_id,schema_version:1},{key:'quotation.action:'+id+':'+(old.version+1)});const result=await quote(a,id);await quoteRevision(a,result,d.action,d.reason);return result;
- });}
-/** Called inside the existing canonical record transaction, through both direct services and app workflows. */
-export async function synchronizeOrder(a:Access,before:any,after:any){
- if(before.kind!=='orders')return;
- if(after.status==='awaiting_payment'&&before.status==='draft'){
-  await reserveOrderStock(a,after);
-  const policy=await businessPolicyFor(a);if(policy.configuration.prepare_draft_invoice){const member=await dbGet('SELECT role FROM ac_memberships WHERE org_id=? AND user_id=?',[a.org,policy.updated_by]);if(!member||!permitted(member.role,'finance'))fail(409,'Draft-invoice policy owner no longer has finance authority; request policy review');const executor:Access={...a,actor:policy.updated_by!,role:member.role,api:false};await requireServices(executor,['invoicing']);
-   const invoices=await dbAll("SELECT id,data FROM ac_records WHERE org_id=? AND environment=? AND kind='invoices'",[a.org,a.environment]);const linked=invoices.find(row=>{const d=JSON.parse(row.data);return d.order_id===after.id&&d.status!=='voided';});if(linked)fail(409,'Order already has an invoice; review before confirmation');
-   const doc=documentSchema.parse(after),customer=await record(a,after.customer_id,'customers');const invoice=await save(executor,'invoices',{...doc,order_id:after.id,reference:'INV-'+randomUUID().slice(0,12).toUpperCase(),...totals(doc),status:'draft',paid_minor:0,source_order_version:before.updated_at||null,prepared_by_policy:policy.version,requested_by:a.actor,customer_snapshot:{name:customer.name,email:customer.email||'',phone:customer.phone||''}});
-   await dbRun('INSERT INTO ac_sales_order_links(order_id,org_id,environment,invoice_id,policy_version,created_at) VALUES (?,?,?,?,?,?)',[after.id,a.org,a.environment,invoice.id,policy.version,now()]);await enqueue(executor,'invoice.created',{id:invoice.id,order_id:after.id,customer_id:after.customer_id});await emit(a,'draft_invoice.prepared',{id:invoice.id,order_id:after.id,customer_id:after.customer_id,policy_version:policy.version,schema_version:1},{key:'order.draft_invoice:'+after.id});
+import { pricingPreview } from './sales-pricing';
+import { create as createObject } from './store';
+import { randomUUID } from 'node:crypto';
+import { z } from 'zod';
+import { dbAll, dbGet, dbRun } from '../db/adapter';
+import { type Access, audit, fail } from '../platform/auth';
+import { now, hash } from '../platform/crypto';
+import { documentSchema, totals, permitted } from '../platform/domain';
+import { record, save, update, enqueue } from '../platform/payments';
+import { financialOperation } from '../finance/service';
+import { basisPoints } from '../finance/money';
+import { requireServices, checkLimits, recordUsage } from '../marketplace/engine';
+import { emit } from './events';
+import { day } from './store';
+import { businessPolicyFor } from './business-policy';
+import {
+  reserveOrderStock,
+  releaseOrderStock,
+  dispatchOrderStock,
+  snapshotCatalogItems,
+} from '../inventory/service';
+export const quotationInput = documentSchema.extend({
+  valid_until: z.string().date().nullable().default(null),
+  price_list_id: z.string().uuid().nullable().default(null),
+  expected_price_list_version: z.number().int().positive().nullable().default(null),
+});
+function quotationFingerprint(d: z.infer<typeof quotationInput>) {
+  const { valid_until, price_list_id, expected_price_list_version, ...legacy } = d;
+  return !valid_until && !price_list_id && !expected_price_list_version ? legacy : d;
+}
+async function quoteRevision(a: Access, q: any, action: string, reason = '') {
+  const id = 'quotation.revision:' + a.org + ':' + a.environment + ':' + q.id + ':' + q.version;
+  if (
+    !(await dbGet('SELECT id FROM ac2_objects WHERE id=? AND org_id=? AND environment=?', [
+      id,
+      a.org,
+      a.environment,
+    ]))
+  )
+    await createObject(
+      a,
+      'quotation_revision',
+      {
+        quotation_id: q.id,
+        quotation_version: q.version,
+        snapshot: q,
+        action,
+        reason,
+        actor: a.actor,
+      },
+      id,
+    );
+}
+export async function quotationHistory(a: Access, id: string) {
+  const current = await quote(a, id);
+  return {
+    quotation: current,
+    data: (
+      await dbAll(
+        "SELECT data,created_at FROM ac2_objects WHERE org_id=? AND environment=? AND kind='quotation_revision' AND id LIKE ? ORDER BY created_at,id LIMIT 500",
+        [
+          a.org,
+          a.environment,
+          'quotation.revision:' + a.org + ':' + a.environment + ':' + id + ':%',
+        ],
+      )
+    )
+      .map((r) => ({ ...JSON.parse(r.data), recorded_at: r.created_at }))
+      .sort((a, b) => a.quotation_version - b.quotation_version),
+    coverage:
+      'Saved snapshots since version-history support; a captured baseline does not reconstruct older changes.',
+  };
+}
+export async function quote(a: Access, id: string) {
+  const row = await dbGet(
+    'SELECT * FROM ac_sales_quotes WHERE id=? AND org_id=? AND environment=?',
+    [id, a.org, a.environment],
+  );
+  if (!row) fail(404, 'Quotation not found');
+  return {
+    ...JSON.parse(row.data),
+    id: row.id,
+    status: row.status,
+    version: Number(row.version),
+    order_id: row.order_id,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+async function quoteDocument(a: Access, input: unknown) {
+  const d = quotationInput.parse(input);
+  if (d.valid_until && d.valid_until < d.issue_date)
+    fail(400, 'Quotation validity must follow its issue date');
+  let price_list_snapshot: any = null;
+  if (d.price_list_id) {
+    const priced = await pricingPreview(a, { price_list_id: d.price_list_id, document: d });
+    if (
+      d.expected_price_list_version !== Number(priced.price_list.version) ||
+      priced.document.items.some(
+        (item, index) => item.unit_price_minor !== d.items[index].unit_price_minor,
+      )
+    )
+      fail(409, 'Price list changed or prices differ; review current pricing again');
+    price_list_snapshot = priced.price_list;
   }
- }
- if(after.status==='cancelled'||after.fulfillment_status==='cancelled'){
-  const link=await dbGet('SELECT invoice_id FROM ac_sales_order_links WHERE order_id=? AND org_id=? AND environment=?',[after.id,a.org,a.environment]);if(link){const invoice=await record(a,link.invoice_id,'invoices');if(!['draft','voided'].includes(invoice.status))fail(409,'An issued linked invoice requires an authorized correction; it cannot be silently cancelled');if(invoice.status==='draft'){await update(a,invoice.id,{...invoice,status:'voided'});await enqueue(a,'invoice.voided',{id:invoice.id,order_id:after.id});}}
-  await releaseOrderStock(a,after.id);
- }
- if(after.fulfillment_status==='fulfilled'&&before.fulfillment_status!=='fulfilled'){
-  if(before.status==='draft'&&(before.items||[]).some((i:any)=>i.product_id))fail(409,'Confirm the order and reserve tracked stock before fulfillment');await dispatchOrderStock(a,after.id);
- }
+  if (d.order_id) fail(400, 'A quotation cannot link an existing order');
+  const customer = await record(a, d.customer_id, 'customers');
+  if (customer.status === 'archived') fail(409, 'Choose an active customer');
+  const items = await snapshotCatalogItems(a, d.items);
+  for (const item of items)
+    if (item.product_id) {
+      const row = await dbGet(
+        'SELECT data FROM ac_products WHERE id=? AND org_id=? AND environment=?',
+        [item.product_id, a.org, a.environment],
+      );
+      if (JSON.parse(row.data).currency !== d.currency)
+        fail(400, 'Product and quotation currency must match; no implicit conversion');
+    }
+  return {
+    ...d,
+    items,
+    price_list_snapshot,
+    customer_snapshot: {
+      name: customer.name,
+      email: customer.email || '',
+      phone: customer.phone || '',
+      address: customer.address || '',
+    },
+    ...totals(d),
+  };
+}
+export async function createQuote(a: Access, input: unknown, key: string) {
+  return financialOperation(a, 'quote.create', key, input, async () => {
+    await requireServices(a, ['sales']);
+    await checkLimits(a, 'sales', 1);
+    const d = await quoteDocument(a, input),
+      id = randomUUID(),
+      at = now(),
+      reference = 'QUO-' + randomUUID().slice(0, 12).toUpperCase();
+    await dbRun(
+      "INSERT INTO ac_sales_quotes(id,org_id,environment,customer_id,status,currency,data,actor,created_at,updated_at) VALUES (?,?,?,?,'draft',?,?,?,?,?)",
+      [
+        id,
+        a.org,
+        a.environment,
+        d.customer_id,
+        d.currency,
+        JSON.stringify({ ...d, reference }),
+        a.actor,
+        at,
+        at,
+      ],
+    );
+    await recordUsage(a, 'sales', 'quotation:' + id, 1, 'quotation.created');
+    await audit(a.org, a.actor, 'quotation.created', id);
+    await emit(
+      a,
+      'quotation.created',
+      { id, customer_id: d.customer_id, schema_version: 1 },
+      { key: 'quotation.created:' + id },
+    );
+    const result = await quote(a, id);
+    await quoteRevision(a, result, 'created');
+    return result;
+  });
+}
+export async function editQuote(a: Access, id: string, input: unknown, key: string) {
+  const d = z
+    .object({ expected_version: z.number().int().positive(), document: quotationInput })
+    .strict()
+    .parse(input);
+  return financialOperation(
+    a,
+    'quote.edit:' + id,
+    key,
+    { expected_version: d.expected_version, document: quotationFingerprint(d.document) },
+    async () => {
+      await requireServices(a, ['sales']);
+      const old = await quote(a, id);
+      if (old.version !== d.expected_version || old.status !== 'draft')
+        fail(409, 'Only the current draft quotation can be edited');
+      const doc = await quoteDocument(a, d.document);
+      await quoteRevision(a, old, 'baseline');
+      await dbRun(
+        'UPDATE ac_sales_quotes SET customer_id=?,currency=?,data=?,version=version+1,updated_at=? WHERE id=? AND org_id=? AND environment=? AND version=?',
+        [
+          doc.customer_id,
+          doc.currency,
+          JSON.stringify({ ...doc, reference: old.reference }),
+          now(),
+          id,
+          a.org,
+          a.environment,
+          d.expected_version,
+        ],
+      );
+      await audit(a.org, a.actor, 'quotation.updated', id);
+      const result = await quote(a, id);
+      await quoteRevision(a, result, 'updated');
+      return result;
+    },
+  );
+}
+export const quoteActionInput = z
+  .object({
+    action: z.enum(['mark_shared', 'accept', 'convert', 'cancel', 'revise']),
+    expected_version: z.number().int().positive(),
+    approval_id: z.string().uuid().optional(),
+    reason: z.string().max(1000).default(''),
+  })
+  .strict();
+export async function quoteAction(a: Access, id: string, input: unknown, key: string) {
+  const d = quoteActionInput.parse(input);
+  return financialOperation(
+    a,
+    'quote.action:' + id,
+    key,
+    d.reason ? d : (({ reason: _, ...legacy }) => legacy)(d),
+    async () => {
+      await requireServices(a, ['sales']);
+      const old = await quote(a, id);
+      if (old.version !== d.expected_version)
+        fail(409, 'Quotation changed; reload before this action');
+      let status = old.status,
+        orderId = old.order_id;
+      await quoteRevision(a, old, 'baseline');
+      if (d.action === 'revise') {
+        if (!['shared', 'accepted'].includes(old.status) || d.reason.trim().length < 8)
+          fail(409, 'Give a revision reason for a shared or accepted quotation');
+        status = 'draft';
+      }
+      if (d.action === 'mark_shared') {
+        if (old.status !== 'draft') fail(409, 'Only a draft can be marked shared');
+        status = 'shared';
+      }
+      if (d.action === 'accept') {
+        if (old.valid_until && old.valid_until < day())
+          fail(409, 'Quotation has expired; revise it before accepting');
+        if (!['draft', 'shared'].includes(old.status))
+          fail(409, 'Quotation is not open for acceptance');
+        const policy = await businessPolicyFor(a);
+        if (
+          old.discount_minor >
+          basisPoints(old.subtotal_minor, policy.configuration.discount_approval_bps)
+        ) {
+          const { requireApproval } = await import('./automation');
+          await requireApproval(a, d.approval_id, 'sales_discount', id, {
+            sales_discount: { quote_version: old.version, discount_minor: old.discount_minor },
+          });
+        }
+        status = 'accepted';
+      }
+      if (d.action === 'cancel') {
+        if (!['draft', 'shared', 'accepted'].includes(old.status))
+          fail(409, 'Converted quotations must be managed through the order');
+        status = 'cancelled';
+      }
+      if (d.action === 'convert') {
+        if (old.status !== 'accepted' || orderId)
+          fail(409, 'Accept the quotation before converting it once');
+        await requireServices(a, ['orders']);
+        const customer = await record(a, old.customer_id, 'customers');
+        if (customer.status === 'archived') fail(409, 'Customer is archived');
+        const doc = documentSchema.parse({ ...old, order_id: undefined });
+        const order = await save(a, 'orders', {
+          ...doc,
+          reference: 'ORD-' + randomUUID().slice(0, 12).toUpperCase(),
+          ...totals(doc),
+          status: 'draft',
+          paid_minor: 0,
+          fulfillment_status: 'unfulfilled',
+          payment_status: 'unpaid',
+          quotation_id: id,
+        });
+        orderId = order.id;
+        status = 'converted';
+        const { checkLimits, recordUsage } = await import('../marketplace/engine');
+        await checkLimits(a, 'orders', 1);
+        await recordUsage(a, 'orders', 'quotation.order:' + id, 1, 'quotation_conversion');
+      }
+      await dbRun(
+        'UPDATE ac_sales_quotes SET status=?,order_id=?,version=version+1,updated_at=? WHERE id=? AND org_id=? AND environment=? AND version=?',
+        [status, orderId, now(), id, a.org, a.environment, d.expected_version],
+      );
+      await audit(a.org, a.actor, 'quotation.' + d.action, id);
+      await emit(
+        a,
+        'quotation.' + d.action,
+        { id, order_id: orderId, customer_id: old.customer_id, schema_version: 1 },
+        { key: 'quotation.action:' + id + ':' + (old.version + 1) },
+      );
+      const result = await quote(a, id);
+      await quoteRevision(a, result, d.action, d.reason);
+      return result;
+    },
+  );
+}
+/** Called inside the existing canonical record transaction, through both direct services and app workflows. */
+export async function synchronizeOrder(a: Access, before: any, after: any) {
+  if (before.kind !== 'orders') return;
+  if (after.status === 'awaiting_payment' && before.status === 'draft') {
+    await reserveOrderStock(a, after);
+    const policy = await businessPolicyFor(a);
+    if (policy.configuration.prepare_draft_invoice) {
+      const member = await dbGet('SELECT role FROM ac_memberships WHERE org_id=? AND user_id=?', [
+        a.org,
+        policy.updated_by,
+      ]);
+      if (!member || !permitted(member.role, 'finance'))
+        fail(
+          409,
+          'Draft-invoice policy owner no longer has finance authority; request policy review',
+        );
+      const executor: Access = { ...a, actor: policy.updated_by!, role: member.role, api: false };
+      await requireServices(executor, ['invoicing']);
+      const invoices = await dbAll(
+        "SELECT id,data FROM ac_records WHERE org_id=? AND environment=? AND kind='invoices'",
+        [a.org, a.environment],
+      );
+      const linked = invoices.find((row) => {
+        const d = JSON.parse(row.data);
+        return d.order_id === after.id && d.status !== 'voided';
+      });
+      if (linked) fail(409, 'Order already has an invoice; review before confirmation');
+      const doc = documentSchema.parse(after),
+        customer = await record(a, after.customer_id, 'customers');
+      const invoice = await save(executor, 'invoices', {
+        ...doc,
+        order_id: after.id,
+        reference: 'INV-' + randomUUID().slice(0, 12).toUpperCase(),
+        ...totals(doc),
+        status: 'draft',
+        paid_minor: 0,
+        source_order_version: before.updated_at || null,
+        prepared_by_policy: policy.version,
+        requested_by: a.actor,
+        customer_snapshot: {
+          name: customer.name,
+          email: customer.email || '',
+          phone: customer.phone || '',
+        },
+      });
+      await dbRun(
+        'INSERT INTO ac_sales_order_links(order_id,org_id,environment,invoice_id,policy_version,created_at) VALUES (?,?,?,?,?,?)',
+        [after.id, a.org, a.environment, invoice.id, policy.version, now()],
+      );
+      await enqueue(executor, 'invoice.created', {
+        id: invoice.id,
+        order_id: after.id,
+        customer_id: after.customer_id,
+      });
+      await emit(
+        a,
+        'draft_invoice.prepared',
+        {
+          id: invoice.id,
+          order_id: after.id,
+          customer_id: after.customer_id,
+          policy_version: policy.version,
+          schema_version: 1,
+        },
+        { key: 'order.draft_invoice:' + after.id },
+      );
+    }
+  }
+  if (after.status === 'cancelled' || after.fulfillment_status === 'cancelled') {
+    const link = await dbGet(
+      'SELECT invoice_id FROM ac_sales_order_links WHERE order_id=? AND org_id=? AND environment=?',
+      [after.id, a.org, a.environment],
+    );
+    if (link) {
+      const invoice = await record(a, link.invoice_id, 'invoices');
+      if (!['draft', 'voided'].includes(invoice.status))
+        fail(
+          409,
+          'An issued linked invoice requires an authorized correction; it cannot be silently cancelled',
+        );
+      if (invoice.status === 'draft') {
+        await update(a, invoice.id, { ...invoice, status: 'voided' });
+        await enqueue(a, 'invoice.voided', { id: invoice.id, order_id: after.id });
+      }
+    }
+    await releaseOrderStock(a, after.id);
+  }
+  if (after.fulfillment_status === 'fulfilled' && before.fulfillment_status !== 'fulfilled') {
+    if (before.status === 'draft' && (before.items || []).some((i: any) => i.product_id))
+      fail(409, 'Confirm the order and reserve tracked stock before fulfillment');
+    await dispatchOrderStock(a, after.id);
+  }
 }
 
-export async function orderDraft(a:Access,id:string){const order=await record(a,id,'orders');return {order,revision:hash(JSON.stringify(order)),editable:order.status==='draft'};}
-export async function editOrderDraft(a:Access,id:string,input:unknown,key:string){const d=z.object({expected_revision:z.string().length(64),document:documentSchema}).strict().parse(input);return financialOperation(a,'order.draft.edit:'+id,key,d,async()=>{await requireServices(a,['orders']);const current=await orderDraft(a,id);if(!current.editable||current.revision!==d.expected_revision)fail(409,'Order is no longer this draft version; reload before editing');const {all}=await import('./store');if((await all(a,'protected_sales')).some(s=>s.order_id===id&&!['cancelled','expired'].includes(s.state)))fail(409,'Use the protected purchase workflow for this order');const document=await quoteDocument(a,d.document);await update(a,id,{...current.order,...document});await audit(a.org,a.actor,'order.draft_edited',id);return orderDraft(a,id);});}
+export async function orderDraft(a: Access, id: string) {
+  const order = await record(a, id, 'orders');
+  return { order, revision: hash(JSON.stringify(order)), editable: order.status === 'draft' };
+}
+export async function editOrderDraft(a: Access, id: string, input: unknown, key: string) {
+  const d = z
+    .object({ expected_revision: z.string().length(64), document: documentSchema })
+    .strict()
+    .parse(input);
+  return financialOperation(a, 'order.draft.edit:' + id, key, d, async () => {
+    await requireServices(a, ['orders']);
+    const current = await orderDraft(a, id);
+    if (!current.editable || current.revision !== d.expected_revision)
+      fail(409, 'Order is no longer this draft version; reload before editing');
+    const { all } = await import('./store');
+    if (
+      (await all(a, 'protected_sales')).some(
+        (s) => s.order_id === id && !['cancelled', 'expired'].includes(s.state),
+      )
+    )
+      fail(409, 'Use the protected purchase workflow for this order');
+    const document = await quoteDocument(a, d.document);
+    await update(a, id, { ...current.order, ...document });
+    await audit(a.org, a.actor, 'order.draft_edited', id);
+    return orderDraft(a, id);
+  });
+}

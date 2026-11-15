@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from 'express';
 
 /**
  * Two-tier fixed-window rate limiting.
@@ -71,18 +71,18 @@ function consume(key: string, limit: number, now: number): Decision {
 }
 
 function applyHeaders(res: Response, decision: Decision): void {
-  res.setHeader("RateLimit-Limit", String(decision.limit));
-  res.setHeader("RateLimit-Remaining", String(decision.remaining));
-  res.setHeader("RateLimit-Reset", String(decision.resetAt));
+  res.setHeader('RateLimit-Limit', String(decision.limit));
+  res.setHeader('RateLimit-Remaining', String(decision.remaining));
+  res.setHeader('RateLimit-Reset', String(decision.resetAt));
 }
 
 /** Global per-IP limiter. Mount before body parsing. */
 export function ipRateLimit(req: Request, res: Response, next: NextFunction): void {
-  const decision = consume(`ip:${req.ip || "unknown"}`, IP_LIMIT, Date.now());
+  const decision = consume(`ip:${req.ip || 'unknown'}`, IP_LIMIT, Date.now());
   applyHeaders(res, decision);
   if (!decision.allowed) {
-    res.setHeader("Retry-After", String(decision.retryAfterSec));
-    res.status(429).json({ error: "rate_limited", retry_after_seconds: decision.retryAfterSec });
+    res.setHeader('Retry-After', String(decision.retryAfterSec));
+    res.status(429).json({ error: 'rate_limited', retry_after_seconds: decision.retryAfterSec });
     return;
   }
   next();
@@ -96,8 +96,8 @@ export function clientRateLimit(clientId: string, res: Response): boolean {
   const decision = consume(`client:${clientId}`, CLIENT_LIMIT, Date.now());
   applyHeaders(res, decision);
   if (!decision.allowed) {
-    res.setHeader("Retry-After", String(decision.retryAfterSec));
-    res.status(429).json({ error: "rate_limited", retry_after_seconds: decision.retryAfterSec });
+    res.setHeader('Retry-After', String(decision.retryAfterSec));
+    res.status(429).json({ error: 'rate_limited', retry_after_seconds: decision.retryAfterSec });
     return false;
   }
   return true;

@@ -55,7 +55,11 @@ export function quotationInvoiceState(quotation: SalesRecord, invoices: SalesRec
   return invoice.status.replaceAll('_', ' ');
 }
 
-export function salesDashboard(quotations: SalesRecord[], orders: SalesRecord[], invoices: SalesRecord[]) {
+export function salesDashboard(
+  quotations: SalesRecord[],
+  orders: SalesRecord[],
+  invoices: SalesRecord[],
+) {
   return {
     toConfirm: quotations.filter((q) => ['draft', 'shared'].includes(q.status)).length,
     toDeliver: orders.filter(orderIsOpenForDelivery).length,
@@ -73,22 +77,33 @@ export function searchQuotations(
   const needle = query.trim().toLowerCase();
   return quotations.filter((quotation) => {
     const customer = customers.find((row) => row.id === quotation.customer_id);
-    const text = `${quotation.reference || ''} ${quotation.order_id || ''} ${customer?.name || ''}`.toLowerCase();
+    const text =
+      `${quotation.reference || ''} ${quotation.order_id || ''} ${customer?.name || ''}`.toLowerCase();
     if (needle && !text.includes(needle)) return false;
     if (filter === 'all') return true;
     if (filter === 'to_invoice') {
-      return quotation.status === 'converted' && quotationInvoiceState(quotation, invoices) === 'To invoice';
+      return (
+        quotation.status === 'converted' &&
+        quotationInvoiceState(quotation, invoices) === 'To invoice'
+      );
     }
     if (filter === 'cancelled') return quotation.status === 'cancelled';
     return quotation.status === filter;
   });
 }
 
-export function searchOrders(orders: SalesRecord[], query: string, customers: SalesRecord[], invoices: SalesRecord[], filter: OrderFilter) {
+export function searchOrders(
+  orders: SalesRecord[],
+  query: string,
+  customers: SalesRecord[],
+  invoices: SalesRecord[],
+  filter: OrderFilter,
+) {
   const needle = query.trim().toLowerCase();
   return orders.filter((order) => {
     const customer = customers.find((row) => row.id === order.customer_id);
-    const text = `${order.number || order.reference || ''} ${order.customer_id || ''} ${customer?.name || ''}`.toLowerCase();
+    const text =
+      `${order.number || order.reference || ''} ${order.customer_id || ''} ${customer?.name || ''}`.toLowerCase();
     if (needle && !text.includes(needle)) return false;
     switch (filter) {
       case 'all':
@@ -110,7 +125,12 @@ export function searchOrders(orders: SalesRecord[], query: string, customers: Sa
 export function pageOf<T>(rows: T[], page: number, size = 20) {
   const pages = Math.max(1, Math.ceil(rows.length / size));
   const current = Math.min(Math.max(1, page), pages);
-  return { rows: rows.slice((current - 1) * size, current * size), page: current, pages, total: rows.length };
+  return {
+    rows: rows.slice((current - 1) * size, current * size),
+    page: current,
+    pages,
+    total: rows.length,
+  };
 }
 
 export function sumByCurrency(rows: SalesRecord[], amount: (row: SalesRecord) => number) {
@@ -122,7 +142,10 @@ export function sumByCurrency(rows: SalesRecord[], amount: (row: SalesRecord) =>
   return totals;
 }
 
-export function formatTotals(totals: Record<string, number>, format: (amount: number, currency: string) => string) {
+export function formatTotals(
+  totals: Record<string, number>,
+  format: (amount: number, currency: string) => string,
+) {
   const entries = Object.entries(totals);
   if (!entries.length) return '—';
   return entries.map(([currency, amount]) => format(amount, currency)).join(' · ');
@@ -137,7 +160,9 @@ export function withinDays(date: string | undefined, days: number, today: string
 }
 
 export function confirmedOrdersInRange(orders: SalesRecord[], days: number, today: string) {
-  return orders.filter((order) => orderIsConfirmed(order) && withinDays(order.issue_date, days, today));
+  return orders.filter(
+    (order) => orderIsConfirmed(order) && withinDays(order.issue_date, days, today),
+  );
 }
 
 export function confirmedOrdersBetween(orders: SalesRecord[], from: string, to: string) {
@@ -165,7 +190,9 @@ export function salesComparison(orders: SalesRecord[], days: number, today: stri
 }
 
 export function toMinor(text: string, currency: string) {
-  const clean = String(text ?? '').replace(/,/g, '').trim();
+  const clean = String(text ?? '')
+    .replace(/,/g, '')
+    .trim();
   if (!clean) return 0;
   const value = Number(clean);
   if (!Number.isFinite(value)) return NaN;
@@ -181,8 +208,15 @@ export function lineAmountMinor(quantity: number, unitPriceMinor: number) {
   return Math.floor((Math.round(quantity * 1000) * unitPriceMinor + 500) / 1000);
 }
 
-export function documentTotals(lines: { quantity: number; priceMinor: number }[], discountMinor: number, taxBps: number) {
-  const subtotal = lines.reduce((sum, line) => sum + lineAmountMinor(line.quantity, line.priceMinor), 0);
+export function documentTotals(
+  lines: { quantity: number; priceMinor: number }[],
+  discountMinor: number,
+  taxBps: number,
+) {
+  const subtotal = lines.reduce(
+    (sum, line) => sum + lineAmountMinor(line.quantity, line.priceMinor),
+    0,
+  );
   const discount = Math.min(Math.max(0, discountMinor || 0), subtotal);
   const taxable = subtotal - discount;
   const tax = Math.floor((taxable * taxBps + 5000) / 10000);
@@ -218,7 +252,10 @@ export function salesSummary(orders: SalesRecord[]) {
 }
 
 export function reportByCustomer(orders: SalesRecord[], customers: SalesRecord[]) {
-  const groups = new Map<string, { name: string; orders: number; value: number; currency: string }>();
+  const groups = new Map<
+    string,
+    { name: string; orders: number; value: number; currency: string }
+  >();
   for (const order of orders.filter(orderIsConfirmed)) {
     const name = customers.find((row) => row.id === order.customer_id)?.name || 'Shared customer';
     const key = `${order.customer_id || name}:${order.currency || 'KES'}`;
@@ -231,7 +268,10 @@ export function reportByCustomer(orders: SalesRecord[], customers: SalesRecord[]
 }
 
 export function reportByProduct(orders: SalesRecord[]) {
-  const groups = new Map<string, { name: string; quantity: number; orders: number; value: number; currency: string }>();
+  const groups = new Map<
+    string,
+    { name: string; quantity: number; orders: number; value: number; currency: string }
+  >();
   for (const order of orders.filter(orderIsConfirmed)) {
     const currency = order.currency || 'KES';
     for (const item of order.items || []) {
@@ -248,11 +288,19 @@ export function reportByProduct(orders: SalesRecord[]) {
 }
 
 export function reportByStatus(orders: SalesRecord[]) {
-  const groups = new Map<string, { status: string; orders: number; value: number; currency: string }>();
+  const groups = new Map<
+    string,
+    { status: string; orders: number; value: number; currency: string }
+  >();
   for (const order of orders) {
     const status = `${order.status || 'unknown'} · ${order.fulfillment_status || 'unfulfilled'}`;
     const key = `${status}:${order.currency || 'KES'}`;
-    const row = groups.get(key) || { status, orders: 0, value: 0, currency: order.currency || 'KES' };
+    const row = groups.get(key) || {
+      status,
+      orders: 0,
+      value: 0,
+      currency: order.currency || 'KES',
+    };
     row.orders += 1;
     row.value += Number(order.total_minor || 0);
     groups.set(key, row);
@@ -278,10 +326,15 @@ export function monthGrid(month: string, records: SalesRecord[], dateField: stri
   });
 }
 
-export function groupQuotations(quotations: SalesRecord[], customers: SalesRecord[], groupBy: string) {
+export function groupQuotations(
+  quotations: SalesRecord[],
+  customers: SalesRecord[],
+  groupBy: string,
+) {
   const groups = new Map<string, SalesRecord[]>();
   for (const quotation of quotations) {
-    const customer = customers.find((row) => row.id === quotation.customer_id)?.name || 'Shared customer';
+    const customer =
+      customers.find((row) => row.id === quotation.customer_id)?.name || 'Shared customer';
     const key =
       groupBy === 'customer'
         ? customer

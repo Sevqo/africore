@@ -8,11 +8,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Overview",
-          "Recorded personal activity"
-        ],
+        "headings": ["UI review personal", "Overview", "Recorded personal activity"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -22,11 +18,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Overview",
-          "Recorded personal activity"
-        ],
+        "headings": ["UI review personal", "Overview", "Recorded personal activity"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -44,12 +36,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Apps",
-          "AfriCore Finance",
-          "AfriCore Analytics"
-        ],
+        "headings": ["UI review personal", "Apps", "AfriCore Finance", "AfriCore Analytics"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -59,12 +46,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Apps",
-          "AfriCore Finance",
-          "AfriCore Analytics"
-        ],
+        "headings": ["UI review personal", "Apps", "AfriCore Finance", "AfriCore Analytics"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -82,11 +64,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Notifications",
-          "Notification history"
-        ],
+        "headings": ["UI review personal", "Notifications", "Notification history"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -96,11 +74,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Notifications",
-          "Notification history"
-        ],
+        "headings": ["UI review personal", "Notifications", "Notification history"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -118,12 +92,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "My Services",
-          "Usage overview",
-          "Income tracking"
-        ],
+        "headings": ["UI review personal", "My Services", "Usage overview", "Income tracking"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -133,12 +102,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "My Services",
-          "Usage overview",
-          "Income tracking"
-        ],
+        "headings": ["UI review personal", "My Services", "Usage overview", "Income tracking"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -245,11 +209,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Assistant",
-          "AI Business Assistant"
-        ],
+        "headings": ["UI review personal", "Assistant", "AI Business Assistant"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -259,11 +219,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Assistant",
-          "AI Business Assistant"
-        ],
+        "headings": ["UI review personal", "Assistant", "AI Business Assistant"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -281,11 +237,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Income",
-          "Add income"
-        ],
+        "headings": ["UI review personal", "Income", "Add income"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -295,11 +247,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Income",
-          "Add income"
-        ],
+        "headings": ["UI review personal", "Income", "Add income"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -317,11 +265,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Expenses",
-          "Expenses"
-        ],
+        "headings": ["UI review personal", "Expenses", "Expenses"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -331,11 +275,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Expenses",
-          "Expenses"
-        ],
+        "headings": ["UI review personal", "Expenses", "Expenses"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -353,11 +293,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Invoices",
-          "Invoicing"
-        ],
+        "headings": ["UI review personal", "Invoices", "Invoicing"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -367,11 +303,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Invoices",
-          "Invoicing"
-        ],
+        "headings": ["UI review personal", "Invoices", "Invoicing"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -389,11 +321,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Clients",
-          "Customers & clients"
-        ],
+        "headings": ["UI review personal", "Clients", "Customers & clients"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -403,11 +331,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Clients",
-          "Customers & clients"
-        ],
+        "headings": ["UI review personal", "Clients", "Customers & clients"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -425,11 +349,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Payment Records",
-          "AfriCore Pay"
-        ],
+        "headings": ["UI review personal", "Payment Records", "AfriCore Pay"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -439,11 +359,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Payment Records",
-          "AfriCore Pay"
-        ],
+        "headings": ["UI review personal", "Payment Records", "AfriCore Pay"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -461,11 +377,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Cash Flow",
-          "Cash Flow"
-        ],
+        "headings": ["UI review personal", "Cash Flow", "Cash Flow"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -475,11 +387,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Cash Flow",
-          "Cash Flow"
-        ],
+        "headings": ["UI review personal", "Cash Flow", "Cash Flow"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -497,11 +405,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Reports",
-          "Recorded personal activity"
-        ],
+        "headings": ["UI review personal", "Reports", "Recorded personal activity"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -511,11 +415,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Reports",
-          "Recorded personal activity"
-        ],
+        "headings": ["UI review personal", "Reports", "Recorded personal activity"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -533,10 +433,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Learn"
-        ],
+        "headings": ["UI review personal", "Learn"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -546,10 +443,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Learn"
-        ],
+        "headings": ["UI review personal", "Learn"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -567,10 +461,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Settings"
-        ],
+        "headings": ["UI review personal", "Settings"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -580,10 +471,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review personal",
-          "Settings"
-        ],
+        "headings": ["UI review personal", "Settings"],
         "overflow": false,
         "unnamed": [],
         "width": 390,

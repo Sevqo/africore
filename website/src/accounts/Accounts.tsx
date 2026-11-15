@@ -1,29 +1,30 @@
-import {appCatalog} from '../../../src/apps/catalog';
-import {retryAccountRead} from './account-read';
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { BusinessApp } from "../BusinessApp";
-import { api } from "../lib/api-client";
-import { Logo } from "../components/Logo";
-import { isDemo } from "../demo/transport";
-import { types, Alert } from "./AccountUI";
-import { Workspaces } from "./WorkspaceSetup";
-import { AccountSettings } from "./AccountSettings";
-import { FocusedWorkspace } from "./FocusedWorkspace";
-import "./accounts.css";
-import {navigate,usePathname} from '../lib/navigation';
-import {ServiceAdmin} from '../marketplace/ServiceAdmin';
-import {serviceCatalog} from '../../../src/marketplace/catalog';
-import {appIntentDestination} from './app-intent';
+import { appCatalog } from '../../../src/apps/catalog';
+import { retryAccountRead } from './account-read';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { BusinessApp } from '../BusinessApp';
+import { api } from '../lib/api-client';
+import { Logo } from '../components/Logo';
+import { isDemo } from '../demo/transport';
+import { types, Alert } from './AccountUI';
+import { Workspaces } from './WorkspaceSetup';
+import { AccountSettings } from './AccountSettings';
+import { FocusedWorkspace } from './FocusedWorkspace';
+import './accounts.css';
+import { navigate, usePathname } from '../lib/navigation';
+import { ServiceAdmin } from '../marketplace/ServiceAdmin';
+import { serviceCatalog } from '../../../src/marketplace/catalog';
+import { appIntentDestination } from './app-intent';
 export function AccountApp() {
-  const path=usePathname();
+  const path = usePathname();
   const [account, setAccount] = useState<any>(null),
-    [error, setError] = useState(""),[retry,setRetry]=useState(0);
+    [error, setError] = useState(''),
+    [retry, setRetry] = useState(0);
   useEffect(() => {
     if (isDemo()) return;
     let live = true;
-    setError("");
-    const controller=new AbortController();
-    retryAccountRead(()=>api("/api/auth/account"),{signal:controller.signal})
+    setError('');
+    const controller = new AbortController();
+    retryAccountRead(() => api('/api/auth/account'), { signal: controller.signal })
       .then((a) => {
         if (live) setAccount(a);
       })
@@ -35,14 +36,33 @@ export function AccountApp() {
       controller.abort();
     };
   }, [retry]);
-  useEffect(()=>{const changed=()=>{setAccount(null);setError('Your session or workspace permissions changed. Sign in to resolve current access.');};window.addEventListener('africore:access-changed',changed);return()=>window.removeEventListener('africore:access-changed',changed);},[]);
-  useEffect(()=>{
-    if(!account||!['/app','/auth/callback'].includes(path))return;
-    const create=new URLSearchParams(location.search).get('create');
-    const destination=types.some(t=>t.kind===create)?'/app/workspaces?create='+create:account.destination;
-    const service=new URLSearchParams(location.search).get('service');
-    if(typeof destination==='string'&&destination.startsWith('/app'))navigate(serviceCatalog.some(s=>s.id===service)?destination+(destination.includes('?')?'&':'?')+'service='+encodeURIComponent(service!)+'#Explore%20Services':appIntentDestination(destination,location.search,appCatalog),true);
-  },[account,path]);
+  useEffect(() => {
+    const changed = () => {
+      setAccount(null);
+      setError('Your session or workspace permissions changed. Sign in to resolve current access.');
+    };
+    window.addEventListener('africore:access-changed', changed);
+    return () => window.removeEventListener('africore:access-changed', changed);
+  }, []);
+  useEffect(() => {
+    if (!account || !['/app', '/auth/callback'].includes(path)) return;
+    const create = new URLSearchParams(location.search).get('create');
+    const destination = types.some((t) => t.kind === create)
+      ? '/app/workspaces?create=' + create
+      : account.destination;
+    const service = new URLSearchParams(location.search).get('service');
+    if (typeof destination === 'string' && destination.startsWith('/app'))
+      navigate(
+        serviceCatalog.some((s) => s.id === service)
+          ? destination +
+              (destination.includes('?') ? '&' : '?') +
+              'service=' +
+              encodeURIComponent(service!) +
+              '#Explore%20Services'
+          : appIntentDestination(destination, location.search, appCatalog),
+        true,
+      );
+  }, [account, path]);
   if (isDemo()) return <BusinessApp />;
   if (error)
     return (
@@ -50,8 +70,10 @@ export function AccountApp() {
         <Logo />
         <h1>Workspace unavailable</h1>
         <Alert error={error} />
-        <button className="button" onClick={()=>setRetry(value=>value+1)}>Retry loading account</button>
-        <a className="secondary-button" href={"/login"+location.search}>
+        <button className="button" onClick={() => setRetry((value) => value + 1)}>
+          Retry loading account
+        </button>
+        <a className="secondary-button" href={'/login' + location.search}>
           Sign in
         </a>
       </main>
@@ -62,17 +84,15 @@ export function AccountApp() {
         Loading your account…
       </main>
     );
-  if (path === "/app" || path === "/auth/callback") {
+  if (path === '/app' || path === '/auth/callback') {
     return <p role="status">Opening your workspace…</p>;
   }
-  if (path === "/app/account") return <AccountSettings account={account} />;
-  if (path === '/app/service-admin') return <ServiceAdmin/>;
-  if (path === "/app/workspaces") return <Workspaces account={account} />;
-  const target = path.startsWith("/app/business/")
-    ? account.workspaces.find(
-        (w: any) => w.kind === "business" && w.id === path.split("/")[3],
-      )
-    : account.workspaces.find((w: any) => "/app/" + w.kind === path);
+  if (path === '/app/account') return <AccountSettings account={account} />;
+  if (path === '/app/service-admin') return <ServiceAdmin />;
+  if (path === '/app/workspaces') return <Workspaces account={account} />;
+  const target = path.startsWith('/app/business/')
+    ? account.workspaces.find((w: any) => w.kind === 'business' && w.id === path.split('/')[3])
+    : account.workspaces.find((w: any) => '/app/' + w.kind === path);
   if (!target)
     return (
       <main data-platform-density className="account-entry">
@@ -82,19 +102,11 @@ export function AccountApp() {
       </main>
     );
   return (
-    <ActiveWorkspace
-      key={target.id}
-      id={target.id}
-      selected={account.workspace?.id === target.id}
-    >
-      {target.kind === "business" ? (
+    <ActiveWorkspace key={target.id} id={target.id} selected={account.workspace?.id === target.id}>
+      {target.kind === 'business' ? (
         <BusinessApp initialOrg={target.id} account={account} />
       ) : (
-        <FocusedWorkspace
-          key={target.id}
-          workspace={target}
-          account={account}
-        />
+        <FocusedWorkspace key={target.id} workspace={target} account={account} />
       )}
     </ActiveWorkspace>
   );
@@ -108,7 +120,7 @@ function ActiveWorkspace({
   selected: boolean;
   children: ReactNode;
 }) {
-  const [error, setError] = useState(""),
+  const [error, setError] = useState(''),
     [ready, setReady] = useState(selected);
   const visit = useRef<Promise<any> | null>(null);
   useEffect(() => {
@@ -117,7 +129,7 @@ function ActiveWorkspace({
       setReady(true);
       return;
     }
-    visit.current ||= api("/api/auth/account/workspace", "POST", {
+    visit.current ||= api('/api/auth/account/workspace', 'POST', {
       workspace_id: id,
     });
     visit.current

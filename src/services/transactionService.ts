@@ -1,10 +1,20 @@
-import { randomUUID } from "node:crypto";
-import { dbAll, dbGet, dbRun, dbTransaction, isPostgres } from "../db";
-import { getAccount } from "./accountService";
-import { getBusiness } from "./businessService";
-import { fetchMpesaTransactions, fetchBankTransactions, fetchSandboxTransactions, SandboxScenario } from "./connectorService";
-import { normalizeMpesaTransaction, normalizeBankTransaction, normalizeSandboxTransaction, CanonicalTransaction } from "./normalizationService";
-import { emitEvent } from "./webhookService";
+import { randomUUID } from 'node:crypto';
+import { dbAll, dbGet, dbRun, dbTransaction, isPostgres } from '../db';
+import { getAccount } from './accountService';
+import { getBusiness } from './businessService';
+import {
+  fetchMpesaTransactions,
+  fetchBankTransactions,
+  fetchSandboxTransactions,
+  SandboxScenario,
+} from './connectorService';
+import {
+  normalizeMpesaTransaction,
+  normalizeBankTransaction,
+  normalizeSandboxTransaction,
+  CanonicalTransaction,
+} from './normalizationService';
+import { emitEvent } from './webhookService';
 
 export interface Transaction extends CanonicalTransaction {
   id: string;
@@ -33,21 +43,24 @@ const INSERT_SQL = isPostgres
  * mid-sync cannot leave a business with a partial batch; webhooks fire only
  * after the batch has committed.
  */
-export async function syncAccountTransactions(accountId: string): Promise<{ synced: number; skipped_duplicates: number; transactions: Transaction[] }> {
+export async function syncAccountTransactions(
+  accountId: string,
+): Promise<{ synced: number; skipped_duplicates: number; transactions: Transaction[] }> {
   const account = await getAccount(accountId);
-  if (!account) throw new Error("account_not_found");
-  if (account.status === "disconnected") throw new Error("account_disconnected");
+  if (!account) throw new Error('account_not_found');
+  if (account.status === 'disconnected') throw new Error('account_disconnected');
 
   const business = await getBusiness(account.business_id);
 
   const raw =
-    account.provider === "mpesa"
+    account.provider === 'mpesa'
       ? fetchMpesaTransactions(account.account_identifier).map(normalizeMpesaTransaction)
-      : account.provider === "bank"
-      ? fetchBankTransactions(account.account_identifier).map(normalizeBankTransaction)
-      : fetchSandboxTransactions(account.account_identifier, (account.scenario as SandboxScenario) || "mixed").map(
-          normalizeSandboxTransaction
-        );
+      : account.provider === 'bank'
+        ? fetchBankTransactions(account.account_identifier).map(normalizeBankTransaction)
+        : fetchSandboxTransactions(
+            account.account_identifier,
+            (account.scenario as SandboxScenario) || 'mixed',
+          ).map(normalizeSandboxTransaction);
 
   const inserted: Transaction[] = [];
   let skipped = 0;
@@ -70,26 +83,42 @@ export async function syncAccountTransactions(accountId: string): Promise<{ sync
     }
   });
 
-  const subject = { type: "business" as const, id: account.business_id, is_sandbox: !!business?.is_sandbox };
+  const subject = {
+    type: 'business' as const,
+    id: account.business_id,
+    is_sandbox: !!business?.is_sandbox,
+  };
   for (const row of inserted) {
     await emitEvent(
-      "transaction.created",
-      { transaction_id: row.id, business_id: account.business_id, amount: row.amount, type: row.type },
-      subject
+      'transaction.created',
+      {
+        transaction_id: row.id,
+        business_id: account.business_id,
+        amount: row.amount,
+        type: row.type,
+      },
+      subject,
     );
   }
 
   return { synced: inserted.length, skipped_duplicates: skipped, transactions: inserted };
 }
 
-export async function listTransactionsForBusiness(businessId: string, limit = 100, offset = 0): Promise<Transaction[]> {
+export async function listTransactionsForBusiness(
+  businessId: string,
+  limit = 100,
+  offset = 0,
+): Promise<Transaction[]> {
   return dbAll<Transaction>(
     `SELECT * FROM transactions WHERE business_id = ? ORDER BY occurred_at DESC LIMIT ? OFFSET ?`,
-    [businessId, limit, offset]
+    [businessId, limit, offset],
   );
 }
 
 export async function countTransactionsForBusiness(businessId: string): Promise<number> {
-  const row = await dbGet<{ c: number | string }>(`SELECT COUNT(*) AS c FROM transactions WHERE business_id = ?`, [businessId]);
+  const row = await dbGet<{ c: number | string }>(
+    `SELECT COUNT(*) AS c FROM transactions WHERE business_id = ?`,
+    [businessId],
+  );
   return Number(row?.c ?? 0);
 }

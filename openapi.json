@@ -52,9 +52,7 @@
   "paths": {
     "/health": {
       "get": {
-        "tags": [
-          "Platform"
-        ],
+        "tags": ["Platform"],
         "summary": "Liveness check",
         "description": "Process-only liveness probe. Deliberately does not touch the database.",
         "operationId": "getHealth",
@@ -83,9 +81,7 @@
     },
     "/readiness": {
       "get": {
-        "tags": [
-          "Platform"
-        ],
+        "tags": ["Platform"],
         "summary": "Readiness check",
         "description": "Runs a cheap `SELECT 1` (3s timeout). Returns 503 when the database is unavailable so a load balancer can drain the instance.",
         "operationId": "getReadiness",
@@ -133,9 +129,7 @@
     },
     "/clients": {
       "post": {
-        "tags": [
-          "Platform"
-        ],
+        "tags": ["Platform"],
         "summary": "Create an API client",
         "description": "Returns the raw API key exactly once; only its hash is persisted.",
         "operationId": "createApiClient",
@@ -183,9 +177,7 @@
         }
       },
       "get": {
-        "tags": [
-          "Platform"
-        ],
+        "tags": ["Platform"],
         "summary": "List API clients",
         "description": "Never returns key material — only id, name and lifecycle timestamps.",
         "operationId": "listApiClients",
@@ -227,9 +219,7 @@
         }
       ],
       "delete": {
-        "tags": [
-          "Platform"
-        ],
+        "tags": ["Platform"],
         "summary": "Revoke an API client",
         "operationId": "revokeApiClient",
         "security": [
@@ -270,9 +260,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Platform"
-        ],
+        "tags": ["Platform"],
         "summary": "Rotate an API client key",
         "description": "The previous key stops authenticating immediately; the new key is returned once.",
         "operationId": "rotateApiClientKey",
@@ -309,9 +297,7 @@
     },
     "/businesses": {
       "post": {
-        "tags": [
-          "Businesses"
-        ],
+        "tags": ["Businesses"],
         "summary": "Register a business",
         "description": "Creates a business in `pending_verification` status and appends `business.created` to its ledger.",
         "operationId": "createBusiness",
@@ -370,9 +356,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Businesses"
-        ],
+        "tags": ["Businesses"],
         "summary": "Get a business",
         "operationId": "getBusiness",
         "security": [
@@ -413,9 +397,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Businesses"
-        ],
+        "tags": ["Businesses"],
         "summary": "Run business verification checks",
         "description": "Runs the configured checks, updates status and trust score, and appends audit entries to the ledger.",
         "operationId": "verifyBusiness",
@@ -457,9 +439,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Businesses"
-        ],
+        "tags": ["Businesses"],
         "summary": "Get a consent-gated business trust record",
         "description": "Requires an active consent grant from the business to the calling API client covering the `trust_score` scope. The response is minimised: KYC identifiers are never returned, and ledger event data is projected through a per-event-type allowlist.",
         "operationId": "getBusinessTrustRecord",
@@ -501,9 +481,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Businesses"
-        ],
+        "tags": ["Businesses"],
         "summary": "Verify a business ledger chain",
         "description": "Re-walks the hash chain, checks sequencing and validates the HMAC head anchor. A nonexistent business is a 404 (not an empty-but-valid chain).",
         "operationId": "verifyBusinessLedger",
@@ -545,9 +523,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Data"
-        ],
+        "tags": ["Data"],
         "summary": "List connected accounts",
         "operationId": "listBusinessAccounts",
         "security": [
@@ -588,9 +564,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Data"
-        ],
+        "tags": ["Data"],
         "summary": "Connect a provider account",
         "operationId": "connectBusinessAccount",
         "security": [
@@ -655,9 +629,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Data"
-        ],
+        "tags": ["Data"],
         "summary": "Disconnect a provider account",
         "description": "Historical transactions are retained; the account can no longer be synced. Idempotent.",
         "operationId": "disconnectBusinessAccount",
@@ -702,9 +674,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Data"
-        ],
+        "tags": ["Data"],
         "summary": "Ingest and normalize provider transactions",
         "description": "Deduplicates on (account_id, external_id), so re-syncing is safe. The whole batch is ingested in one transaction.",
         "operationId": "syncBusinessAccount",
@@ -761,9 +731,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Data"
-        ],
+        "tags": ["Data"],
         "summary": "List normalized transactions",
         "operationId": "listBusinessTransactions",
         "security": [
@@ -813,9 +781,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Intelligence"
-        ],
+        "tags": ["Intelligence"],
         "summary": "Get explainable financial metrics",
         "description": "Requires an active consent grant covering the `financial_profile` scope for the calling API client.",
         "operationId": "getBusinessFinancialProfile",
@@ -854,9 +820,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Operations"
-        ],
+        "tags": ["Operations"],
         "summary": "Create an invoice",
         "operationId": "createBusinessInvoice",
         "security": [
@@ -909,9 +873,7 @@
         }
       },
       "get": {
-        "tags": [
-          "Operations"
-        ],
+        "tags": ["Operations"],
         "summary": "List invoices",
         "operationId": "listBusinessInvoices",
         "security": [
@@ -927,10 +889,7 @@
             "description": "Filter by invoice status",
             "schema": {
               "type": "string",
-              "enum": [
-                "unpaid",
-                "paid"
-              ]
+              "enum": ["unpaid", "paid"]
             }
           },
           {
@@ -974,9 +933,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Operations"
-        ],
+        "tags": ["Operations"],
         "summary": "Match payments to invoices",
         "description": "Runs exact, tolerance and installment matching. Only completed credit transactions not already matched to another invoice are eligible; the run is atomic and every claim is conditional, so one payment cannot settle two invoices.",
         "operationId": "reconcileBusiness",
@@ -1018,9 +975,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Intelligence"
-        ],
+        "tags": ["Intelligence"],
         "summary": "Get business intelligence",
         "description": "Requires an active consent grant covering the `insights` scope for the calling API client.",
         "operationId": "getBusinessInsights",
@@ -1059,9 +1014,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Intelligence"
-        ],
+        "tags": ["Intelligence"],
         "summary": "Ask a grounded business question",
         "description": "Requires an active consent grant covering the `query` scope, plus the scope governing the data the matched intent exposes (for example `invoices` or `insights`). A narrow `query` grant cannot read a financial profile or trust score.",
         "operationId": "askBusinessQuestion",
@@ -1114,9 +1067,7 @@
     },
     "/persons": {
       "post": {
-        "tags": [
-          "Persons"
-        ],
+        "tags": ["Persons"],
         "summary": "Register a person",
         "description": "Raw national ID and phone number are never stored — only salted hashes. The response contains the hashes.",
         "operationId": "createPerson",
@@ -1173,9 +1124,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Persons"
-        ],
+        "tags": ["Persons"],
         "summary": "Get a person",
         "operationId": "getPerson",
         "security": [
@@ -1216,9 +1165,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Persons"
-        ],
+        "tags": ["Persons"],
         "summary": "Run person verification checks",
         "description": "Checks name/identifier presence and duplicate national-ID registration, then updates status.",
         "operationId": "verifyPerson",
@@ -1260,9 +1207,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Persons"
-        ],
+        "tags": ["Persons"],
         "summary": "Get a consent-gated person trust record",
         "description": "Requires an active consent grant from the person to the calling API client covering the `trust_score` scope. Returns presence booleans, never the cross-linkable identifier hashes.",
         "operationId": "getPersonTrustRecord",
@@ -1304,9 +1249,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Persons"
-        ],
+        "tags": ["Persons"],
         "summary": "Verify a person ledger chain",
         "operationId": "verifyPersonLedger",
         "security": [
@@ -1342,9 +1285,7 @@
     },
     "/consents": {
       "post": {
-        "tags": [
-          "Consent"
-        ],
+        "tags": ["Consent"],
         "summary": "Grant purpose-specific access",
         "description": "`scope` is one or more capability scopes (`all` grants every scope). An optional `expires_at` must be an ISO 8601 timestamp with an offset and in the future; expired grants are treated as inactive automatically.",
         "operationId": "grantConsent",
@@ -1365,10 +1306,7 @@
                 "subject_id": "6f1c2d34-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
                 "grantee": "Acme Lending",
                 "purpose": "credit_underwriting",
-                "scope": [
-                  "trust_score",
-                  "financial_profile"
-                ],
+                "scope": ["trust_score", "financial_profile"],
                 "expires_at": "2027-01-31T23:59:59.000Z"
               }
             }
@@ -1400,9 +1338,7 @@
         }
       },
       "get": {
-        "tags": [
-          "Consent"
-        ],
+        "tags": ["Consent"],
         "summary": "List a subject's consent grants",
         "operationId": "listConsents",
         "security": [
@@ -1417,10 +1353,7 @@
             "required": true,
             "schema": {
               "type": "string",
-              "enum": [
-                "business",
-                "person"
-              ]
+              "enum": ["business", "person"]
             }
           },
           {
@@ -1481,9 +1414,7 @@
         }
       ],
       "delete": {
-        "tags": [
-          "Consent"
-        ],
+        "tags": ["Consent"],
         "summary": "Revoke consent immediately",
         "description": "Idempotent: revoking an already-revoked grant returns it unchanged and does not append another audit event.",
         "operationId": "revokeConsent",
@@ -1520,9 +1451,7 @@
     },
     "/webhooks": {
       "post": {
-        "tags": [
-          "Webhooks"
-        ],
+        "tags": ["Webhooks"],
         "summary": "Create a signed webhook subscription",
         "description": "Returns the per-subscription signing secret once. Deliveries are signed with `x-africore-signature` (hex HMAC-SHA256 over `${timestamp}.${body}`) plus `x-africore-timestamp` (unix seconds). Targets must be HTTPS URLs with no port, credentials or private/IP-literal hostname. Event patterns are validated against the known event catalogue.",
         "operationId": "createWebhookSubscription",
@@ -1569,9 +1498,7 @@
         }
       },
       "get": {
-        "tags": [
-          "Webhooks"
-        ],
+        "tags": ["Webhooks"],
         "summary": "List the caller's webhook subscriptions",
         "description": "The signing secret is never returned by list.",
         "operationId": "listWebhookSubscriptions",
@@ -1610,9 +1537,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Webhooks"
-        ],
+        "tags": ["Webhooks"],
         "summary": "Rotate a webhook signing secret",
         "description": "Issues a new signing secret for a subscription owned by the calling API client. The previous secret stops validating immediately. The new secret is returned once.",
         "operationId": "rotateWebhookSecret",
@@ -1646,9 +1571,7 @@
     },
     "/webhooks/events": {
       "get": {
-        "tags": [
-          "Webhooks"
-        ],
+        "tags": ["Webhooks"],
         "summary": "List webhook events for administrators",
         "operationId": "listWebhookEvents",
         "security": [
@@ -1702,9 +1625,7 @@
     },
     "/sandbox/businesses": {
       "post": {
-        "tags": [
-          "Sandbox"
-        ],
+        "tags": ["Sandbox"],
         "summary": "Create an isolated synthetic business",
         "operationId": "createSandboxBusiness",
         "security": [
@@ -1752,9 +1673,7 @@
         }
       },
       "get": {
-        "tags": [
-          "Sandbox"
-        ],
+        "tags": ["Sandbox"],
         "summary": "List sandbox businesses",
         "operationId": "listSandboxBusinesses",
         "security": [
@@ -1790,9 +1709,7 @@
     },
     "/sandbox/persons": {
       "post": {
-        "tags": [
-          "Sandbox"
-        ],
+        "tags": ["Sandbox"],
         "summary": "Create an isolated synthetic person",
         "operationId": "createSandboxPerson",
         "security": [
@@ -1840,9 +1757,7 @@
         }
       },
       "get": {
-        "tags": [
-          "Sandbox"
-        ],
+        "tags": ["Sandbox"],
         "summary": "List sandbox persons",
         "operationId": "listSandboxPersons",
         "security": [
@@ -1878,9 +1793,7 @@
     },
     "/sandbox/webhook-test": {
       "post": {
-        "tags": [
-          "Sandbox"
-        ],
+        "tags": ["Sandbox"],
         "summary": "Send a signed test webhook",
         "description": "Fires one synthetic signed delivery (`webhook.test`) at the supplied URL so a receiver can verify signature handling. The outbound HTTP status code is deliberately not returned; only whether delivery succeeded, plus the signature and timestamp used. Signatures are hex HMAC-SHA256 over `${timestamp}.${body}`.",
         "operationId": "sendSandboxWebhookTest",
@@ -1932,10 +1845,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Business",
-          "Onboarding"
-        ],
+        "tags": ["Business", "Onboarding"],
         "summary": "Record business-owner consent for statement processing",
         "operationId": "recordBusinessOnboardingConsent",
         "security": [
@@ -1989,10 +1899,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Business",
-          "Onboarding"
-        ],
+        "tags": ["Business", "Onboarding"],
         "summary": "Queue a statement for async ingestion (returns 202 + workflow id)",
         "description": "Validates business consent and enqueues the Orbit ingestion pipeline. Parsing/normalizing/ledger/scoring run asynchronously; poll GET /orbit/workflows/{id} for progress. Identical content is deduplicated.",
         "operationId": "uploadBusinessStatement",
@@ -2043,10 +1950,7 @@
         }
       },
       "get": {
-        "tags": [
-          "Business",
-          "Onboarding"
-        ],
+        "tags": ["Business", "Onboarding"],
         "summary": "List uploaded statements, including failed parses",
         "operationId": "listBusinessStatements",
         "security": [
@@ -2093,9 +1997,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Business"
-        ],
+        "tags": ["Business"],
         "summary": "List the business's registered till/paybill/bank shortcodes",
         "operationId": "listBusinessShortcodes",
         "security": [
@@ -2142,10 +2044,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Business",
-          "Intelligence"
-        ],
+        "tags": ["Business", "Intelligence"],
         "summary": "Business dashboard: cash flow, counterparties, health score and tips",
         "description": "Deterministic metrics computed from normalized business transactions. Requires an active business_profile consent grant for the calling client. Liquidity is reported as unavailable when statements do not capture running balances rather than being invented.",
         "operationId": "getBusinessDashboard",
@@ -2187,10 +2086,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Business",
-          "Intelligence"
-        ],
+        "tags": ["Business", "Intelligence"],
         "summary": "Issue a lender-facing business decision card",
         "description": "Maps the deterministic business metrics and health score into the shared DecisionCard shape. Issuing is an auditable event: every derived metric and the decision are appended to the subject's hash-chained ledger and audit_trail_ref is the ledger entry id of the decision.",
         "operationId": "issueBusinessDecisionCard",
@@ -2235,9 +2131,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Operations"
-        ],
+        "tags": ["Operations"],
         "summary": "Get an invoice with its recorded payments",
         "operationId": "getBusinessInvoice",
         "security": [
@@ -2298,9 +2192,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Operations"
-        ],
+        "tags": ["Operations"],
         "summary": "Send a draft invoice (makes it collectable)",
         "operationId": "sendBusinessInvoice",
         "security": [
@@ -2350,9 +2242,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Operations"
-        ],
+        "tags": ["Operations"],
         "summary": "Record a payment against an invoice",
         "description": "Records a manual receipt, or links a completed incoming transaction. Payments above the outstanding balance are rejected; a fully-paid invoice gets status paid.",
         "operationId": "recordInvoicePayment",
@@ -2421,9 +2311,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Operations"
-        ],
+        "tags": ["Operations"],
         "summary": "Auto-match incoming payments to open invoices",
         "description": "Runs full-settlement reconciliation first, then applies partial receipts where the counterparty agrees with the expected payer/customer. Leftover payments remain in the review queue.",
         "operationId": "autoMatchBusinessPayments",
@@ -2471,9 +2359,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Operations"
-        ],
+        "tags": ["Operations"],
         "summary": "List unmatched incoming payments for human review",
         "operationId": "getReceivablesReviewQueue",
         "security": [
@@ -2520,9 +2406,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Intelligence"
-        ],
+        "tags": ["Intelligence"],
         "summary": "Receivables summary and DSO (honest null without invoices)",
         "operationId": "getReceivablesSummary",
         "security": [
@@ -2577,9 +2461,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Business"
-        ],
+        "tags": ["Business"],
         "summary": "Link a person profile to a business (explicit, idempotent)",
         "description": "Linking is the only way the two subjects become associated. It records an auditable link on both ledgers and never merges transaction streams, scores or consent grants.",
         "operationId": "linkBusinessProfile",
@@ -2594,9 +2476,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "person_id"
-                ],
+                "required": ["person_id"],
                 "properties": {
                   "person_id": {
                     "type": "string",
@@ -2650,9 +2530,7 @@
         }
       },
       "get": {
-        "tags": [
-          "Business"
-        ],
+        "tags": ["Business"],
         "summary": "List explicit profile links for a business",
         "operationId": "listBusinessProfileLinks",
         "security": [
@@ -2702,9 +2580,7 @@
         }
       ],
       "delete": {
-        "tags": [
-          "Business"
-        ],
+        "tags": ["Business"],
         "summary": "Remove a profile link",
         "operationId": "unlinkBusinessProfile",
         "security": [
@@ -2753,9 +2629,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Business"
-        ],
+        "tags": ["Business"],
         "summary": "Side-by-side linked profiles view (only when a link exists)",
         "operationId": "getLinkedProfiles",
         "security": [
@@ -2794,9 +2668,7 @@
     },
     "/metrics": {
       "get": {
-        "tags": [
-          "Platform"
-        ],
+        "tags": ["Platform"],
         "summary": "Prometheus-style in-process metrics (admin only)",
         "description": "Per-instance counters and latency summaries; resets on restart. Admin-only because request mix and latency are operationally sensitive.",
         "operationId": "getMetrics",
@@ -2827,9 +2699,7 @@
     },
     "/orbit/workflows": {
       "get": {
-        "tags": [
-          "Orbit"
-        ],
+        "tags": ["Orbit"],
         "summary": "List Orbit workflows for a subject",
         "operationId": "listOrbitWorkflows",
         "security": [
@@ -2844,10 +2714,7 @@
             "required": true,
             "schema": {
               "type": "string",
-              "enum": [
-                "business",
-                "individual"
-              ]
+              "enum": ["business", "individual"]
             }
           },
           {
@@ -2903,9 +2770,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Orbit"
-        ],
+        "tags": ["Orbit"],
         "summary": "Workflow state, transition history and dead-letter errors",
         "operationId": "getOrbitWorkflow",
         "security": [
@@ -2949,9 +2814,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Orbit"
-        ],
+        "tags": ["Orbit"],
         "summary": "Simulate an incoming M-Pesa payment (enqueues the matching workflow)",
         "description": "Returns 200 immediately with a workflow id. Matching, DSO recalculation and ledger writes happen asynchronously in the matching and scoring queues. Retried webhooks with the same reference+amount are deduplicated.",
         "operationId": "simulateMpesaPayment",
@@ -3101,9 +2964,7 @@
               "message": "Request body failed validation.",
               "details": {
                 "fieldErrors": {
-                  "legal_name": [
-                    "String must contain at least 2 character(s)"
-                  ]
+                  "legal_name": ["String must contain at least 2 character(s)"]
                 }
               },
               "request_id": "5f0c9c2e-6a0f-4b8f-9d4e-3a1a2b3c4d5e"
@@ -3268,9 +3129,7 @@
       "Error": {
         "type": "object",
         "description": "Flat error envelope. `error` is a stable machine-readable code; extra fields are additive and endpoint-specific.",
-        "required": [
-          "error"
-        ],
+        "required": ["error"],
         "properties": {
           "error": {
             "type": "string",
@@ -3313,17 +3172,11 @@
       },
       "HealthResponse": {
         "type": "object",
-        "required": [
-          "status",
-          "service",
-          "db_engine"
-        ],
+        "required": ["status", "service", "db_engine"],
         "properties": {
           "status": {
             "type": "string",
-            "enum": [
-              "ok"
-            ]
+            "enum": ["ok"]
           },
           "service": {
             "type": "string",
@@ -3331,92 +3184,61 @@
           },
           "db_engine": {
             "type": "string",
-            "enum": [
-              "sqlite",
-              "postgres"
-            ]
+            "enum": ["sqlite", "postgres"]
           }
         }
       },
       "ReadinessResponse": {
         "type": "object",
-        "required": [
-          "status",
-          "checks",
-          "db_engine"
-        ],
+        "required": ["status", "checks", "db_engine"],
         "properties": {
           "status": {
             "type": "string",
-            "enum": [
-              "ok"
-            ]
+            "enum": ["ok"]
           },
           "checks": {
             "type": "object",
-            "required": [
-              "database"
-            ],
+            "required": ["database"],
             "properties": {
               "database": {
                 "type": "string",
-                "enum": [
-                  "ok"
-                ]
+                "enum": ["ok"]
               }
             }
           },
           "db_engine": {
             "type": "string",
-            "enum": [
-              "sqlite",
-              "postgres"
-            ]
+            "enum": ["sqlite", "postgres"]
           }
         }
       },
       "ReadinessFailureResponse": {
         "type": "object",
-        "required": [
-          "status",
-          "checks",
-          "db_engine"
-        ],
+        "required": ["status", "checks", "db_engine"],
         "properties": {
           "status": {
             "type": "string",
-            "enum": [
-              "error"
-            ]
+            "enum": ["error"]
           },
           "checks": {
             "type": "object",
-            "required": [
-              "database"
-            ],
+            "required": ["database"],
             "properties": {
               "database": {
                 "type": "string",
-                "enum": [
-                  "error"
-                ]
+                "enum": ["error"]
               }
             }
           },
           "db_engine": {
             "type": "string",
-            "enum": [
-              "sqlite",
-              "postgres"
-            ]
+            "enum": ["sqlite", "postgres"]
           }
         }
       },
       "ApiClientCreateRequest": {
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "properties": {
           "name": {
             "type": "string",
@@ -3427,11 +3249,7 @@
       },
       "ApiClient": {
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "created_at"
-        ],
+        "required": ["id", "name", "created_at"],
         "properties": {
           "id": {
             "type": "string",
@@ -3458,10 +3276,7 @@
           },
           {
             "type": "object",
-            "required": [
-              "api_key",
-              "note"
-            ],
+            "required": ["api_key", "note"],
             "properties": {
               "api_key": {
                 "type": "string",
@@ -3477,12 +3292,7 @@
       },
       "ApiClientRotated": {
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "api_key",
-          "note"
-        ],
+        "required": ["id", "name", "api_key", "note"],
         "properties": {
           "id": {
             "type": "string",
@@ -3502,11 +3312,7 @@
       },
       "ApiClientRevoked": {
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "revoked_at"
-        ],
+        "required": ["id", "name", "revoked_at"],
         "properties": {
           "id": {
             "type": "string",
@@ -3523,9 +3329,7 @@
       },
       "BusinessCreateRequest": {
         "type": "object",
-        "required": [
-          "legal_name"
-        ],
+        "required": ["legal_name"],
         "properties": {
           "legal_name": {
             "type": "string",
@@ -3592,10 +3396,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "pending_verification",
-              "verified"
-            ],
+            "enum": ["pending_verification", "verified"],
             "example": "pending_verification"
           },
           "trust_score": {
@@ -3624,10 +3425,7 @@
       },
       "BusinessVerificationResult": {
         "type": "object",
-        "required": [
-          "checks",
-          "business"
-        ],
+        "required": ["checks", "business"],
         "properties": {
           "checks": {
             "type": "object",
@@ -3647,9 +3445,7 @@
       },
       "PersonCreateRequest": {
         "type": "object",
-        "required": [
-          "full_name"
-        ],
+        "required": ["full_name"],
         "properties": {
           "full_name": {
             "type": "string",
@@ -3669,14 +3465,7 @@
       },
       "Person": {
         "type": "object",
-        "required": [
-          "id",
-          "full_name",
-          "status",
-          "is_sandbox",
-          "created_at",
-          "updated_at"
-        ],
+        "required": ["id", "full_name", "status", "is_sandbox", "created_at", "updated_at"],
         "properties": {
           "id": {
             "type": "string",
@@ -3697,10 +3486,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "pending_verification",
-              "verified"
-            ]
+            "enum": ["pending_verification", "verified"]
           },
           "is_sandbox": {
             "type": "boolean"
@@ -3717,11 +3503,7 @@
       },
       "PersonVerificationResult": {
         "type": "object",
-        "required": [
-          "checks",
-          "duplicate",
-          "person"
-        ],
+        "required": ["checks", "duplicate", "person"],
         "properties": {
           "checks": {
             "type": "object",
@@ -3745,18 +3527,11 @@
       },
       "AccountConnectRequest": {
         "type": "object",
-        "required": [
-          "provider",
-          "account_identifier"
-        ],
+        "required": ["provider", "account_identifier"],
         "properties": {
           "provider": {
             "type": "string",
-            "enum": [
-              "mpesa",
-              "bank",
-              "sandbox"
-            ]
+            "enum": ["mpesa", "bank", "sandbox"]
           },
           "account_identifier": {
             "type": "string",
@@ -3765,12 +3540,7 @@
           },
           "scenario": {
             "type": "string",
-            "enum": [
-              "success",
-              "failure",
-              "duplicate",
-              "mixed"
-            ],
+            "enum": ["success", "failure", "duplicate", "mixed"],
             "description": "Sandbox-only deterministic data scenario"
           }
         }
@@ -3796,30 +3566,18 @@
           },
           "provider": {
             "type": "string",
-            "enum": [
-              "mpesa",
-              "bank",
-              "sandbox"
-            ]
+            "enum": ["mpesa", "bank", "sandbox"]
           },
           "account_identifier": {
             "type": "string"
           },
           "status": {
             "type": "string",
-            "enum": [
-              "connected",
-              "disconnected"
-            ]
+            "enum": ["connected", "disconnected"]
           },
           "scenario": {
             "type": "string",
-            "enum": [
-              "success",
-              "failure",
-              "duplicate",
-              "mixed"
-            ],
+            "enum": ["success", "failure", "duplicate", "mixed"],
             "nullable": true
           },
           "connected_at": {
@@ -3877,10 +3635,7 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "credit",
-              "debit"
-            ]
+            "enum": ["credit", "debit"]
           },
           "counterparty": {
             "type": "string",
@@ -3892,19 +3647,11 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "completed",
-              "failed",
-              "pending"
-            ]
+            "enum": ["completed", "failed", "pending"]
           },
           "source_provider": {
             "type": "string",
-            "enum": [
-              "mpesa",
-              "bank",
-              "sandbox"
-            ]
+            "enum": ["mpesa", "bank", "sandbox"]
           },
           "raw_status": {
             "type": "string"
@@ -3924,10 +3671,7 @@
           },
           "subject_type": {
             "type": "string",
-            "enum": [
-              "business",
-              "individual"
-            ],
+            "enum": ["business", "individual"],
             "description": "Dual-mode subject discriminator"
           },
           "statement_id": {
@@ -3943,11 +3687,7 @@
       },
       "SyncResult": {
         "type": "object",
-        "required": [
-          "synced",
-          "skipped_duplicates",
-          "transactions"
-        ],
+        "required": ["synced", "skipped_duplicates", "transactions"],
         "properties": {
           "synced": {
             "type": "integer",
@@ -3969,10 +3709,7 @@
       },
       "InvoiceCreateRequest": {
         "type": "object",
-        "required": [
-          "customer_reference",
-          "amount"
-        ],
+        "required": ["customer_reference", "amount"],
         "properties": {
           "customer_reference": {
             "type": "string",
@@ -4036,14 +3773,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "draft",
-              "sent",
-              "partially_paid",
-              "paid",
-              "overdue",
-              "unpaid"
-            ]
+            "enum": ["draft", "sent", "partially_paid", "paid", "overdue", "unpaid"]
           },
           "matched_transaction_id": {
             "type": "string",
@@ -4155,10 +3885,7 @@
         "properties": {
           "method": {
             "type": "string",
-            "enum": [
-              "insufficient_data",
-              "linear_projection_from_history"
-            ]
+            "enum": ["insufficient_data", "linear_projection_from_history"]
           },
           "daily_net_cash_flow_avg": {
             "type": "number"
@@ -4172,11 +3899,7 @@
           },
           "confidence": {
             "type": "string",
-            "enum": [
-              "low",
-              "medium",
-              "high"
-            ]
+            "enum": ["low", "medium", "high"]
           }
         }
       },
@@ -4187,9 +3910,7 @@
           },
           {
             "type": "object",
-            "required": [
-              "days_overdue"
-            ],
+            "required": ["days_overdue"],
             "properties": {
               "days_overdue": {
                 "type": "integer",
@@ -4206,9 +3927,7 @@
           },
           {
             "type": "object",
-            "required": [
-              "deviation_from_mean"
-            ],
+            "required": ["deviation_from_mean"],
             "properties": {
               "deviation_from_mean": {
                 "type": "number",
@@ -4220,12 +3939,7 @@
       },
       "CustomerConcentration": {
         "type": "object",
-        "required": [
-          "customer_reference",
-          "total_invoiced",
-          "invoice_count",
-          "share_of_total_pct"
-        ],
+        "required": ["customer_reference", "total_invoiced", "invoice_count", "share_of_total_pct"],
         "properties": {
           "customer_reference": {
             "type": "string"
@@ -4276,9 +3990,7 @@
       },
       "AskRequest": {
         "type": "object",
-        "required": [
-          "question"
-        ],
+        "required": ["question"],
         "properties": {
           "question": {
             "type": "string",
@@ -4289,12 +4001,7 @@
       },
       "QueryAnswer": {
         "type": "object",
-        "required": [
-          "question",
-          "matched_intent",
-          "answer",
-          "data"
-        ],
+        "required": ["question", "matched_intent", "answer", "data"],
         "properties": {
           "question": {
             "type": "string"
@@ -4325,20 +4032,11 @@
       },
       "ConsentGrantRequest": {
         "type": "object",
-        "required": [
-          "subject_type",
-          "subject_id",
-          "grantee",
-          "purpose",
-          "scope"
-        ],
+        "required": ["subject_type", "subject_id", "grantee", "purpose", "scope"],
         "properties": {
           "subject_type": {
             "type": "string",
-            "enum": [
-              "business",
-              "person"
-            ]
+            "enum": ["business", "person"]
           },
           "subject_id": {
             "type": "string",
@@ -4397,10 +4095,7 @@
           },
           "subject_type": {
             "type": "string",
-            "enum": [
-              "business",
-              "person"
-            ]
+            "enum": ["business", "person"]
           },
           "subject_id": {
             "type": "string",
@@ -4419,10 +4114,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "active",
-              "revoked"
-            ]
+            "enum": ["active", "revoked"]
           },
           "granted_at": {
             "type": "string",
@@ -4442,10 +4134,7 @@
       },
       "WebhookSubscribeRequest": {
         "type": "object",
-        "required": [
-          "event_pattern",
-          "target_url"
-        ],
+        "required": ["event_pattern", "target_url"],
         "properties": {
           "event_pattern": {
             "type": "string",
@@ -4461,10 +4150,7 @@
           },
           "environment": {
             "type": "string",
-            "enum": [
-              "live",
-              "sandbox"
-            ],
+            "enum": ["live", "sandbox"],
             "default": "live"
           }
         }
@@ -4502,16 +4188,11 @@
           },
           "environment": {
             "type": "string",
-            "enum": [
-              "live",
-              "sandbox"
-            ]
+            "enum": ["live", "sandbox"]
           },
           "status": {
             "type": "string",
-            "enum": [
-              "active"
-            ]
+            "enum": ["active"]
           },
           "created_at": {
             "type": "string",
@@ -4526,10 +4207,7 @@
           },
           {
             "type": "object",
-            "required": [
-              "secret",
-              "note"
-            ],
+            "required": ["secret", "note"],
             "properties": {
               "secret": {
                 "type": "string",
@@ -4545,11 +4223,7 @@
       },
       "WebhookSecretRotation": {
         "type": "object",
-        "required": [
-          "id",
-          "secret",
-          "note"
-        ],
+        "required": ["id", "secret", "note"],
         "properties": {
           "id": {
             "type": "string",
@@ -4566,9 +4240,7 @@
       },
       "WebhookTestRequest": {
         "type": "object",
-        "required": [
-          "target_url"
-        ],
+        "required": ["target_url"],
         "properties": {
           "target_url": {
             "type": "string",
@@ -4578,11 +4250,7 @@
       },
       "WebhookTestResult": {
         "type": "object",
-        "required": [
-          "delivered",
-          "signature",
-          "timestamp"
-        ],
+        "required": ["delivered", "signature", "timestamp"],
         "properties": {
           "delivered": {
             "type": "boolean",
@@ -4604,12 +4272,7 @@
       },
       "WebhookEvent": {
         "type": "object",
-        "required": [
-          "id",
-          "event_type",
-          "payload",
-          "created_at"
-        ],
+        "required": ["id", "event_type", "payload", "created_at"],
         "properties": {
           "id": {
             "type": "string",
@@ -4628,10 +4291,7 @@
           },
           "is_sandbox": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ]
+            "enum": [0, 1]
           },
           "payload": {
             "type": "string",
@@ -4653,11 +4313,7 @@
       },
       "ChainVerification": {
         "type": "object",
-        "required": [
-          "valid",
-          "entryCount",
-          "anchored"
-        ],
+        "required": ["valid", "entryCount", "anchored"],
         "properties": {
           "valid": {
             "type": "boolean"
@@ -4693,13 +4349,7 @@
       },
       "RedactedLedgerEvent": {
         "type": "object",
-        "required": [
-          "id",
-          "event_type",
-          "created_at",
-          "entry_hash",
-          "data"
-        ],
+        "required": ["id", "event_type", "created_at", "entry_hash", "data"],
         "properties": {
           "id": {
             "type": "string",
@@ -4745,9 +4395,7 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "business"
-            ]
+            "enum": ["business"]
           },
           "status": {
             "type": "string"
@@ -4777,11 +4425,7 @@
       },
       "BusinessTrustRecord": {
         "type": "object",
-        "required": [
-          "subject",
-          "verification_history",
-          "integrity"
-        ],
+        "required": ["subject", "verification_history", "integrity"],
         "properties": {
           "subject": {
             "$ref": "#/components/schemas/BusinessTrustRecordSubject"
@@ -4799,14 +4443,7 @@
       },
       "PersonTrustRecordSubject": {
         "type": "object",
-        "required": [
-          "id",
-          "type",
-          "status",
-          "is_sandbox",
-          "created_at",
-          "updated_at"
-        ],
+        "required": ["id", "type", "status", "is_sandbox", "created_at", "updated_at"],
         "properties": {
           "id": {
             "type": "string",
@@ -4814,9 +4451,7 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "person"
-            ]
+            "enum": ["person"]
           },
           "status": {
             "type": "string"
@@ -4836,22 +4471,14 @@
       },
       "PersonTrustRecord": {
         "type": "object",
-        "required": [
-          "subject",
-          "identifiers",
-          "verification_history",
-          "integrity"
-        ],
+        "required": ["subject", "identifiers", "verification_history", "integrity"],
         "properties": {
           "subject": {
             "$ref": "#/components/schemas/PersonTrustRecordSubject"
           },
           "identifiers": {
             "type": "object",
-            "required": [
-              "national_id_present",
-              "phone_present"
-            ],
+            "required": ["national_id_present", "phone_present"],
             "properties": {
               "national_id_present": {
                 "type": "boolean"
@@ -4902,11 +4529,7 @@
           },
           "match_type": {
             "type": "string",
-            "enum": [
-              "exact",
-              "tolerance",
-              "partial"
-            ]
+            "enum": ["exact", "tolerance", "partial"]
           },
           "confidence": {
             "type": "number",
@@ -4920,11 +4543,7 @@
       },
       "UnmatchedInvoice": {
         "type": "object",
-        "required": [
-          "invoice_id",
-          "amount",
-          "reason"
-        ],
+        "required": ["invoice_id", "amount", "reason"],
         "properties": {
           "invoice_id": {
             "type": "string",
@@ -4946,10 +4565,7 @@
       },
       "ReconciliationResult": {
         "type": "object",
-        "required": [
-          "matched",
-          "unmatched_invoices"
-        ],
+        "required": ["matched", "unmatched_invoices"],
         "properties": {
           "matched": {
             "type": "array",
@@ -4967,9 +4583,7 @@
       },
       "SandboxBusinessCreateRequest": {
         "type": "object",
-        "required": [
-          "legal_name"
-        ],
+        "required": ["legal_name"],
         "properties": {
           "legal_name": {
             "type": "string",
@@ -4985,9 +4599,7 @@
       },
       "SandboxPersonCreateRequest": {
         "type": "object",
-        "required": [
-          "full_name"
-        ],
+        "required": ["full_name"],
         "properties": {
           "full_name": {
             "type": "string",
@@ -5017,10 +4629,7 @@
       },
       "BusinessOnboardingConsentResult": {
         "type": "object",
-        "required": [
-          "consent",
-          "note"
-        ],
+        "required": ["consent", "note"],
         "properties": {
           "consent": {
             "$ref": "#/components/schemas/Consent"
@@ -5032,19 +4641,11 @@
       },
       "StatementUploadRequest": {
         "type": "object",
-        "required": [
-          "source_type",
-          "content"
-        ],
+        "required": ["source_type", "content"],
         "properties": {
           "source_type": {
             "type": "string",
-            "enum": [
-              "individual_mpesa",
-              "business_till",
-              "business_paybill",
-              "bank"
-            ]
+            "enum": ["individual_mpesa", "business_till", "business_paybill", "bank"]
           },
           "shortcode": {
             "type": "string",
@@ -5070,12 +4671,7 @@
       },
       "StatementUploadResult": {
         "type": "object",
-        "required": [
-          "statement_id",
-          "transactions_imported",
-          "duplicates_skipped",
-          "warnings"
-        ],
+        "required": ["statement_id", "transactions_imported", "duplicates_skipped", "warnings"],
         "properties": {
           "statement_id": {
             "type": "string",
@@ -5129,12 +4725,7 @@
           },
           "source_type": {
             "type": "string",
-            "enum": [
-              "individual_mpesa",
-              "business_till",
-              "business_paybill",
-              "bank"
-            ]
+            "enum": ["individual_mpesa", "business_till", "business_paybill", "bank"]
           },
           "shortcode": {
             "type": "string",
@@ -5159,10 +4750,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "parsed",
-              "failed"
-            ]
+            "enum": ["parsed", "failed"]
           },
           "error_code": {
             "type": "string",
@@ -5189,13 +4777,7 @@
       },
       "BusinessShortcode": {
         "type": "object",
-        "required": [
-          "id",
-          "business_id",
-          "type",
-          "shortcode",
-          "created_at"
-        ],
+        "required": ["id", "business_id", "type", "shortcode", "created_at"],
         "properties": {
           "id": {
             "type": "string",
@@ -5207,12 +4789,7 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "till",
-              "paybill",
-              "bank",
-              "mpesa"
-            ]
+            "enum": ["till", "paybill", "bank", "mpesa"]
           },
           "shortcode": {
             "type": "string"
@@ -5229,13 +4806,7 @@
       },
       "MonthlyCashFlow": {
         "type": "object",
-        "required": [
-          "month",
-          "inflow",
-          "outflow",
-          "net",
-          "transaction_count"
-        ],
+        "required": ["month", "inflow", "outflow", "net", "transaction_count"],
         "properties": {
           "month": {
             "type": "string",
@@ -5257,25 +4828,14 @@
       },
       "RevenueTrend": {
         "type": "object",
-        "required": [
-          "available",
-          "direction",
-          "change_pct",
-          "method",
-          "detail"
-        ],
+        "required": ["available", "direction", "change_pct", "method", "detail"],
         "properties": {
           "available": {
             "type": "boolean"
           },
           "direction": {
             "type": "string",
-            "enum": [
-              "growing",
-              "flat",
-              "declining",
-              "insufficient_data"
-            ]
+            "enum": ["growing", "flat", "declining", "insufficient_data"]
           },
           "change_pct": {
             "type": "number",
@@ -5291,14 +4851,7 @@
       },
       "HealthComponent": {
         "type": "object",
-        "required": [
-          "key",
-          "label",
-          "score",
-          "weight",
-          "available",
-          "detail"
-        ],
+        "required": ["key", "label", "score", "weight", "available", "detail"],
         "properties": {
           "key": {
             "type": "string",
@@ -5336,14 +4889,7 @@
       },
       "BusinessHealthScore": {
         "type": "object",
-        "required": [
-          "score",
-          "band",
-          "band_label",
-          "components",
-          "excluded_components",
-          "method"
-        ],
+        "required": ["score", "band", "band_label", "components", "excluded_components", "method"],
         "properties": {
           "score": {
             "type": "integer",
@@ -5352,12 +4898,7 @@
           },
           "band": {
             "type": "string",
-            "enum": [
-              "strong",
-              "stable",
-              "watch",
-              "at_risk"
-            ]
+            "enum": ["strong", "stable", "watch", "at_risk"]
           },
           "band_label": {
             "type": "string"
@@ -5594,13 +5135,7 @@
       },
       "DecisionEvidence": {
         "type": "object",
-        "required": [
-          "key",
-          "label",
-          "value",
-          "impact",
-          "detail"
-        ],
+        "required": ["key", "label", "value", "impact", "detail"],
         "properties": {
           "key": {
             "type": "string"
@@ -5620,11 +5155,7 @@
           },
           "impact": {
             "type": "string",
-            "enum": [
-              "positive",
-              "negative",
-              "neutral"
-            ]
+            "enum": ["positive", "negative", "neutral"]
           },
           "detail": {
             "type": "string"
@@ -5729,10 +5260,7 @@
                 "properties": {
                   "type": {
                     "type": "string",
-                    "enum": [
-                      "business",
-                      "individual"
-                    ]
+                    "enum": ["business", "individual"]
                   },
                   "id": {
                     "type": "string"
@@ -5756,20 +5284,11 @@
               },
               "risk_band": {
                 "type": "string",
-                "enum": [
-                  "low",
-                  "moderate",
-                  "elevated",
-                  "high"
-                ]
+                "enum": ["low", "moderate", "elevated", "high"]
               },
               "verdict": {
                 "type": "string",
-                "enum": [
-                  "approve",
-                  "review",
-                  "decline"
-                ]
+                "enum": ["approve", "review", "decline"]
               },
               "evidence": {
                 "type": "array",
@@ -5863,12 +5382,7 @@
               },
               "health_band": {
                 "type": "string",
-                "enum": [
-                  "strong",
-                  "stable",
-                  "watch",
-                  "at_risk"
-                ]
+                "enum": ["strong", "stable", "watch", "at_risk"]
               },
               "receivables": {
                 "$ref": "#/components/schemas/ReceivablesSummary"
@@ -5882,10 +5396,7 @@
       },
       "InvoicePaymentRequest": {
         "type": "object",
-        "required": [
-          "amount",
-          "method"
-        ],
+        "required": ["amount", "method"],
         "properties": {
           "amount": {
             "type": "number",
@@ -5893,12 +5404,7 @@
           },
           "method": {
             "type": "string",
-            "enum": [
-              "mpesa",
-              "bank",
-              "manual",
-              "cash"
-            ]
+            "enum": ["mpesa", "bank", "manual", "cash"]
           },
           "reference": {
             "type": "string",
@@ -5916,14 +5422,7 @@
       },
       "InvoicePayment": {
         "type": "object",
-        "required": [
-          "id",
-          "business_id",
-          "invoice_id",
-          "amount",
-          "method",
-          "paid_at"
-        ],
+        "required": ["id", "business_id", "invoice_id", "amount", "method", "paid_at"],
         "properties": {
           "id": {
             "type": "string",
@@ -5987,10 +5486,7 @@
       },
       "ReviewQueue": {
         "type": "object",
-        "required": [
-          "count",
-          "transactions"
-        ],
+        "required": ["count", "transactions"],
         "properties": {
           "count": {
             "type": "integer"
@@ -6028,12 +5524,7 @@
       },
       "BusinessLink": {
         "type": "object",
-        "required": [
-          "id",
-          "person_id",
-          "business_id",
-          "created_at"
-        ],
+        "required": ["id", "person_id", "business_id", "created_at"],
         "properties": {
           "id": {
             "type": "string",
@@ -6059,10 +5550,7 @@
       },
       "BusinessLinkResult": {
         "type": "object",
-        "required": [
-          "link",
-          "created"
-        ],
+        "required": ["link", "created"],
         "properties": {
           "link": {
             "$ref": "#/components/schemas/BusinessLink"
@@ -6074,12 +5562,7 @@
       },
       "LinkedProfilesView": {
         "type": "object",
-        "required": [
-          "business",
-          "persons",
-          "linked",
-          "isolation_note"
-        ],
+        "required": ["business", "persons", "linked", "isolation_note"],
         "properties": {
           "business": {
             "type": "object",
@@ -6185,11 +5668,7 @@
               },
               "signal": {
                 "type": "string",
-                "enum": [
-                  "verified_anchor_candidate",
-                  "concentration_risk",
-                  "no_anchor"
-                ]
+                "enum": ["verified_anchor_candidate", "concentration_risk", "no_anchor"]
               },
               "detail": {
                 "type": "string"
@@ -6207,11 +5686,7 @@
               },
               "signal": {
                 "type": "string",
-                "enum": [
-                  "established",
-                  "developing",
-                  "none"
-                ]
+                "enum": ["established", "developing", "none"]
               },
               "detail": {
                 "type": "string"
@@ -6231,12 +5706,7 @@
               },
               "signal": {
                 "type": "string",
-                "enum": [
-                  "verifiable",
-                  "partial",
-                  "unverifiable",
-                  "no_invoice_data"
-                ]
+                "enum": ["verifiable", "partial", "unverifiable", "no_invoice_data"]
               },
               "detail": {
                 "type": "string"
@@ -6253,12 +5723,7 @@
       },
       "OrbitWorkflowAccepted": {
         "type": "object",
-        "required": [
-          "workflow_id",
-          "job_id",
-          "duplicate",
-          "status"
-        ],
+        "required": ["workflow_id", "job_id", "duplicate", "status"],
         "properties": {
           "workflow_id": {
             "type": "string"
@@ -6275,9 +5740,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "accepted"
-            ]
+            "enum": ["accepted"]
           }
         }
       },
@@ -6298,17 +5761,11 @@
           },
           "kind": {
             "type": "string",
-            "enum": [
-              "statement_ingestion",
-              "payment_matching"
-            ]
+            "enum": ["statement_ingestion", "payment_matching"]
           },
           "subject_type": {
             "type": "string",
-            "enum": [
-              "business",
-              "individual"
-            ]
+            "enum": ["business", "individual"]
           },
           "subject_id": {
             "type": "string"
@@ -6384,11 +5841,7 @@
       },
       "OrbitWorkflowView": {
         "type": "object",
-        "required": [
-          "workflow",
-          "history",
-          "dead_letter"
-        ],
+        "required": ["workflow", "history", "dead_letter"],
         "properties": {
           "workflow": {
             "$ref": "#/components/schemas/OrbitWorkflow"
@@ -6427,9 +5880,7 @@
       },
       "PaymentSimulateRequest": {
         "type": "object",
-        "required": [
-          "amount"
-        ],
+        "required": ["amount"],
         "properties": {
           "amount": {
             "type": "number",

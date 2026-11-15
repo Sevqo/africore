@@ -1,9 +1,9 @@
 // First import on purpose: config loads a local .env before the DB adapter
 // snapshots DATABASE_URL at import time (same convention as src/index.ts).
-import { config } from "./config";
-import { migrate } from "./db";
-import { logger } from "./logging";
-import { startRedisWorkers } from "./orbit/runtime";
+import { config } from './config';
+import { migrate } from './db';
+import { logger } from './logging';
+import { startRedisWorkers } from './orbit/runtime';
 
 /**
  * Standalone Orbit worker entry point (production / Redis).
@@ -17,8 +17,9 @@ import { startRedisWorkers } from "./orbit/runtime";
 async function main(): Promise<void> {
   const redisUrl = process.env.REDIS_URL;
   if (!redisUrl) {
-    logger.error("orbit_worker_requires_redis", {
-      message: "REDIS_URL is not set. Start the API without REDIS_URL for in-process dev workers, or set REDIS_URL for the standalone worker.",
+    logger.error('orbit_worker_requires_redis', {
+      message:
+        'REDIS_URL is not set. Start the API without REDIS_URL for in-process dev workers, or set REDIS_URL for the standalone worker.',
     });
     process.exit(1);
   }
@@ -26,13 +27,13 @@ async function main(): Promise<void> {
   await migrate();
 
   const queues = startRedisWorkers(redisUrl);
-  logger.info("orbit_worker_started", { backend: queues.backend, node_env: config.nodeEnv });
+  logger.info('orbit_worker_started', { backend: queues.backend, node_env: config.nodeEnv });
 
   let shuttingDown = false;
   const shutdown = async (signal: string) => {
     if (shuttingDown) return;
     shuttingDown = true;
-    logger.info("orbit_worker_stopping", { signal });
+    logger.info('orbit_worker_stopping', { signal });
     try {
       await queues.close();
     } finally {
@@ -40,14 +41,18 @@ async function main(): Promise<void> {
     }
   };
 
-  process.on("SIGTERM", () => void shutdown("SIGTERM"));
-  process.on("SIGINT", () => void shutdown("SIGINT"));
-  process.on("unhandledRejection", (reason) => {
-    logger.error("orbit_worker_unhandled_rejection", { message: reason instanceof Error ? reason.message : String(reason) });
+  process.on('SIGTERM', () => void shutdown('SIGTERM'));
+  process.on('SIGINT', () => void shutdown('SIGINT'));
+  process.on('unhandledRejection', (reason) => {
+    logger.error('orbit_worker_unhandled_rejection', {
+      message: reason instanceof Error ? reason.message : String(reason),
+    });
   });
 }
 
 main().catch((err) => {
-  logger.error("orbit_worker_start_failed", { message: err instanceof Error ? err.message : String(err) });
+  logger.error('orbit_worker_start_failed', {
+    message: err instanceof Error ? err.message : String(err),
+  });
   process.exit(1);
 });

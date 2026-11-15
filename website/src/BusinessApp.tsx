@@ -1,30 +1,34 @@
-import {CommerceWorkspace} from './apps/lazy-workspaces';
-import {POSWorkspace} from './apps/lazy-workspaces';
-import {ProcurementWorkspace} from './apps/lazy-workspaces';
-import {DocumentsWorkspace} from './apps/lazy-workspaces';
-import {PeopleWorkspace} from './apps/lazy-workspaces';
-import {WorkWorkspace} from './apps/lazy-workspaces';
-import {AccountingWorkspace} from './apps/lazy-workspaces';
-import {NotificationCentre} from './apps/NotificationCentre';
-import {WorkspaceSearch} from './apps/WorkspaceSearch';
-import {WorkspaceAppLauncher} from './apps/WorkspaceAppLauncher';
-import {WorkspaceAccountMenu} from './apps/WorkspaceAccountMenu';
-import {OrderDraftEditor} from './apps/OrderDraftEditor';
-import {useAppContext,AppContextNavigation,WorkspaceAdminNavigation} from './apps/AppNavigation';
-import {CrmWorkspace} from './apps/lazy-workspaces';
-import {InventoryWorkspace} from './apps/lazy-workspaces';
-import {SalesWorkspace} from './apps/lazy-workspaces';
-import {ProductCatalog} from './apps/ProductCatalog';
-import {NotificationBell} from './apps/NotificationBell';
-import {AppsWorkspace} from './apps/AppsWorkspace';
-import {CustomerTools} from './finance/CustomerTools';
-import {FinancialOverview} from './finance/FinancialOverview';
-import {parseMoney,parsePercent} from '../../src/finance/money';
-import {PaymentCentre} from './finance/PaymentCentre';
-import {RecordFinanceDetails} from './finance/RecordFinanceDetails';
+import { CommerceWorkspace } from './apps/lazy-workspaces';
+import { POSWorkspace } from './apps/lazy-workspaces';
+import { ProcurementWorkspace } from './apps/lazy-workspaces';
+import { DocumentsWorkspace } from './apps/lazy-workspaces';
+import { PeopleWorkspace } from './apps/lazy-workspaces';
+import { WorkWorkspace } from './apps/lazy-workspaces';
+import { AccountingWorkspace } from './apps/lazy-workspaces';
+import { NotificationCentre } from './apps/NotificationCentre';
+import { WorkspaceSearch } from './apps/WorkspaceSearch';
+import { WorkspaceAppLauncher } from './apps/WorkspaceAppLauncher';
+import { WorkspaceAccountMenu } from './apps/WorkspaceAccountMenu';
+import { OrderDraftEditor } from './apps/OrderDraftEditor';
+import {
+  useAppContext,
+  AppContextNavigation,
+  WorkspaceAdminNavigation,
+} from './apps/AppNavigation';
+import { CrmWorkspace } from './apps/lazy-workspaces';
+import { InventoryWorkspace } from './apps/lazy-workspaces';
+import { SalesWorkspace } from './apps/lazy-workspaces';
+import { ProductCatalog } from './apps/ProductCatalog';
+import { NotificationBell } from './apps/NotificationBell';
+import { AppsWorkspace } from './apps/AppsWorkspace';
+import { CustomerTools } from './finance/CustomerTools';
+import { FinancialOverview } from './finance/FinancialOverview';
+import { parseMoney, parsePercent } from '../../src/finance/money';
+import { PaymentCentre } from './finance/PaymentCentre';
+import { RecordFinanceDetails } from './finance/RecordFinanceDetails';
 import { TeamDirectory } from './accounts/TeamDirectory';
 import { peekQuery, cancelOtherWorkspaceReads } from './lib/query-cache';
-import {managedSignOut} from './accounts/auth';
+import { managedSignOut } from './accounts/auth';
 import { createRequestGate } from './components/requestGate';
 import {
   FinancialActivity,
@@ -37,15 +41,19 @@ import { Icon, type IconName } from './components/Icon';
 import { useRef } from 'react';
 import { useFocusScope } from './components/useFocusScope';
 import { PassportWorkspace } from './trust/PassportWorkspace';
-import {MoneyTools} from './marketplace/MoneyTools';
-import {useMarketplace,Services,ServiceGate,marketTabs,visibleServiceTab,canReadServiceTab} from './marketplace/Services';
-import {businessTabs,directAppTabs} from './workspace-navigation';
-import {WebhooksConsole} from './marketplace/WebhooksConsole';
-import {VerificationConsole} from './marketplace/VerificationConsole';
+import { MoneyTools } from './marketplace/MoneyTools';
 import {
-  startDemo,
-  isDemo,
-} from './demo/transport';
+  useMarketplace,
+  Services,
+  ServiceGate,
+  marketTabs,
+  visibleServiceTab,
+  canReadServiceTab,
+} from './marketplace/Services';
+import { businessTabs, directAppTabs } from './workspace-navigation';
+import { WebhooksConsole } from './marketplace/WebhooksConsole';
+import { VerificationConsole } from './marketplace/VerificationConsole';
+import { startDemo, isDemo } from './demo/transport';
 import { OperationsWorkspace, operationsTabs } from './operations/OperationsWorkspace';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Logo } from './components/Logo';
@@ -86,9 +94,7 @@ export function Checkout() {
     setBusy(true);
     setError('');
     try {
-      setResult(
-        await api('/api/v1/checkout/' + token + '/pay', 'POST', { scenario }),
-      );
+      setResult(await api('/api/v1/checkout/' + token + '/pay', 'POST', { scenario }));
       await load();
     } catch (e) {
       setError((e as Error).message);
@@ -107,9 +113,7 @@ export function Checkout() {
             <p>Payment to</p>
             <h1>{data.merchant}</h1>
             <p>{data.reference}</p>
-            <div className="checkout-total">
-              {money(data.amount_minor, data.currency)}
-            </div>
+            <div className="checkout-total">{money(data.amount_minor, data.currency)}</div>
             <ul>
               {data.items.map((i: any, n: number) => (
                 <li key={n}>
@@ -120,7 +124,16 @@ export function Checkout() {
             <p>
               Status: <strong>{data.status.replaceAll('_', ' ')}</strong>
             </p>
-            {(data.can_pay ?? !['expired', 'cancelled', 'paid','partially_paid','credited','reversed','refunded'].includes(data.status)) && (
+            {(data.can_pay ??
+              ![
+                'expired',
+                'cancelled',
+                'paid',
+                'partially_paid',
+                'credited',
+                'reversed',
+                'refunded',
+              ].includes(data.status)) && (
               <>
                 <label className="field">
                   <span>Sandbox outcome</span>
@@ -136,10 +149,7 @@ export function Checkout() {
                   className="button"
                   disabled={busy}
                   onClick={() =>
-                    pay(
-                      (document.getElementById('scenario') as HTMLSelectElement)
-                        .value,
-                    )
+                    pay((document.getElementById('scenario') as HTMLSelectElement).value)
                   }
                 >
                   {busy ? (
@@ -152,19 +162,67 @@ export function Checkout() {
                 </button>
               </>
             )}
-            {['paid','credited'].includes(data.status)&&<p role="status">This invoice is settled. No further payment is needed. Historical payment evidence remains available below.</p>}
-            {data.status==='partially_paid'&&<p>A partial payment is recorded. Ask the merchant for a new request covering the remaining invoice balance; this receipt cannot be charged again.</p>}
-            {data.payment_unavailable_reason==='request_exceeds_remaining_balance'&&<p>This request exceeds the remaining invoice balance. Ask the merchant for a new link; the original request amount has not been changed.</p>}
-            {data.payment_unavailable_reason==='recorded_cash_return_requires_invoice_review'&&<p role="status">Payment is paused while the merchant reviews an invoice correction for recorded cash returned. Do not make another payment for that returned amount.</p>}
-            {data.receipts?.length>0&&<section aria-label="Payment evidence"><h2>Payment evidence</h2>{data.receipts.map((receipt:any)=><article key={receipt.id}><p>{money(receipt.amount_minor,receipt.currency)} · {receipt.status} · {new Date(receipt.occurred_at).toLocaleString()}</p><p>{receipt.effect==='requires_review'?'Reversal evidence awaits merchant review. The original settlement has not been reversed.':receipt.effect==='applied_return'?'Confirmed return applied to the original payment.':'Recorded payment confirmation.'}</p></article>)}<small>{data.receipt_coverage}</small></section>}
+            {['paid', 'credited'].includes(data.status) && (
+              <p role="status">
+                This invoice is settled. No further payment is needed. Historical payment evidence
+                remains available below.
+              </p>
+            )}
+            {data.status === 'partially_paid' && (
+              <p>
+                A partial payment is recorded. Ask the merchant for a new request covering the
+                remaining invoice balance; this receipt cannot be charged again.
+              </p>
+            )}
+            {data.payment_unavailable_reason === 'request_exceeds_remaining_balance' && (
+              <p>
+                This request exceeds the remaining invoice balance. Ask the merchant for a new link;
+                the original request amount has not been changed.
+              </p>
+            )}
+            {data.payment_unavailable_reason === 'recorded_cash_return_requires_invoice_review' && (
+              <p role="status">
+                Payment is paused while the merchant reviews an invoice correction for recorded cash
+                returned. Do not make another payment for that returned amount.
+              </p>
+            )}
+            {data.receipts?.length > 0 && (
+              <section aria-label="Payment evidence">
+                <h2>Payment evidence</h2>
+                {data.receipts.map((receipt: any) => (
+                  <article key={receipt.id}>
+                    <p>
+                      {money(receipt.amount_minor, receipt.currency)} · {receipt.status} ·{' '}
+                      {new Date(receipt.occurred_at).toLocaleString()}
+                    </p>
+                    <p>
+                      {receipt.effect === 'requires_review'
+                        ? 'Reversal evidence awaits merchant review. The original settlement has not been reversed.'
+                        : receipt.effect === 'applied_return'
+                          ? 'Confirmed return applied to the original payment.'
+                          : 'Recorded payment confirmation.'}
+                    </p>
+                  </article>
+                ))}
+                <small>{data.receipt_coverage}</small>
+              </section>
+            )}
             {data.request_status === 'paid' && (
-              <details><summary>Sandbox evidence test</summary><p>This reports an unlinked reversal for merchant review. It does not refund money or change invoice allocations. A linked simulator return is performed by authorized staff in Payment activity.</p><button
-                className="secondary-button"
-                disabled={busy||result?.reconciliation==='reversal_requires_review'}
-                onClick={() => pay('reversed')}
-              >
-                Report reversal evidence for review
-              </button></details>
+              <details>
+                <summary>Sandbox evidence test</summary>
+                <p>
+                  This reports an unlinked reversal for merchant review. It does not refund money or
+                  change invoice allocations. A linked simulator return is performed by authorized
+                  staff in Payment activity.
+                </p>
+                <button
+                  className="secondary-button"
+                  disabled={busy || result?.reconciliation === 'reversal_requires_review'}
+                  onClick={() => pay('reversed')}
+                >
+                  Report reversal evidence for review
+                </button>
+              </details>
             )}
             {result && (
               <div className="alert" role="status">
@@ -172,13 +230,14 @@ export function Checkout() {
                   ? 'Duplicate ignored safely.'
                   : result.status === 'pending'
                     ? 'Awaiting confirmation. Choose success to complete the delayed test.'
-                    : result.reconciliation==='reversal_requires_review'?'Reversal evidence recorded for merchant review. The invoice settlement remains unchanged until an authorized linked return is confirmed.':`Provider: ${result.status}. Reconciliation: ${result.reconciliation}.`}
+                    : result.reconciliation === 'reversal_requires_review'
+                      ? 'Reversal evidence recorded for merchant review. The invoice settlement remains unchanged until an authorized linked return is confirmed.'
+                      : `Provider: ${result.status}. Reconciliation: ${result.reconciliation}.`}
               </div>
             )}
             <small>
-              Need help? Contact the merchant through your existing trusted
-              channel. This checkout is an evaluation and does not initiate
-              M-Pesa.
+              Need help? Contact the merchant through your existing trusted channel. This checkout
+              is an evaluation and does not initiate M-Pesa.
             </small>
           </>
         ) : (
@@ -189,22 +248,29 @@ export function Checkout() {
   );
 }
 const tabs = businessTabs;
-export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:any}={}) {
-  const [resolvingOrgs,setResolvingOrgs]=useState(true),[orgLoadError,setOrgLoadError]=useState('');
+export function BusinessApp({ initialOrg, account }: { initialOrg?: string; account?: any } = {}) {
+  const [resolvingOrgs, setResolvingOrgs] = useState(true),
+    [orgLoadError, setOrgLoadError] = useState('');
   const workspaceSwitch = useRef(0);
-  const creationKeys=useRef(new Map<string,string>());
-  const [reportFilters]=useState({from:'',to:'',currency:'KES'});
-  const [sidebarCollapsed,setSidebarCollapsed]=useState(()=>{try{return localStorage.getItem('africore-business-sidebar-collapsed')==='true';}catch{return false;}});
+  const creationKeys = useRef(new Map<string, string>());
+  const [reportFilters] = useState({ from: '', to: '', currency: 'KES' });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('africore-business-sidebar-collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   const [me, setMe] = useState<any>(null),
     [orgs, setOrgs] = useState<any[]>([]),
-    [org, setOrg] = useState(initialOrg||''),
+    [org, setOrg] = useState(initialOrg || ''),
     [tab, setTab] = useState(() => {
       const saved = decodeURIComponent(location.hash.slice(1));
       return tabs.includes(saved) ? saved : 'Overview';
     }),
     [environment, setEnvironment] = useState('sandbox'),
-    [loaded, setLoaded] = useState<{scope:string;value:any}|null>(null),
+    [loaded, setLoaded] = useState<{ scope: string; value: any } | null>(null),
     [customers, setCustomers] = useState<any[]>([]),
     [error, setError] = useState(''),
     [notice, setNotice] = useState(''),
@@ -216,15 +282,25 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
     [urlRevision, setUrlRevision] = useState(0);
   const passportInitialTab = new URLSearchParams(location.search).get('section') || undefined;
   const [navOpen, setNavOpen] = useState(false);
-  const market=useMarketplace(org,environment,'business',account?.service_catalog,isDemo());
+  const market = useMarketplace(org, environment, 'business', account?.service_catalog, isDemo());
   const [offset, setOffset] = useState(0),
     [search, setSearch] = useState('');
   const requestGate = useRef(createRequestGate());
   const viewScope =
-    org + '\0' + environment + '\0' + tab + '\0' + offset + '\0' + search + '\0' + JSON.stringify(reportFilters);
+    org +
+    '\0' +
+    environment +
+    '\0' +
+    tab +
+    '\0' +
+    offset +
+    '\0' +
+    search +
+    '\0' +
+    JSON.stringify(reportFilters);
   const currentScope = useRef(viewScope);
   currentScope.current = viewScope;
-  const [invoiceFilter,setInvoiceFilter]=useState('all');
+  const [invoiceFilter, setInvoiceFilter] = useState('all');
   const recordTabs = [
     'Customers',
     'Orders',
@@ -251,7 +327,10 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
     };
     window.addEventListener('popstate', change);
     window.addEventListener('africore:app-navigation', change);
-    return () => { window.removeEventListener('popstate', change); window.removeEventListener('africore:app-navigation', change); };
+    return () => {
+      window.removeEventListener('popstate', change);
+      window.removeEventListener('africore:app-navigation', change);
+    };
   }, []);
   useEffect(() => {
     if (decodeURIComponent(location.hash.slice(1)) !== tab)
@@ -265,53 +344,171 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
     return () => window.removeEventListener('resize', resize);
   }, []);
   const base = '/api/v1/organizations/' + org;
-  const suffix=({Overview:'/report','Cash Flow':'/report',Reports:'/report',Payments:'/payments',Reconciliation:'/reconciliation',Team:'/team',Developers:'/records/applications',Settings:'/audit'} as Record<string,string>)[tab]||'/records/'+tab.toLowerCase();
-  const filterQuery=new URLSearchParams(Object.fromEntries(Object.entries(reportFilters).filter(([,v])=>v))).toString();
-  const resource=suffix+(recordTabs.includes(tab)?'?limit=25&offset='+offset+'&q='+encodeURIComponent(search)+(tab==='Invoices'&&invoiceFilter!=='all'?'&status='+invoiceFilter:''):['Overview','Cash Flow','Reports'].includes(tab)?'?'+filterQuery:'');
-  const data=loaded?.scope===viewScope?loaded.value:peekQuery<any>(base+resource,environment,isDemo())||null;
-  const setData=(value:any)=>setLoaded({scope:viewScope,value});
-  useEffect(()=>{if(org)cancelOtherWorkspaceReads(base,environment);},[org,environment]);
+  const suffix =
+    (
+      {
+        Overview: '/report',
+        'Cash Flow': '/report',
+        Reports: '/report',
+        Payments: '/payments',
+        Reconciliation: '/reconciliation',
+        Team: '/team',
+        Developers: '/records/applications',
+        Settings: '/audit',
+      } as Record<string, string>
+    )[tab] || '/records/' + tab.toLowerCase();
+  const filterQuery = new URLSearchParams(
+    Object.fromEntries(Object.entries(reportFilters).filter(([, v]) => v)),
+  ).toString();
+  const resource =
+    suffix +
+    (recordTabs.includes(tab)
+      ? '?limit=25&offset=' +
+        offset +
+        '&q=' +
+        encodeURIComponent(search) +
+        (tab === 'Invoices' && invoiceFilter !== 'all' ? '&status=' + invoiceFilter : '')
+      : ['Overview', 'Cash Flow', 'Reports'].includes(tab)
+        ? '?' + filterQuery
+        : '');
+  const data =
+    loaded?.scope === viewScope
+      ? loaded.value
+      : peekQuery<any>(base + resource, environment, isDemo()) || null;
+  const setData = (value: any) => setLoaded({ scope: viewScope, value });
   useEffect(() => {
-    if(account){setMe(account.user);const memberships=account.workspaces.filter((w:any)=>w.kind==='business');setOrgs(memberships);setOrg(initialOrg||memberships[0]?.id||'');setResolvingOrgs(false);return;}
+    if (org) cancelOtherWorkspaceReads(base, environment);
+  }, [org, environment]);
+  useEffect(() => {
+    if (account) {
+      setMe(account.user);
+      const memberships = account.workspaces.filter((w: any) => w.kind === 'business');
+      setOrgs(memberships);
+      setOrg(initialOrg || memberships[0]?.id || '');
+      setResolvingOrgs(false);
+      return;
+    }
     api('/api/auth/me')
       .then(setMe)
       .catch(() => (location.href = '/signin'));
     api('/api/v1/organizations')
       .then(async (r) => {
         setOrgs(r.data);
-        if (isDemo()) { setOrg(r.data[0]?.id || ''); return; }
+        if (isDemo()) {
+          setOrg(r.data[0]?.id || '');
+          return;
+        }
         const account = await api('/api/auth/account');
-        const requested=initialOrg||account.workspace?.id;
-        if(initialOrg&&!r.data.some((o:any)=>o.id===initialOrg)) throw new Error('Business membership is no longer available.');
-        setOrg(r.data.some((o: any) => o.id === requested)
-          ? requested : r.data[0]?.id || '');
+        const requested = initialOrg || account.workspace?.id;
+        if (initialOrg && !r.data.some((o: any) => o.id === initialOrg))
+          throw new Error('Business membership is no longer available.');
+        setOrg(r.data.some((o: any) => o.id === requested) ? requested : r.data[0]?.id || '');
       })
-      .catch(e=>setOrgLoadError((e as Error).message))
-      .finally(()=>setResolvingOrgs(false));
+      .catch((e) => setOrgLoadError((e as Error).message))
+      .finally(() => setResolvingOrgs(false));
   }, []);
-  const call = (suffix:string,method='GET',body?:unknown,headers?:Record<string,string>) => {
-    const intent=base+'\0'+environment+'\0'+suffix+'\0'+JSON.stringify(body),idempotent=method==='POST'&&(/^\/records\//.test(suffix)||suffix==='/expenses');
-    if(idempotent&&!creationKeys.current.has(intent))creationKeys.current.set(intent,crypto.randomUUID());
-    return api(base+suffix,method,body,environment,idempotent?{'Idempotency-Key':creationKeys.current.get(intent)!,...headers}:headers).then(result=>{if(idempotent)creationKeys.current.delete(intent);return result;});
+  const call = (
+    suffix: string,
+    method = 'GET',
+    body?: unknown,
+    headers?: Record<string, string>,
+  ) => {
+    const intent = base + '\0' + environment + '\0' + suffix + '\0' + JSON.stringify(body),
+      idempotent = method === 'POST' && (/^\/records\//.test(suffix) || suffix === '/expenses');
+    if (idempotent && !creationKeys.current.has(intent))
+      creationKeys.current.set(intent, crypto.randomUUID());
+    return api(
+      base + suffix,
+      method,
+      body,
+      environment,
+      idempotent ? { 'Idempotency-Key': creationKeys.current.get(intent)!, ...headers } : headers,
+    ).then((result) => {
+      if (idempotent) creationKeys.current.delete(intent);
+      return result;
+    });
   };
-  const [recordTarget,setRecordTarget]=useState<{tab:string;id:string;scope:string}|null>(null);
-  function openRecord(tab:string,id:string){if(tab==='Products'){const scope=org+'\0'+environment;void call('/products/'+id).then(p=>{if(!currentScope.current.startsWith(scope+'\0'))return;const url=new URL(location.href);url.searchParams.set('product-query',p.sku);url.searchParams.set('product-id',p.id);history.replaceState(null,'',url.pathname+url.search+url.hash);setTab('Products');dispatchEvent(new Event('africore:product-search'));}).catch(e=>{if(currentScope.current.startsWith(scope+'\0'))setError(e.message);});return;}setTab(tab);setRecordTarget({tab,id,scope:org+'\0'+environment});setNavOpen(false);}
-  useEffect(()=>{if(!recordTarget||recordTarget.tab!==tab||recordTarget.scope!==org+'\0'+environment)return;let current=true;call('/records/'+tab.toLowerCase()+'/'+recordTarget.id).then(row=>{if(current){setSelected(row);setRecordTarget(null);}}).catch(e=>{if(current){setError(e.message);setRecordTarget(null);}});return()=>{current=false;};},[recordTarget,tab,org,environment]);
-  const appContext=useAppContext(call,org+'\0'+environment,!!org&&!isDemo());
+  const [recordTarget, setRecordTarget] = useState<{
+    tab: string;
+    id: string;
+    scope: string;
+  } | null>(null);
+  function openRecord(tab: string, id: string) {
+    if (tab === 'Products') {
+      const scope = org + '\0' + environment;
+      void call('/products/' + id)
+        .then((p) => {
+          if (!currentScope.current.startsWith(scope + '\0')) return;
+          const url = new URL(location.href);
+          url.searchParams.set('product-query', p.sku);
+          url.searchParams.set('product-id', p.id);
+          history.replaceState(null, '', url.pathname + url.search + url.hash);
+          setTab('Products');
+          dispatchEvent(new Event('africore:product-search'));
+        })
+        .catch((e) => {
+          if (currentScope.current.startsWith(scope + '\0')) setError(e.message);
+        });
+      return;
+    }
+    setTab(tab);
+    setRecordTarget({ tab, id, scope: org + '\0' + environment });
+    setNavOpen(false);
+  }
+  useEffect(() => {
+    if (
+      !recordTarget ||
+      recordTarget.tab !== tab ||
+      recordTarget.scope !== org + '\0' + environment
+    )
+      return;
+    let current = true;
+    call('/records/' + tab.toLowerCase() + '/' + recordTarget.id)
+      .then((row) => {
+        if (current) {
+          setSelected(row);
+          setRecordTarget(null);
+        }
+      })
+      .catch((e) => {
+        if (current) {
+          setError(e.message);
+          setRecordTarget(null);
+        }
+      });
+    return () => {
+      current = false;
+    };
+  }, [recordTarget, tab, org, environment]);
+  const appContext = useAppContext(call, org + '\0' + environment, !!org && !isDemo());
   async function load() {
     if (currentScope.current !== viewScope) return;
     const latest = requestGate.current.begin();
     const current = () => latest() && currentScope.current === viewScope;
-    if (!org || tab==='Apps' || directAppTabs.includes(tab) || tab==='Expenses' || marketTabs.includes(tab) || !canReadServiceTab(market,tab) || tab === 'Business Passport' || operationsTabs.includes(tab)) {
+    if (
+      !org ||
+      tab === 'Apps' ||
+      directAppTabs.includes(tab) ||
+      tab === 'Expenses' ||
+      marketTabs.includes(tab) ||
+      !canReadServiceTab(market, tab) ||
+      tab === 'Business Passport' ||
+      operationsTabs.includes(tab)
+    ) {
       setError('');
       setBusy(false);
       return;
     }
     setBusy(true);
     setError('');
-    setData(peekQuery<any>(base+resource,environment,isDemo())||null);
+    setData(peekQuery<any>(base + resource, environment, isDemo()) || null);
     try {
-      const [r,related] = await Promise.all([call(resource),['Orders','Invoices'].includes(tab)?call('/records/customers?limit=100'):Promise.resolve(null)]);
+      const [r, related] = await Promise.all([
+        call(resource),
+        ['Orders', 'Invoices'].includes(tab)
+          ? call('/records/customers?limit=100')
+          : Promise.resolve(null),
+      ]);
       if (!current()) return;
       setData(r);
       if (['Orders', 'Invoices'].includes(tab)) {
@@ -328,7 +525,7 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
     setNotice('');
     load();
     return () => requestGate.current.invalidate();
-  }, [org, tab, environment, offset, search, filterQuery, market.catalog,invoiceFilter]);
+  }, [org, tab, environment, offset, search, filterQuery, market.catalog, invoiceFilter]);
   useEffect(() => {
     setOffset(0);
     setQuery('');
@@ -361,7 +558,7 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
       });
       const result = await api('/api/v1/organizations');
       setOrgs(result.data);
-      if(initialOrg&&!isDemo()) location.href='/app/business/'+r.id;
+      if (initialOrg && !isDemo()) location.href = '/app/business/' + r.id;
       else setOrg(r.id);
       setCreating(false);
       return r;
@@ -376,13 +573,13 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
       if (['Orders', 'Invoices'].includes(tab)) {
         body = {
           customer_id: raw.customer_id,
-          ...(raw.number?{number:raw.number}:{}),
+          ...(raw.number ? { number: raw.number } : {}),
           currency: raw.currency,
           items: JSON.parse(raw.items),
           issue_date: raw.issue_date,
           due_date: raw.due_date,
-          discount_minor: parseMoney(String(raw.discount_amount||'0'),raw.currency),
-          tax_bps: parsePercent(String(raw.tax_percent||'0')),
+          discount_minor: parseMoney(String(raw.discount_amount || '0'), raw.currency),
+          tax_bps: parsePercent(String(raw.tax_percent || '0')),
           notes: raw.notes || '',
           terms: raw.terms || '',
           payment_instructions: raw.payment_instructions || '',
@@ -421,8 +618,9 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
   }
   const organization = orgs.find((o) => o.id === org),
     writable =
-      organization &&
-      ['owner', 'admin', 'finance', 'operations'].includes(organization.role),financeWritable=!!organization&&['owner','admin','finance'].includes(organization.role),adminWritable=!!organization&&['owner','admin'].includes(organization.role);
+      organization && ['owner', 'admin', 'finance', 'operations'].includes(organization.role),
+    financeWritable = !!organization && ['owner', 'admin', 'finance'].includes(organization.role),
+    adminWritable = !!organization && ['owner', 'admin'].includes(organization.role);
   // The browser demo stores profile fields directly; the API stores serialized profile JSON.
   const profile = organization?.profile
     ? typeof organization.profile === 'string'
@@ -432,7 +630,9 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
   function docForm() {
     return (
       <>
-        <Field label="Document number (optional)"><input name="number" maxLength={80} placeholder="Generated when left blank"/></Field>
+        <Field label="Document number (optional)">
+          <input name="number" maxLength={80} placeholder="Generated when left blank" />
+        </Field>
         <Field label="Customer">
           <select name="customer_id" required>
             <option value="">Select a customer</option>
@@ -443,7 +643,11 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
             ))}
           </select>
         </Field>
-        {!customers.length&&<p>Add a customer in Customers first. Customer entry is included with Invoicing and Orders.</p>}
+        {!customers.length && (
+          <p>
+            Add a customer in Customers first. Customer entry is included with Invoicing and Orders.
+          </p>
+        )}
         <div className="form-grid">
           <Field label="Currency">
             <select
@@ -474,20 +678,16 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
           <Field label="Due date">
             <input required type="date" name="due_date" />
           </Field>
-          <Field label={"Discount · "+documentCurrency}>
-            <input
-              type="number"
-              name="discount_amount"
-              min="0"
-              defaultValue="0"
-            />
+          <Field label={'Discount · ' + documentCurrency}>
+            <input type="number" name="discount_amount" min="0" defaultValue="0" />
           </Field>
           <Field label="Tax rate (%)">
             <input
               type="number"
               name="tax_percent"
               min="0"
-              max="100" step="0.01"
+              max="100"
+              step="0.01"
               defaultValue="0"
             />
           </Field>
@@ -514,10 +714,7 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
     return (
       <form className="panel create-form" onSubmit={onboarding}>
         <h2>Create a business workspace</h2>
-        <p>
-          Country and currency are explicit. Business verification starts as
-          unverified.
-        </p>
+        <p>Country and currency are explicit. Business verification starts as unverified.</p>
         <div className="form-grid">
           {[
             ['Business name', 'name'],
@@ -551,13 +748,7 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
             </select>
           </Field>
           <Field label="Country code">
-            <input
-              required
-              name="country"
-              minLength={2}
-              maxLength={2}
-              defaultValue="KE"
-            />
+            <input required name="country" minLength={2} maxLength={2} defaultValue="KE" />
           </Field>
           <Field label="Currency">
             <select
@@ -590,10 +781,16 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
         <div className="metric-grid business-metric-strip">
           {metrics.map(([label, value, icon]) => (
             <article key={label} className="panel business-metric">
-              <span className="business-metric-icon"><Icon name={icon as IconName}/></span>
+              <span className="business-metric-icon">
+                <Icon name={icon as IconName} />
+              </span>
               <span className="business-metric-label">{label}</span>
               <strong>{money(Number(value), data.currency)}</strong>
-              <small>{environment==='sandbox'&&label==='Confirmed inflows'?'Test payment events':data.currency+' · covered records'}</small>
+              <small>
+                {environment === 'sandbox' && label === 'Confirmed inflows'
+                  ? 'Test payment events'
+                  : data.currency + ' · covered records'}
+              </small>
             </article>
           ))}
         </div>
@@ -603,94 +800,174 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
             scope={org + environment}
             currency={data.currency}
             filters={filterQuery}
-            testOnly={environment==='sandbox'}
+            testOnly={environment === 'sandbox'}
           />
           <section className="panel dashboard-quick-actions">
-            <div className="section-heading"><div><span className="eyebrow">WORKSPACE</span><h2>Quick actions</h2></div><span className="dashboard-action-mark"><Icon name="bolt"/></span></div>
+            <div className="section-heading">
+              <div>
+                <span className="eyebrow">WORKSPACE</span>
+                <h2>Quick actions</h2>
+              </div>
+              <span className="dashboard-action-mark">
+                <Icon name="bolt" />
+              </span>
+            </div>
             <nav aria-label="Business quick actions">
               {[
-                ['Invoices','Create or review invoices','document'],
-                ['Expenses','Record an expense','payment'],
-                ['Customers','Add a customer','users'],
-                ['Intelligence','Explore analytics','chart'],
-              ].map(([target,label,icon])=><button key={target} onClick={()=>setTab(target)}><span className="dashboard-action-icon"><Icon name={icon as IconName}/></span><span>{label}</span><Icon name="right"/></button>)}
+                ['Invoices', 'Create or review invoices', 'document'],
+                ['Expenses', 'Record an expense', 'payment'],
+                ['Customers', 'Add a customer', 'users'],
+                ['Intelligence', 'Explore analytics', 'chart'],
+              ].map(([target, label, icon]) => (
+                <button key={target} onClick={() => setTab(target)}>
+                  <span className="dashboard-action-icon">
+                    <Icon name={icon as IconName} />
+                  </span>
+                  <span>{label}</span>
+                  <Icon name="right" />
+                </button>
+              ))}
             </nav>
-            <details><summary>Payment availability</summary><p>Live payment collection is not configured. Test payment events do not move real funds.</p></details>
+            <details>
+              <summary>Payment availability</summary>
+              <p>
+                Live payment collection is not configured. Test payment events do not move real
+                funds.
+              </p>
+            </details>
           </section>
         </div>
         <div className="business-dashboard-secondary">
           <section className="panel dashboard-aging-panel">
-            <div className="section-heading"><div><span className="eyebrow">INVOICES</span><h2>Receivables aging</h2></div><button className="quiet-button" onClick={()=>setTab('Invoices')}>View invoices <Icon name="right"/></button></div>
-            <div className="aging-breakdown">
-            {Object.entries(data.aging || {}).map(([label, value]) => (
-              <div className="aging-row" key={label}>
-                <span>{label.replaceAll('_', ' ')}</span>
-                <div className="aging-bar"><i style={{width:Math.max(0,Math.min(100,(Number(value)/Math.max(1,data.outstanding_minor))*100))+'%'}}/></div>
-                <b>{money(Number(value), data.currency)}</b>
+            <div className="section-heading">
+              <div>
+                <span className="eyebrow">INVOICES</span>
+                <h2>Receivables aging</h2>
               </div>
-            ))}
+              <button className="quiet-button" onClick={() => setTab('Invoices')}>
+                View invoices <Icon name="right" />
+              </button>
             </div>
-            <p className="muted">Issued invoices, less allocated payments and credit notes. Draft and void invoices excluded.</p>
+            <div className="aging-breakdown">
+              {Object.entries(data.aging || {}).map(([label, value]) => (
+                <div className="aging-row" key={label}>
+                  <span>{label.replaceAll('_', ' ')}</span>
+                  <div className="aging-bar">
+                    <i
+                      style={{
+                        width:
+                          Math.max(
+                            0,
+                            Math.min(
+                              100,
+                              (Number(value) / Math.max(1, data.outstanding_minor)) * 100,
+                            ),
+                          ) + '%',
+                      }}
+                    />
+                  </div>
+                  <b>{money(Number(value), data.currency)}</b>
+                </div>
+              ))}
+            </div>
+            <p className="muted">
+              Issued invoices, less allocated payments and credit notes. Draft and void invoices
+              excluded.
+            </p>
           </section>
           <section className="panel dashboard-recent-panel">
-            <div className="section-heading"><div><span className="eyebrow">LATEST ACTIVITY</span><h2>Recent provider events</h2></div><button className="quiet-button" onClick={()=>setTab('Payments')}>View payments <Icon name="right"/></button></div>
+            <div className="section-heading">
+              <div>
+                <span className="eyebrow">LATEST ACTIVITY</span>
+                <h2>Recent provider events</h2>
+              </div>
+              <button className="quiet-button" onClick={() => setTab('Payments')}>
+                View payments <Icon name="right" />
+              </button>
+            </div>
             {data.events?.length ? (
-            <div className="table-scroll dashboard-recent-desktop">
-              <DataTable>
-                <thead>
-                  <tr>
-                    <th>Provider reference</th><th>Amount</th><th>Recorded</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.events.map((e: any) => (
-                    <tr key={e.id}>
-                      <td>{e.provider_ref}</td>
-                      <td>{money(Number(e.amount_minor), e.currency)}</td>
-                      <td>
+              <div className="table-scroll dashboard-recent-desktop">
+                <DataTable>
+                  <thead>
+                    <tr>
+                      <th>Provider reference</th>
+                      <th>Amount</th>
+                      <th>Recorded</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.events.map((e: any) => (
+                      <tr key={e.id}>
+                        <td>{e.provider_ref}</td>
+                        <td>{money(Number(e.amount_minor), e.currency)}</td>
+                        <td>
+                          {new Date(e.created_at).toLocaleString('en-KE', {
+                            timeZone: 'Africa/Nairobi',
+                          })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </DataTable>
+              </div>
+            ) : null}
+            {data.events?.length ? (
+              <div className="dashboard-recent-mobile" aria-label="Recent provider events">
+                {data.events.map((e: any) => (
+                  <article className="provider-event-mobile-row" key={e.id}>
+                    <div className="provider-event-mobile-primary">
+                      <strong>{money(Number(e.amount_minor), e.currency)}</strong>
+                      <time dateTime={e.created_at}>
                         {new Date(e.created_at).toLocaleString('en-KE', {
                           timeZone: 'Africa/Nairobi',
                         })}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </DataTable>
-            </div>
-          ) : null}
-          {data.events?.length ? (
-            <div className="dashboard-recent-mobile" aria-label="Recent provider events">
-              {data.events.map((e: any) => (
-                <article className="provider-event-mobile-row" key={e.id}>
-                  <div className="provider-event-mobile-primary">
-                    <strong>{money(Number(e.amount_minor), e.currency)}</strong>
-                    <time dateTime={e.created_at}>
-                      {new Date(e.created_at).toLocaleString('en-KE', {
-                        timeZone: 'Africa/Nairobi',
-                      })}
-                    </time>
-                  </div>
-                  <details className="provider-event-mobile-reference">
-                    <summary title={e.provider_ref}>Reference: {e.provider_ref}</summary>
-                    <code>{e.provider_ref}</code>
-                  </details>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <Empty text="No verified payment activity yet. Create an invoice and test a checkout." />
-          )}
+                      </time>
+                    </div>
+                    <details className="provider-event-mobile-reference">
+                      <summary title={e.provider_ref}>Reference: {e.provider_ref}</summary>
+                      <code>{e.provider_ref}</code>
+                    </details>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <Empty text="No verified payment activity yet. Create an invoice and test a checkout." />
+            )}
           </section>
         </div>
         <p className="methodology">{data.methodology}</p>
       </div>
     );
   }
-  if(resolvingOrgs) return <main className="account-entry" role="status">Loading your Business workspace…</main>;
-  if(orgLoadError) return <main className="account-entry"><h1>Business workspace unavailable</h1><ErrorBox error={orgLoadError}/><a href="/app/workspaces">Resolve current access</a><button className="button" onClick={()=>location.reload()}>Try again</button></main>;
+  if (resolvingOrgs)
+    return (
+      <main className="account-entry" role="status">
+        Loading your Business workspace…
+      </main>
+    );
+  if (orgLoadError)
+    return (
+      <main className="account-entry">
+        <h1>Business workspace unavailable</h1>
+        <ErrorBox error={orgLoadError} />
+        <a href="/app/workspaces">Resolve current access</a>
+        <button className="button" onClick={() => location.reload()}>
+          Try again
+        </button>
+      </main>
+    );
   return (
     <div className="business-shell" data-platform-density>
-      <a className="workspace-skip" href="#workspace-main" onClick={event=>{event.preventDefault();document.getElementById('workspace-main')?.focus();}}>Skip to workspace content</a>
+      <a
+        className="workspace-skip"
+        href="#workspace-main"
+        onClick={(event) => {
+          event.preventDefault();
+          document.getElementById('workspace-main')?.focus();
+        }}
+      >
+        Skip to workspace content
+      </a>
       {navOpen && (
         <button
           className="nav-scrim"
@@ -699,7 +976,9 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
         />
       )}
       <aside
-        className={'sidebar ' + (navOpen ? 'is-open ' : '')+(sidebarCollapsed?'is-collapsed':'')}
+        className={
+          'sidebar ' + (navOpen ? 'is-open ' : '') + (sidebarCollapsed ? 'is-collapsed' : '')
+        }
         ref={navRef}
         role={navOpen ? 'dialog' : undefined}
         aria-modal={navOpen ? true : undefined}
@@ -708,7 +987,21 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
       >
         <div className="sidebar-brand">
           <Logo />
-          <button className="icon-button sidebar-collapse-toggle" aria-label={sidebarCollapsed?'Expand navigation':'Collapse navigation'} aria-pressed={sidebarCollapsed} onClick={()=>setSidebarCollapsed(value=>{try{localStorage.setItem('africore-business-sidebar-collapsed',String(!value));}catch{}return !value;})}><Icon name="menu"/></button>
+          <button
+            className="icon-button sidebar-collapse-toggle"
+            aria-label={sidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
+            aria-pressed={sidebarCollapsed}
+            onClick={() =>
+              setSidebarCollapsed((value) => {
+                try {
+                  localStorage.setItem('africore-business-sidebar-collapsed', String(!value));
+                } catch {}
+                return !value;
+              })
+            }
+          >
+            <Icon name="menu" />
+          </button>
           <button
             data-autofocus
             className="icon-button app-nav-close"
@@ -720,29 +1013,91 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
         </div>
         <span className="workspace-label">Business workspace</span>
         <nav aria-label="Business navigation">
-          <div className="workspace-primary-nav">{([{tab:'Overview',label:'Home',icon:'home'},{tab:'Apps',label:'Apps',icon:'grid'},{tab:'My Services',label:'Services',icon:'network'},{tab:'Intelligence',label:'Analytics',icon:'chart'},{tab:'Automations',label:'Automations',icon:'bolt'},{tab:'Notifications',label:'Notifications',icon:'bell'}] as const).map(item=><button key={item.tab} title={sidebarCollapsed?item.label:undefined} className={tab===item.tab&&(!appContext.app||item.tab==='Apps')?'active':''} aria-current={tab===item.tab&&(!appContext.app||item.tab==='Apps')?'page':undefined} onClick={()=>{const url=new URL(location.href);url.searchParams.delete('app');url.searchParams.delete('section');url.hash=encodeURIComponent(item.tab);history.pushState(null,'',url.pathname+url.search+url.hash);dispatchEvent(new Event('africore:app-navigation'));setTab(item.tab);setCreating(false);setNavOpen(false);}}><Icon name={item.icon}/><span>{item.label}</span></button>)}</div>
-          {appContext.app&&<AppContextNavigation app={appContext.app} section={appContext.section} tab={tab} navigate={value=>{setTab(value);setCreating(false);setNavOpen(false);}}/>}
-          <WorkspaceAdminNavigation tab={tab} navigate={value=>{setTab(value);setCreating(false);setNavOpen(false);}}/>
+          <div className="workspace-primary-nav">
+            {(
+              [
+                { tab: 'Overview', label: 'Home', icon: 'home' },
+                { tab: 'Apps', label: 'Apps', icon: 'grid' },
+                { tab: 'My Services', label: 'Services', icon: 'network' },
+                { tab: 'Intelligence', label: 'Analytics', icon: 'chart' },
+                { tab: 'Automations', label: 'Automations', icon: 'bolt' },
+                { tab: 'Notifications', label: 'Notifications', icon: 'bell' },
+              ] as const
+            ).map((item) => (
+              <button
+                key={item.tab}
+                title={sidebarCollapsed ? item.label : undefined}
+                className={
+                  tab === item.tab && (!appContext.app || item.tab === 'Apps') ? 'active' : ''
+                }
+                aria-current={
+                  tab === item.tab && (!appContext.app || item.tab === 'Apps') ? 'page' : undefined
+                }
+                onClick={() => {
+                  const url = new URL(location.href);
+                  url.searchParams.delete('app');
+                  url.searchParams.delete('section');
+                  url.hash = encodeURIComponent(item.tab);
+                  history.pushState(null, '', url.pathname + url.search + url.hash);
+                  dispatchEvent(new Event('africore:app-navigation'));
+                  setTab(item.tab);
+                  setCreating(false);
+                  setNavOpen(false);
+                }}
+              >
+                <Icon name={item.icon} />
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+          {appContext.app && (
+            <AppContextNavigation
+              app={appContext.app}
+              section={appContext.section}
+              tab={tab}
+              navigate={(value) => {
+                setTab(value);
+                setCreating(false);
+                setNavOpen(false);
+              }}
+            />
+          )}
+          <WorkspaceAdminNavigation
+            tab={tab}
+            navigate={(value) => {
+              setTab(value);
+              setCreating(false);
+              setNavOpen(false);
+            }}
+          />
         </nav>
         <div className="sidebar-bottom">
-          {!isDemo()&&<a href="/app/workspaces"><Icon name="grid"/><span>Workspace management</span></a>}
+          {!isDemo() && (
+            <a href="/app/workspaces">
+              <Icon name="grid" />
+              <span>Workspace management</span>
+            </a>
+          )}
           <a href="/docs">
             <span>Developer docs</span> <Icon name="right" />
           </a>
           <button
             onClick={() =>
-              managedSignOut().then(
-                () => (location.href = '/signin'),
-              ).catch(e=>setError((e as Error).message))
+              managedSignOut()
+                .then(() => (location.href = '/signin'))
+                .catch((e) => setError((e as Error).message))
             }
           >
-            <Icon name="close"/><span>Sign out</span>
+            <Icon name="close" />
+            <span>Sign out</span>
           </button>
         </div>
       </aside>
-      <div className="app-main" inert={navOpen||undefined}>
+      <div className="app-main" inert={navOpen || undefined}>
         <header className="app-header">
-          {!isDemo()&&org&&<WorkspaceAppLauncher api={call} scope={org+'\0'+environment} navigate={setTab}/>}
+          {!isDemo() && org && (
+            <WorkspaceAppLauncher api={call} scope={org + '\0' + environment} navigate={setTab} />
+          )}
           <button
             className="icon-button app-nav-toggle"
             aria-label="Open business navigation"
@@ -759,14 +1114,20 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
               onChange={async (e) => {
                 const version = ++workspaceSwitch.current;
                 const id = e.target.value;
-                if (!id) { setOrg(''); return; }
+                if (!id) {
+                  setOrg('');
+                  return;
+                }
                 try {
-                  if (!isDemo()) await api('/api/auth/account/workspace', 'POST', {workspace_id: id});
+                  if (!isDemo())
+                    await api('/api/auth/account/workspace', 'POST', { workspace_id: id });
                   if (version === workspaceSwitch.current) {
-                    if(initialOrg&&!isDemo()) location.href='/app/business/'+id;
+                    if (initialOrg && !isDemo()) location.href = '/app/business/' + id;
                     else setOrg(id);
                   }
-                } catch (error) { if (version === workspaceSwitch.current) setError((error as Error).message); }
+                } catch (error) {
+                  if (version === workspaceSwitch.current) setError((error as Error).message);
+                }
               }}
             >
               <option value="">Select workspace</option>
@@ -776,35 +1137,89 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
                 </option>
               ))}
             </select>
-            <button
-              className="quiet-button"
-              onClick={() => setCreating('workspace' as any)}
-            >
+            <button className="quiet-button" onClick={() => setCreating('workspace' as any)}>
               + Workspace
             </button>
           </div>
-          {!isDemo()&&org&&<WorkspaceSearch api={call} scope={org+'\0'+environment} services={market.catalog?.services||[]} navigate={setTab} openRecord={openRecord}/>}
+          {!isDemo() && org && (
+            <WorkspaceSearch
+              api={call}
+              scope={org + '\0' + environment}
+              services={market.catalog?.services || []}
+              navigate={setTab}
+              openRecord={openRecord}
+            />
+          )}
           <div>
-            {(isDemo()||tab==='Developers')&&<select
-              aria-label="Data environment"
-              value={environment}
-              onChange={(e) => setEnvironment(e.target.value)}
-            >
-              <option value="sandbox">Sandbox</option>
-              <option value="production">
-                Production (collection disabled)
-              </option>
-            </select>}
-            {org&&!isDemo()&&<NotificationBell key={org+'\0'+environment} api={call} scope={org+'\0'+environment} navigate={setTab} openRecord={openRecord}/>}{!isDemo()?<WorkspaceAccountMenu name={account?.profile?.display_name} email={me?.email} role={organization?.role}/>:<span>{me?.email}</span>}
+            {(isDemo() || tab === 'Developers') && (
+              <select
+                aria-label="Data environment"
+                value={environment}
+                onChange={(e) => setEnvironment(e.target.value)}
+              >
+                <option value="sandbox">Sandbox</option>
+                <option value="production">Production (collection disabled)</option>
+              </select>
+            )}
+            {org && !isDemo() && (
+              <NotificationBell
+                key={org + '\0' + environment}
+                api={call}
+                scope={org + '\0' + environment}
+                navigate={setTab}
+                openRecord={openRecord}
+              />
+            )}
+            {!isDemo() ? (
+              <WorkspaceAccountMenu
+                name={account?.profile?.display_name}
+                email={me?.email}
+                role={organization?.role}
+              />
+            ) : (
+              <span>{me?.email}</span>
+            )}
           </div>
         </header>
         <main className="workspace-content" id="workspace-main" tabIndex={-1}>
-          <nav className="workspace-breadcrumbs" aria-label="Breadcrumb"><button onClick={()=>{const url=new URL(location.href);url.searchParams.delete('app');url.searchParams.delete('section');url.hash='Overview';history.pushState(null,'',url.pathname+url.search+url.hash);dispatchEvent(new Event('africore:app-navigation'));setTab('Overview');setCreating(false);}}>Home</button>{appContext.app&&<><span aria-hidden="true">/</span><button onClick={()=>setTab('Apps')}>{appContext.app.name}</button><span aria-hidden="true">/</span><span aria-current="page">{(()=>{const label=appContext.app.navigation.find((item:any)=>item.section===appContext.section)?.label||tab;return appContext.section==='dashboard'&&label==='Overview'?'Dashboard':label;})()}</span></>}</nav>
+          <nav className="workspace-breadcrumbs" aria-label="Breadcrumb">
+            <button
+              onClick={() => {
+                const url = new URL(location.href);
+                url.searchParams.delete('app');
+                url.searchParams.delete('section');
+                url.hash = 'Overview';
+                history.pushState(null, '', url.pathname + url.search + url.hash);
+                dispatchEvent(new Event('africore:app-navigation'));
+                setTab('Overview');
+                setCreating(false);
+              }}
+            >
+              Home
+            </button>
+            {appContext.app && (
+              <>
+                <span aria-hidden="true">/</span>
+                <button onClick={() => setTab('Apps')}>{appContext.app.name}</button>
+                <span aria-hidden="true">/</span>
+                <span aria-current="page">
+                  {(() => {
+                    const label =
+                      appContext.app.navigation.find(
+                        (item: any) => item.section === appContext.section,
+                      )?.label || tab;
+                    return appContext.section === 'dashboard' && label === 'Overview'
+                      ? 'Dashboard'
+                      : label;
+                  })()}
+                </span>
+              </>
+            )}
+          </nav>
           <div className="workspace-title">
             <div>
               <span className="eyebrow">
-                {organization?.name || 'WELCOME TO AFRICORE'} ·{' '}
-                {isDemo()?'DEMO':'BUSINESS'}
+                {organization?.name || 'WELCOME TO AFRICORE'} · {isDemo() ? 'DEMO' : 'BUSINESS'}
               </span>
               <h1>{tab === 'Overview' ? 'Business Overview' : tab}</h1>
               <p>
@@ -827,35 +1242,61 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
                           'Create an application, scope its server key and review signed webhook delivery.',
                         Transactions:
                           'Import source records with stable IDs. Imported credits do not confirm payment.',
-                        Settings:
-                          'Review workspace identity and recorded changes.',
+                        Settings: 'Review workspace identity and recorded changes.',
                       } as Record<string, string>
                     )[tab] ||
-                    ({'Cash Flow':'Review recorded movement and upcoming obligations.',Reports:'Filter financial records and export matching totals.',Intelligence:'Explore trends, forecasts and risks from available records.',Forecasts:'Review projections and the assumptions behind them.',Automations:'Manage rules, approvals and workflow runs.',Notifications:'Review workspace notifications.',Approvals:'Review actions that need your approval.',Assistant:'Ask questions grounded in your authorized records.',Fulfillment:'Track orders through delivery.',Connect:'Manage supported data connections.','Business Passport':'Manage business identity and share selected credentials.'} as Record<string,string>)[tab] || 'Manage your authorized workspace records.'}
+                    (
+                      {
+                        'Cash Flow': 'Review recorded movement and upcoming obligations.',
+                        Reports: 'Filter financial records and export matching totals.',
+                        Intelligence: 'Explore trends, forecasts and risks from available records.',
+                        Forecasts: 'Review projections and the assumptions behind them.',
+                        Automations: 'Manage rules, approvals and workflow runs.',
+                        Notifications: 'Review workspace notifications.',
+                        Approvals: 'Review actions that need your approval.',
+                        Assistant: 'Ask questions grounded in your authorized records.',
+                        Fulfillment: 'Track orders through delivery.',
+                        Connect: 'Manage supported data connections.',
+                        'Business Passport':
+                          'Manage business identity and share selected credentials.',
+                      } as Record<string, string>
+                    )[tab] ||
+                    'Manage your authorized workspace records.'}
               </p>
             </div>
             {org &&
-              writable && (tab==='Invoices'?financeWritable:['Integrations','Developers'].includes(tab)?adminWritable:true) &&
-              visibleServiceTab(market,tab) &&
-              [
-                'Customers',
-                'Orders',
-                'Invoices',
-                'Integrations',
-                'Developers',
-              ].includes(tab) && (
-                <button
-                  className="button"
-                  onClick={() => setCreating(!creating)}
-                >
+              writable &&
+              (tab === 'Invoices'
+                ? financeWritable
+                : ['Integrations', 'Developers'].includes(tab)
+                  ? adminWritable
+                  : true) &&
+              visibleServiceTab(market, tab) &&
+              ['Customers', 'Orders', 'Invoices', 'Integrations', 'Developers'].includes(tab) && (
+                <button className="button" onClick={() => setCreating(!creating)}>
                   + {tab === 'Developers' ? 'Application' : tab.slice(0, -1)}
                 </button>
               )}
           </div>
-          {(isDemo()||['Payments','Reconciliation'].includes(tab))&&<p className="environment-note">{isDemo()?'Demo workspace · ':''}{environment==='sandbox'?'Test payment events only. No real funds move.':'Live payment collection is not configured.'}</p>}
+          {(isDemo() || ['Payments', 'Reconciliation'].includes(tab)) && (
+            <p className="environment-note">
+              {isDemo() ? 'Demo workspace · ' : ''}
+              {environment === 'sandbox'
+                ? 'Test payment events only. No real funds move.'
+                : 'Live payment collection is not configured.'}
+            </p>
+          )}
           <ErrorBox error={error} />
-          {error&&<button className="secondary-button" onClick={load}>Retry this view</button>}
-          {busy&&data&&<p className="background-update" role="status">Refreshing records…</p>}
+          {error && (
+            <button className="secondary-button" onClick={load}>
+              Retry this view
+            </button>
+          )}
+          {busy && data && (
+            <p className="background-update" role="status">
+              Refreshing records…
+            </p>
+          )}
           {notice && (
             <div className="alert one-time" role="status">
               {notice}
@@ -880,862 +1321,1034 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
           )}
           {!org || creating === ('workspace' as any) ? (
             onboardingForm()
-          ) : tab==='Apps' ? <AppsWorkspace openRecord={openRecord} role={organization?.role} api={call} scope={org+'\0'+environment} manager={['owner','admin'].includes(orgs.find((w:any)=>w.id===org)?.role)} navigate={setTab} services={market.catalog?.services||[]} onServicesChanged={market.reload}/> : marketTabs.includes(tab) ? <Services market={market} view={tab} navigate={setTab} manager={['owner','admin'].includes(orgs.find((w:any)=>w.id===org)?.role)}/> : (
-            <ServiceGate market={market} tab={tab} navigate={setTab}><>
-              {creating && (
-                <form className="panel create-form" onSubmit={create}>
-                  <h2>
-                    Create{' '}
-                    {tab === 'Developers'
-                      ? 'application'
-                      : tab.toLowerCase().slice(0, -1)}
-                  </h2>
-                  {['Orders', 'Invoices'].includes(tab) ? (
-                    docForm()
-                  ) : tab === 'Customers' ? (
-                    <>
-                      <Field label="Customer name">
-                        <input required name="name" />
-                      </Field>
-                      <Field label="Type">
-                        <select name="type">
-                          <option value="individual">Individual</option>
-                          <option value="business">Business</option>
+          ) : tab === 'Apps' ? (
+            <AppsWorkspace
+              openRecord={openRecord}
+              role={organization?.role}
+              api={call}
+              scope={org + '\0' + environment}
+              manager={['owner', 'admin'].includes(orgs.find((w: any) => w.id === org)?.role)}
+              navigate={setTab}
+              services={market.catalog?.services || []}
+              onServicesChanged={market.reload}
+            />
+          ) : marketTabs.includes(tab) ? (
+            <Services
+              market={market}
+              view={tab}
+              navigate={setTab}
+              manager={['owner', 'admin'].includes(orgs.find((w: any) => w.id === org)?.role)}
+            />
+          ) : (
+            <ServiceGate market={market} tab={tab} navigate={setTab}>
+              <>
+                {creating && (
+                  <form className="panel create-form" onSubmit={create}>
+                    <h2>
+                      Create {tab === 'Developers' ? 'application' : tab.toLowerCase().slice(0, -1)}
+                    </h2>
+                    {['Orders', 'Invoices'].includes(tab) ? (
+                      docForm()
+                    ) : tab === 'Customers' ? (
+                      <>
+                        <Field label="Customer name">
+                          <input required name="name" />
+                        </Field>
+                        <Field label="Type">
+                          <select name="type">
+                            <option value="individual">Individual</option>
+                            <option value="business">Business</option>
+                          </select>
+                        </Field>
+                        <Field label="Email">
+                          <input type="email" name="email" />
+                        </Field>
+                        <Field label="Phone">
+                          <input name="phone" />
+                        </Field>
+                        <Field label="Address">
+                          <textarea name="address" maxLength={1000} />
+                        </Field>
+                        <Field label="Notes">
+                          <textarea name="notes" />
+                        </Field>
+                      </>
+                    ) : tab === 'Integrations' ? (
+                      <Field label="Source">
+                        <select name="provider">
+                          <option value="csv">CSV import</option>
+                          <option value="sandbox">Sandbox provider</option>
+                          <option value="africore_pay">AfriCore Pay</option>
                         </select>
                       </Field>
-                      <Field label="Email">
-                        <input type="email" name="email" />
-                      </Field>
-                      <Field label="Phone">
-                        <input name="phone" />
-                      </Field>
-                      <Field label="Address"><textarea name="address" maxLength={1000}/></Field>
-                      <Field label="Notes">
-                        <textarea name="notes" />
-                      </Field>
-                    </>
-                  ) : tab === 'Integrations' ? (
-                    <Field label="Source">
-                      <select name="provider">
-                        <option value="csv">CSV import</option>
-                        <option value="sandbox">Sandbox provider</option>
-                        <option value="africore_pay">AfriCore Pay</option>
-                      </select>
-                    </Field>
-                  ) : (
-                    <>
-                      <Field label="Application name">
-                        <input required name="name" />
-                      </Field>
-                      <Field label="Description">
-                        <textarea name="description" />
-                      </Field>
-                    </>
-                  )}
-                  <div className="actions">
-                    <button className="button" disabled={busy}>
-                      Save <Icon name="right" />
-                    </button>
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={() => setCreating(false)}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              )}
-              {isDemo() && (
-                <div className="alert demo-banner" role="status">
-                  <b>Interactive demo · synthetic data</b>
-                  <p>
-                    No database or real funds. Changes stay in this browser. AI,
-                    external providers and protected settlement require backend
-                    configuration.
-                  </p>
-                  <button
-                    onClick={() => {
-                      startDemo(true);
-                      location.reload();
-                    }}
-                  >
-                    Reset demo data
-                  </button>
-                </div>
-              )}
-              {tab === 'Business Passport' && (
-                <PassportWorkspace
-                  key={org + environment + (passportInitialTab||'') + urlRevision}
-                  org={org}
-                  environment={environment}
-                  role={organization?.role || 'viewer'}
-                  serviceIds={market.catalog?.services.filter((s:any)=>s.status==='active').map((s:any)=>s.id)||[]}
-                  initialTab={passportInitialTab}
-                />
-              )}
-              {tab==='Customer Relationships'&&<CrmWorkspace admin={adminWritable} writable={!!writable} api={call} scope={org+'\0'+environment} navigate={setTab}/>}
-{tab==='Products'&&<ProductCatalog writable={!!writable} api={call} scope={org+'\0'+environment}/>}
-{tab==='Inventory'&&<InventoryWorkspace writable={!!writable} api={call} scope={org+'\0'+environment}/>}
-{tab==='Accounting'&&<AccountingWorkspace key={org+'\0'+environment} api={call} scope={org+'\0'+environment} manager={adminWritable} navigate={setTab}/>}
-{tab==='Point of Sale'&&<POSWorkspace key={org+'\0'+environment} api={call} scope={org+'\0'+environment} manager={adminWritable} navigate={setTab}/>}
-{tab==='Commerce'&&<CommerceWorkspace key={org+'\0'+environment} api={call} scope={org+'\0'+environment} manager={adminWritable} navigate={setTab}/>}
-{tab==='Procurement'&&<ProcurementWorkspace key={org+'\0'+environment} api={call} scope={org+'\0'+environment}/>}
-{tab==='Documents'&&<DocumentsWorkspace key={org+'\0'+environment} api={call} scope={org+'\0'+environment}/>}
-{tab==='People'&&<PeopleWorkspace key={org+'\0'+environment} api={call} scope={org+'\0'+environment}/>}
-{tab==='Work'&&<WorkWorkspace key={org+'\0'+environment} api={call} scope={org+'\0'+environment}/>}
-{tab==='Quotations'&&<SalesWorkspace admin={adminWritable} writable={!!writable} api={call} scope={org+'\0'+environment} navigate={setTab} services={market.catalog?.services||[]}/>}
-{tab==='Customers'&&<CustomerTools api={call} org={org} environment={environment} writable={writable} onChanged={load}/>}
-              {['Cash Flow','Reports'].includes(tab)&&<FinancialOverview api={call} scope={org+'\0'+environment}/>}
-              {tab==='Invoices'&&<div className="finance-toolbar" aria-label="Invoice views">{[['all','All invoices'],['draft','Drafts'],['outstanding','Outstanding'],['overdue','Overdue'],['paid','Paid'],['credited','Credited']].map(([value,label])=><button key={value} className="secondary-button" aria-pressed={invoiceFilter===value} onClick={()=>{setOffset(0);setInvoiceFilter(value);}}>{label}</button>)}</div>}
-              {['Payments','Reconciliation'].includes(tab)&&<PaymentCentre key={org+environment+tab} api={call} scope={org+'\0'+environment} writable={writable} admin={['owner','admin'].includes(organization?.role)} reconcile={tab==='Reconciliation'}/>}
-              {['Cash Flow','Expenses'].includes(tab)&&<MoneyTools api={call} scope={org+'\0'+environment} cashFlow={tab==='Cash Flow'} writable={['owner','admin','finance'].includes(organization?.role)}/>}
-              {tab==='Notifications'&&<NotificationCentre api={call} scope={org+'\0'+environment} kind="business" navigate={setTab} openRecord={openRecord}/>}
-{operationsTabs.includes(tab)&&tab!=='Notifications' && (
-                <OperationsWorkspace
-                  key={org + environment + tab}
-                  section={tab}
-                  services={market.catalog?.services.filter((s:any)=>s.status==='active').map((s:any)=>s.id)||[]}
-                  org={org}
-                  environment={environment}
-                  role={organization?.role || 'viewer'}
-                  onNavigate={setTab}
-                />
-              )}
-              {busy && !data && (
-                <div className="skeleton" role="status">
-                  Loading your records…
-                </div>
-              )}
-              {tab==='Overview' && (
-                <>
-                  {metricView()}
-                </>
-              )}
-              {[
-                'Customers',
-                'Orders',
-                'Invoices',
-                'Transactions',
-                'Integrations',
-                'Developers',
-              ].includes(tab) && (
-                <>
-                  <div className="table-toolbar">
-                    <input
-                      aria-label="Search records"
-                      maxLength={200}
-                      placeholder="Search records…"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                    />
-                    <button className="quiet-button" onClick={load}>
-                      Refresh
-                    </button>
-                  </div>
-                  <section className="panel record-panel">
-                    {data?.data?.length ? (
+                    ) : (
                       <>
-                      <div
-                        className={
-                          tab === 'Invoices'
-                            ? 'table-scroll invoice-table-desktop'
-                            : tab === 'Orders'
-                              ? 'table-scroll order-table-desktop'
-                              : 'table-scroll'
-                        }
+                        <Field label="Application name">
+                          <input required name="name" />
+                        </Field>
+                        <Field label="Description">
+                          <textarea name="description" />
+                        </Field>
+                      </>
+                    )}
+                    <div className="actions">
+                      <button className="button" disabled={busy}>
+                        Save <Icon name="right" />
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => setCreating(false)}
                       >
-                        <DataTable>
-                          <thead>
-                            <tr>
-                              <th>Reference / name</th>
-                              <th>Status / type</th>
-                              <th>Amount / description</th>
-                              <th>Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {data.data.map((r: any) => (
-                              <tr key={r.id}>
-                                <td>
-                                  <button
-                                    className="text-button"
-                                    onClick={() => setSelected(r)}
-                                  >
-                                    {r.reference ||
-                                      r.name ||
-                                      r.provider ||
-                                      r.external_id}
-                                  </button>
-                                  <small className="record-id">{r.id}</small>
-                                </td>
-                                <td>
-                                  <span className="badge">
-                                    {r.status || r.type || 'active'}
-                                  </span>
-                                </td>
-                                <td>
-                                  {r.total_minor
-                                    ? money(r.total_minor, r.currency)
-                                    : r.amount_minor
-                                      ? money(r.amount_minor, r.currency)
-                                      : r.description || '—'}
-                                  {r.paid_minor > 0 && (
-                                    <small className="record-id">
-                                      Paid: {money(r.paid_minor, r.currency)}
-                                    </small>
-                                  )}
-                                </td>
-                                <td>
-                                  <div className="row-actions">
-                                    {r.status === 'draft' && writable && (
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
+                {isDemo() && (
+                  <div className="alert demo-banner" role="status">
+                    <b>Interactive demo · synthetic data</b>
+                    <p>
+                      No database or real funds. Changes stay in this browser. AI, external
+                      providers and protected settlement require backend configuration.
+                    </p>
+                    <button
+                      onClick={() => {
+                        startDemo(true);
+                        location.reload();
+                      }}
+                    >
+                      Reset demo data
+                    </button>
+                  </div>
+                )}
+                {tab === 'Business Passport' && (
+                  <PassportWorkspace
+                    key={org + environment + (passportInitialTab || '') + urlRevision}
+                    org={org}
+                    environment={environment}
+                    role={organization?.role || 'viewer'}
+                    serviceIds={
+                      market.catalog?.services
+                        .filter((s: any) => s.status === 'active')
+                        .map((s: any) => s.id) || []
+                    }
+                    initialTab={passportInitialTab}
+                  />
+                )}
+                {tab === 'Customer Relationships' && (
+                  <CrmWorkspace
+                    admin={adminWritable}
+                    writable={!!writable}
+                    api={call}
+                    scope={org + '\0' + environment}
+                    navigate={setTab}
+                  />
+                )}
+                {tab === 'Products' && (
+                  <ProductCatalog
+                    writable={!!writable}
+                    api={call}
+                    scope={org + '\0' + environment}
+                  />
+                )}
+                {tab === 'Inventory' && (
+                  <InventoryWorkspace
+                    writable={!!writable}
+                    api={call}
+                    scope={org + '\0' + environment}
+                  />
+                )}
+                {tab === 'Accounting' && (
+                  <AccountingWorkspace
+                    key={org + '\0' + environment}
+                    api={call}
+                    scope={org + '\0' + environment}
+                    manager={adminWritable}
+                    navigate={setTab}
+                  />
+                )}
+                {tab === 'Point of Sale' && (
+                  <POSWorkspace
+                    key={org + '\0' + environment}
+                    api={call}
+                    scope={org + '\0' + environment}
+                    manager={adminWritable}
+                    navigate={setTab}
+                  />
+                )}
+                {tab === 'Commerce' && (
+                  <CommerceWorkspace
+                    key={org + '\0' + environment}
+                    api={call}
+                    scope={org + '\0' + environment}
+                    manager={adminWritable}
+                    navigate={setTab}
+                  />
+                )}
+                {tab === 'Procurement' && (
+                  <ProcurementWorkspace
+                    key={org + '\0' + environment}
+                    api={call}
+                    scope={org + '\0' + environment}
+                  />
+                )}
+                {tab === 'Documents' && (
+                  <DocumentsWorkspace
+                    key={org + '\0' + environment}
+                    api={call}
+                    scope={org + '\0' + environment}
+                  />
+                )}
+                {tab === 'People' && (
+                  <PeopleWorkspace
+                    key={org + '\0' + environment}
+                    api={call}
+                    scope={org + '\0' + environment}
+                  />
+                )}
+                {tab === 'Work' && (
+                  <WorkWorkspace
+                    key={org + '\0' + environment}
+                    api={call}
+                    scope={org + '\0' + environment}
+                  />
+                )}
+                {tab === 'Quotations' && (
+                  <SalesWorkspace
+                    admin={adminWritable}
+                    writable={!!writable}
+                    api={call}
+                    scope={org + '\0' + environment}
+                    navigate={setTab}
+                    services={market.catalog?.services || []}
+                  />
+                )}
+                {tab === 'Customers' && (
+                  <CustomerTools
+                    api={call}
+                    org={org}
+                    environment={environment}
+                    writable={writable}
+                    onChanged={load}
+                  />
+                )}
+                {['Cash Flow', 'Reports'].includes(tab) && (
+                  <FinancialOverview api={call} scope={org + '\0' + environment} />
+                )}
+                {tab === 'Invoices' && (
+                  <div className="finance-toolbar" aria-label="Invoice views">
+                    {[
+                      ['all', 'All invoices'],
+                      ['draft', 'Drafts'],
+                      ['outstanding', 'Outstanding'],
+                      ['overdue', 'Overdue'],
+                      ['paid', 'Paid'],
+                      ['credited', 'Credited'],
+                    ].map(([value, label]) => (
+                      <button
+                        key={value}
+                        className="secondary-button"
+                        aria-pressed={invoiceFilter === value}
+                        onClick={() => {
+                          setOffset(0);
+                          setInvoiceFilter(value);
+                        }}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {['Payments', 'Reconciliation'].includes(tab) && (
+                  <PaymentCentre
+                    key={org + environment + tab}
+                    api={call}
+                    scope={org + '\0' + environment}
+                    writable={writable}
+                    admin={['owner', 'admin'].includes(organization?.role)}
+                    reconcile={tab === 'Reconciliation'}
+                  />
+                )}
+                {['Cash Flow', 'Expenses'].includes(tab) && (
+                  <MoneyTools
+                    api={call}
+                    scope={org + '\0' + environment}
+                    cashFlow={tab === 'Cash Flow'}
+                    writable={['owner', 'admin', 'finance'].includes(organization?.role)}
+                  />
+                )}
+                {tab === 'Notifications' && (
+                  <NotificationCentre
+                    api={call}
+                    scope={org + '\0' + environment}
+                    kind="business"
+                    navigate={setTab}
+                    openRecord={openRecord}
+                  />
+                )}
+                {operationsTabs.includes(tab) && tab !== 'Notifications' && (
+                  <OperationsWorkspace
+                    key={org + environment + tab}
+                    section={tab}
+                    services={
+                      market.catalog?.services
+                        .filter((s: any) => s.status === 'active')
+                        .map((s: any) => s.id) || []
+                    }
+                    org={org}
+                    environment={environment}
+                    role={organization?.role || 'viewer'}
+                    onNavigate={setTab}
+                  />
+                )}
+                {busy && !data && (
+                  <div className="skeleton" role="status">
+                    Loading your records…
+                  </div>
+                )}
+                {tab === 'Overview' && <>{metricView()}</>}
+                {[
+                  'Customers',
+                  'Orders',
+                  'Invoices',
+                  'Transactions',
+                  'Integrations',
+                  'Developers',
+                ].includes(tab) && (
+                  <>
+                    <div className="table-toolbar">
+                      <input
+                        aria-label="Search records"
+                        maxLength={200}
+                        placeholder="Search records…"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                      />
+                      <button className="quiet-button" onClick={load}>
+                        Refresh
+                      </button>
+                    </div>
+                    <section className="panel record-panel">
+                      {data?.data?.length ? (
+                        <>
+                          <div
+                            className={
+                              tab === 'Invoices'
+                                ? 'table-scroll invoice-table-desktop'
+                                : tab === 'Orders'
+                                  ? 'table-scroll order-table-desktop'
+                                  : 'table-scroll'
+                            }
+                          >
+                            <DataTable>
+                              <thead>
+                                <tr>
+                                  <th>Reference / name</th>
+                                  <th>Status / type</th>
+                                  <th>Amount / description</th>
+                                  <th>Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {data.data.map((r: any) => (
+                                  <tr key={r.id}>
+                                    <td>
                                       <button
-                                        onClick={() =>
-                                          action(() =>
-                                            call(
-                                              '/records/' +
-                                                tab.toLowerCase() +
-                                                '/' +
-                                                r.id,
-                                              'PATCH',
-                                              {
-                                                status:
-                                                  tab === 'Invoices'
-                                                    ? 'issued'
-                                                    : 'awaiting_payment',
-                                              },
-                                            ),
-                                          )
-                                        }
+                                        className="text-button"
+                                        onClick={() => setSelected(r)}
                                       >
-                                        Issue
+                                        {r.reference || r.name || r.provider || r.external_id}
                                       </button>
-                                    )}
-                                    {[
-                                      'issued',
-                                      'awaiting_payment',
-                                      'partially_paid',
-                                    ].includes(r.status) &&
-                                      writable && market.catalog?.services.some((s:any)=>s.id==='payments'&&s.status==='active') && (
+                                      <small className="record-id">{r.id}</small>
+                                    </td>
+                                    <td>
+                                      <span className="badge">
+                                        {r.status || r.type || 'active'}
+                                      </span>
+                                    </td>
+                                    <td>
+                                      {r.total_minor
+                                        ? money(r.total_minor, r.currency)
+                                        : r.amount_minor
+                                          ? money(r.amount_minor, r.currency)
+                                          : r.description || '—'}
+                                      {r.paid_minor > 0 && (
+                                        <small className="record-id">
+                                          Paid: {money(r.paid_minor, r.currency)}
+                                        </small>
+                                      )}
+                                    </td>
+                                    <td>
+                                      <div className="row-actions">
+                                        {r.status === 'draft' && writable && (
+                                          <button
+                                            onClick={() =>
+                                              action(() =>
+                                                call(
+                                                  '/records/' + tab.toLowerCase() + '/' + r.id,
+                                                  'PATCH',
+                                                  {
+                                                    status:
+                                                      tab === 'Invoices'
+                                                        ? 'issued'
+                                                        : 'awaiting_payment',
+                                                  },
+                                                ),
+                                              )
+                                            }
+                                          >
+                                            Issue
+                                          </button>
+                                        )}
+                                        {['issued', 'awaiting_payment', 'partially_paid'].includes(
+                                          r.status,
+                                        ) &&
+                                          writable &&
+                                          market.catalog?.services.some(
+                                            (s: any) =>
+                                              s.id === 'payments' && s.status === 'active',
+                                          ) && (
+                                            <button onClick={() => requestPayment(r)}>
+                                              Payment link
+                                            </button>
+                                          )}
+                                        {tab === 'Invoices' && (
+                                          <button
+                                            onClick={async () => {
+                                              try {
+                                                const fresh = await call(
+                                                  '/records/invoices/' + r.id,
+                                                );
+                                                setSelected(fresh);
+                                                setTimeout(() => window.print(), 100);
+                                              } catch (e) {
+                                                setError((e as Error).message);
+                                              }
+                                            }}
+                                          >
+                                            Print / PDF
+                                          </button>
+                                        )}
+                                        {tab === 'Developers' && (
+                                          <button onClick={() => credentials(r)}>
+                                            Generate key
+                                          </button>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </DataTable>
+                          </div>
+                          {tab === 'Invoices' && (
+                            <div className="invoice-list-mobile" aria-label="Invoices">
+                              {data.data.map((r: any) => {
+                                const totalMinor = r.total_minor ?? r.amount_minor ?? 0,
+                                  paidMinor = r.paid_minor ?? 0,
+                                  outstandingMinor =
+                                    r.outstanding_minor ?? Math.max(0, totalMinor - paidMinor),
+                                  canRequestPayment =
+                                    ['issued', 'awaiting_payment', 'partially_paid'].includes(
+                                      r.status,
+                                    ) &&
+                                    outstandingMinor > 0 &&
+                                    writable &&
+                                    market.catalog?.services.some(
+                                      (s: any) => s.id === 'payments' && s.status === 'active',
+                                    );
+                                return (
+                                  <article className="invoice-mobile-record" key={r.id}>
+                                    <div className="invoice-mobile-heading">
+                                      <button
+                                        className="invoice-mobile-reference"
+                                        onClick={() => setSelected(r)}
+                                        aria-label={`Open invoice ${r.reference || 'details'}`}
+                                      >
+                                        {r.reference || 'Invoice'}
+                                      </button>
+                                      <span className="badge invoice-mobile-status">
+                                        {r.status || 'active'}
+                                      </span>
+                                    </div>
+                                    <div className="invoice-mobile-amounts">
+                                      <div>
+                                        <span>Invoice total</span>
+                                        <strong>{money(totalMinor, r.currency)}</strong>
+                                      </div>
+                                      <div className="invoice-mobile-secondary-amount">
+                                        <span>{paidMinor > 0 ? 'Paid' : 'Outstanding'}</span>
+                                        <b>
+                                          {paidMinor > 0
+                                            ? money(paidMinor, r.currency)
+                                            : money(outstandingMinor, r.currency)}
+                                        </b>
+                                      </div>
+                                      {paidMinor > 0 && outstandingMinor > 0 && (
+                                        <div className="invoice-mobile-balance">
+                                          <span>Remaining</span>
+                                          <b>{money(outstandingMinor, r.currency)}</b>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="invoice-mobile-actions">
+                                      <button
+                                        className="quiet-button"
+                                        onClick={() => setSelected(r)}
+                                      >
+                                        Details
+                                      </button>
+                                      {r.status === 'draft' && writable && (
                                         <button
+                                          className="quiet-button"
+                                          onClick={() =>
+                                            action(() =>
+                                              call('/records/invoices/' + r.id, 'PATCH', {
+                                                status: 'issued',
+                                              }),
+                                            )
+                                          }
+                                        >
+                                          Issue
+                                        </button>
+                                      )}
+                                      {canRequestPayment && (
+                                        <button
+                                          className="quiet-button"
                                           onClick={() => requestPayment(r)}
                                         >
                                           Payment link
                                         </button>
                                       )}
-                                    {tab === 'Invoices' && (
                                       <button
-                                        onClick={async () => {try{const fresh=await call('/records/invoices/'+r.id);setSelected(fresh);setTimeout(()=>window.print(),100);}catch(e){setError((e as Error).message);}}}
+                                        className="quiet-button"
+                                        onClick={async () => {
+                                          try {
+                                            const fresh = await call('/records/invoices/' + r.id);
+                                            setSelected(fresh);
+                                            setTimeout(() => window.print(), 100);
+                                          } catch (e) {
+                                            setError((e as Error).message);
+                                          }
+                                        }}
                                       >
                                         Print / PDF
                                       </button>
-                                    )}
-                                    {tab === 'Developers' && (
-                                      <button onClick={() => credentials(r)}>
-                                        Generate key
-                                      </button>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </DataTable>
-                      </div>
-                      {tab === 'Invoices' && (
-                        <div className="invoice-list-mobile" aria-label="Invoices">
-                          {data.data.map((r: any) => {
-                            const totalMinor =
-                                r.total_minor ?? r.amount_minor ?? 0,
-                              paidMinor = r.paid_minor ?? 0,
-                              outstandingMinor =
-                                r.outstanding_minor ??
-                                Math.max(0, totalMinor - paidMinor),
-                              canRequestPayment =
-                                ['issued', 'awaiting_payment', 'partially_paid'].includes(
-                                  r.status,
-                                ) &&
-                                outstandingMinor > 0 &&
-                                writable &&
-                                market.catalog?.services.some(
-                                  (s: any) =>
-                                    s.id === 'payments' && s.status === 'active',
-                                );
-                            return (
-                              <article className="invoice-mobile-record" key={r.id}>
-                                <div className="invoice-mobile-heading">
-                                  <button
-                                    className="invoice-mobile-reference"
-                                    onClick={() => setSelected(r)}
-                                    aria-label={`Open invoice ${r.reference || 'details'}`}
-                                  >
-                                    {r.reference || 'Invoice'}
-                                  </button>
-                                  <span className="badge invoice-mobile-status">
-                                    {r.status || 'active'}
-                                  </span>
-                                </div>
-                                <div className="invoice-mobile-amounts">
-                                  <div>
-                                    <span>Invoice total</span>
-                                    <strong>{money(totalMinor, r.currency)}</strong>
-                                  </div>
-                                  <div className="invoice-mobile-secondary-amount">
-                                    <span>
-                                      {paidMinor > 0 ? 'Paid' : 'Outstanding'}
-                                    </span>
-                                    <b>
-                                      {paidMinor > 0
-                                        ? money(paidMinor, r.currency)
-                                        : money(outstandingMinor, r.currency)}
-                                    </b>
-                                  </div>
-                                  {paidMinor > 0 && outstandingMinor > 0 && (
-                                    <div className="invoice-mobile-balance">
-                                      <span>Remaining</span>
-                                      <b>{money(outstandingMinor, r.currency)}</b>
                                     </div>
-                                  )}
-                                </div>
-                                <div className="invoice-mobile-actions">
-                                  <button
-                                    className="quiet-button"
-                                    onClick={() => setSelected(r)}
-                                  >
-                                    Details
-                                  </button>
-                                  {r.status === 'draft' && writable && (
-                                    <button
-                                      className="quiet-button"
-                                      onClick={() =>
-                                        action(() =>
-                                          call(
-                                            '/records/invoices/' + r.id,
-                                            'PATCH',
-                                            { status: 'issued' },
-                                          ),
-                                        )
-                                      }
-                                    >
-                                      Issue
-                                    </button>
-                                  )}
-                                  {canRequestPayment && (
-                                    <button
-                                      className="quiet-button"
-                                      onClick={() => requestPayment(r)}
-                                    >
-                                      Payment link
-                                    </button>
-                                  )}
-                                  <button
-                                    className="quiet-button"
-                                    onClick={async () => {
-                                      try {
-                                        const fresh = await call(
-                                          '/records/invoices/' + r.id,
-                                        );
-                                        setSelected(fresh);
-                                        setTimeout(() => window.print(), 100);
-                                      } catch (e) {
-                                        setError((e as Error).message);
-                                      }
-                                    }}
-                                  >
-                                    Print / PDF
-                                  </button>
-                                </div>
-                              </article>
-                            );
-                          })}
-                        </div>
-                      )}
-                      {tab === 'Orders' && (
-                        <div className="orders-list-mobile" aria-label="Orders">
-                          {data.data.map((r: any) => {
-                            const totalMinor = r.total_minor ?? r.amount_minor,
-                              canRequestPayment =
-                                ['issued', 'awaiting_payment', 'partially_paid'].includes(r.status) &&
-                                writable &&
-                                market.catalog?.services.some(
-                                  (s: any) => s.id === 'payments' && s.status === 'active',
+                                  </article>
                                 );
-                            return (
-                              <article className="order-mobile-record" key={r.id}>
-                                <div className="order-mobile-heading">
-                                  <button
-                                    className="order-mobile-reference"
-                                    onClick={() => setSelected(r)}
-                                    aria-label={`Open order ${r.reference || 'details'}`}
-                                  >
-                                    {r.reference || 'Order'}
-                                  </button>
-                                  <span className="badge order-mobile-status">
-                                    {r.status || 'active'}
-                                  </span>
-                                </div>
-                                <div className="order-mobile-financials">
-                                  {totalMinor != null && (
-                                    <div className="order-mobile-total">
-                                      <span>Order total</span>
-                                      <strong>{money(totalMinor, r.currency)}</strong>
-                                    </div>
-                                  )}
-                                  {r.paid_minor != null && r.paid_minor > 0 && (
-                                    <div>
-                                      <span>Paid</span>
-                                      <b>{money(r.paid_minor, r.currency)}</b>
-                                    </div>
-                                  )}
-                                  {r.outstanding_minor != null && (
-                                    <div>
-                                      <span>Outstanding</span>
-                                      <b>{money(r.outstanding_minor, r.currency)}</b>
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="order-mobile-actions">
-                                  <button className="quiet-button" onClick={() => setSelected(r)}>Details</button>
-                                  {r.status === 'draft' && writable && (
-                                    <button
-                                      className="quiet-button"
-                                      onClick={() => action(() => call('/records/orders/' + r.id, 'PATCH', { status: 'awaiting_payment' }))}
-                                    >Issue</button>
-                                  )}
-                                  {canRequestPayment && (
-                                    <button className="quiet-button" onClick={() => requestPayment(r)}>Payment link</button>
-                                  )}
-                                </div>
-                              </article>
-                            );
-                          })}
-                        </div>
-                      )}
-                      </>
-                    ) : (
-                      !busy && (
-                        <Empty
-                          text={
-                            'No ' +
-                            tab.toLowerCase() +
-                            ' yet. Your saved records will appear here.'
-                          }
-                        />
-                      )
-                    )}
-                  </section>
-                  {tab === 'Transactions' && (
-                    <form
-                      className="panel"
-                      onSubmit={async (e) => {
-                        e.preventDefault();
-                        const input = new FormData(e.currentTarget);
-                        await action(async () => {
-                          const rows = JSON.parse(String(input.get('rows')));
-                          const result = await call('/import', 'POST', {
-                            rows,
-                          });
-                          setNotice(
-                            `${result.imported} imported; ${result.duplicates} duplicates ignored.`,
-                          );
-                          return result;
-                        });
-                      }}
-                    >
-                      <h2>Import transaction data</h2>
-                      <p>
-                        Merchant imports retain provenance and never confirm
-                        provider payments. Upload a CSV or paste normalized
-                        JSON.
-                      </p>
-                      <input
-                        type="file"
-                        accept=".csv,text/csv"
-                        aria-label="Import CSV"
-                        onChange={async (e) => {
-                          try {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const text = await file.text();
-                            const lines = parseCSV(text),
-                              headers = lines.shift() || [];
-                            const rows = lines
-                              .filter((r) => r.some(Boolean))
-                              .map((values) => {
-                                const r: any = Object.fromEntries(
-                                  headers.map((h, i) => [h.trim(), values[i]]),
-                                );
-                                r.amount_minor = Number(r.amount_minor);
-                                return r;
-                              });
-                            (
-                              document.getElementById(
-                                'import-json',
-                              ) as HTMLTextAreaElement
-                            ).value = JSON.stringify(rows, null, 2);
-                          } catch (e) {
-                            setError((e as Error).message);
-                          }
-                        }}
-                      />
-                      <p className="muted">
-                        Headers:
-                        external_id,amount_minor,currency,type,occurred_at,source,counterparty
-                      </p>
-                      <textarea
-                        id="import-json"
-                        name="rows"
-                        rows={6}
-                        required
-                        placeholder='[{"external_id":"receipt-001","amount_minor":10000,"currency":"KES","type":"inflow","occurred_at":"2026-10-25T09:00:00Z","source":"csv"}]'
-                      />
-                      <button className="button">Import records</button>
-                    </form>
-                  )}
-                  {tab === 'Developers' && (
-                    <DeveloperTools
-                      key={org + environment}
-                      call={call}
-                      onNotice={setNotice}
-                    />
-                  )}
-                  {tab === 'Webhooks' && <WebhooksConsole key={org + environment} call={call} manager={['owner','admin'].includes(organization?.role)} />}
-                  {tab === 'Verification APIs' && <VerificationConsole key={org + environment} call={call} />}
-                </>
-              )}
-              {recordTabs.includes(tab) && (
-                <nav className="record-pagination" aria-label="Record pages">
-                  <button
-                    className="secondary-button"
-                    disabled={busy || offset === 0}
-                    onClick={() => setOffset(Math.max(0, offset - 25))}
-                  >
-                    Previous page
-                  </button>
-                  <span role="status">
-                    {data?.data?.length
-                      ? 'Records ' +
-                        (offset + 1) +
-                        '–' +
-                        (offset + data.data.length)
-                      : 'No matching records'}
-                    {search ? ' matching “' + search + '”' : ''}
-                  </span>
-                  <button
-                    className="secondary-button"
-                    disabled={busy || !data?.data || data.data.length < 25}
-                    onClick={() => setOffset(offset + 25)}
-                  >
-                    Next page
-                  </button>
-                </nav>
-              )}
-              {tab === 'Invoices' && data?.data?.length > 0 && (
-                <RecordAnalytics records={data.data} kind="invoices" />
-              )}
-              {tab === 'Payments' && data?.data?.length > 0 && (
-                <RecordAnalytics records={data.data} kind="payments" />
-              )}
-              {tab === 'Payments' && (
-                <section className="panel">
-                  <h2>Payment requests</h2>
-                  {data?.data?.length ? (
-                    <div className="table-scroll">
-                      <DataTable>
-                        <thead>
-                          <tr>
-                            <th>Request</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {data.data.map((r: any) => (
-                            <tr key={r.id}>
-                              <td>{r.id}</td>
-                              <td>
-                                {money(Number(r.amount_minor), r.currency)}
-                              </td>
-                              <td>
-                                <span className="badge">{r.status}</span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </DataTable>
-                    </div>
-                  ) : (
-                    <Empty text="Create a payment link from an issued order or invoice." />
-                  )}
-                  <p className="muted">
-                    Checkout URLs contain secrets and are shown once at
-                    creation.
-                  </p>
-                </section>
-              )}
-              {tab === 'Reconciliation' && (
-                <ReconciliationOverview data={data} />
-              )}
-              {tab === 'Reconciliation' && (
-                <details className="panel learning-helper">
-                  <summary>How payment matching works</summary>
-                  <ol>
-                    <li>Use a provider-confirmed payment event.</li>
-                    <li>
-                      Match its reference, amount and currency to a request.
-                    </li>
-                    <li>
-                      Review duplicates, mismatches or unallocated records.
-                    </li>
-                    <li>Record a review note; retain the original evidence.</li>
-                  </ol>
-                  <p>
-                    Imported credits and a customer’s screenshot cannot confirm
-                    a payment.
-                  </p>
-                </details>
-              )}
-              {tab === 'Reconciliation' && (
-                <>
-                  <section className="panel">
-                    <h2>Matched allocations</h2>
-                    <p>
-                      {data?.allocations?.length || 0} verified allocations in{' '}
-                      {environment}.
-                    </p>
-                    {data?.allocations?.map((r: any) => (
-                      <div className="list-row" key={r.id}>
-                        <code>{r.document_id}</code>
-                        <span>{r.amount_minor} minor units</span>
-                      </div>
-                    ))}
-                  </section>
-                  <section className="panel">
-                    <h2>Exception queue</h2>
-                    {data?.exceptions?.length ? (
-                      data.exceptions.map((r: any) => (
-                        <div className="list-row" key={r.id}>
-                          <div>
-                            <b>{r.reason.replaceAll('_', ' ')}</b>
-                            <p>
-                              {r.event_id} · {r.status}
-                            </p>
-                          </div>
-                          {r.status === 'pending_review' && (
-                            <button
-                              onClick={() => {
-                                const note = prompt(
-                                  'Review note (minimum 5 characters). Original events remain unchanged.',
-                                );
-                                if (note)
-                                  action(() =>
-                                    call(
-                                      '/reconciliation/' + r.id + '/review',
-                                      'POST',
-                                      { note },
-                                    ),
-                                  );
-                              }}
-                            >
-                              Record review
-                            </button>
+                              })}
+                            </div>
                           )}
-                        </div>
-                      ))
-                    ) : (
-                      <Empty text="No exceptions to review." />
+                          {tab === 'Orders' && (
+                            <div className="orders-list-mobile" aria-label="Orders">
+                              {data.data.map((r: any) => {
+                                const totalMinor = r.total_minor ?? r.amount_minor,
+                                  canRequestPayment =
+                                    ['issued', 'awaiting_payment', 'partially_paid'].includes(
+                                      r.status,
+                                    ) &&
+                                    writable &&
+                                    market.catalog?.services.some(
+                                      (s: any) => s.id === 'payments' && s.status === 'active',
+                                    );
+                                return (
+                                  <article className="order-mobile-record" key={r.id}>
+                                    <div className="order-mobile-heading">
+                                      <button
+                                        className="order-mobile-reference"
+                                        onClick={() => setSelected(r)}
+                                        aria-label={`Open order ${r.reference || 'details'}`}
+                                      >
+                                        {r.reference || 'Order'}
+                                      </button>
+                                      <span className="badge order-mobile-status">
+                                        {r.status || 'active'}
+                                      </span>
+                                    </div>
+                                    <div className="order-mobile-financials">
+                                      {totalMinor != null && (
+                                        <div className="order-mobile-total">
+                                          <span>Order total</span>
+                                          <strong>{money(totalMinor, r.currency)}</strong>
+                                        </div>
+                                      )}
+                                      {r.paid_minor != null && r.paid_minor > 0 && (
+                                        <div>
+                                          <span>Paid</span>
+                                          <b>{money(r.paid_minor, r.currency)}</b>
+                                        </div>
+                                      )}
+                                      {r.outstanding_minor != null && (
+                                        <div>
+                                          <span>Outstanding</span>
+                                          <b>{money(r.outstanding_minor, r.currency)}</b>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="order-mobile-actions">
+                                      <button
+                                        className="quiet-button"
+                                        onClick={() => setSelected(r)}
+                                      >
+                                        Details
+                                      </button>
+                                      {r.status === 'draft' && writable && (
+                                        <button
+                                          className="quiet-button"
+                                          onClick={() =>
+                                            action(() =>
+                                              call('/records/orders/' + r.id, 'PATCH', {
+                                                status: 'awaiting_payment',
+                                              }),
+                                            )
+                                          }
+                                        >
+                                          Issue
+                                        </button>
+                                      )}
+                                      {canRequestPayment && (
+                                        <button
+                                          className="quiet-button"
+                                          onClick={() => requestPayment(r)}
+                                        >
+                                          Payment link
+                                        </button>
+                                      )}
+                                    </div>
+                                  </article>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        !busy && (
+                          <Empty
+                            text={
+                              'No ' +
+                              tab.toLowerCase() +
+                              ' yet. Your saved records will appear here.'
+                            }
+                          />
+                        )
+                      )}
+                    </section>
+                    {tab === 'Transactions' && (
+                      <form
+                        className="panel"
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          const input = new FormData(e.currentTarget);
+                          await action(async () => {
+                            const rows = JSON.parse(String(input.get('rows')));
+                            const result = await call('/import', 'POST', {
+                              rows,
+                            });
+                            setNotice(
+                              `${result.imported} imported; ${result.duplicates} duplicates ignored.`,
+                            );
+                            return result;
+                          });
+                        }}
+                      >
+                        <h2>Import transaction data</h2>
+                        <p>
+                          Merchant imports retain provenance and never confirm provider payments.
+                          Upload a CSV or paste normalized JSON.
+                        </p>
+                        <input
+                          type="file"
+                          accept=".csv,text/csv"
+                          aria-label="Import CSV"
+                          onChange={async (e) => {
+                            try {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const text = await file.text();
+                              const lines = parseCSV(text),
+                                headers = lines.shift() || [];
+                              const rows = lines
+                                .filter((r) => r.some(Boolean))
+                                .map((values) => {
+                                  const r: any = Object.fromEntries(
+                                    headers.map((h, i) => [h.trim(), values[i]]),
+                                  );
+                                  r.amount_minor = Number(r.amount_minor);
+                                  return r;
+                                });
+                              (
+                                document.getElementById('import-json') as HTMLTextAreaElement
+                              ).value = JSON.stringify(rows, null, 2);
+                            } catch (e) {
+                              setError((e as Error).message);
+                            }
+                          }}
+                        />
+                        <p className="muted">
+                          Headers:
+                          external_id,amount_minor,currency,type,occurred_at,source,counterparty
+                        </p>
+                        <textarea
+                          id="import-json"
+                          name="rows"
+                          rows={6}
+                          required
+                          placeholder='[{"external_id":"receipt-001","amount_minor":10000,"currency":"KES","type":"inflow","occurred_at":"2026-10-25T09:00:00Z","source":"csv"}]'
+                        />
+                        <button className="button">Import records</button>
+                      </form>
                     )}
-                  </section>
-                </>
-              )}
-              {tab==='Team'&&<TeamDirectory key={org+environment} data={data} call={call} action={action} role={organization?.role} actor={me?.id}/> }
-              {tab === 'Settings' && (
-                <>
-                  <section className="panel">
-                    <h2>Business profile</h2>
-                    <p>
-                      {organization?.name} · {organization?.verification_status}
-                    </p>
-                    <p>
-                      Default currency: {organization && profile?.currency} ·
-                      Default display timezone: Africa/Nairobi
-                    </p>
-                    <p>
-                      Identity and business verification are not completed
-                      automatically.
-                    </p>
-                    {me?.verified||account?.user?.verified ? <p>Email verified.</p> : <a href="/verify">
-                      Verify your email <Icon name="right" />
-                    </a>}
-                  </section>
-                  <section className="panel">
-                    <h2>Audit history</h2>
-                    {data?.data?.map((r: any) => (
-                      <div key={r.id} className="list-row">
-                        <span>{r.action}</span>
-                        <time>
-                          {new Date(r.created_at).toLocaleString('en-KE', {
-                            timeZone: 'Africa/Nairobi',
-                          })}
-                        </time>
-                      </div>
-                    ))}
-                  </section>
-                </>
-              )}
-              {selected && (
-                <Overlay onClose={() => setSelected(null)}>
-                  <section
-                    className={
-                      'record-modal panel ' +
-                      (selected.kind === 'invoices' ? 'print-invoice' : '')
-                    }
-                    role="dialog"
-                    aria-modal="true"
-                    aria-label="Record details"
-                  >
+                    {tab === 'Developers' && (
+                      <DeveloperTools key={org + environment} call={call} onNotice={setNotice} />
+                    )}
+                    {tab === 'Webhooks' && (
+                      <WebhooksConsole
+                        key={org + environment}
+                        call={call}
+                        manager={['owner', 'admin'].includes(organization?.role)}
+                      />
+                    )}
+                    {tab === 'Verification APIs' && (
+                      <VerificationConsole key={org + environment} call={call} />
+                    )}
+                  </>
+                )}
+                {recordTabs.includes(tab) && (
+                  <nav className="record-pagination" aria-label="Record pages">
                     <button
-                      className="close-modal"
-                      onClick={() => setSelected(null)}
+                      className="secondary-button"
+                      disabled={busy || offset === 0}
+                      onClick={() => setOffset(Math.max(0, offset - 25))}
                     >
-                      Close <Icon name="close" />
+                      Previous page
                     </button>
-                    <h2>{selected.reference || selected.name}</h2>
-                    {selected.kind === 'invoices' ? (
-                      <>
-                        <small className="record-id">
-                          Record ID: {selected.id}
-                        </small>
-                        <p>
-                          {organization?.name} · {profile?.email}
-                        </p>
-                        <p>
-                          Invoice · {selected.issue_date} · Due{' '}
-                          {selected.due_date}
-                        </p>
-                        <p>
-                          Customer:{' '}
-                          {customers.find((c) => c.id === selected.customer_id)
-                            ?.name || selected.customer_id}
-                        </p>
+                    <span role="status">
+                      {data?.data?.length
+                        ? 'Records ' + (offset + 1) + '–' + (offset + data.data.length)
+                        : 'No matching records'}
+                      {search ? ' matching “' + search + '”' : ''}
+                    </span>
+                    <button
+                      className="secondary-button"
+                      disabled={busy || !data?.data || data.data.length < 25}
+                      onClick={() => setOffset(offset + 25)}
+                    >
+                      Next page
+                    </button>
+                  </nav>
+                )}
+                {tab === 'Invoices' && data?.data?.length > 0 && (
+                  <RecordAnalytics records={data.data} kind="invoices" />
+                )}
+                {tab === 'Payments' && data?.data?.length > 0 && (
+                  <RecordAnalytics records={data.data} kind="payments" />
+                )}
+                {tab === 'Payments' && (
+                  <section className="panel">
+                    <h2>Payment requests</h2>
+                    {data?.data?.length ? (
+                      <div className="table-scroll">
                         <DataTable>
                           <thead>
                             <tr>
-                              <th>Item</th>
-                              <th>Quantity</th>
-                              <th>Unit price</th>
+                              <th>Request</th>
+                              <th>Amount</th>
+                              <th>Status</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {selected.items.map((i: any, n: number) => (
-                              <tr key={n}>
-                                <td>{i.description}</td>
-                                <td>{i.quantity}</td>
+                            {data.data.map((r: any) => (
+                              <tr key={r.id}>
+                                <td>{r.id}</td>
+                                <td>{money(Number(r.amount_minor), r.currency)}</td>
                                 <td>
-                                  {money(i.unit_price_minor, selected.currency)}
+                                  <span className="badge">{r.status}</span>
                                 </td>
                               </tr>
                             ))}
                           </tbody>
                         </DataTable>
-                        <p>
-                          Subtotal:{' '}
-                          {money(selected.subtotal_minor, selected.currency)} ·
-                          Discount:{' '}
-                          {money(selected.discount_minor, selected.currency)} ·
-                          Tax: {money(selected.tax_minor, selected.currency)}
-                        </p>
-                        <h3>
-                          Total:{' '}
-                          {money(selected.total_minor, selected.currency)}
-                        </h3>
-                        <p>
-                          Paid: {money(selected.paid_minor, selected.currency)}{' '}
-                          · {selected.status}
-                        </p>
-                        <p>{selected.notes}</p>
-                        <p>{selected.terms}</p>
-                        <p>{selected.payment_instructions}</p>
-                        <small>
-                          Ordinary commercial invoice. Not KRA-validated eTIMS.
-                        </small>
-                        <button
-                          className="button"
-                          onClick={() => window.print()}
-                        >
-                          Print / Save PDF
-                        </button>
-                      </>
-                    ) : selected.kind === 'customers' ? (
-                      <p>
-                        {selected.email || 'No email recorded'} ·{' '}
-                        {selected.phone || 'No phone recorded'}
-                      </p>
+                      </div>
                     ) : (
-                      <pre>{JSON.stringify(selected, null, 2)}</pre>
+                      <Empty text="Create a payment link from an issued order or invoice." />
                     )}
-                    {selected.kind==='orders'&&selected.status==='draft'&&writable&&!isDemo()&&<OrderDraftEditor row={selected} api={call} scope={org+'\0'+environment} services={market.catalog?.services||[]} customers={customers} onSaved={async()=>{const scope=viewScope;await load();try{const fresh=await call('/records/orders/'+selected.id);if(currentScope.current===scope)setSelected(fresh);}catch(e){if(currentScope.current===scope)setError((e as Error).message);}}}/>}
-{['invoices','customers','orders'].includes(selected.kind)&&<RecordFinanceDetails key={org+environment+selected.id} row={selected} api={call} writable={financeWritable} onChanged={async()=>{const scope=viewScope;await load();try{const fresh=await call('/records/'+selected.kind+'/'+selected.id);if(currentScope.current===scope)setSelected(fresh);}catch(e){if(currentScope.current===scope)setError((e as Error).message);}}}/>}
-                    {selected.kind === 'customers' && writable && (
-                      <form
-                        onSubmit={async (e) => {
-                          e.preventDefault();
-                          const values = Object.fromEntries(
-                            new FormData(e.currentTarget),
-                          );
-                          const result = await action(() =>
-                            call(
-                              '/records/customers/' + selected.id,
-                              'PATCH',
-                              values,
-                            ),
-                          );
-                          if (result) {
-                            setSelected(null);
-                            setNotice('Customer updated.');
-                          }
-                        }}
-                      >
-                        <Field label="Customer name">
-                          <input
-                            name="name"
-                            required
-                            maxLength={200}
-                            defaultValue={selected.name}
-                          />
-                        </Field>
-                        <Field label="Email">
-                          <input
-                            name="email"
-                            type="email"
-                            defaultValue={selected.email}
-                          />
-                        </Field>
-                        <Field label="Phone">
-                          <input
-                            name="phone"
-                            maxLength={50}
-                            defaultValue={selected.phone}
-                          />
-                        </Field>
-                        <Field label="Address"><textarea name="address" maxLength={1000} defaultValue={selected.address||''}/></Field>
-                        <Field label="Notes">
-                          <textarea
-                            name="notes"
-                            maxLength={3000}
-                            defaultValue={selected.notes}
-                          />
-                        </Field>
-                        <button className="button" disabled={busy}>
-                          Save customer changes
-                        </button>
-                        <ErrorBox error={error} />
-                      </form>
-                    )}
+                    <p className="muted">
+                      Checkout URLs contain secrets and are shown once at creation.
+                    </p>
                   </section>
-                </Overlay>
-              )}
-            </></ServiceGate>
+                )}
+                {tab === 'Reconciliation' && <ReconciliationOverview data={data} />}
+                {tab === 'Reconciliation' && (
+                  <details className="panel learning-helper">
+                    <summary>How payment matching works</summary>
+                    <ol>
+                      <li>Use a provider-confirmed payment event.</li>
+                      <li>Match its reference, amount and currency to a request.</li>
+                      <li>Review duplicates, mismatches or unallocated records.</li>
+                      <li>Record a review note; retain the original evidence.</li>
+                    </ol>
+                    <p>Imported credits and a customer’s screenshot cannot confirm a payment.</p>
+                  </details>
+                )}
+                {tab === 'Reconciliation' && (
+                  <>
+                    <section className="panel">
+                      <h2>Matched allocations</h2>
+                      <p>
+                        {data?.allocations?.length || 0} verified allocations in {environment}.
+                      </p>
+                      {data?.allocations?.map((r: any) => (
+                        <div className="list-row" key={r.id}>
+                          <code>{r.document_id}</code>
+                          <span>{r.amount_minor} minor units</span>
+                        </div>
+                      ))}
+                    </section>
+                    <section className="panel">
+                      <h2>Exception queue</h2>
+                      {data?.exceptions?.length ? (
+                        data.exceptions.map((r: any) => (
+                          <div className="list-row" key={r.id}>
+                            <div>
+                              <b>{r.reason.replaceAll('_', ' ')}</b>
+                              <p>
+                                {r.event_id} · {r.status}
+                              </p>
+                            </div>
+                            {r.status === 'pending_review' && (
+                              <button
+                                onClick={() => {
+                                  const note = prompt(
+                                    'Review note (minimum 5 characters). Original events remain unchanged.',
+                                  );
+                                  if (note)
+                                    action(() =>
+                                      call('/reconciliation/' + r.id + '/review', 'POST', { note }),
+                                    );
+                                }}
+                              >
+                                Record review
+                              </button>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <Empty text="No exceptions to review." />
+                      )}
+                    </section>
+                  </>
+                )}
+                {tab === 'Team' && (
+                  <TeamDirectory
+                    key={org + environment}
+                    data={data}
+                    call={call}
+                    action={action}
+                    role={organization?.role}
+                    actor={me?.id}
+                  />
+                )}
+                {tab === 'Settings' && (
+                  <>
+                    <section className="panel">
+                      <h2>Business profile</h2>
+                      <p>
+                        {organization?.name} · {organization?.verification_status}
+                      </p>
+                      <p>
+                        Default currency: {organization && profile?.currency} · Default display
+                        timezone: Africa/Nairobi
+                      </p>
+                      <p>Identity and business verification are not completed automatically.</p>
+                      {me?.verified || account?.user?.verified ? (
+                        <p>Email verified.</p>
+                      ) : (
+                        <a href="/verify">
+                          Verify your email <Icon name="right" />
+                        </a>
+                      )}
+                    </section>
+                    <section className="panel">
+                      <h2>Audit history</h2>
+                      {data?.data?.map((r: any) => (
+                        <div key={r.id} className="list-row">
+                          <span>{r.action}</span>
+                          <time>
+                            {new Date(r.created_at).toLocaleString('en-KE', {
+                              timeZone: 'Africa/Nairobi',
+                            })}
+                          </time>
+                        </div>
+                      ))}
+                    </section>
+                  </>
+                )}
+                {selected && (
+                  <Overlay onClose={() => setSelected(null)}>
+                    <section
+                      className={
+                        'record-modal panel ' +
+                        (selected.kind === 'invoices' ? 'print-invoice' : '')
+                      }
+                      role="dialog"
+                      aria-modal="true"
+                      aria-label="Record details"
+                    >
+                      <button className="close-modal" onClick={() => setSelected(null)}>
+                        Close <Icon name="close" />
+                      </button>
+                      <h2>{selected.reference || selected.name}</h2>
+                      {selected.kind === 'invoices' ? (
+                        <>
+                          <small className="record-id">Record ID: {selected.id}</small>
+                          <p>
+                            {organization?.name} · {profile?.email}
+                          </p>
+                          <p>
+                            Invoice · {selected.issue_date} · Due {selected.due_date}
+                          </p>
+                          <p>
+                            Customer:{' '}
+                            {customers.find((c) => c.id === selected.customer_id)?.name ||
+                              selected.customer_id}
+                          </p>
+                          <DataTable>
+                            <thead>
+                              <tr>
+                                <th>Item</th>
+                                <th>Quantity</th>
+                                <th>Unit price</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {selected.items.map((i: any, n: number) => (
+                                <tr key={n}>
+                                  <td>{i.description}</td>
+                                  <td>{i.quantity}</td>
+                                  <td>{money(i.unit_price_minor, selected.currency)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </DataTable>
+                          <p>
+                            Subtotal: {money(selected.subtotal_minor, selected.currency)} ·
+                            Discount: {money(selected.discount_minor, selected.currency)} · Tax:{' '}
+                            {money(selected.tax_minor, selected.currency)}
+                          </p>
+                          <h3>Total: {money(selected.total_minor, selected.currency)}</h3>
+                          <p>
+                            Paid: {money(selected.paid_minor, selected.currency)} ·{' '}
+                            {selected.status}
+                          </p>
+                          <p>{selected.notes}</p>
+                          <p>{selected.terms}</p>
+                          <p>{selected.payment_instructions}</p>
+                          <small>Ordinary commercial invoice. Not KRA-validated eTIMS.</small>
+                          <button className="button" onClick={() => window.print()}>
+                            Print / Save PDF
+                          </button>
+                        </>
+                      ) : selected.kind === 'customers' ? (
+                        <p>
+                          {selected.email || 'No email recorded'} ·{' '}
+                          {selected.phone || 'No phone recorded'}
+                        </p>
+                      ) : (
+                        <pre>{JSON.stringify(selected, null, 2)}</pre>
+                      )}
+                      {selected.kind === 'orders' &&
+                        selected.status === 'draft' &&
+                        writable &&
+                        !isDemo() && (
+                          <OrderDraftEditor
+                            row={selected}
+                            api={call}
+                            scope={org + '\0' + environment}
+                            services={market.catalog?.services || []}
+                            customers={customers}
+                            onSaved={async () => {
+                              const scope = viewScope;
+                              await load();
+                              try {
+                                const fresh = await call('/records/orders/' + selected.id);
+                                if (currentScope.current === scope) setSelected(fresh);
+                              } catch (e) {
+                                if (currentScope.current === scope) setError((e as Error).message);
+                              }
+                            }}
+                          />
+                        )}
+                      {['invoices', 'customers', 'orders'].includes(selected.kind) && (
+                        <RecordFinanceDetails
+                          key={org + environment + selected.id}
+                          row={selected}
+                          api={call}
+                          writable={financeWritable}
+                          onChanged={async () => {
+                            const scope = viewScope;
+                            await load();
+                            try {
+                              const fresh = await call(
+                                '/records/' + selected.kind + '/' + selected.id,
+                              );
+                              if (currentScope.current === scope) setSelected(fresh);
+                            } catch (e) {
+                              if (currentScope.current === scope) setError((e as Error).message);
+                            }
+                          }}
+                        />
+                      )}
+                      {selected.kind === 'customers' && writable && (
+                        <form
+                          onSubmit={async (e) => {
+                            e.preventDefault();
+                            const values = Object.fromEntries(new FormData(e.currentTarget));
+                            const result = await action(() =>
+                              call('/records/customers/' + selected.id, 'PATCH', values),
+                            );
+                            if (result) {
+                              setSelected(null);
+                              setNotice('Customer updated.');
+                            }
+                          }}
+                        >
+                          <Field label="Customer name">
+                            <input
+                              name="name"
+                              required
+                              maxLength={200}
+                              defaultValue={selected.name}
+                            />
+                          </Field>
+                          <Field label="Email">
+                            <input name="email" type="email" defaultValue={selected.email} />
+                          </Field>
+                          <Field label="Phone">
+                            <input name="phone" maxLength={50} defaultValue={selected.phone} />
+                          </Field>
+                          <Field label="Address">
+                            <textarea
+                              name="address"
+                              maxLength={1000}
+                              defaultValue={selected.address || ''}
+                            />
+                          </Field>
+                          <Field label="Notes">
+                            <textarea name="notes" maxLength={3000} defaultValue={selected.notes} />
+                          </Field>
+                          <button className="button" disabled={busy}>
+                            Save customer changes
+                          </button>
+                          <ErrorBox error={error} />
+                        </form>
+                      )}
+                    </section>
+                  </Overlay>
+                )}
+              </>
+            </ServiceGate>
           )}
         </main>
       </div>
@@ -1743,20 +2356,12 @@ export function BusinessApp({initialOrg,account}:{initialOrg?:string;account?:an
   );
 }
 function LineItemsInput({ currency }: { currency: string }) {
-  const [items, setItems] = useState([
-    { description: '', quantity: 1, price: 100 },
-  ]);
+  const [items, setItems] = useState([{ description: '', quantity: 1, price: 100 }]);
   const multiplier = ['UGX', 'RWF'].includes(currency) ? 1 : 100;
-  const change = (
-    index: number,
-    key: 'description' | 'quantity' | 'price',
-    value: string,
-  ) =>
+  const change = (index: number, key: 'description' | 'quantity' | 'price', value: string) =>
     setItems(
       items.map((item, i) =>
-        i === index
-          ? { ...item, [key]: key === 'description' ? value : Number(value) }
-          : item,
+        i === index ? { ...item, [key]: key === 'description' ? value : Number(value) } : item,
       ),
     );
   return (
@@ -1769,7 +2374,13 @@ function LineItemsInput({ currency }: { currency: string }) {
           items.map((i) => ({
             description: i.description,
             quantity: i.quantity,
-            unit_price_minor: (()=>{try{return parseMoney(String(i.price),currency);}catch{return 0;}})(),
+            unit_price_minor: (() => {
+              try {
+                return parseMoney(String(i.price), currency);
+              } catch {
+                return 0;
+              }
+            })(),
           })),
         )}
       />
@@ -1802,7 +2413,15 @@ function LineItemsInput({ currency }: { currency: string }) {
               max={100000000}
               step={1 / multiplier}
               value={item.price}
-              onChange={(e) => {try{parseMoney(e.target.value,currency);e.target.setCustomValidity('');}catch(error){e.target.setCustomValidity((error as Error).message);}change(index, 'price', e.target.value);}}
+              onChange={(e) => {
+                try {
+                  parseMoney(e.target.value, currency);
+                  e.target.setCustomValidity('');
+                } catch (error) {
+                  e.target.setCustomValidity((error as Error).message);
+                }
+                change(index, 'price', e.target.value);
+              }}
             />
           </Field>
           <button
@@ -1820,19 +2439,14 @@ function LineItemsInput({ currency }: { currency: string }) {
         type="button"
         className="secondary-button"
         disabled={items.length >= 100}
-        onClick={() =>
-          setItems([...items, { description: '', quantity: 1, price: 0 }])
-        }
+        onClick={() => setItems([...items, { description: '', quantity: 1, price: 0 }])}
       >
         + Add item
       </button>
       <p className="muted">
         Item subtotal:{' '}
         {money(
-          items.reduce(
-            (s, i) => s + Math.round(i.price * multiplier) * i.quantity,
-            0,
-          ),
+          items.reduce((s, i) => s + Math.round(i.price * multiplier) * i.quantity, 0),
           currency,
         )}
       </p>
@@ -1842,7 +2456,6 @@ function LineItemsInput({ currency }: { currency: string }) {
 function Empty({ text }: { text: string }) {
   return (
     <div className="empty-state">
-
       <p>{text}</p>
     </div>
   );
@@ -1881,10 +2494,7 @@ function DeveloperTools({
       <ErrorBox error={error} />
       <section className="panel">
         <h2>API credentials</h2>
-        <p>
-          Generate a replacement key before revoking the old one. Secrets are
-          shown once.
-        </p>
+        <p>Generate a replacement key before revoking the old one. Secrets are shown once.</p>
         {keys.map((k) => (
           <div className="list-row" key={k.id}>
             <code>
@@ -1893,11 +2503,7 @@ function DeveloperTools({
             {k.revoked_at ? (
               <span>Revoked</span>
             ) : (
-              <button
-                onClick={() =>
-                  run(() => call('/credentials/' + k.id, 'DELETE'))
-                }
-              >
+              <button onClick={() => run(() => call('/credentials/' + k.id, 'DELETE'))}>
                 Revoke
               </button>
             )}
@@ -1930,12 +2536,7 @@ function DeveloperTools({
       >
         <h2>Signed webhooks</h2>
         <Field label="Public HTTPS endpoint">
-          <input
-            name="url"
-            required
-            type="url"
-            placeholder="https://hooks.example.com/africore"
-          />
+          <input name="url" required type="url" placeholder="https://hooks.example.com/africore" />
         </Field>
         <button className="button">Register endpoint</button>
       </form>
@@ -1953,11 +2554,7 @@ function DeveloperTools({
             <button
               onClick={() =>
                 run(async () => {
-                  const r = await call(
-                    '/webhooks/' + h.id + '/rotate',
-                    'POST',
-                    {},
-                  );
+                  const r = await call('/webhooks/' + h.id + '/rotate', 'POST', {});
                   onNotice('New webhook secret: ' + r.secret);
                 })
               }
@@ -1971,11 +2568,7 @@ function DeveloperTools({
             <span>
               {d.event_type} · {d.status} · {d.attempts} attempts
             </span>
-            <button
-              onClick={() =>
-                run(() => call('/deliveries/' + d.id + '/replay', 'POST', {}))
-              }
-            >
+            <button onClick={() => run(() => call('/deliveries/' + d.id + '/replay', 'POST', {}))}>
               Replay
             </button>
           </div>

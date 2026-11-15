@@ -39,8 +39,7 @@ export function BuyerPortal() {
       </header>
       <main>
         <div className="alert">
-          Evaluation only. No real payment, funds custody or production
-          buyer-protection promise.
+          Evaluation only. No real payment, funds custody or production buyer-protection promise.
         </div>
         {error && (
           <div className="alert error" role="alert">
@@ -60,9 +59,7 @@ export function BuyerPortal() {
               <span className="eyebrow">PURCHASE FROM {data.merchant}</span>
               <h1>{data.title}</h1>
               <p>{data.description}</p>
-              <strong className="buyer-amount">
-                {money(data.amount_minor, data.currency)}
-              </strong>
+              <strong className="buyer-amount">{money(data.amount_minor, data.currency)}</strong>
               <p>Merchant verification: {data.merchant_verification}</p>
               <Provenance label={data.state} />
               <div className="buyer-terms">
@@ -75,10 +72,7 @@ export function BuyerPortal() {
                 <div>
                   <h3>Delivery & inspection</h3>
                   <p>{data.delivery_terms}</p>
-                  <p>
-                    {data.inspection_hours}-hour inspection after receipt
-                    confirmation.
-                  </p>
+                  <p>{data.inspection_hours}-hour inspection after receipt confirmation.</p>
                 </div>
                 <div>
                   <h3>Cancellation & disputes</h3>
@@ -92,9 +86,7 @@ export function BuyerPortal() {
                   <button
                     className="button"
                     disabled={busy}
-                    onClick={() =>
-                      action(() => api('/action', 'POST', { action: 'pay' }))
-                    }
+                    onClick={() => action(() => api('/action', 'POST', { action: 'pay' }))}
                   >
                     Simulate buyer payment
                   </button>
@@ -104,9 +96,7 @@ export function BuyerPortal() {
                     className="button"
                     disabled={busy}
                     onClick={() =>
-                      action(() =>
-                        api('/action', 'POST', { action: 'confirm_receipt' }),
-                      )
+                      action(() => api('/action', 'POST', { action: 'confirm_receipt' }))
                     }
                   >
                     Confirm receipt in sandbox
@@ -116,9 +106,7 @@ export function BuyerPortal() {
                   <button
                     className="button"
                     disabled={busy}
-                    onClick={() =>
-                      action(() => api('/action', 'POST', { action: 'accept' }))
-                    }
+                    onClick={() => action(() => api('/action', 'POST', { action: 'accept' }))}
                   >
                     Accept purchase
                   </button>
@@ -127,9 +115,7 @@ export function BuyerPortal() {
                   <button
                     className="secondary-button"
                     disabled={busy}
-                    onClick={() =>
-                      action(() => api('/action', 'POST', { action: 'cancel' }))
-                    }
+                    onClick={() => action(() => api('/action', 'POST', { action: 'cancel' }))}
                   >
                     Cancel unpaid sale
                   </button>
@@ -155,18 +141,12 @@ export function BuyerPortal() {
                 <p>No shipment recorded yet.</p>
               )}
             </section>
-            {[
-              'awaiting_shipment',
-              'shipped',
-              'inspection_period',
-              'accepted',
-            ].includes(data.state) && (
+            {['awaiting_shipment', 'shipped', 'inspection_period', 'accepted'].includes(
+              data.state,
+            ) && (
               <Form submit={(d) => action(() => api('/disputes', 'POST', d))}>
                 <h2>Raise a dispute</h2>
-                <p>
-                  A complaint creates a review record, never an automatic
-                  refund.
-                </p>
+                <p>A complaint creates a review record, never an automatic refund.</p>
                 <Field label="Reason">
                   <select name="reason">
                     {[
@@ -183,12 +163,7 @@ export function BuyerPortal() {
                   </select>
                 </Field>
                 <Field label="Your statement">
-                  <textarea
-                    name="statement"
-                    required
-                    minLength={10}
-                    maxLength={3000}
-                  />
+                  <textarea name="statement" required minLength={10} maxLength={3000} />
                 </Field>
                 <button className="secondary-button">Open dispute</button>
               </Form>
@@ -232,17 +207,13 @@ export function BuyerPortal() {
                             setFile({
                               filename: f.name,
                               content_type: f.type,
-                              content_base64: String(reader.result).split(
-                                ',',
-                              )[1],
+                              content_base64: String(reader.result).split(',')[1],
                             });
                           reader.readAsDataURL(f);
                         }}
                       />
                     </Field>
-                    <button className="secondary-button">
-                      Append evidence
-                    </button>
+                    <button className="secondary-button">Append evidence</button>
                   </Form>
                 )}
               </section>

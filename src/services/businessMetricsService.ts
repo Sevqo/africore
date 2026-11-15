@@ -1,9 +1,9 @@
-import { dbAll } from "../db";
-import {singleCurrency} from './currency-integrity';
-import { getBusiness, Business } from "./businessService";
-import { Transaction } from "./transactionService";
-import { getReceivablesSummary, ReceivablesSummary } from "./receivablesService";
-import { computeSupplyChainReadiness, SupplyChainReadiness } from "./supplyChainService";
+import { dbAll } from '../db';
+import { singleCurrency } from './currency-integrity';
+import { getBusiness, Business } from './businessService';
+import { Transaction } from './transactionService';
+import { getReceivablesSummary, ReceivablesSummary } from './receivablesService';
+import { computeSupplyChainReadiness, SupplyChainReadiness } from './supplyChainService';
 
 /**
  * Business dashboard analytics.
@@ -43,7 +43,7 @@ export interface MonthlyCashFlow {
 
 export interface RevenueTrend {
   available: boolean;
-  direction: "growing" | "flat" | "declining" | "insufficient_data";
+  direction: 'growing' | 'flat' | 'declining' | 'insufficient_data';
   change_pct: number | null;
   method: string;
   detail: string;
@@ -79,7 +79,7 @@ export interface CounterpartyIntelligence {
 }
 
 export interface BusinessMetrics {
-  currency?:string;
+  currency?: string;
   window: {
     months: number;
     from: string;
@@ -107,7 +107,12 @@ export interface BusinessMetrics {
 }
 
 export interface HealthComponent {
-  key: "cash_flow_stability" | "revenue_trend" | "payment_discipline" | "customer_concentration" | "liquidity_buffer";
+  key:
+    | 'cash_flow_stability'
+    | 'revenue_trend'
+    | 'payment_discipline'
+    | 'customer_concentration'
+    | 'liquidity_buffer';
   label: string;
   /** 0-100 component score, or null when the data needed is not captured. */
   score: number | null;
@@ -117,7 +122,7 @@ export interface HealthComponent {
   reason?: string;
 }
 
-export type HealthBand = "strong" | "stable" | "watch" | "at_risk";
+export type HealthBand = 'strong' | 'stable' | 'watch' | 'at_risk';
 
 export interface BusinessHealthScore {
   score: number;
@@ -138,10 +143,10 @@ export interface BusinessDashboard {
     is_sandbox: boolean;
   };
   generated_at: string;
-  window: BusinessMetrics["window"];
-  cash_flow: BusinessMetrics["cash_flow"];
-  counterparties: BusinessMetrics["counterparties"];
-  totals: BusinessMetrics["totals"];
+  window: BusinessMetrics['window'];
+  cash_flow: BusinessMetrics['cash_flow'];
+  counterparties: BusinessMetrics['counterparties'];
+  totals: BusinessMetrics['totals'];
   health_score: BusinessHealthScore;
   tips: string[];
   /** Null when the business has no invoice data — never fabricated. */
@@ -149,7 +154,7 @@ export interface BusinessDashboard {
   supply_chain_readiness: SupplyChainReadiness;
 }
 
-const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 function round2(value: number): number {
   return Math.round(value * 100) / 100;
@@ -165,7 +170,7 @@ function clamp(value: number, min: number, max: number): number {
 
 function monthKey(timestamp: number): string {
   const date = new Date(timestamp);
-  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
 function monthsBack(from: Date, count: number): string[] {
@@ -179,8 +184,8 @@ function monthsBack(from: Date, count: number): string[] {
 }
 
 function counterpartyKey(value: string | null | undefined): string {
-  const trimmed = (value ?? "").trim();
-  return trimmed.length > 0 ? trimmed : "Unattributed";
+  const trimmed = (value ?? '').trim();
+  return trimmed.length > 0 ? trimmed : 'Unattributed';
 }
 
 function standardDeviation(values: number[], mean: number): number {
@@ -189,17 +194,24 @@ function standardDeviation(values: number[], mean: number): number {
   return Math.sqrt(variance);
 }
 
-export function computeBusinessMetrics(transactions: Transaction[], options: MetricsOptions = {}): BusinessMetrics {
-  const currency=singleCurrency(transactions);
+export function computeBusinessMetrics(
+  transactions: Transaction[],
+  options: MetricsOptions = {},
+): BusinessMetrics {
+  const currency = singleCurrency(transactions);
   const now = options.now ?? new Date();
-  const windowMonths = clamp(Math.floor(options.months ?? DEFAULT_WINDOW_MONTHS), 1, MAX_WINDOW_MONTHS);
+  const windowMonths = clamp(
+    Math.floor(options.months ?? DEFAULT_WINDOW_MONTHS),
+    1,
+    MAX_WINDOW_MONTHS,
+  );
   const months = monthsBack(now, windowMonths);
   const firstMonth = months[0];
   const nowMs = now.getTime();
 
   // Completed, non-future rows inside the window, in chronological order.
   const settled = transactions
-    .filter((txn) => txn.status === "completed")
+    .filter((txn) => txn.status === 'completed')
     .filter((txn) => {
       const time = new Date(txn.occurred_at).getTime();
       return Number.isFinite(time) && time <= nowMs && monthKey(time) >= firstMonth;
@@ -213,35 +225,51 @@ export function computeBusinessMetrics(transactions: Transaction[], options: Met
   for (const txn of settled) {
     const bucket = monthlyMap.get(monthKey(new Date(txn.occurred_at).getTime()));
     if (!bucket) continue;
-    if (txn.type === "credit") bucket.inflow += txn.amount;
+    if (txn.type === 'credit') bucket.inflow += txn.amount;
     else bucket.outflow += txn.amount;
     bucket.transaction_count += 1;
     bucket.net = bucket.inflow - bucket.outflow;
   }
   const monthly = months.map((month) => {
     const bucket = monthlyMap.get(month)!;
-    return { ...bucket, inflow: round2(bucket.inflow), outflow: round2(bucket.outflow), net: round2(bucket.net) };
+    return {
+      ...bucket,
+      inflow: round2(bucket.inflow),
+      outflow: round2(bucket.outflow),
+      net: round2(bucket.net),
+    };
   });
 
-  const dataMonths = monthly.filter((bucket) => bucket.transaction_count > 0).map((bucket) => bucket.month);
+  const dataMonths = monthly
+    .filter((bucket) => bucket.transaction_count > 0)
+    .map((bucket) => bucket.month);
   const activeMonthly = monthly.filter((bucket) => bucket.transaction_count > 0);
   const inflows = activeMonthly.map((bucket) => bucket.inflow);
-  const meanInflow = inflows.length > 0 ? inflows.reduce((sum, value) => sum + value, 0) / inflows.length : 0;
+  const meanInflow =
+    inflows.length > 0 ? inflows.reduce((sum, value) => sum + value, 0) / inflows.length : 0;
   const stdevInflow = standardDeviation(inflows, meanInflow);
-  const inflowVolatility = meanInflow > 0 && inflows.length >= 2 ? round2(stdevInflow / meanInflow) : null;
+  const inflowVolatility =
+    meanInflow > 0 && inflows.length >= 2 ? round2(stdevInflow / meanInflow) : null;
 
-  const revenueTrend = computeRevenueTrend(activeMonthly,currency);
+  const revenueTrend = computeRevenueTrend(activeMonthly, currency);
   const peakActivity = computePeakActivity(settled);
 
-  const credits = settled.filter((txn) => txn.type === "credit");
-  const debits = settled.filter((txn) => txn.type === "debit");
+  const credits = settled.filter((txn) => txn.type === 'credit');
+  const debits = settled.filter((txn) => txn.type === 'debit');
   const totalInflow = credits.reduce((sum, txn) => sum + txn.amount, 0);
   const totalOutflow = debits.reduce((sum, txn) => sum + txn.amount, 0);
 
-  const creditByCounterparty = new Map<string, { amount: number; count: number; months: Set<string> }>();
+  const creditByCounterparty = new Map<
+    string,
+    { amount: number; count: number; months: Set<string> }
+  >();
   for (const txn of credits) {
     const key = counterpartyKey(txn.counterparty);
-    const entry = creditByCounterparty.get(key) ?? { amount: 0, count: 0, months: new Set<string>() };
+    const entry = creditByCounterparty.get(key) ?? {
+      amount: 0,
+      count: 0,
+      months: new Set<string>(),
+    };
     entry.amount += txn.amount;
     entry.count += 1;
     entry.months.add(monthKey(new Date(txn.occurred_at).getTime()));
@@ -264,31 +292,54 @@ export function computeBusinessMetrics(transactions: Transaction[], options: Met
     .reduce((sum, entry) => sum + entry.amount, 0);
   const repeatCustomerRatio = totalInflow > 0 ? round2(repeatInflow / totalInflow) : 0;
 
-  const debitByCounterparty = new Map<string, { amount: number; count: number; months: Set<string> }>();
+  const debitByCounterparty = new Map<
+    string,
+    { amount: number; count: number; months: Set<string> }
+  >();
   for (const txn of debits) {
     const key = counterpartyKey(txn.counterparty);
-    const entry = debitByCounterparty.get(key) ?? { amount: 0, count: 0, months: new Set<string>() };
+    const entry = debitByCounterparty.get(key) ?? {
+      amount: 0,
+      count: 0,
+      months: new Set<string>(),
+    };
     entry.amount += txn.amount;
     entry.count += 1;
     entry.months.add(monthKey(new Date(txn.occurred_at).getTime()));
     debitByCounterparty.set(key, entry);
   }
 
-  const repeatSuppliers = Array.from(debitByCounterparty.entries()).filter(([, entry]) => entry.count >= 3);
+  const repeatSuppliers = Array.from(debitByCounterparty.entries()).filter(
+    ([, entry]) => entry.count >= 3,
+  );
   const activeMonthCount = Math.max(1, dataMonths.length);
   const regularityScore =
     repeatSuppliers.length === 0
       ? 0
-      : round2(repeatSuppliers.reduce((sum, [, entry]) => sum + Math.min(1, entry.months.size / activeMonthCount), 0) / repeatSuppliers.length);
+      : round2(
+          repeatSuppliers.reduce(
+            (sum, [, entry]) => sum + Math.min(1, entry.months.size / activeMonthCount),
+            0,
+          ) / repeatSuppliers.length,
+        );
 
   const topSuppliers = Array.from(debitByCounterparty.entries())
-    .map(([counterparty, entry]) => ({ counterparty, outflow: round2(entry.amount), payment_count: entry.count }))
+    .map(([counterparty, entry]) => ({
+      counterparty,
+      outflow: round2(entry.amount),
+      payment_count: entry.count,
+    }))
     .sort((a, b) => b.outflow - a.outflow)
     .slice(0, 5);
 
   const failed = transactions.filter((txn) => {
-    const time=Date.parse(txn.occurred_at);
-    return txn.status === 'failed' && Number.isFinite(time) && time<=nowMs && monthKey(time)>=firstMonth;
+    const time = Date.parse(txn.occurred_at);
+    return (
+      txn.status === 'failed' &&
+      Number.isFinite(time) &&
+      time <= nowMs &&
+      monthKey(time) >= firstMonth
+    );
   }).length;
   const settledCount = settled.length;
 
@@ -303,7 +354,7 @@ export function computeBusinessMetrics(transactions: Transaction[], options: Met
     cash_flow: {
       monthly,
       inflow_volatility: inflowVolatility,
-      volatility_method: "coefficient_of_variation_of_monthly_inflow",
+      volatility_method: 'coefficient_of_variation_of_monthly_inflow',
       revenue_trend: revenueTrend,
       peak_activity: peakActivity,
     },
@@ -330,12 +381,12 @@ export function computeBusinessMetrics(transactions: Transaction[], options: Met
   };
 }
 
-function computeRevenueTrend(activeMonthly: MonthlyCashFlow[],currency:string): RevenueTrend {
-  const method = "newer_half_vs_older_half_mean_monthly_inflow";
+function computeRevenueTrend(activeMonthly: MonthlyCashFlow[], currency: string): RevenueTrend {
+  const method = 'newer_half_vs_older_half_mean_monthly_inflow';
   if (activeMonthly.length < 3) {
     return {
       available: false,
-      direction: "insufficient_data",
+      direction: 'insufficient_data',
       change_pct: null,
       method,
       detail: `Only ${activeMonthly.length} month(s) of activity; at least 3 are needed to judge a trend.`,
@@ -345,22 +396,23 @@ function computeRevenueTrend(activeMonthly: MonthlyCashFlow[],currency:string): 
   const split = Math.floor(activeMonthly.length / 2);
   const older = activeMonthly.slice(0, split);
   const newer = activeMonthly.slice(split);
-  const mean = (series: MonthlyCashFlow[]) => series.reduce((sum, bucket) => sum + bucket.inflow, 0) / series.length;
+  const mean = (series: MonthlyCashFlow[]) =>
+    series.reduce((sum, bucket) => sum + bucket.inflow, 0) / series.length;
   const olderMean = mean(older);
   const newerMean = mean(newer);
 
   if (olderMean <= 0) {
     return {
       available: false,
-      direction: "insufficient_data",
+      direction: 'insufficient_data',
       change_pct: null,
       method,
-      detail: "No inflow in the earlier part of the window to compare against.",
+      detail: 'No inflow in the earlier part of the window to compare against.',
     };
   }
 
   const changePct = round1(((newerMean - olderMean) / olderMean) * 100);
-  const direction = changePct > 5 ? "growing" : changePct < -5 ? "declining" : "flat";
+  const direction = changePct > 5 ? 'growing' : changePct < -5 ? 'declining' : 'flat';
   return {
     available: true,
     direction,
@@ -371,7 +423,7 @@ function computeRevenueTrend(activeMonthly: MonthlyCashFlow[],currency:string): 
 }
 
 function computePeakActivity(settled: Transaction[]): PeakActivity {
-  const credits = settled.filter((txn) => txn.type === "credit");
+  const credits = settled.filter((txn) => txn.type === 'credit');
   const weekdayCounts = new Map<string, number>();
   const hourCounts = new Map<number, number>();
 
@@ -382,7 +434,8 @@ function computePeakActivity(settled: Transaction[]): PeakActivity {
     hourCounts.set(date.getUTCHours(), (hourCounts.get(date.getUTCHours()) ?? 0) + 1);
   }
 
-  const busiestWeekday = Array.from(weekdayCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  const busiestWeekday =
+    Array.from(weekdayCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
   const busiestHour = Array.from(hourCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
   const totalInflow = credits.reduce((sum, txn) => sum + txn.amount, 0);
 
@@ -393,7 +446,7 @@ function computePeakActivity(settled: Transaction[]): PeakActivity {
   };
 }
 
-const HEALTH_WEIGHTS: Record<HealthComponent["key"], number> = {
+const HEALTH_WEIGHTS: Record<HealthComponent['key'], number> = {
   cash_flow_stability: 0.3,
   revenue_trend: 0.2,
   payment_discipline: 0.2,
@@ -414,23 +467,26 @@ export function computeBusinessHealth(metrics: BusinessMetrics): BusinessHealthS
   // Cash-flow stability: low volatility and mostly positive-net months.
   const volatility = metrics.cash_flow.inflow_volatility;
   const activeMonths = metrics.cash_flow.monthly.filter((bucket) => bucket.transaction_count > 0);
-  const positiveRatio = activeMonths.length > 0 ? activeMonths.filter((bucket) => bucket.net >= 0).length / activeMonths.length : 0;
+  const positiveRatio =
+    activeMonths.length > 0
+      ? activeMonths.filter((bucket) => bucket.net >= 0).length / activeMonths.length
+      : 0;
   if (volatility === null) {
     components.push({
-      key: "cash_flow_stability",
-      label: "Cash-flow stability",
+      key: 'cash_flow_stability',
+      label: 'Cash-flow stability',
       score: null,
       weight: HEALTH_WEIGHTS.cash_flow_stability,
       available: false,
-      detail: "Not enough months of inflow to measure volatility.",
-      reason: "requires at least two active months",
+      detail: 'Not enough months of inflow to measure volatility.',
+      reason: 'requires at least two active months',
     });
   } else {
     const volatilityScore = clamp(100 - (volatility / 0.5) * 100, 0, 100);
     const score = Math.round(volatilityScore * 0.6 + positiveRatio * 100 * 0.4);
     components.push({
-      key: "cash_flow_stability",
-      label: "Cash-flow stability",
+      key: 'cash_flow_stability',
+      label: 'Cash-flow stability',
       score: clamp(score, 0, 100),
       weight: HEALTH_WEIGHTS.cash_flow_stability,
       available: true,
@@ -442,19 +498,19 @@ export function computeBusinessHealth(metrics: BusinessMetrics): BusinessHealthS
   const trend = metrics.cash_flow.revenue_trend;
   if (!trend.available || trend.change_pct === null) {
     components.push({
-      key: "revenue_trend",
-      label: "Revenue trend",
+      key: 'revenue_trend',
+      label: 'Revenue trend',
       score: null,
       weight: HEALTH_WEIGHTS.revenue_trend,
       available: false,
       detail: trend.detail,
-      reason: "requires at least three months of activity",
+      reason: 'requires at least three months of activity',
     });
   } else {
-    const score = trend.direction === "growing" ? 100 : trend.direction === "flat" ? 60 : 25;
+    const score = trend.direction === 'growing' ? 100 : trend.direction === 'flat' ? 60 : 25;
     components.push({
-      key: "revenue_trend",
-      label: "Revenue trend",
+      key: 'revenue_trend',
+      label: 'Revenue trend',
       score,
       weight: HEALTH_WEIGHTS.revenue_trend,
       available: true,
@@ -466,59 +522,78 @@ export function computeBusinessHealth(metrics: BusinessMetrics): BusinessHealthS
   const failedRatio = metrics.totals.failed_ratio;
   const disciplineScore = clamp(Math.round(100 - failedRatio * 300), 0, 100);
   components.push({
-    key: "payment_discipline",
-    label: "Payment discipline",
+    key: 'payment_discipline',
+    label: 'Payment discipline',
     score: disciplineScore,
     weight: HEALTH_WEIGHTS.payment_discipline,
     available: true,
     detail:
       metrics.totals.failed_count === 0
-        ? "No failed or returned payments observed in the window."
+        ? 'No failed or returned payments observed in the window.'
         : `${metrics.totals.failed_count} failed/returned payment(s) observed.`,
   });
 
   // Customer concentration: how much sits on the single largest buyer.
   const topShare = metrics.counterparties.top_customers[0]?.share_of_inflow_pct ?? 0;
-  const concentrationScore = clamp(Math.round(100 - (Math.max(0, topShare - 20) / 60) * 80), 20, 100);
+  const concentrationScore = clamp(
+    Math.round(100 - (Math.max(0, topShare - 20) / 60) * 80),
+    20,
+    100,
+  );
   components.push({
-    key: "customer_concentration",
-    label: "Customer concentration",
+    key: 'customer_concentration',
+    label: 'Customer concentration',
     score: metrics.totals.inflow > 0 ? concentrationScore : null,
     weight: HEALTH_WEIGHTS.customer_concentration,
     available: metrics.totals.inflow > 0,
     detail:
       metrics.totals.inflow > 0
-        ? `Largest buyer accounts for ${topShare}% of inflow${metrics.counterparties.anchor_buyer_risk ? " (above the 40% anchor-buyer threshold)." : "."}`
-        : "No inflow in the window.",
-    reason: metrics.totals.inflow > 0 ? undefined : "no inflow in the window",
+        ? `Largest buyer accounts for ${topShare}% of inflow${metrics.counterparties.anchor_buyer_risk ? ' (above the 40% anchor-buyer threshold).' : '.'}`
+        : 'No inflow in the window.',
+    reason: metrics.totals.inflow > 0 ? undefined : 'no inflow in the window',
   });
 
   // Liquidity buffer: statements do not capture running balances, so this is
   // reported as unavailable rather than invented.
   components.push({
-    key: "liquidity_buffer",
-    label: "Liquidity buffer",
+    key: 'liquidity_buffer',
+    label: 'Liquidity buffer',
     score: null,
     weight: HEALTH_WEIGHTS.liquidity_buffer,
     available: false,
-    detail: "Balance data is not captured from the uploaded statements.",
-    reason: "no running-balance column ingested",
+    detail: 'Balance data is not captured from the uploaded statements.',
+    reason: 'no running-balance column ingested',
   });
 
-  const available = components.filter((component) => component.available && component.score !== null);
+  const available = components.filter(
+    (component) => component.available && component.score !== null,
+  );
   const availableWeight = available.reduce((sum, component) => sum + component.weight, 0);
-  const weighted = available.reduce((sum, component) => sum + (component.score as number) * component.weight, 0);
+  const weighted = available.reduce(
+    (sum, component) => sum + (component.score as number) * component.weight,
+    0,
+  );
   const score = availableWeight > 0 ? Math.round(weighted / availableWeight) : 0;
-  const band: HealthBand = score >= 80 ? "strong" : score >= 60 ? "stable" : score >= 40 ? "watch" : "at_risk";
-  const bandLabel = band === "strong" ? "Strong" : band === "stable" ? "Stable" : band === "watch" ? "Watch" : "At risk";
+  const band: HealthBand =
+    score >= 80 ? 'strong' : score >= 60 ? 'stable' : score >= 40 ? 'watch' : 'at_risk';
+  const bandLabel =
+    band === 'strong'
+      ? 'Strong'
+      : band === 'stable'
+        ? 'Stable'
+        : band === 'watch'
+          ? 'Watch'
+          : 'At risk';
 
   return {
     score: clamp(score, 0, 100),
     band,
     band_label: bandLabel,
     components,
-    excluded_components: components.filter((component) => !component.available).map((component) => component.key),
-    method: "weighted_components_renormalised_over_available_inputs",
+    excluded_components: components
+      .filter((component) => !component.available)
+      .map((component) => component.key),
+    method: 'weighted_components_renormalised_over_available_inputs',
   };
 }
 
@@ -535,69 +610,84 @@ export function buildBusinessTips(metrics: BusinessMetrics, health: BusinessHeal
 
   if (topCustomer && topShare > 40) {
     tips.push(
-      `Your top customer (${topCustomer.counterparty}) is ${topShare}% of inflow — diversifying would reduce revenue risk.`
+      `Your top customer (${topCustomer.counterparty}) is ${topShare}% of inflow — diversifying would reduce revenue risk.`,
     );
   }
 
   const volatility = metrics.cash_flow.inflow_volatility;
   if (volatility !== null && volatility >= 0.35) {
     tips.push(
-      `Monthly inflow swings by about ${Math.round(volatility * 100)}% — a cash buffer sized to your lowest month would smooth timing risk.`
+      `Monthly inflow swings by about ${Math.round(volatility * 100)}% — a cash buffer sized to your lowest month would smooth timing risk.`,
     );
   }
 
   const trend = metrics.cash_flow.revenue_trend;
-  if (trend.available && trend.direction === "declining" && trend.change_pct !== null) {
-    tips.push(`Inflow declined ${Math.abs(trend.change_pct)}% over the window — review pricing or customer retention before drawing more credit.`);
+  if (trend.available && trend.direction === 'declining' && trend.change_pct !== null) {
+    tips.push(
+      `Inflow declined ${Math.abs(trend.change_pct)}% over the window — review pricing or customer retention before drawing more credit.`,
+    );
   }
-  if (trend.available && trend.direction === "growing" && trend.change_pct !== null) {
-    tips.push(`Inflow grew ${trend.change_pct}% over the window — this is the trend a lender will weight most heavily.`);
+  if (trend.available && trend.direction === 'growing' && trend.change_pct !== null) {
+    tips.push(
+      `Inflow grew ${trend.change_pct}% over the window — this is the trend a lender will weight most heavily.`,
+    );
   }
 
   if (metrics.totals.inflow > 0 && metrics.counterparties.repeat_customer_ratio < 0.5) {
     tips.push(
-      `Only ${Math.round(metrics.counterparties.repeat_customer_ratio * 100)}% of inflow comes from repeat customers — repeat business is the cheapest way to stabilise revenue.`
+      `Only ${Math.round(metrics.counterparties.repeat_customer_ratio * 100)}% of inflow comes from repeat customers — repeat business is the cheapest way to stabilise revenue.`,
     );
   }
 
   if (metrics.totals.outflow > 0 && metrics.counterparties.supplier.repeat_supplier_count === 0) {
-    tips.push("No repeat supplier relationships were detected — consolidating regular suppliers can improve pricing and payment terms.");
+    tips.push(
+      'No repeat supplier relationships were detected — consolidating regular suppliers can improve pricing and payment terms.',
+    );
   }
 
   if (metrics.totals.failed_ratio > 0.05) {
     tips.push(
-      `${Math.round(metrics.totals.failed_ratio * 100)}% of attempted payments failed or were returned — reducing failed payments improves your payment-discipline score.`
+      `${Math.round(metrics.totals.failed_ratio * 100)}% of attempted payments failed or were returned — reducing failed payments improves your payment-discipline score.`,
     );
   }
 
-  if (metrics.counterparties.supplier.repeat_supplier_count > 0 && metrics.counterparties.supplier.regularity_score < 0.5) {
+  if (
+    metrics.counterparties.supplier.repeat_supplier_count > 0 &&
+    metrics.counterparties.supplier.regularity_score < 0.5
+  ) {
     tips.push(
-      `Supplier payments are irregular across months (${Math.round(metrics.counterparties.supplier.regularity_score * 100)}% regularity) — scheduled payments strengthen your supply relationships.`
+      `Supplier payments are irregular across months (${Math.round(metrics.counterparties.supplier.regularity_score * 100)}% regularity) — scheduled payments strengthen your supply relationships.`,
     );
   }
 
   const avgTicket = metrics.cash_flow.peak_activity.average_ticket;
   if (avgTicket > 0 && metrics.totals.credit_count > 0) {
     tips.push(
-      `Your average payment is KES ${avgTicket.toLocaleString("en-KE")} across ${metrics.totals.credit_count} payments — the strongest-ticket customers are the ones to keep close.`
+      `Your average payment is KES ${avgTicket.toLocaleString('en-KE')} across ${metrics.totals.credit_count} payments — the strongest-ticket customers are the ones to keep close.`,
     );
   }
 
   const busiestDay = metrics.cash_flow.peak_activity.busiest_weekday;
   if (busiestDay) {
-    tips.push(`${busiestDay} is your busiest day for incoming payments — align stock and staffing with that weekly peak.`);
+    tips.push(
+      `${busiestDay} is your busiest day for incoming payments — align stock and staffing with that weekly peak.`,
+    );
   }
 
   if (metrics.totals.months_of_history > 0) {
     tips.push(
-      `${metrics.totals.months_of_history} month(s) of history is visible to the platform — more history generally raises lender confidence.`
+      `${metrics.totals.months_of_history} month(s) of history is visible to the platform — more history generally raises lender confidence.`,
     );
   }
 
-  const components = health.components.filter((component) => component.available && component.score !== null);
+  const components = health.components.filter(
+    (component) => component.available && component.score !== null,
+  );
   const weakest = [...components].sort((a, b) => (a.score as number) - (b.score as number))[0];
   if (weakest) {
-    tips.push(`Your weakest health component is ${weakest.label.toLowerCase()} (${weakest.score}/100) — ${weakest.detail}`);
+    tips.push(
+      `Your weakest health component is ${weakest.label.toLowerCase()} (${weakest.score}/100) — ${weakest.detail}`,
+    );
   }
 
   const unique = Array.from(new Set(tips));
@@ -614,13 +704,16 @@ export interface BusinessContext {
 /** Loads the business and its transactions and computes every derived metric.
  *  Shared by the dashboard endpoint and the decision-card service so a lender
  *  is never shown a number the owner's dashboard cannot reproduce. */
-export async function loadBusinessContext(businessId: string, options: MetricsOptions = {}): Promise<BusinessContext> {
+export async function loadBusinessContext(
+  businessId: string,
+  options: MetricsOptions = {},
+): Promise<BusinessContext> {
   const business: Business | undefined = await getBusiness(businessId);
-  if (!business) throw new Error("business_not_found");
+  if (!business) throw new Error('business_not_found');
 
   const transactions = await dbAll<Transaction>(
     `SELECT * FROM transactions WHERE business_id = ? AND subject_type = 'business'`,
-    [businessId]
+    [businessId],
   );
 
   const metrics = computeBusinessMetrics(transactions, options);
@@ -631,7 +724,10 @@ export async function loadBusinessContext(businessId: string, options: MetricsOp
 }
 
 /** Loads the business and its transactions, then computes the dashboard. */
-export async function getBusinessDashboard(businessId: string, options: MetricsOptions = {}): Promise<BusinessDashboard> {
+export async function getBusinessDashboard(
+  businessId: string,
+  options: MetricsOptions = {},
+): Promise<BusinessDashboard> {
   const { business, metrics, health, tips } = await loadBusinessContext(businessId, options);
   const receivables = await getReceivablesSummary(businessId);
   const supplyChainReadiness = computeSupplyChainReadiness(metrics, receivables);
@@ -656,4 +752,3 @@ export async function getBusinessDashboard(businessId: string, options: MetricsO
     supply_chain_readiness: supplyChainReadiness,
   };
 }
-

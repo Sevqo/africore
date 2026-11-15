@@ -8,11 +8,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Overview",
-          "From application to integration"
-        ],
+        "headings": ["UI review developer", "Overview", "From application to integration"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -22,11 +18,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Overview",
-          "From application to integration"
-        ],
+        "headings": ["UI review developer", "Overview", "From application to integration"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -44,11 +36,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Notifications",
-          "Notification history"
-        ],
+        "headings": ["UI review developer", "Notifications", "Notification history"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -58,11 +46,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Notifications",
-          "Notification history"
-        ],
+        "headings": ["UI review developer", "Notifications", "Notification history"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -80,11 +64,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Products",
-          "Product Catalog"
-        ],
+        "headings": ["UI review developer", "Products", "Product Catalog"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -94,11 +74,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Products",
-          "Product Catalog"
-        ],
+        "headings": ["UI review developer", "Products", "Product Catalog"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -256,11 +232,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Assistant",
-          "AI Business Assistant"
-        ],
+        "headings": ["UI review developer", "Assistant", "AI Business Assistant"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -270,11 +242,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Assistant",
-          "AI Business Assistant"
-        ],
+        "headings": ["UI review developer", "Assistant", "AI Business Assistant"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -292,11 +260,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Data",
-          "AfriCore Data"
-        ],
+        "headings": ["UI review developer", "Data", "AfriCore Data"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -306,11 +270,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Data",
-          "AfriCore Data"
-        ],
+        "headings": ["UI review developer", "Data", "AfriCore Data"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -328,11 +288,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "My Applications",
-          "Create application"
-        ],
+        "headings": ["UI review developer", "My Applications", "Create application"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -342,11 +298,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "My Applications",
-          "Create application"
-        ],
+        "headings": ["UI review developer", "My Applications", "Create application"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -364,11 +316,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "API Keys",
-          "Create sandbox key"
-        ],
+        "headings": ["UI review developer", "API Keys", "Create sandbox key"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -378,11 +326,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "API Keys",
-          "Create sandbox key"
-        ],
+        "headings": ["UI review developer", "API Keys", "Create sandbox key"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -400,10 +344,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "API Explorer"
-        ],
+        "headings": ["UI review developer", "API Explorer"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -414,10 +355,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "API Explorer"
-        ],
+        "headings": ["UI review developer", "API Explorer"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -435,10 +373,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Sandbox"
-        ],
+        "headings": ["UI review developer", "Sandbox"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -448,10 +383,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Sandbox"
-        ],
+        "headings": ["UI review developer", "Sandbox"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -469,11 +401,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Webhooks",
-          "Webhooks"
-        ],
+        "headings": ["UI review developer", "Webhooks", "Webhooks"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -483,11 +411,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Webhooks",
-          "Webhooks"
-        ],
+        "headings": ["UI review developer", "Webhooks", "Webhooks"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -505,10 +429,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Request Logs"
-        ],
+        "headings": ["UI review developer", "Request Logs"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -518,10 +439,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Request Logs"
-        ],
+        "headings": ["UI review developer", "Request Logs"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -539,11 +457,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Usage & Limits",
-          "From application to integration"
-        ],
+        "headings": ["UI review developer", "Usage & Limits", "From application to integration"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -553,11 +467,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Usage & Limits",
-          "From application to integration"
-        ],
+        "headings": ["UI review developer", "Usage & Limits", "From application to integration"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -575,10 +485,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "API Documentation"
-        ],
+        "headings": ["UI review developer", "API Documentation"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -588,10 +495,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "API Documentation"
-        ],
+        "headings": ["UI review developer", "API Documentation"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -609,10 +513,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "SDKs & Examples"
-        ],
+        "headings": ["UI review developer", "SDKs & Examples"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -622,10 +523,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "SDKs & Examples"
-        ],
+        "headings": ["UI review developer", "SDKs & Examples"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -643,11 +541,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Verification APIs",
-          "Verification APIs"
-        ],
+        "headings": ["UI review developer", "Verification APIs", "Verification APIs"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -657,11 +551,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Verification APIs",
-          "Verification APIs"
-        ],
+        "headings": ["UI review developer", "Verification APIs", "Verification APIs"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -679,10 +569,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Settings"
-        ],
+        "headings": ["UI review developer", "Settings"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -692,10 +579,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Settings"
-        ],
+        "headings": ["UI review developer", "Settings"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -713,10 +597,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Support"
-        ],
+        "headings": ["UI review developer", "Support"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -726,10 +607,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "UI review developer",
-          "Support"
-        ],
+        "headings": ["UI review developer", "Support"],
         "overflow": false,
         "unnamed": [],
         "width": 390,

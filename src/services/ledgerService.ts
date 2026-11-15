@@ -1,6 +1,6 @@
-import crypto, { timingSafeEqual } from "node:crypto";
-import { randomUUID } from "node:crypto";
-import { dbGet, dbAll, dbRun, dbTransaction, isPostgres } from "../db";
+import crypto, { timingSafeEqual } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
+import { dbGet, dbAll, dbRun, dbTransaction, isPostgres } from '../db';
 
 /**
  * Hash-chained, HMAC-anchored trust ledger.
@@ -24,9 +24,9 @@ import { dbGet, dbAll, dbRun, dbTransaction, isPostgres } from "../db";
  *     with the original unkeyed scheme.
  */
 
-const GENESIS_HASH = "0".repeat(64);
+const GENESIS_HASH = '0'.repeat(64);
 const HASH_VERSION_V2 = 2;
-const DEV_LEDGER_KEY = "afriscore-dev-ledger-key";
+const DEV_LEDGER_KEY = 'afriscore-dev-ledger-key';
 
 export interface LedgerEntry {
   id: string;
@@ -49,12 +49,26 @@ interface LedgerHead {
   anchor_hmac: string;
   updated_at: string;
 }
-export type LedgerCheckpoint=Pick<LedgerHead,'subject_type'|'subject_id'|'entry_count'|'head_hash'|'anchor_hmac'>;
+export type LedgerCheckpoint = Pick<
+  LedgerHead,
+  'subject_type' | 'subject_id' | 'entry_count' | 'head_hash' | 'anchor_hmac'
+>;
 /** Keep this checkpoint outside the database whose rollback it is intended to detect. */
-export async function ledgerCheckpoint(subjectType:'business'|'person',subjectId:string):Promise<LedgerCheckpoint>{
- if(!(await verifyChainIntegrity(subjectType,subjectId)).valid)throw new Error('Cannot checkpoint a damaged ledger');
- const head=await getHead(subjectType,subjectId);if(!head)throw new Error('No authenticated ledger head to checkpoint');
- return {subject_type:subjectType,subject_id:subjectId,entry_count:Number(head.entry_count),head_hash:head.head_hash,anchor_hmac:head.anchor_hmac};
+export async function ledgerCheckpoint(
+  subjectType: 'business' | 'person',
+  subjectId: string,
+): Promise<LedgerCheckpoint> {
+  if (!(await verifyChainIntegrity(subjectType, subjectId)).valid)
+    throw new Error('Cannot checkpoint a damaged ledger');
+  const head = await getHead(subjectType, subjectId);
+  if (!head) throw new Error('No authenticated ledger head to checkpoint');
+  return {
+    subject_type: subjectType,
+    subject_id: subjectId,
+    entry_count: Number(head.entry_count),
+    head_hash: head.head_hash,
+    anchor_hmac: head.anchor_hmac,
+  };
 }
 
 export interface ChainVerification {
@@ -68,8 +82,10 @@ export interface ChainVerification {
 function ledgerKey(): string {
   const key = process.env.LEDGER_HMAC_KEY || process.env.ID_HASH_SALT;
   if (!key) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("LEDGER_HMAC_KEY is not set — refusing to write an unkeyed ledger in production.");
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'LEDGER_HMAC_KEY is not set — refusing to write an unkeyed ledger in production.',
+      );
     }
     return DEV_LEDGER_KEY;
   }
@@ -77,9 +93,16 @@ function ledgerKey(): string {
 }
 
 /** v1 (pre-upgrade) hash: what older rows were written with. */
-function hashLegacy(prevHash: string, subjectType: string, subjectId: string, eventType: string, eventData: string, createdAt: string): string {
+function hashLegacy(
+  prevHash: string,
+  subjectType: string,
+  subjectId: string,
+  eventType: string,
+  eventData: string,
+  createdAt: string,
+): string {
   const payload = `${prevHash}|${subjectType}|${subjectId}|${eventType}|${eventData}|${createdAt}`;
-  return crypto.createHash("sha256").update(payload).digest("hex");
+  return crypto.createHash('sha256').update(payload).digest('hex');
 }
 
 /** v2 hash: includes the entry id and sequence number. */
@@ -91,17 +114,22 @@ function hashV2(
   subjectId: string,
   eventType: string,
   eventData: string,
-  createdAt: string
+  createdAt: string,
 ): string {
   const payload = `${HASH_VERSION_V2}|${prevHash}|${id}|${seq}|${subjectType}|${subjectId}|${eventType}|${eventData}|${createdAt}`;
-  return crypto.createHash("sha256").update(payload).digest("hex");
+  return crypto.createHash('sha256').update(payload).digest('hex');
 }
 
-function anchorFor(subjectType: string, subjectId: string, entryCount: number, headHash: string): string {
+function anchorFor(
+  subjectType: string,
+  subjectId: string,
+  entryCount: number,
+  headHash: string,
+): string {
   return crypto
-    .createHmac("sha256", ledgerKey())
+    .createHmac('sha256', ledgerKey())
     .update(`${subjectType}|${subjectId}|${entryCount}|${headHash}`)
-    .digest("hex");
+    .digest('hex');
 }
 
 function safeEqual(a: string, b: string): boolean {
@@ -112,25 +140,31 @@ function safeEqual(a: string, b: string): boolean {
 
 function isUniqueViolation(err: unknown): boolean {
   const e = err as { code?: string; message?: string };
-  return e?.code === "23505" || !!e?.message?.includes("UNIQUE constraint failed");
+  return e?.code === '23505' || !!e?.message?.includes('UNIQUE constraint failed');
 }
 
 async function getHead(subjectType: string, subjectId: string): Promise<LedgerHead | undefined> {
-  return dbGet<LedgerHead>(`SELECT * FROM ledger_heads WHERE subject_type = ? AND subject_id = ?`, [subjectType, subjectId]);
+  return dbGet<LedgerHead>(`SELECT * FROM ledger_heads WHERE subject_type = ? AND subject_id = ?`, [
+    subjectType,
+    subjectId,
+  ]);
 }
 
-async function getLastEntry(subjectType: string, subjectId: string): Promise<LedgerEntry | undefined> {
+async function getLastEntry(
+  subjectType: string,
+  subjectId: string,
+): Promise<LedgerEntry | undefined> {
   return dbGet<LedgerEntry>(
     `SELECT * FROM ledger WHERE subject_type = ? AND subject_id = ? ORDER BY COALESCE(seq, 0) DESC, created_at DESC, id DESC LIMIT 1`,
-    [subjectType, subjectId]
+    [subjectType, subjectId],
   );
 }
 
 async function countEntries(subjectType: string, subjectId: string): Promise<number> {
-  const row = await dbGet<{ c: number | string }>(`SELECT COUNT(*) AS c FROM ledger WHERE subject_type = ? AND subject_id = ?`, [
-    subjectType,
-    subjectId,
-  ]);
+  const row = await dbGet<{ c: number | string }>(
+    `SELECT COUNT(*) AS c FROM ledger WHERE subject_type = ? AND subject_id = ?`,
+    [subjectType, subjectId],
+  );
   return Number(row?.c ?? 0);
 }
 
@@ -140,10 +174,10 @@ async function countEntries(subjectType: string, subjectId: string): Promise<num
  * (SQLite is serialised, PostgreSQL retries on the predecessor UNIQUE index).
  */
 export async function appendEvent(
-  subjectType: "business" | "person",
+  subjectType: 'business' | 'person',
   subjectId: string,
   eventType: string,
-  eventData: object
+  eventData: object,
 ): Promise<LedgerEntry> {
   const dataStr = JSON.stringify(eventData);
   let attempt = 0;
@@ -156,17 +190,32 @@ export async function appendEvent(
         // two concurrent appends can read the same predecessor and race the
         // UNIQUE(subject_type, subject_id, prev_hash) index into a retry storm.
         if (isPostgres) {
-          await dbRun(`SELECT pg_advisory_xact_lock(hashtext(?))`, [`ledger:${subjectType}:${subjectId}`]);
+          await dbRun(`SELECT pg_advisory_xact_lock(hashtext(?))`, [
+            `ledger:${subjectType}:${subjectId}`,
+          ]);
         }
 
         const head = await getHead(subjectType, subjectId);
         const last = head ? undefined : await getLastEntry(subjectType, subjectId);
         const prevHash = head ? head.head_hash : last ? last.entry_hash : GENESIS_HASH;
-        const entryCount = head ? Number(head.entry_count) : last ? await countEntries(subjectType, subjectId) : 0;
+        const entryCount = head
+          ? Number(head.entry_count)
+          : last
+            ? await countEntries(subjectType, subjectId)
+            : 0;
         const seq = entryCount + 1;
         const createdAt = new Date().toISOString();
         const id = randomUUID();
-        const entryHash = hashV2(prevHash, id, seq, subjectType, subjectId, eventType, dataStr, createdAt);
+        const entryHash = hashV2(
+          prevHash,
+          id,
+          seq,
+          subjectType,
+          subjectId,
+          eventType,
+          dataStr,
+          createdAt,
+        );
 
         const entry: LedgerEntry = {
           id,
@@ -184,7 +233,7 @@ export async function appendEvent(
         await dbRun(
           `INSERT INTO ledger (id, subject_type, subject_id, event_type, event_data, prev_hash, entry_hash, seq, hash_version, created_at)
            VALUES (@id, @subject_type, @subject_id, @event_type, @event_data, @prev_hash, @entry_hash, @seq, @hash_version, @created_at)`,
-          entry
+          entry,
         );
 
         const headHash = entryHash;
@@ -203,7 +252,7 @@ export async function appendEvent(
             head_hash: headHash,
             anchor_hmac: anchorFor(subjectType, subjectId, seq, headHash),
             updated_at: createdAt,
-          }
+          },
         );
 
         return entry;
@@ -220,10 +269,13 @@ export async function appendEvent(
   }
 }
 
-export async function getLedger(subjectType: "business" | "person", subjectId: string): Promise<LedgerEntry[]> {
+export async function getLedger(
+  subjectType: 'business' | 'person',
+  subjectId: string,
+): Promise<LedgerEntry[]> {
   return dbAll<LedgerEntry>(
     `SELECT * FROM ledger WHERE subject_type = ? AND subject_id = ? ORDER BY COALESCE(seq, 0) ASC, created_at ASC, id ASC`,
-    [subjectType, subjectId]
+    [subjectType, subjectId],
   );
 }
 
@@ -233,13 +285,27 @@ export async function getLedger(subjectType: "business" | "person", subjectId: s
  * removed, reordered, or when the tail was truncated.
  */
 export async function verifyChainIntegrity(
-  subjectType: "business" | "person",
+  subjectType: 'business' | 'person',
   subjectId: string,
-  checkpoint?:LedgerCheckpoint
+  checkpoint?: LedgerCheckpoint,
 ): Promise<ChainVerification> {
   const entries = await getLedger(subjectType, subjectId);
   const head = await getHead(subjectType, subjectId);
-  if(checkpoint&&(checkpoint.subject_type!==subjectType||checkpoint.subject_id!==subjectId||!head||Number(head.entry_count)!==Number(checkpoint.entry_count)||head.head_hash!==checkpoint.head_hash||head.anchor_hmac!==checkpoint.anchor_hmac))return {valid:false,reason:'external_checkpoint_mismatch',entryCount:entries.length,anchored:!!head};
+  if (
+    checkpoint &&
+    (checkpoint.subject_type !== subjectType ||
+      checkpoint.subject_id !== subjectId ||
+      !head ||
+      Number(head.entry_count) !== Number(checkpoint.entry_count) ||
+      head.head_hash !== checkpoint.head_hash ||
+      head.anchor_hmac !== checkpoint.anchor_hmac)
+  )
+    return {
+      valid: false,
+      reason: 'external_checkpoint_mismatch',
+      entryCount: entries.length,
+      anchored: !!head,
+    };
 
   let expectedPrev = GENESIS_HASH;
   let expectedSeq: number | null = null;
@@ -247,7 +313,13 @@ export async function verifyChainIntegrity(
 
   for (const entry of entries) {
     if (entry.prev_hash !== expectedPrev) {
-      return { valid: false, brokenAt: entry.id, reason: "prev_hash_mismatch", entryCount: entries.length, anchored: !!head };
+      return {
+        valid: false,
+        brokenAt: entry.id,
+        reason: 'prev_hash_mismatch',
+        entryCount: entries.length,
+        anchored: !!head,
+      };
     }
 
     const version = Number(entry.hash_version ?? 1);
@@ -255,10 +327,22 @@ export async function verifyChainIntegrity(
       sawV2 = true;
       const seq = Number(entry.seq);
       if (!Number.isInteger(seq) || seq < 1) {
-        return { valid: false, brokenAt: entry.id, reason: "missing_seq", entryCount: entries.length, anchored: !!head };
+        return {
+          valid: false,
+          brokenAt: entry.id,
+          reason: 'missing_seq',
+          entryCount: entries.length,
+          anchored: !!head,
+        };
       }
       if (expectedSeq !== null && seq !== expectedSeq) {
-        return { valid: false, brokenAt: entry.id, reason: "seq_gap", entryCount: entries.length, anchored: !!head };
+        return {
+          valid: false,
+          brokenAt: entry.id,
+          reason: 'seq_gap',
+          entryCount: entries.length,
+          anchored: !!head,
+        };
       }
       expectedSeq = seq + 1;
     }
@@ -273,12 +357,25 @@ export async function verifyChainIntegrity(
             entry.subject_id,
             entry.event_type,
             entry.event_data,
-            entry.created_at
+            entry.created_at,
           )
-        : hashLegacy(entry.prev_hash, entry.subject_type, entry.subject_id, entry.event_type, entry.event_data, entry.created_at);
+        : hashLegacy(
+            entry.prev_hash,
+            entry.subject_type,
+            entry.subject_id,
+            entry.event_type,
+            entry.event_data,
+            entry.created_at,
+          );
 
     if (recomputed !== entry.entry_hash) {
-      return { valid: false, brokenAt: entry.id, reason: "hash_mismatch", entryCount: entries.length, anchored: !!head };
+      return {
+        valid: false,
+        brokenAt: entry.id,
+        reason: 'hash_mismatch',
+        entryCount: entries.length,
+        anchored: !!head,
+      };
     }
 
     expectedPrev = entry.entry_hash;
@@ -288,28 +385,43 @@ export async function verifyChainIntegrity(
   // deleted, so the chain cannot be trusted.
   if (!head) {
     if (sawV2) {
-      return { valid: false, reason: "missing_anchor", entryCount: entries.length, anchored: false };
+      return {
+        valid: false,
+        reason: 'missing_anchor',
+        entryCount: entries.length,
+        anchored: false,
+      };
     }
     return { valid: true, entryCount: entries.length, anchored: false };
   }
 
   if (Number(head.entry_count) !== entries.length) {
-    return { valid: false, reason: "entry_count_mismatch", entryCount: entries.length, anchored: true };
+    return {
+      valid: false,
+      reason: 'entry_count_mismatch',
+      entryCount: entries.length,
+      anchored: true,
+    };
   }
 
   const computedHead = entries.length ? entries[entries.length - 1].entry_hash : GENESIS_HASH;
   if (computedHead !== head.head_hash) {
-    return { valid: false, reason: "head_mismatch", entryCount: entries.length, anchored: true };
+    return { valid: false, reason: 'head_mismatch', entryCount: entries.length, anchored: true };
   }
 
   let expectedAnchor: string;
   try {
     expectedAnchor = anchorFor(subjectType, subjectId, Number(head.entry_count), head.head_hash);
   } catch (err) {
-    return { valid: false, reason: "anchor_key_unavailable", entryCount: entries.length, anchored: true };
+    return {
+      valid: false,
+      reason: 'anchor_key_unavailable',
+      entryCount: entries.length,
+      anchored: true,
+    };
   }
   if (!safeEqual(expectedAnchor, head.anchor_hmac)) {
-    return { valid: false, reason: "anchor_mismatch", entryCount: entries.length, anchored: true };
+    return { valid: false, reason: 'anchor_mismatch', entryCount: entries.length, anchored: true };
   }
 
   return { valid: true, entryCount: entries.length, anchored: true };

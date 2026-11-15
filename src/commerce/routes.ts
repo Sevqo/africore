@@ -1,44 +1,286 @@
-import {storeOrders} from './orders';
-import {Router} from 'express';
-import {z} from 'zod';
-import {route,access} from '../platform/auth';
-import {stores,saveStore,listings,saveListing,saveCollection,commerceConfiguration,saveCommerceRules,commerceHistory} from './catalog';
-import {previewStoreCart} from './quote';
-import {previewPublication,publishStore,unpublishStore,publicStore} from './publishing';
-import {saveCheckoutPolicy} from './checkout-policy';
-import {createCart,getCart,updateCart,confirmCart} from './carts';
-import {cartCookieName,cartCookieOptions,cartTokenFromCookie} from './cart-access';
-import {fail} from '../platform/auth';
-import {listAssets,uploadAsset,withdrawAsset,currentAsset,assetBytes,publicMediaAccess} from '../publishing/assets';
-import {publicStoreImage} from './public-images';
-export const commerce=Router();
-const key=(req:any)=>z.string().min(8).max(200).parse(req.headers['idempotency-key']);
-const cartScope=(req:any)=>{const environment=String(req.params.environment),slug=String(req.params.slug);return {environment,slug,token:cartTokenFromCookie(req.headers.cookie,environment,slug)};};
-function imageResponse(res:any,bytes:Buffer,mime:string){res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Content-Security-Policy',"default-src 'none'; sandbox");res.setHeader('Content-Disposition','inline; filename="public-image.webp"');res.type(mime).send(bytes);}
-commerce.get('/organizations/:org/commerce/assets',route(async(req,res)=>res.json(await listAssets(await access(req,'admin'),req.query))));
-commerce.post('/organizations/:org/commerce/assets',route(async(req,res)=>res.status(201).json(await uploadAsset(await access(req,'admin'),req.body,key(req)))));
-commerce.post('/organizations/:org/commerce/assets/:id/withdraw',route(async(req,res)=>res.json(await withdrawAsset(await access(req,'admin'),String(req.params.id),req.body,key(req)))));
-commerce.get('/organizations/:org/commerce/assets/:id/content',route(async(req,res)=>{const a=await access(req,'admin');await publicMediaAccess(a,false);const asset=await currentAsset(a,z.string().uuid().parse(req.params.id),false);imageResponse(res,assetBytes(asset),asset.mime);}));
-commerce.get('/storefronts/:environment/:slug/assets/:id',route(async(req,res)=>{const image=await publicStoreImage(String(req.params.environment),String(req.params.slug),String(req.params.id));imageResponse(res,image.bytes,image.mime);}));
-commerce.get('/storefronts/:environment/:slug/cart',route(async(req,res)=>{const s=cartScope(req);res.setHeader('Cache-Control','no-store');res.json(await getCart(s.environment,s.slug,s.token));}));
-commerce.post('/storefronts/:environment/:slug/cart',route(async(req,res)=>{const s=cartScope(req),result=await createCart(s.environment,s.slug,req.body,s.token);res.setHeader('Cache-Control','no-store');if(result.token)res.cookie(cartCookieName(s.environment,s.slug),result.token,cartCookieOptions(s.environment,s.slug));res.status(result.created?201:200).json(result.cart);}));
-commerce.put('/storefronts/:environment/:slug/cart',route(async(req,res)=>{const s=cartScope(req);const token=s.token||fail(401,'Start a cart before saving it');await updateCart(s.environment,s.slug,token,req.body,key(req));res.setHeader('Cache-Control','no-store');res.json(await getCart(s.environment,s.slug,s.token));}));
-commerce.post('/storefronts/:environment/:slug/cart/confirm',route(async(req,res)=>{const s=cartScope(req),token=s.token||fail(401,'Start a cart before checkout');await confirmCart(s.environment,s.slug,token,req.body,key(req));res.setHeader('Cache-Control','no-store');res.json(await getCart(s.environment,s.slug,token));}));
-commerce.put('/organizations/:org/commerce/stores/:id/checkout-policy',route(async(req,res)=>res.json(await saveCheckoutPolicy(await access(req,'admin'),String(req.params.id),req.body,key(req)))));
-commerce.get('/organizations/:org/commerce/stores/:id/orders',route(async(req,res)=>res.json(await storeOrders(await access(req,'admin'),String(req.params.id),req.query))));
-commerce.get('/organizations/:org/commerce/stores',route(async(req,res)=>res.json(await stores(await access(req)))));
-commerce.post('/organizations/:org/commerce/stores/:id/quote',route(async(req,res)=>res.json(await previewStoreCart(await access(req),String(req.params.id),req.body))));
-commerce.get('/organizations/:org/commerce/stores/:id/publication-preview',route(async(req,res)=>res.json(await previewPublication(await access(req,'admin'),String(req.params.id)))));
-commerce.post('/organizations/:org/commerce/stores/:id/publish',route(async(req,res)=>res.json(await publishStore(await access(req,'admin'),String(req.params.id),req.body,key(req)))));
-commerce.post('/organizations/:org/commerce/stores/:id/unpublish',route(async(req,res)=>res.json(await unpublishStore(await access(req,'admin'),String(req.params.id),req.body,key(req)))));
-commerce.get('/storefronts/:environment/:slug',route(async(req,res)=>res.json(await publicStore(String(req.params.environment),String(req.params.slug),req.query))));
-commerce.post('/organizations/:org/commerce/stores',route(async(req,res)=>res.status(201).json(await saveStore(await access(req,'admin'),null,req.body,key(req)))));
-commerce.put('/organizations/:org/commerce/stores/:id',route(async(req,res)=>res.json(await saveStore(await access(req,'admin'),String(req.params.id),req.body,key(req)))));
-commerce.get('/organizations/:org/commerce/stores/:id/configuration',route(async(req,res)=>res.json(await commerceConfiguration(await access(req),String(req.params.id)))));
-commerce.get('/organizations/:org/commerce/stores/:id/history',route(async(req,res)=>res.json(await commerceHistory(await access(req),String(req.params.id)))));
-commerce.put('/organizations/:org/commerce/stores/:id/rules',route(async(req,res)=>res.json(await saveCommerceRules(await access(req,'admin'),String(req.params.id),req.body,key(req)))));
-commerce.get('/organizations/:org/commerce/stores/:id/listings',route(async(req,res)=>res.json(await listings(await access(req),String(req.params.id),req.query))));
-commerce.post('/organizations/:org/commerce/stores/:id/listings',route(async(req,res)=>res.status(201).json(await saveListing(await access(req,'admin'),String(req.params.id),null,req.body,key(req)))));
-commerce.put('/organizations/:org/commerce/stores/:id/listings/:listing',route(async(req,res)=>res.json(await saveListing(await access(req,'admin'),String(req.params.id),String(req.params.listing),req.body,key(req)))));
-commerce.post('/organizations/:org/commerce/stores/:id/collections',route(async(req,res)=>res.status(201).json(await saveCollection(await access(req,'admin'),String(req.params.id),null,req.body,key(req)))));
-commerce.put('/organizations/:org/commerce/stores/:id/collections/:collection',route(async(req,res)=>res.json(await saveCollection(await access(req,'admin'),String(req.params.id),String(req.params.collection),req.body,key(req)))));
+import { storeOrders } from './orders';
+import { Router } from 'express';
+import { z } from 'zod';
+import { route, access } from '../platform/auth';
+import {
+  stores,
+  saveStore,
+  listings,
+  saveListing,
+  saveCollection,
+  commerceConfiguration,
+  saveCommerceRules,
+  commerceHistory,
+} from './catalog';
+import { previewStoreCart } from './quote';
+import { previewPublication, publishStore, unpublishStore, publicStore } from './publishing';
+import { saveCheckoutPolicy } from './checkout-policy';
+import { createCart, getCart, updateCart, confirmCart } from './carts';
+import { cartCookieName, cartCookieOptions, cartTokenFromCookie } from './cart-access';
+import { fail } from '../platform/auth';
+import {
+  listAssets,
+  uploadAsset,
+  withdrawAsset,
+  currentAsset,
+  assetBytes,
+  publicMediaAccess,
+} from '../publishing/assets';
+import { publicStoreImage } from './public-images';
+export const commerce = Router();
+const key = (req: any) => z.string().min(8).max(200).parse(req.headers['idempotency-key']);
+const cartScope = (req: any) => {
+  const environment = String(req.params.environment),
+    slug = String(req.params.slug);
+  return { environment, slug, token: cartTokenFromCookie(req.headers.cookie, environment, slug) };
+};
+function imageResponse(res: any, bytes: Buffer, mime: string) {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+  res.setHeader('Content-Disposition', 'inline; filename="public-image.webp"');
+  res.type(mime).send(bytes);
+}
+commerce.get(
+  '/organizations/:org/commerce/assets',
+  route(async (req, res) => res.json(await listAssets(await access(req, 'admin'), req.query))),
+);
+commerce.post(
+  '/organizations/:org/commerce/assets',
+  route(async (req, res) =>
+    res.status(201).json(await uploadAsset(await access(req, 'admin'), req.body, key(req))),
+  ),
+);
+commerce.post(
+  '/organizations/:org/commerce/assets/:id/withdraw',
+  route(async (req, res) =>
+    res.json(
+      await withdrawAsset(await access(req, 'admin'), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+commerce.get(
+  '/organizations/:org/commerce/assets/:id/content',
+  route(async (req, res) => {
+    const a = await access(req, 'admin');
+    await publicMediaAccess(a, false);
+    const asset = await currentAsset(a, z.string().uuid().parse(req.params.id), false);
+    imageResponse(res, assetBytes(asset), asset.mime);
+  }),
+);
+commerce.get(
+  '/storefronts/:environment/:slug/assets/:id',
+  route(async (req, res) => {
+    const image = await publicStoreImage(
+      String(req.params.environment),
+      String(req.params.slug),
+      String(req.params.id),
+    );
+    imageResponse(res, image.bytes, image.mime);
+  }),
+);
+commerce.get(
+  '/storefronts/:environment/:slug/cart',
+  route(async (req, res) => {
+    const s = cartScope(req);
+    res.setHeader('Cache-Control', 'no-store');
+    res.json(await getCart(s.environment, s.slug, s.token));
+  }),
+);
+commerce.post(
+  '/storefronts/:environment/:slug/cart',
+  route(async (req, res) => {
+    const s = cartScope(req),
+      result = await createCart(s.environment, s.slug, req.body, s.token);
+    res.setHeader('Cache-Control', 'no-store');
+    if (result.token)
+      res.cookie(
+        cartCookieName(s.environment, s.slug),
+        result.token,
+        cartCookieOptions(s.environment, s.slug),
+      );
+    res.status(result.created ? 201 : 200).json(result.cart);
+  }),
+);
+commerce.put(
+  '/storefronts/:environment/:slug/cart',
+  route(async (req, res) => {
+    const s = cartScope(req);
+    const token = s.token || fail(401, 'Start a cart before saving it');
+    await updateCart(s.environment, s.slug, token, req.body, key(req));
+    res.setHeader('Cache-Control', 'no-store');
+    res.json(await getCart(s.environment, s.slug, s.token));
+  }),
+);
+commerce.post(
+  '/storefronts/:environment/:slug/cart/confirm',
+  route(async (req, res) => {
+    const s = cartScope(req),
+      token = s.token || fail(401, 'Start a cart before checkout');
+    await confirmCart(s.environment, s.slug, token, req.body, key(req));
+    res.setHeader('Cache-Control', 'no-store');
+    res.json(await getCart(s.environment, s.slug, token));
+  }),
+);
+commerce.put(
+  '/organizations/:org/commerce/stores/:id/checkout-policy',
+  route(async (req, res) =>
+    res.json(
+      await saveCheckoutPolicy(
+        await access(req, 'admin'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+commerce.get(
+  '/organizations/:org/commerce/stores/:id/orders',
+  route(async (req, res) =>
+    res.json(await storeOrders(await access(req, 'admin'), String(req.params.id), req.query)),
+  ),
+);
+commerce.get(
+  '/organizations/:org/commerce/stores',
+  route(async (req, res) => res.json(await stores(await access(req)))),
+);
+commerce.post(
+  '/organizations/:org/commerce/stores/:id/quote',
+  route(async (req, res) =>
+    res.json(await previewStoreCart(await access(req), String(req.params.id), req.body)),
+  ),
+);
+commerce.get(
+  '/organizations/:org/commerce/stores/:id/publication-preview',
+  route(async (req, res) =>
+    res.json(await previewPublication(await access(req, 'admin'), String(req.params.id))),
+  ),
+);
+commerce.post(
+  '/organizations/:org/commerce/stores/:id/publish',
+  route(async (req, res) =>
+    res.json(
+      await publishStore(await access(req, 'admin'), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+commerce.post(
+  '/organizations/:org/commerce/stores/:id/unpublish',
+  route(async (req, res) =>
+    res.json(
+      await unpublishStore(await access(req, 'admin'), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+commerce.get(
+  '/storefronts/:environment/:slug',
+  route(async (req, res) =>
+    res.json(await publicStore(String(req.params.environment), String(req.params.slug), req.query)),
+  ),
+);
+commerce.post(
+  '/organizations/:org/commerce/stores',
+  route(async (req, res) =>
+    res.status(201).json(await saveStore(await access(req, 'admin'), null, req.body, key(req))),
+  ),
+);
+commerce.put(
+  '/organizations/:org/commerce/stores/:id',
+  route(async (req, res) =>
+    res.json(
+      await saveStore(await access(req, 'admin'), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+commerce.get(
+  '/organizations/:org/commerce/stores/:id/configuration',
+  route(async (req, res) =>
+    res.json(await commerceConfiguration(await access(req), String(req.params.id))),
+  ),
+);
+commerce.get(
+  '/organizations/:org/commerce/stores/:id/history',
+  route(async (req, res) =>
+    res.json(await commerceHistory(await access(req), String(req.params.id))),
+  ),
+);
+commerce.put(
+  '/organizations/:org/commerce/stores/:id/rules',
+  route(async (req, res) =>
+    res.json(
+      await saveCommerceRules(
+        await access(req, 'admin'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+commerce.get(
+  '/organizations/:org/commerce/stores/:id/listings',
+  route(async (req, res) =>
+    res.json(await listings(await access(req), String(req.params.id), req.query)),
+  ),
+);
+commerce.post(
+  '/organizations/:org/commerce/stores/:id/listings',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(
+        await saveListing(
+          await access(req, 'admin'),
+          String(req.params.id),
+          null,
+          req.body,
+          key(req),
+        ),
+      ),
+  ),
+);
+commerce.put(
+  '/organizations/:org/commerce/stores/:id/listings/:listing',
+  route(async (req, res) =>
+    res.json(
+      await saveListing(
+        await access(req, 'admin'),
+        String(req.params.id),
+        String(req.params.listing),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+commerce.post(
+  '/organizations/:org/commerce/stores/:id/collections',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(
+        await saveCollection(
+          await access(req, 'admin'),
+          String(req.params.id),
+          null,
+          req.body,
+          key(req),
+        ),
+      ),
+  ),
+);
+commerce.put(
+  '/organizations/:org/commerce/stores/:id/collections/:collection',
+  route(async (req, res) =>
+    res.json(
+      await saveCollection(
+        await access(req, 'admin'),
+        String(req.params.id),
+        String(req.params.collection),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);

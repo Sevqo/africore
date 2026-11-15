@@ -1,23 +1,23 @@
-import {migratePublicMedia} from '../publishing/schema';
-import {migratePOS} from '../pos/schema';
-import {migrateCommerce} from '../commerce/schema';
-import {migrateProcurement} from '../erp/procurement-schema';
-import {migrateDocuments} from '../erp/documents-schema';
-import {migratePeople} from '../erp/people-schema';
-import {migrateAccounting} from '../erp/accounting-schema';
-import {migrateERP} from '../erp/schema';
-import {migrateConnected} from '../operations/connected-schema';
-import {migrateApps} from '../apps/schema';
-import {migrateBusinessOperations} from '../operations/business-schema';
-import {migrateFinance} from '../finance/schema';
+import { migratePublicMedia } from '../publishing/schema';
+import { migratePOS } from '../pos/schema';
+import { migrateCommerce } from '../commerce/schema';
+import { migrateProcurement } from '../erp/procurement-schema';
+import { migrateDocuments } from '../erp/documents-schema';
+import { migratePeople } from '../erp/people-schema';
+import { migrateAccounting } from '../erp/accounting-schema';
+import { migrateERP } from '../erp/schema';
+import { migrateConnected } from '../operations/connected-schema';
+import { migrateApps } from '../apps/schema';
+import { migrateBusinessOperations } from '../operations/business-schema';
+import { migrateFinance } from '../finance/schema';
 import { migrateTrust } from '../trust/schema';
-import {migrateSecurity} from '../platform/security-schema';
-import {migrateMarketplace} from '../marketplace/schema';
+import { migrateSecurity } from '../platform/security-schema';
+import { migrateMarketplace } from '../marketplace/schema';
 import { migrateOperations } from '../operations/schema';
 import { migratePlatform } from '../platform/schema';
 import { migrateAccounts } from '../platform/accounts-schema';
 import { migrateWorkspaceExperiences } from '../platform/workspace-schema';
-import { dbExec, isPostgres, rawSqliteDb } from "./adapter";
+import { dbExec, isPostgres, rawSqliteDb } from './adapter';
 
 // Table/column types here (TEXT, REAL, INTEGER) are valid in both SQLite
 // and PostgreSQL, so one schema string works for both engines — the only
@@ -346,12 +346,18 @@ export async function migrate(): Promise<void> {
     await dbExec(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS matched_invoice_id TEXT;`);
     await dbExec(`ALTER TABLE webhook_subscriptions ADD COLUMN IF NOT EXISTS secret TEXT;`);
     await dbExec(`ALTER TABLE webhook_subscriptions ADD COLUMN IF NOT EXISTS client_id TEXT;`);
-    await dbExec(`ALTER TABLE webhook_subscriptions ADD COLUMN IF NOT EXISTS environment TEXT NOT NULL DEFAULT 'live';`);
+    await dbExec(
+      `ALTER TABLE webhook_subscriptions ADD COLUMN IF NOT EXISTS environment TEXT NOT NULL DEFAULT 'live';`,
+    );
     await dbExec(`ALTER TABLE webhook_events ADD COLUMN IF NOT EXISTS subject_type TEXT;`);
     await dbExec(`ALTER TABLE webhook_events ADD COLUMN IF NOT EXISTS subject_id TEXT;`);
-    await dbExec(`ALTER TABLE webhook_events ADD COLUMN IF NOT EXISTS is_sandbox INTEGER DEFAULT 0;`);
+    await dbExec(
+      `ALTER TABLE webhook_events ADD COLUMN IF NOT EXISTS is_sandbox INTEGER DEFAULT 0;`,
+    );
     await dbExec(`ALTER TABLE ledger ADD COLUMN IF NOT EXISTS seq INTEGER;`);
-    await dbExec(`ALTER TABLE ledger ADD COLUMN IF NOT EXISTS hash_version INTEGER NOT NULL DEFAULT 1;`);
+    await dbExec(
+      `ALTER TABLE ledger ADD COLUMN IF NOT EXISTS hash_version INTEGER NOT NULL DEFAULT 1;`,
+    );
     await dbExec(`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS is_sandbox INTEGER DEFAULT 0;`);
     await dbExec(`ALTER TABLE persons ADD COLUMN IF NOT EXISTS is_sandbox INTEGER DEFAULT 0;`);
     await dbExec(`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS scenario TEXT;`);
@@ -364,14 +370,20 @@ export async function migrate(): Promise<void> {
     await dbExec(`ALTER TABLE api_clients ADD COLUMN IF NOT EXISTS revoked_at TEXT;`);
     await dbExec(`ALTER TABLE consents ADD COLUMN IF NOT EXISTS expires_at TEXT;`);
     await dbExec(`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS sector TEXT;`);
-    await dbExec(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS subject_type TEXT NOT NULL DEFAULT 'business';`);
+    await dbExec(
+      `ALTER TABLE transactions ADD COLUMN IF NOT EXISTS subject_type TEXT NOT NULL DEFAULT 'business';`,
+    );
     await dbExec(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS statement_id TEXT;`);
     await dbExec(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS shortcode TEXT;`);
 
     // Money precision: REAL on PostgreSQL is float4 and loses cents. These
     // rewrites are idempotent; existing values are rounded to 2 decimals.
-    await dbExec(`ALTER TABLE transactions ALTER COLUMN amount TYPE NUMERIC(18,2) USING round(amount::numeric, 2);`);
-    await dbExec(`ALTER TABLE invoices ALTER COLUMN amount TYPE NUMERIC(18,2) USING round(amount::numeric, 2);`);
+    await dbExec(
+      `ALTER TABLE transactions ALTER COLUMN amount TYPE NUMERIC(18,2) USING round(amount::numeric, 2);`,
+    );
+    await dbExec(
+      `ALTER TABLE invoices ALTER COLUMN amount TYPE NUMERIC(18,2) USING round(amount::numeric, 2);`,
+    );
   } else {
     const guard = (table: string, column: string, ddl: string) => {
       const cols = rawSqliteDb!.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
@@ -379,30 +391,30 @@ export async function migrate(): Promise<void> {
         rawSqliteDb!.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
       }
     };
-    guard("transactions", "matched_invoice_id", "matched_invoice_id TEXT");
-    guard("webhook_subscriptions", "secret", "secret TEXT");
-    guard("webhook_subscriptions", "client_id", "client_id TEXT");
-    guard("webhook_subscriptions", "environment", "environment TEXT NOT NULL DEFAULT 'live'");
-    guard("webhook_events", "subject_type", "subject_type TEXT");
-    guard("webhook_events", "subject_id", "subject_id TEXT");
-    guard("webhook_events", "is_sandbox", "is_sandbox INTEGER DEFAULT 0");
-    guard("ledger", "seq", "seq INTEGER");
-    guard("ledger", "hash_version", "hash_version INTEGER NOT NULL DEFAULT 1");
-    guard("businesses", "is_sandbox", "is_sandbox INTEGER DEFAULT 0");
-    guard("persons", "is_sandbox", "is_sandbox INTEGER DEFAULT 0");
-    guard("accounts", "scenario", "scenario TEXT");
-    guard("invoices", "expected_counterparty", "expected_counterparty TEXT");
-    guard("invoices", "paid_amount", "paid_amount NUMERIC(18,2)");
-    guard("invoices", "invoice_number", "invoice_number TEXT");
-    guard("invoices", "attachment_file_name", "attachment_file_name TEXT");
-    guard("invoices", "attachment_sha256", "attachment_sha256 TEXT");
-    guard("invoices", "attachment_size_bytes", "attachment_size_bytes INTEGER");
-    guard("api_clients", "revoked_at", "revoked_at TEXT");
-    guard("consents", "expires_at", "expires_at TEXT");
-    guard("businesses", "sector", "sector TEXT");
-    guard("transactions", "subject_type", "subject_type TEXT NOT NULL DEFAULT 'business'");
-    guard("transactions", "statement_id", "statement_id TEXT");
-    guard("transactions", "shortcode", "shortcode TEXT");
+    guard('transactions', 'matched_invoice_id', 'matched_invoice_id TEXT');
+    guard('webhook_subscriptions', 'secret', 'secret TEXT');
+    guard('webhook_subscriptions', 'client_id', 'client_id TEXT');
+    guard('webhook_subscriptions', 'environment', "environment TEXT NOT NULL DEFAULT 'live'");
+    guard('webhook_events', 'subject_type', 'subject_type TEXT');
+    guard('webhook_events', 'subject_id', 'subject_id TEXT');
+    guard('webhook_events', 'is_sandbox', 'is_sandbox INTEGER DEFAULT 0');
+    guard('ledger', 'seq', 'seq INTEGER');
+    guard('ledger', 'hash_version', 'hash_version INTEGER NOT NULL DEFAULT 1');
+    guard('businesses', 'is_sandbox', 'is_sandbox INTEGER DEFAULT 0');
+    guard('persons', 'is_sandbox', 'is_sandbox INTEGER DEFAULT 0');
+    guard('accounts', 'scenario', 'scenario TEXT');
+    guard('invoices', 'expected_counterparty', 'expected_counterparty TEXT');
+    guard('invoices', 'paid_amount', 'paid_amount NUMERIC(18,2)');
+    guard('invoices', 'invoice_number', 'invoice_number TEXT');
+    guard('invoices', 'attachment_file_name', 'attachment_file_name TEXT');
+    guard('invoices', 'attachment_sha256', 'attachment_sha256 TEXT');
+    guard('invoices', 'attachment_size_bytes', 'attachment_size_bytes INTEGER');
+    guard('api_clients', 'revoked_at', 'revoked_at TEXT');
+    guard('consents', 'expires_at', 'expires_at TEXT');
+    guard('businesses', 'sector', 'sector TEXT');
+    guard('transactions', 'subject_type', "subject_type TEXT NOT NULL DEFAULT 'business'");
+    guard('transactions', 'statement_id', 'statement_id TEXT');
+    guard('transactions', 'shortcode', 'shortcode TEXT');
   }
 
   // Service-level guards (both engines).
@@ -412,16 +424,43 @@ export async function migrate(): Promise<void> {
   // data), the index cannot be created; we log and continue so the migration
   // is not fatal, and verification reports the fork explicitly.
   try {
-    await dbExec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_ledger_prev ON ledger (subject_type, subject_id, prev_hash);`);
+    await dbExec(
+      `CREATE UNIQUE INDEX IF NOT EXISTS idx_ledger_prev ON ledger (subject_type, subject_id, prev_hash);`,
+    );
   } catch {
-    console.warn(JSON.stringify({ level: "warn", event: "migration_skipped", index: "idx_ledger_prev", reason: "existing_forked_chain" }));
+    console.warn(
+      JSON.stringify({
+        level: 'warn',
+        event: 'migration_skipped',
+        index: 'idx_ledger_prev',
+        reason: 'existing_forked_chain',
+      }),
+    );
   }
   try {
-    await dbExec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_unique ON accounts (business_id, provider, account_identifier);`);
+    await dbExec(
+      `CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_unique ON accounts (business_id, provider, account_identifier);`,
+    );
   } catch {
-    console.warn(JSON.stringify({ level: "warn", event: "migration_skipped", index: "idx_accounts_unique", reason: "existing_duplicate_accounts" }));
+    console.warn(
+      JSON.stringify({
+        level: 'warn',
+        event: 'migration_skipped',
+        index: 'idx_accounts_unique',
+        reason: 'existing_duplicate_accounts',
+      }),
+    );
   }
 }
 
-
-export { dbGet, dbAll, dbRun, dbExec, dbTransaction, dbSavepoint, inTransaction, isPostgres, closeDb } from "./adapter";
+export {
+  dbGet,
+  dbAll,
+  dbRun,
+  dbExec,
+  dbTransaction,
+  dbSavepoint,
+  inTransaction,
+  isPostgres,
+  closeDb,
+} from './adapter';

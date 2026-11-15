@@ -1,5 +1,5 @@
-import { OrbitQueues, createOrbitQueues, getOrbitQueues } from "./queue";
-import { registerWorkers } from "./workers";
+import { OrbitQueues, createOrbitQueues, getOrbitQueues } from './queue';
+import { registerWorkers } from './workers';
 
 /**
  * Inline dev/test workers: when REDIS_URL is unset the API process also
@@ -8,7 +8,7 @@ import { registerWorkers } from "./workers";
  */
 export function startInlineWorkers(): OrbitQueues {
   const queues = getOrbitQueues();
-  if (queues.backend !== "memory") return queues;
+  if (queues.backend !== 'memory') return queues;
   registerWorkers(queues);
   queues.startAutoDrain();
   return queues;

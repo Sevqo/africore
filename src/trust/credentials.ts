@@ -10,16 +10,11 @@ import { randomUUID } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import { dbAll, dbGet, dbRun } from '../db';
 import { Access, audit, fail } from '../platform/auth';
-import {requireServices,checkLimits,recordUsage} from '../marketplace/engine';
+import { requireServices, checkLimits, recordUsage } from '../marketplace/engine';
 import { seal, unseal, now, hash } from '../platform/crypto';
 import { atomic } from '../operations/store';
 import { emit } from '../operations/events';
-import {
-  credentialTypes,
-  schemaRegistry,
-  issueInput,
-  minimalCredential,
-} from './contracts';
+import { credentialTypes, schemaRegistry, issueInput, minimalCredential } from './contracts';
 import { get, list, put, change, origin, sandbox, flags } from './store';
 import { commitmentFor } from './proofs';
 export async function newKey(owner: string, environment: string) {
@@ -35,25 +30,25 @@ export async function newKey(owner: string, environment: string) {
       environment,
       'active',
       JSON.stringify({ ...publicJwk, kid: id, alg: 'ES256', use: 'sig' }),
-      seal(JSON.stringify(privateJwk),JSON.stringify(['signing-key',owner,environment,id])),
+      seal(JSON.stringify(privateJwk), JSON.stringify(['signing-key', owner, environment, id])),
       now(),
     ],
   );
   return id;
 }
-export async function signed(
-  owner: string,
-  environment: string,
-  payload: any,
-  typ = 'vc+jwt',
-) {
+export async function signed(owner: string, environment: string, payload: any, typ = 'vc+jwt') {
   const key = await dbGet(
     "SELECT * FROM ac3_keys WHERE owner_id=? AND environment=? AND state='active' ORDER BY created_at DESC",
     [owner, environment],
   );
   if (!key) fail(503, 'No active signing key');
   const privateKey = await importJWK(
-    JSON.parse(unseal(key.private_sealed,JSON.stringify(['signing-key',key.owner_id,key.environment,key.id]))),
+    JSON.parse(
+      unseal(
+        key.private_sealed,
+        JSON.stringify(['signing-key', key.owner_id, key.environment, key.id]),
+      ),
+    ),
     'ES256',
   );
   return new CompactSign(Buffer.from(JSON.stringify(payload)))
@@ -71,10 +66,9 @@ export async function issuerMetadata(id: string) {
     [id],
   );
   if (!i) fail(404, 'Issuer not found');
-  const keys = await dbAll(
-    'SELECT id,state,public_jwk,created_at FROM ac3_keys WHERE owner_id=?',
-    [id],
-  );
+  const keys = await dbAll('SELECT id,state,public_jwk,created_at FROM ac3_keys WHERE owner_id=?', [
+    id,
+  ]);
   return {
     ...i,
     types: JSON.parse(i.types),
@@ -86,9 +80,7 @@ export async function issuerMetadata(id: string) {
     issuer: 'urn:uuid:' + id,
     recognized: i.status === 'approved' && i.environment === 'production',
     authority:
-      i.environment === 'sandbox'
-        ? 'sandbox_only_no_institutional_authority'
-        : 'unverified',
+      i.environment === 'sandbox' ? 'sandbox_only_no_institutional_authority' : 'unverified',
     jwks: {
       keys: keys.map((k) => ({
         ...JSON.parse(k.public_jwk),
@@ -142,8 +134,7 @@ export async function reviewIssuer(a: Access, id: string, input: any) {
   const i = await dbGet('SELECT * FROM ac3_issuers WHERE id=?', [id]);
   if (!i || i.environment !== 'sandbox') fail(404, 'Sandbox issuer not found');
   if (d.decision === 'approve_sandbox') {
-    if (i.status === 'revoked')
-      fail(409, 'Revoked issuer cannot be reactivated');
+    if (i.status === 'revoked') fail(409, 'Revoked issuer cannot be reactivated');
     await newKey(id, 'sandbox');
   }
   await dbRun('UPDATE ac3_issuers SET status=?,review=? WHERE id=?', [
@@ -164,22 +155,20 @@ export async function reviewIssuer(a: Access, id: string, input: any) {
   await audit(i.org_id, a.actor, 'issuer.' + d.decision, id);
   return issuerMetadata(id);
 }
-export async function rotateKey(
-  a: Access,
-  issuer: string,
-  compromise: boolean,
-) {
+export async function rotateKey(a: Access, issuer: string, compromise: boolean) {
   sandbox(a);
-  const i = await dbGet(
-    'SELECT * FROM ac3_issuers WHERE id=? AND org_id=? AND environment=?',
-    [issuer, a.org, a.environment],
-  );
+  const i = await dbGet('SELECT * FROM ac3_issuers WHERE id=? AND org_id=? AND environment=?', [
+    issuer,
+    a.org,
+    a.environment,
+  ]);
   if (!i || i.status !== 'approved_sandbox')
     fail(403, 'Approved sandbox issuer authority required');
-  await dbRun(
-    "UPDATE ac3_keys SET state=? WHERE owner_id=? AND environment=? AND state='active'",
-    [compromise ? 'compromised' : 'retired', issuer, a.environment],
-  );
+  await dbRun("UPDATE ac3_keys SET state=? WHERE owner_id=? AND environment=? AND state='active'", [
+    compromise ? 'compromised' : 'retired',
+    issuer,
+    a.environment,
+  ]);
   if (compromise) {
     const affected = await dbAll(
       "SELECT id,org_id FROM ac3_credentials WHERE issuer_id=? AND status!='revoked'",
@@ -203,17 +192,12 @@ export async function rotateKey(
 export async function requestIssuance(a: Access, input: any) {
   sandbox(a);
   const d = issueInput.parse(input);
-  if (d.holder_org !== a.org)
-    fail(403, 'Holder must authorize its own evidence');
-  const issuer = await dbGet(
-    'SELECT * FROM ac3_issuers WHERE id=? AND environment=?',
-    [d.issuer_id, a.environment],
-  );
-  if (
-    !issuer ||
-    issuer.status !== 'approved_sandbox' ||
-    !JSON.parse(issuer.types).includes(d.type)
-  )
+  if (d.holder_org !== a.org) fail(403, 'Holder must authorize its own evidence');
+  const issuer = await dbGet('SELECT * FROM ac3_issuers WHERE id=? AND environment=?', [
+    d.issuer_id,
+    a.environment,
+  ]);
+  if (!issuer || issuer.status !== 'approved_sandbox' || !JSON.parse(issuer.types).includes(d.type))
     fail(403, 'Issuer is not approved for this sandbox credential type');
   await get(a, (await list(a, 'passport'))[0]?.id, 'passport');
   const evidence = [];
@@ -251,10 +235,7 @@ export const context = () => [
   Object.fromEntries([
     ...credentialTypes.map((t) => [t, 'https://africore.example/vocab#' + t]),
     ['AfriCoreEvidence', 'https://africore.example/vocab#AfriCoreEvidence'],
-    [
-      'evidence',
-      { '@id': 'https://africore.example/vocab#evidence', '@type': '@json' },
-    ],
+    ['evidence', { '@id': 'https://africore.example/vocab#evidence', '@type': '@json' }],
     ['displayName', 'https://schema.org/name'],
     ['country', 'https://schema.org/addressCountry'],
   ]),
@@ -264,35 +245,21 @@ export async function issue(a: Access, requestId: string) {
   if (!flags().credential_issuance) fail(503, 'Credential issuance disabled');
   return atomic(a, async () => {
     const request = await get(a, requestId, 'issuance_request', true);
-    if (
-      request.peer_org === a.org &&
-      request.status === 'issued' &&
-      request.credential_id
-    )
+    if (request.peer_org === a.org && request.status === 'issued' && request.credential_id)
       return {
-        ...(await credential(
-          { ...a, org: request.org_id },
-          request.credential_id,
-        )),
+        ...(await credential({ ...a, org: request.org_id }, request.credential_id)),
         duplicate: true,
       };
-    if (
-      request.peer_org !== a.org ||
-      request.status !== 'pending' ||
-      request.expires_at < now()
-    )
+    if (request.peer_org !== a.org || request.status !== 'pending' || request.expires_at < now())
       fail(403, 'An active holder-authorized issuance request is required');
-    await requireServices(a,['credentials']);
-    await checkLimits(a,'credentials',1);
-    const i = await dbGet(
-      'SELECT * FROM ac3_issuers WHERE id=? AND org_id=? AND environment=?',
-      [request.issuer_id, a.org, a.environment],
-    );
-    if (
-      !i ||
-      i.status !== 'approved_sandbox' ||
-      !JSON.parse(i.types).includes(request.type)
-    )
+    await requireServices(a, ['credentials']);
+    await checkLimits(a, 'credentials', 1);
+    const i = await dbGet('SELECT * FROM ac3_issuers WHERE id=? AND org_id=? AND environment=?', [
+      request.issuer_id,
+      a.org,
+      a.environment,
+    ]);
+    if (!i || i.status !== 'approved_sandbox' || !JSON.parse(i.types).includes(request.type))
       fail(403, 'Approved issuer type authority required');
     const holder: Access = { ...a, org: request.org_id };
     const passport = (await list(holder, 'passport'))[0];
@@ -300,14 +267,8 @@ export async function issue(a: Access, requestId: string) {
     const evidence = [];
     for (const id of request.evidence_ids) {
       const e = await get(holder, id, 'evidence');
-      if (
-        e.status !== 'active' ||
-        !(await (await import('./domain')).sourceCurrent(holder, e))
-      )
-        fail(
-          409,
-          'Source evidence expired or changed; refresh evidence and authorization',
-        );
+      if (e.status !== 'active' || !(await (await import('./domain')).sourceCurrent(holder, e)))
+        fail(409, 'Source evidence expired or changed; refresh evidence and authorization');
       const prior = request.evidence.find((v: any) => v.id === id);
       if (
         !prior ||
@@ -345,10 +306,7 @@ export async function issue(a: Access, requestId: string) {
           !['delivered', 'fulfilled'].includes(e.facts.fulfillment_status),
       )
     )
-      fail(
-        409,
-        'Completed paid orders are required for trading-history claims',
-      );
+      fail(409, 'Completed paid orders are required for trading-history claims');
     if (
       request.type === 'SupplierRelationshipCredential' &&
       evidence.some((e) => e.facts.relationship !== 'supplier')
@@ -376,8 +334,7 @@ export async function issue(a: Access, requestId: string) {
             "SELECT id,data FROM ac_records WHERE org_id=? AND environment=? AND kind='invoices'",
             [holder.org, a.environment],
           ))
-            if (JSON.parse(row.data).order_id === e.source_id)
-              documents.push(row.id);
+            if (JSON.parse(row.data).order_id === e.source_id) documents.push(row.id);
         for (const doc of documents)
           requestIds.push(
             ...(
@@ -420,20 +377,12 @@ export async function issue(a: Access, requestId: string) {
       evidence.some((e) => e.facts.status !== 'confirmed')
     )
       fail(409, 'Counterparty confirmation required');
-    await dbRun('UPDATE ac3_issuers SET next_index=next_index+1 WHERE id=?', [
-      i.id,
-    ]);
-    const counter = await dbGet(
-        'SELECT next_index FROM ac3_issuers WHERE id=?',
-        [i.id],
-      ),
+    await dbRun('UPDATE ac3_issuers SET next_index=next_index+1 WHERE id=?', [i.id]);
+    const counter = await dbGet('SELECT next_index FROM ac3_issuers WHERE id=?', [i.id]),
       index = Number(counter.next_index) - 1;
-    if (index >= 131072)
-      fail(503, 'Status-list capacity reached; operator migration required');
+    if (index >= 131072) fail(503, 'Status-list capacity reached; operator migration required');
     const id = randomUUID(),
-      until = new Date(
-        Date.now() + request.valid_days * 86400000,
-      ).toISOString(),
+      until = new Date(Date.now() + request.valid_days * 86400000).toISOString(),
       level = Math.min(...evidence.map((e) => e.assurance_level));
     const facts = evidence.map((e) => e.facts),
       dates = facts
@@ -461,8 +410,7 @@ export async function issue(a: Access, requestId: string) {
       };
     if (request.type === 'PaymentActivityCredential') {
       const totals: Record<string, number> = {};
-      for (const f of facts)
-        totals[f.currency] = (totals[f.currency] || 0) + f.amount_minor;
+      for (const f of facts) totals[f.currency] = (totals[f.currency] || 0) + f.amount_minor;
       summary = {
         event_count: facts.length,
         totals_minor_by_currency: totals,
@@ -493,8 +441,7 @@ export async function issue(a: Access, requestId: string) {
     if (request.type === 'BusinessDataCoverageCredential')
       summary = {
         categories: [...new Set(evidence.map((e) => e.source_kind))],
-        source_verified_count: evidence.filter((e) => e.assurance_level >= 2)
-          .length,
+        source_verified_count: evidence.filter((e) => e.assurance_level >= 2).length,
         observed_at: now(),
       };
     const vc: any = {
@@ -529,14 +476,12 @@ export async function issue(a: Access, requestId: string) {
         type: 'BitstringStatusListEntry',
         statusPurpose: p,
         statusListIndex: String(index),
-        statusListCredential:
-          origin() + '/api/v1/trust/status/' + i.id + '/' + p,
+        statusListCredential: origin() + '/api/v1/trust/status/' + i.id + '/' + p,
       })),
     };
     const token = await signed(i.id, a.environment, vc),
       header = decodeProtectedHeader(token),
-      salt =
-        '0x' + (await import('node:crypto')).randomBytes(32).toString('hex'),
+      salt = '0x' + (await import('node:crypto')).randomBytes(32).toString('hex'),
       commitment = commitmentFor(token, salt);
     await dbRun(
       'INSERT INTO ac3_credentials(id,org_id,environment,issuer_id,key_id,schema_id,status,status_index,token_sealed,salt_sealed,commitment,fingerprint,valid_until,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
@@ -549,8 +494,8 @@ export async function issue(a: Access, requestId: string) {
         request.type,
         'active',
         index,
-        seal(token,JSON.stringify(['credential-token',holder.org,a.environment,id])),
-        seal(salt,JSON.stringify(['credential-salt',holder.org,a.environment,id])),
+        seal(token, JSON.stringify(['credential-token', holder.org, a.environment, id])),
+        seal(salt, JSON.stringify(['credential-salt', holder.org, a.environment, id])),
         commitment,
         hash(request.id),
         until,
@@ -559,7 +504,7 @@ export async function issue(a: Access, requestId: string) {
     );
     await change(a, request, { status: 'issued', credential_id: id });
     await audit(holder.org, a.actor, 'credential.issued', id);
-    await recordUsage(a,'credentials','credential:'+id,1,'credential_issued');
+    await recordUsage(a, 'credentials', 'credential:' + id, 1, 'credential_issued');
     await emit(holder, 'credential.issued', {
       id,
       issuer_id: i.id,
@@ -570,27 +515,28 @@ export async function issue(a: Access, requestId: string) {
   });
 }
 export async function credential(a: Access, id: string) {
-  const r = await dbGet(
-    'SELECT * FROM ac3_credentials WHERE id=? AND org_id=? AND environment=?',
-    [id, a.org, a.environment],
-  );
+  const r = await dbGet('SELECT * FROM ac3_credentials WHERE id=? AND org_id=? AND environment=?', [
+    id,
+    a.org,
+    a.environment,
+  ]);
   if (!r) fail(404, 'Credential not found');
-  const token = unseal(r.token_sealed,JSON.stringify(['credential-token',r.org_id,r.environment,r.id])),
-    payload = JSON.parse(
-      Buffer.from(token.split('.')[1], 'base64url').toString(),
-    );
+  const token = unseal(
+      r.token_sealed,
+      JSON.stringify(['credential-token', r.org_id, r.environment, r.id]),
+    ),
+    payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
   return {
     id: r.id,
     type: r.schema_id,
     issuer_id: r.issuer_id,
-    status:
-      r.status === 'active' && r.valid_until < now() ? 'expired' : r.status,
+    status: r.status === 'active' && r.valid_until < now() ? 'expired' : r.status,
     valid_until: r.valid_until,
     created_at: r.created_at,
     credential: payload,
     token,
     commitment: r.commitment,
-    salt: unseal(r.salt_sealed,JSON.stringify(['credential-salt',r.org_id,r.environment,r.id])),
+    salt: unseal(r.salt_sealed, JSON.stringify(['credential-salt', r.org_id, r.environment, r.id])),
     media_type: 'application/vc+jwt',
   };
 }
@@ -601,12 +547,7 @@ export async function credentials(a: Access) {
   );
   return Promise.all(rows.map((r) => credential(a, r.id)));
 }
-export async function changeStatus(
-  a: Access,
-  id: string,
-  status: string,
-  reason: string,
-) {
+export async function changeStatus(a: Access, id: string, status: string, reason: string) {
   sandbox(a);
   return atomic(a, async () => {
     const r = await dbGet(
@@ -614,8 +555,7 @@ export async function changeStatus(
       [id, a.org, a.environment],
     );
     if (!r) fail(403, 'Issuing organization authority required');
-    if (r.status === 'revoked')
-      fail(409, 'Revocation is permanent; issue a corrected credential');
+    if (r.status === 'revoked') fail(409, 'Revocation is permanent; issue a corrected credential');
     await dbRun('UPDATE ac3_credentials SET status=? WHERE id=?', [status, id]);
     await put(a, 'status_event', {
       credential_id: id,
@@ -632,14 +572,12 @@ export async function changeStatus(
   });
 }
 export async function statusList(issuer: string, purpose: string) {
-  if (!['revocation', 'suspension'].includes(purpose))
-    fail(400, 'Unsupported status purpose');
+  if (!['revocation', 'suspension'].includes(purpose)) fail(400, 'Unsupported status purpose');
   const i = await issuerMetadata(issuer),
     bits = Buffer.alloc(16384);
-  for (const r of await dbAll(
-    'SELECT status,status_index FROM ac3_credentials WHERE issuer_id=?',
-    [issuer],
-  ))
+  for (const r of await dbAll('SELECT status,status_index FROM ac3_credentials WHERE issuer_id=?', [
+    issuer,
+  ]))
     if (r.status === (purpose === 'revocation' ? 'revoked' : 'suspended'))
       bits[Math.floor(r.status_index / 8)] |= 1 << (7 - (r.status_index % 8));
   const url = origin() + '/api/v1/trust/status/' + issuer + '/' + purpose;
@@ -686,16 +624,9 @@ export async function verifyCredential(token: string, externalJwk?: any) {
   try {
     if (token.length > 100000) fail(400, 'Credential too large');
     const header = decodeProtectedHeader(token);
-    if (
-      header.alg !== 'ES256' ||
-      header.typ !== 'vc+jwt' ||
-      header.jku ||
-      header.x5u
-    )
+    if (header.alg !== 'ES256' || header.typ !== 'vc+jwt' || header.jku || header.x5u)
       throw Error('Unsupported JOSE header');
-    const key = await dbGet('SELECT * FROM ac3_keys WHERE id=?', [
-      header.kid || '',
-    ]);
+    const key = await dbGet('SELECT * FROM ac3_keys WHERE id=?', [header.kid || '']);
     if (!key && !externalJwk) {
       report.reason =
         'Unknown issuer key; supply a pinned public JWK for cryptographic-only verification';
@@ -707,9 +638,7 @@ export async function verifyCredential(token: string, externalJwk?: any) {
       algorithms: ['ES256'],
     });
     report.signature = 'valid';
-    const vc = minimalCredential.parse(
-      JSON.parse(Buffer.from(result.payload).toString()),
-    );
+    const vc = minimalCredential.parse(JSON.parse(Buffer.from(result.payload).toString()));
     if (
       new Set(vc.credentialStatus.map((s) => s.statusPurpose)).size !== 2 ||
       Date.parse(vc.validUntil) <= Date.parse(vc.validFrom)
@@ -733,8 +662,7 @@ export async function verifyCredential(token: string, externalJwk?: any) {
     report.schema = 'supported';
     report.assurance = vc.credentialSubject.evidence.assurance_level;
     report.period =
-      Date.parse(vc.validFrom) <= Date.now() &&
-      Date.parse(vc.validUntil) > Date.now()
+      Date.parse(vc.validFrom) <= Date.now() && Date.parse(vc.validUntil) > Date.now()
         ? 'current'
         : 'expired_or_not_yet_valid';
     report.key = key?.state || 'externally_supplied_unrecognized';
@@ -742,16 +670,21 @@ export async function verifyCredential(token: string, externalJwk?: any) {
       report.overall = 'requires_review';
       return report;
     }
-    if (vc.issuer !== 'urn:uuid:' + key.owner_id)
-      throw Error('Issuer/key mismatch');
+    if (vc.issuer !== 'urn:uuid:' + key.owner_id) throw Error('Issuer/key mismatch');
     const i = await issuerMetadata(key.owner_id);
     report.issuer_authority = i.authority;
     report.issuer_status = i.status;
-    const stored = await dbGet(
-      'SELECT * FROM ac3_credentials WHERE id=? AND issuer_id=?',
-      [String(vc.id).replace('urn:uuid:', ''), key.owner_id],
-    );
-    if (stored && unseal(stored.token_sealed,JSON.stringify(['credential-token',stored.org_id,stored.environment,stored.id])) === token)
+    const stored = await dbGet('SELECT * FROM ac3_credentials WHERE id=? AND issuer_id=?', [
+      String(vc.id).replace('urn:uuid:', ''),
+      key.owner_id,
+    ]);
+    if (
+      stored &&
+      unseal(
+        stored.token_sealed,
+        JSON.stringify(['credential-token', stored.org_id, stored.environment, stored.id]),
+      ) === token
+    )
       report.status = stored.status;
     else report.status = 'unknown';
     report.status_checked_at = now();

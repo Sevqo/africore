@@ -25,7 +25,12 @@
     "startup_schema_verification": "passed",
     "full_restore_tested": false,
     "production_branch_changed": false,
-    "local_upgrade_rehearsal": {"commands": 62, "original_rows_retained": 136, "readiness": "passed", "replay": "empty"}
+    "local_upgrade_rehearsal": {
+      "commands": 62,
+      "original_rows_retained": 136,
+      "readiness": "passed",
+      "replay": "empty"
+    }
   },
   "hosted_acceptance": {
     "existing_managed_identity_and_business_workspace": "opened without credential reconstruction",

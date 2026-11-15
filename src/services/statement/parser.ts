@@ -1,5 +1,5 @@
-import crypto from "node:crypto";
-import { parseCsv } from "./csv";
+import crypto from 'node:crypto';
+import { parseCsv } from './csv';
 
 /**
  * Statement ingestion, behind a `StatementSource` interface.
@@ -13,22 +13,26 @@ import { parseCsv } from "./csv";
  * TypeScript. A PDF source can implement the same interface later without
  * touching the ingestion service.
  */
-export type StatementSourceType = "individual_mpesa" | "business_till" | "business_paybill" | "bank";
+export type StatementSourceType =
+  | 'individual_mpesa'
+  | 'business_till'
+  | 'business_paybill'
+  | 'bank';
 
 export const STATEMENT_SOURCE_TYPES: readonly StatementSourceType[] = [
-  "individual_mpesa",
-  "business_till",
-  "business_paybill",
-  "bank",
+  'individual_mpesa',
+  'business_till',
+  'business_paybill',
+  'bank',
 ] as const;
 
 export type StatementErrorCode =
-  | "unreadable_file"
-  | "wrong_statement_type"
-  | "insufficient_history"
-  | "missing_shortcode"
-  | "empty_statement"
-  | "invalid_rows";
+  | 'unreadable_file'
+  | 'wrong_statement_type'
+  | 'insufficient_history'
+  | 'missing_shortcode'
+  | 'empty_statement'
+  | 'invalid_rows';
 
 export class StatementParseError extends Error {
   readonly code: StatementErrorCode;
@@ -36,7 +40,7 @@ export class StatementParseError extends Error {
 
   constructor(code: StatementErrorCode, message: string, details?: Record<string, unknown>) {
     super(message);
-    this.name = "StatementParseError";
+    this.name = 'StatementParseError';
     this.code = code;
     this.details = details;
   }
@@ -50,8 +54,8 @@ export interface StatementMeta {
 export interface ParsedStatementRow {
   external_id: string;
   amount: number;
-  type: "credit" | "debit";
-  status: "completed" | "failed" | "pending";
+  type: 'credit' | 'debit';
+  status: 'completed' | 'failed' | 'pending';
   counterparty: string | null;
   category: string;
   raw_status: string;
@@ -77,7 +81,7 @@ const MIN_HISTORY_DAYS = 30;
 const MAX_HEADER_SCAN_ROWS = 6;
 
 function normalizeHeader(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '');
 }
 
 function findTable(rows: string[][]): { headerIndex: number; headers: string[] } | null {
@@ -85,7 +89,16 @@ function findTable(rows: string[][]): { headerIndex: number; headers: string[] }
     const cells = rows[i];
     if (cells.length < 3) continue;
     const normalized = cells.map(normalizeHeader);
-    const looksLikeHeader = normalized.some((h) => ["date", "receiptno", "completiontime", "transactiondate", "description", "narrative"].includes(h));
+    const looksLikeHeader = normalized.some((h) =>
+      [
+        'date',
+        'receiptno',
+        'completiontime',
+        'transactiondate',
+        'description',
+        'narrative',
+      ].includes(h),
+    );
     if (looksLikeHeader) return { headerIndex: i, headers: normalized };
   }
   return null;
@@ -100,15 +113,15 @@ function column(headers: string[], aliases: string[]): number {
 }
 
 function cell(row: string[], index: number): string {
-  if (index < 0 || index >= row.length) return "";
-  return (row[index] ?? "").trim();
+  if (index < 0 || index >= row.length) return '';
+  return (row[index] ?? '').trim();
 }
 
 function parseAmount(value: string): number | null {
-  const cleaned = value.replace(/[^0-9.,-]/g, "").replace(/,/g, "");
+  const cleaned = value.replace(/[^0-9.,-]/g, '').replace(/,/g, '');
   if (!/\d/.test(cleaned)) return null;
   const negative = /^-/.test(cleaned) || /^\(.*\)$/.test(value.trim());
-  const parsed = Number(cleaned.replace(/-/g, ""));
+  const parsed = Number(cleaned.replace(/-/g, ''));
   if (!Number.isFinite(parsed)) return null;
   return negative ? -parsed : parsed;
 }
@@ -122,7 +135,14 @@ export function parseStatementDate(value: string): string | null {
   const iso = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/.exec(trimmed);
   if (iso) {
     const date = new Date(
-      Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]), Number(iso[4] ?? 0), Number(iso[5] ?? 0), Number(iso[6] ?? 0))
+      Date.UTC(
+        Number(iso[1]),
+        Number(iso[2]) - 1,
+        Number(iso[3]),
+        Number(iso[4] ?? 0),
+        Number(iso[5] ?? 0),
+        Number(iso[6] ?? 0),
+      ),
     );
     return Number.isNaN(date.getTime()) ? null : date.toISOString();
   }
@@ -130,7 +150,14 @@ export function parseStatementDate(value: string): string | null {
   const dmy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/.exec(trimmed);
   if (dmy) {
     const date = new Date(
-      Date.UTC(Number(dmy[3]), Number(dmy[2]) - 1, Number(dmy[1]), Number(dmy[4] ?? 0), Number(dmy[5] ?? 0), Number(dmy[6] ?? 0))
+      Date.UTC(
+        Number(dmy[3]),
+        Number(dmy[2]) - 1,
+        Number(dmy[1]),
+        Number(dmy[4] ?? 0),
+        Number(dmy[5] ?? 0),
+        Number(dmy[6] ?? 0),
+      ),
     );
     return Number.isNaN(date.getTime()) ? null : date.toISOString();
   }
@@ -138,11 +165,12 @@ export function parseStatementDate(value: string): string | null {
   return null;
 }
 
-function normalizeStatus(raw: string): "completed" | "failed" | "pending" {
+function normalizeStatus(raw: string): 'completed' | 'failed' | 'pending' {
   const lower = raw.toLowerCase();
-  if (lower.includes("complet") || lower.includes("success")) return "completed";
-  if (lower.includes("fail") || lower.includes("revers") || lower.includes("bounce")) return "failed";
-  return "pending";
+  if (lower.includes('complet') || lower.includes('success')) return 'completed';
+  if (lower.includes('fail') || lower.includes('revers') || lower.includes('bounce'))
+    return 'failed';
+  return 'pending';
 }
 
 const PHONE_PATTERN = /(?:254|0)7\d{8}/;
@@ -153,19 +181,22 @@ const COUNTERPARTY_PREFIX =
 function extractCounterparty(details: string, explicit: string): string | null {
   if (explicit.trim()) return explicit.trim();
 
-  const stripped = details.replace(COUNTERPARTY_PREFIX, "").trim();
+  const stripped = details.replace(COUNTERPARTY_PREFIX, '').trim();
   if (!stripped) return null;
 
-  const phone = PHONE_PATTERN.exec(stripped.replace(/\s+/g, ""));
+  const phone = PHONE_PATTERN.exec(stripped.replace(/\s+/g, ''));
   // Prefer a human/business name over the phone number: the same payer may be
   // written with different phone formats, which would fragment analytics.
-  const withoutPhone = stripped.replace(new RegExp(PHONE_PATTERN.source, "g"), "").replace(/\s+/g, " ").trim();
+  const withoutPhone = stripped
+    .replace(new RegExp(PHONE_PATTERN.source, 'g'), '')
+    .replace(/\s+/g, ' ')
+    .trim();
   if (withoutPhone.length >= 2) return withoutPhone;
   return phone ? phone[0] : stripped;
 }
 
 function generatedExternalId(parts: Array<string | number>): string {
-  return `gen-${crypto.createHash("sha256").update(parts.join("|")).digest("hex").slice(0, 32)}`;
+  return `gen-${crypto.createHash('sha256').update(parts.join('|')).digest('hex').slice(0, 32)}`;
 }
 
 abstract class CsvStatementSource implements StatementSource {
@@ -174,35 +205,52 @@ abstract class CsvStatementSource implements StatementSource {
   protected abstract requiredGroups: string[][];
   /** Groups where at least one alternative must be present (e.g. debit OR credit). */
   protected requiredAnyGroups: string[][] = [];
-  protected abstract parseRows(headers: string[], rows: string[][], meta: StatementMeta, warnings: string[]): ParsedStatementRow[];
+  protected abstract parseRows(
+    headers: string[],
+    rows: string[][],
+    meta: StatementMeta,
+    warnings: string[],
+  ): ParsedStatementRow[];
 
   parse(content: string, meta: StatementMeta): ParsedStatement {
     if (!content || !content.trim()) {
-      throw new StatementParseError("unreadable_file", "The uploaded file is empty.");
+      throw new StatementParseError('unreadable_file', 'The uploaded file is empty.');
     }
 
     const allRows = parseCsv(content);
     const table = findTable(allRows);
     if (!table) {
       throw new StatementParseError(
-        "wrong_statement_type",
-        "Could not find a statement header row. Upload a CSV export of the statement."
+        'wrong_statement_type',
+        'Could not find a statement header row. Upload a CSV export of the statement.',
       );
     }
 
-    const missing = this.requiredGroups.filter((group) => column(table.headers, group) < 0).map((group) => group[0]);
+    const missing = this.requiredGroups
+      .filter((group) => column(table.headers, group) < 0)
+      .map((group) => group[0]);
     for (const group of this.requiredAnyGroups) {
-      if (column(table.headers, group) < 0) missing.push(group.join("|"));
+      if (column(table.headers, group) < 0) missing.push(group.join('|'));
     }
     if (missing.length > 0) {
-      throw new StatementParseError("wrong_statement_type", "This file does not look like the selected statement type.", {
-        missing_columns: missing,
-        source_type: this.sourceType,
-      });
+      throw new StatementParseError(
+        'wrong_statement_type',
+        'This file does not look like the selected statement type.',
+        {
+          missing_columns: missing,
+          source_type: this.sourceType,
+        },
+      );
     }
 
-    if ((this.sourceType === "business_till" || this.sourceType === "business_paybill") && !meta.shortcode) {
-      throw new StatementParseError("missing_shortcode", "A till or paybill shortcode is required for this statement type.");
+    if (
+      (this.sourceType === 'business_till' || this.sourceType === 'business_paybill') &&
+      !meta.shortcode
+    ) {
+      throw new StatementParseError(
+        'missing_shortcode',
+        'A till or paybill shortcode is required for this statement type.',
+      );
     }
 
     const warnings: string[] = [];
@@ -210,19 +258,24 @@ abstract class CsvStatementSource implements StatementSource {
     const rows = this.parseRows(table.headers, dataRows, meta, warnings);
 
     if (rows.length === 0) {
-      throw new StatementParseError("invalid_rows", "No readable transactions were found in this statement.");
+      throw new StatementParseError(
+        'invalid_rows',
+        'No readable transactions were found in this statement.',
+      );
     }
 
-    const times = rows.map((row) => new Date(row.occurred_at).getTime()).filter((time) => Number.isFinite(time));
+    const times = rows
+      .map((row) => new Date(row.occurred_at).getTime())
+      .filter((time) => Number.isFinite(time));
     const periodStart = new Date(Math.min(...times)).toISOString();
     const periodEnd = new Date(Math.max(...times)).toISOString();
     const historyDays = Math.floor((Math.max(...times) - Math.min(...times)) / DAY_MS);
 
     if (historyDays < MIN_HISTORY_DAYS) {
       throw new StatementParseError(
-        "insufficient_history",
+        'insufficient_history',
         `The statement covers ${historyDays} day(s) of history; at least ${MIN_HISTORY_DAYS} days are required.`,
-        { period_start: periodStart, period_end: periodEnd, days: historyDays }
+        { period_start: periodStart, period_end: periodEnd, days: historyDays },
       );
     }
 
@@ -239,17 +292,27 @@ abstract class CsvStatementSource implements StatementSource {
 
 /** Personal M-Pesa statement (the individual-borrower source). */
 export class IndividualMpesaSource extends CsvStatementSource {
-  readonly sourceType = "individual_mpesa" as const;
-  protected requiredGroups: string[][] = [["receiptno", "transactionid", "receipt"], ["completiontime", "transactiondate", "date"]];
-  protected requiredAnyGroups: string[][] = [["paidin", "credit", "moneyin", "withdrawn", "debit", "moneyout"]];
+  readonly sourceType = 'individual_mpesa' as const;
+  protected requiredGroups: string[][] = [
+    ['receiptno', 'transactionid', 'receipt'],
+    ['completiontime', 'transactiondate', 'date'],
+  ];
+  protected requiredAnyGroups: string[][] = [
+    ['paidin', 'credit', 'moneyin', 'withdrawn', 'debit', 'moneyout'],
+  ];
 
-  protected parseRows(headers: string[], rows: string[][], _meta: StatementMeta, warnings: string[]): ParsedStatementRow[] {
-    const receipt = column(headers, ["receiptno", "transactionid", "receipt"]);
-    const date = column(headers, ["completiontime", "transactiondate", "date"]);
-    const details = column(headers, ["details", "description", "narrative"]);
-    const status = column(headers, ["transactionstatus", "status"]);
-    const paidIn = column(headers, ["paidin", "credit", "moneyin"]);
-    const withdrawn = column(headers, ["withdrawn", "debit", "moneyout"]);
+  protected parseRows(
+    headers: string[],
+    rows: string[][],
+    _meta: StatementMeta,
+    warnings: string[],
+  ): ParsedStatementRow[] {
+    const receipt = column(headers, ['receiptno', 'transactionid', 'receipt']);
+    const date = column(headers, ['completiontime', 'transactiondate', 'date']);
+    const details = column(headers, ['details', 'description', 'narrative']);
+    const status = column(headers, ['transactionstatus', 'status']);
+    const paidIn = column(headers, ['paidin', 'credit', 'moneyin']);
+    const withdrawn = column(headers, ['withdrawn', 'debit', 'moneyout']);
 
     const parsed: ParsedStatementRow[] = [];
 
@@ -258,27 +321,29 @@ export class IndividualMpesaSource extends CsvStatementSource {
       const creditAmount = parseAmount(cell(row, paidIn));
       const debitAmount = parseAmount(cell(row, withdrawn));
       if (!occurredAt || (creditAmount === null && debitAmount === null)) {
-        warnings.push("Skipped a row with an unreadable date or amount.");
+        warnings.push('Skipped a row with an unreadable date or amount.');
         continue;
       }
 
       const isCredit = creditAmount !== null && Math.abs(creditAmount) > 0;
       const amount = Math.abs(isCredit ? (creditAmount as number) : (debitAmount as number));
       if (amount === 0) {
-        warnings.push("Skipped a zero-amount row.");
+        warnings.push('Skipped a zero-amount row.');
         continue;
       }
 
-      const rawStatus = cell(row, status) || "Completed";
+      const rawStatus = cell(row, status) || 'Completed';
       const detailsText = cell(row, details);
 
       parsed.push({
-        external_id: cell(row, receipt) || generatedExternalId([this.sourceType, occurredAt, amount, detailsText]),
+        external_id:
+          cell(row, receipt) ||
+          generatedExternalId([this.sourceType, occurredAt, amount, detailsText]),
         amount,
-        type: isCredit ? "credit" : "debit",
+        type: isCredit ? 'credit' : 'debit',
         status: normalizeStatus(rawStatus),
-        counterparty: extractCounterparty(detailsText, ""),
-        category: isCredit ? "sales" : "expenses",
+        counterparty: extractCounterparty(detailsText, ''),
+        category: isCredit ? 'sales' : 'expenses',
         raw_status: rawStatus,
         occurred_at: occurredAt,
       });
@@ -293,22 +358,32 @@ export class IndividualMpesaSource extends CsvStatementSource {
 export class BusinessMerchantSource extends CsvStatementSource {
   readonly sourceType: StatementSourceType;
 
-  constructor(sourceType: "business_till" | "business_paybill") {
+  constructor(sourceType: 'business_till' | 'business_paybill') {
     super();
     this.sourceType = sourceType;
   }
 
-  protected requiredGroups: string[][] = [["receiptno", "transactionid", "receipt"], ["completiontime", "transactiondate", "date"]];
-  protected requiredAnyGroups: string[][] = [["paidin", "credit", "amount", "moneyin", "withdrawn", "debit", "moneyout"]];
+  protected requiredGroups: string[][] = [
+    ['receiptno', 'transactionid', 'receipt'],
+    ['completiontime', 'transactiondate', 'date'],
+  ];
+  protected requiredAnyGroups: string[][] = [
+    ['paidin', 'credit', 'amount', 'moneyin', 'withdrawn', 'debit', 'moneyout'],
+  ];
 
-  protected parseRows(headers: string[], rows: string[][], _meta: StatementMeta, warnings: string[]): ParsedStatementRow[] {
-    const receipt = column(headers, ["receiptno", "transactionid", "receipt"]);
-    const date = column(headers, ["completiontime", "transactiondate", "date"]);
-    const details = column(headers, ["details", "description", "narrative"]);
-    const status = column(headers, ["transactionstatus", "status"]);
-    const paidIn = column(headers, ["paidin", "credit", "amount", "moneyin"]);
-    const withdrawn = column(headers, ["withdrawn", "debit", "moneyout"]);
-    const msisdn = column(headers, ["msisdn", "customername", "payer", "customer"]);
+  protected parseRows(
+    headers: string[],
+    rows: string[][],
+    _meta: StatementMeta,
+    warnings: string[],
+  ): ParsedStatementRow[] {
+    const receipt = column(headers, ['receiptno', 'transactionid', 'receipt']);
+    const date = column(headers, ['completiontime', 'transactiondate', 'date']);
+    const details = column(headers, ['details', 'description', 'narrative']);
+    const status = column(headers, ['transactionstatus', 'status']);
+    const paidIn = column(headers, ['paidin', 'credit', 'amount', 'moneyin']);
+    const withdrawn = column(headers, ['withdrawn', 'debit', 'moneyout']);
+    const msisdn = column(headers, ['msisdn', 'customername', 'payer', 'customer']);
     const parsed: ParsedStatementRow[] = [];
 
     for (const row of rows) {
@@ -316,28 +391,30 @@ export class BusinessMerchantSource extends CsvStatementSource {
       const creditAmount = parseAmount(cell(row, paidIn));
       const debitAmount = parseAmount(cell(row, withdrawn));
       if (!occurredAt || (creditAmount === null && debitAmount === null)) {
-        warnings.push("Skipped a row with an unreadable date or amount.");
+        warnings.push('Skipped a row with an unreadable date or amount.');
         continue;
       }
 
       const isCredit = creditAmount !== null && Math.abs(creditAmount) > 0;
       const amount = Math.abs(isCredit ? (creditAmount as number) : (debitAmount as number));
       if (amount === 0) {
-        warnings.push("Skipped a zero-amount row.");
+        warnings.push('Skipped a zero-amount row.');
         continue;
       }
 
-      const rawStatus = cell(row, status) || "Completed";
+      const rawStatus = cell(row, status) || 'Completed';
       const detailsText = cell(row, details);
       const explicitCounterparty = cell(row, msisdn);
 
       parsed.push({
-        external_id: cell(row, receipt) || generatedExternalId([this.sourceType, occurredAt, amount, detailsText]),
+        external_id:
+          cell(row, receipt) ||
+          generatedExternalId([this.sourceType, occurredAt, amount, detailsText]),
         amount,
-        type: isCredit ? "credit" : "debit",
+        type: isCredit ? 'credit' : 'debit',
         status: normalizeStatus(rawStatus),
         counterparty: extractCounterparty(detailsText, explicitCounterparty),
-        category: isCredit ? "sales" : "expenses",
+        category: isCredit ? 'sales' : 'expenses',
         raw_status: rawStatus,
         occurred_at: occurredAt,
       });
@@ -350,16 +427,26 @@ export class BusinessMerchantSource extends CsvStatementSource {
 /** Bank statement CSV: separate debit/credit columns (the common Kenyan bank
  *  export) or a single signed amount column. */
 export class BankStatementSource extends CsvStatementSource {
-  readonly sourceType = "bank" as const;
-  protected requiredGroups: string[][] = [["date", "valuedate", "transactiondate"], ["description", "narrative", "details"]];
-  protected requiredAnyGroups: string[][] = [["debit", "withdrawal", "credit", "deposit", "amount"]];
+  readonly sourceType = 'bank' as const;
+  protected requiredGroups: string[][] = [
+    ['date', 'valuedate', 'transactiondate'],
+    ['description', 'narrative', 'details'],
+  ];
+  protected requiredAnyGroups: string[][] = [
+    ['debit', 'withdrawal', 'credit', 'deposit', 'amount'],
+  ];
 
-  protected parseRows(headers: string[], rows: string[][], _meta: StatementMeta, warnings: string[]): ParsedStatementRow[] {
-    const date = column(headers, ["date", "valuedate", "transactiondate"]);
-    const narrative = column(headers, ["description", "narrative", "details"]);
-    const debit = column(headers, ["debit", "withdrawal"]);
-    const credit = column(headers, ["credit", "deposit"]);
-    const amount = column(headers, ["amount"]);
+  protected parseRows(
+    headers: string[],
+    rows: string[][],
+    _meta: StatementMeta,
+    warnings: string[],
+  ): ParsedStatementRow[] {
+    const date = column(headers, ['date', 'valuedate', 'transactiondate']);
+    const narrative = column(headers, ['description', 'narrative', 'details']);
+    const debit = column(headers, ['debit', 'withdrawal']);
+    const credit = column(headers, ['credit', 'deposit']);
+    const amount = column(headers, ['amount']);
     const parsed: ParsedStatementRow[] = [];
 
     for (const row of rows) {
@@ -369,23 +456,23 @@ export class BankStatementSource extends CsvStatementSource {
       const signedAmount = parseAmount(cell(row, amount));
 
       if (!occurredAt) {
-        warnings.push("Skipped a row with an unreadable date.");
+        warnings.push('Skipped a row with an unreadable date.');
         continue;
       }
 
-      let type: "credit" | "debit";
+      let type: 'credit' | 'debit';
       let value: number;
       if (creditAmount !== null && Math.abs(creditAmount) > 0) {
-        type = "credit";
+        type = 'credit';
         value = Math.abs(creditAmount);
       } else if (debitAmount !== null && Math.abs(debitAmount) > 0) {
-        type = "debit";
+        type = 'debit';
         value = Math.abs(debitAmount);
       } else if (signedAmount !== null && signedAmount !== 0) {
-        type = signedAmount > 0 ? "credit" : "debit";
+        type = signedAmount > 0 ? 'credit' : 'debit';
         value = Math.abs(signedAmount);
       } else {
-        warnings.push("Skipped a row with no readable amount.");
+        warnings.push('Skipped a row with no readable amount.');
         continue;
       }
 
@@ -394,10 +481,10 @@ export class BankStatementSource extends CsvStatementSource {
         external_id: generatedExternalId([this.sourceType, occurredAt, value, narrativeText]),
         amount: value,
         type,
-        status: "completed",
-        counterparty: extractCounterparty(narrativeText, ""),
-        category: type === "credit" ? "sales" : "expenses",
-        raw_status: "COMPLETED",
+        status: 'completed',
+        counterparty: extractCounterparty(narrativeText, ''),
+        category: type === 'credit' ? 'sales' : 'expenses',
+        raw_status: 'COMPLETED',
         occurred_at: occurredAt,
       });
     }
@@ -409,26 +496,32 @@ export class BankStatementSource extends CsvStatementSource {
 /** Resolves the source implementation for an explicit upload type. */
 export function createStatementSource(sourceType: StatementSourceType): StatementSource {
   switch (sourceType) {
-    case "individual_mpesa":
+    case 'individual_mpesa':
       return new IndividualMpesaSource();
-    case "business_till":
-      return new BusinessMerchantSource("business_till");
-    case "business_paybill":
-      return new BusinessMerchantSource("business_paybill");
-    case "bank":
+    case 'business_till':
+      return new BusinessMerchantSource('business_till');
+    case 'business_paybill':
+      return new BusinessMerchantSource('business_paybill');
+    case 'bank':
       return new BankStatementSource();
     default: {
       const exhaustive: never = sourceType;
-      throw new StatementParseError("wrong_statement_type", `Unsupported statement type: ${String(exhaustive)}`);
+      throw new StatementParseError(
+        'wrong_statement_type',
+        `Unsupported statement type: ${String(exhaustive)}`,
+      );
     }
   }
 }
 
-export function parseStatement(sourceType: StatementSourceType, content: string, meta: StatementMeta = {}): ParsedStatement {
+export function parseStatement(
+  sourceType: StatementSourceType,
+  content: string,
+  meta: StatementMeta = {},
+): ParsedStatement {
   return createStatementSource(sourceType).parse(content, meta);
 }
 
 export function isStatementSourceType(value: string): value is StatementSourceType {
   return (STATEMENT_SOURCE_TYPES as readonly string[]).includes(value);
 }
-

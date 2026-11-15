@@ -1,4 +1,4 @@
-import { dbExec, dbRun, dbTransaction, isPostgres } from "../db/adapter";
+import { dbExec, dbRun, dbTransaction, isPostgres } from '../db/adapter';
 export async function migrateWorkspaceExperiences() {
   await dbTransaction(async () => {
     await dbExec(`
@@ -14,19 +14,19 @@ CREATE INDEX IF NOT EXISTS ac_personal_income_scope ON ac_personal_income(worksp
 `);
     if (isPostgres)
       for (const table of [
-        "ac_owned_workspaces",
-        "ac_identity_links",
-        "ac_account_details",
-        "ac_personal_income",
-        "ac_revoked_access_tokens",
-        "ac_api_request_logs",
+        'ac_owned_workspaces',
+        'ac_identity_links',
+        'ac_account_details',
+        'ac_personal_income',
+        'ac_revoked_access_tokens',
+        'ac_api_request_logs',
       ])
         await dbExec(
           `ALTER TABLE ${table} ENABLE ROW LEVEL SECURITY; REVOKE ALL ON ${table} FROM PUBLIC;`,
         );
     await dbRun(
-      "INSERT INTO platform_migrations(version,applied_at) VALUES (?,?) ON CONFLICT(version) DO NOTHING",
-      ["005-workspace-experiences", new Date().toISOString()],
+      'INSERT INTO platform_migrations(version,applied_at) VALUES (?,?) ON CONFLICT(version) DO NOTHING',
+      ['005-workspace-experiences', new Date().toISOString()],
     );
   });
 }

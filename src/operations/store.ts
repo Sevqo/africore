@@ -40,9 +40,7 @@ export const day = (date = new Date()) =>
     day: '2-digit',
   }).format(date);
 export const addDays = (date: string, n: number) =>
-  new Date(Date.parse(date + 'T00:00:00Z') + n * 86400000)
-    .toISOString()
-    .slice(0, 10);
+  new Date(Date.parse(date + 'T00:00:00Z') + n * 86400000).toISOString().slice(0, 10);
 export { minor } from './contracts';
 export async function atomic<T>(a: Access, fn: () => Promise<T>): Promise<T> {
   return dbTransaction(async () => {
@@ -101,31 +99,11 @@ export async function create(
   await audit(a.org, a.actor, kind + '.created', id);
   return get(a, id, kind);
 }
-export async function change(
-  a: Access,
-  object: DomainObject,
-  data: Record<string, unknown>,
-) {
-  const {
-    id,
-    org_id,
-    environment,
-    kind,
-    version,
-    created_at,
-    updated_at,
-    ...rest
-  } = object;
+export async function change(a: Access, object: DomainObject, data: Record<string, unknown>) {
+  const { id, org_id, environment, kind, version, created_at, updated_at, ...rest } = object;
   const result = await dbRun(
     'UPDATE ac2_objects SET data=?,version=version+1,updated_at=? WHERE id=? AND org_id=? AND environment=? AND version=?',
-    [
-      JSON.stringify({ ...rest, ...data }),
-      now(),
-      id,
-      a.org,
-      a.environment,
-      version,
-    ],
+    [JSON.stringify({ ...rest, ...data }), now(), id, a.org, a.environment, version],
   );
   if (!result.changes) fail(409, 'Resource changed; reload before retry');
   return get(a, id, kind);
@@ -138,4 +116,4 @@ export async function legacy(a: Access, kind: string) {
     )
   ).map((r) => ({ ...JSON.parse(r.data), id: r.id, created_at: r.created_at }));
 }
-export {safeCSV} from '../common/csv-export';
+export { safeCSV } from '../common/csv-export';

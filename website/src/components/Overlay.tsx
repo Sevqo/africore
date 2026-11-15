@@ -1,10 +1,10 @@
-import {createPortal} from 'react-dom';
+import { createPortal } from 'react-dom';
 import { useRef, type ReactNode } from 'react';
 import { useFocusScope } from './useFocusScope';
 export function Overlay({
   children,
   onClose,
-  portal=false,
+  portal = false,
 }: {
   children: ReactNode;
   onClose: () => void;
@@ -24,5 +24,5 @@ export function Overlay({
       {children}
     </div>
   );
-  return portal ? createPortal(content,document.body) : content;
+  return portal ? createPortal(content, document.body) : content;
 }

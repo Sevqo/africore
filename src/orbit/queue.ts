@@ -1,4 +1,4 @@
-import crypto from "node:crypto";
+import crypto from 'node:crypto';
 import {
   DeadLetterJobPayload,
   IngestionJobPayload,
@@ -8,7 +8,7 @@ import {
   ORBIT_QUEUE_NAMES,
   OrbitQueueName,
   ScoringJobPayload,
-} from "./types";
+} from './types';
 
 /**
  * Orbit queue runtime.
@@ -27,9 +27,16 @@ export const MAX_ATTEMPTS = 3;
 const BACKOFF_BASE_MS = 1_000;
 const DRAIN_GUARD = 10_000;
 
-const DRAIN_ORDER: readonly OrbitQueueName[] = ["ingestion", "normalization", "ledger", "scoring", "matching", "dead-letter"];
+const DRAIN_ORDER: readonly OrbitQueueName[] = [
+  'ingestion',
+  'normalization',
+  'ledger',
+  'scoring',
+  'matching',
+  'dead-letter',
+];
 
-export type SubjectType = "business" | "individual";
+export type SubjectType = 'business' | 'individual';
 
 export interface JobContext {
   jobId: string;
@@ -61,7 +68,7 @@ export interface OrbitQueue<T> {
 }
 
 export interface OrbitQueues {
-  readonly backend: "memory" | "redis";
+  readonly backend: 'memory' | 'redis';
   ingestion: OrbitQueue<IngestionJobPayload>;
   normalization: OrbitQueue<NormalizationJobPayload>;
   ledger: OrbitQueue<LedgerJobPayload>;
@@ -77,7 +84,11 @@ export interface OrbitQueues {
 }
 
 export function deterministicJobId(parts: Array<string | number | null | undefined>): string {
-  return crypto.createHash("sha256").update(parts.map((part) => String(part ?? "")).join("|")).digest("hex").slice(0, 32);
+  return crypto
+    .createHash('sha256')
+    .update(parts.map((part) => String(part ?? '')).join('|'))
+    .digest('hex')
+    .slice(0, 32);
 }
 
 // ---------------------------------------------------------------------------
@@ -92,10 +103,10 @@ interface MemoryJobRecord {
   enqueuedAt: number;
 }
 
-type JobStatus = "queued" | "running" | "done" | "failed";
+type JobStatus = 'queued' | 'running' | 'done' | 'failed';
 
 class MemoryOrbitQueues implements OrbitQueues {
-  readonly backend = "memory" as const;
+  readonly backend = 'memory' as const;
   private pending = new Map<OrbitQueueName, MemoryJobRecord[]>();
   private processors = new Map<OrbitQueueName, Processor<unknown>>();
   private status = new Map<string, JobStatus>();
@@ -111,17 +122,20 @@ class MemoryOrbitQueues implements OrbitQueues {
   private queue(name: OrbitQueueName): OrbitQueue<unknown> {
     return {
       name,
-      enqueue: async (payload: unknown, options?: EnqueueOptions) => this.enqueue(name, payload, options),
+      enqueue: async (payload: unknown, options?: EnqueueOptions) =>
+        this.enqueue(name, payload, options),
       register: (processor: Processor<unknown>) => this.processors.set(name, processor),
     } as OrbitQueue<unknown>;
   }
 
-  readonly ingestion = this.queue("ingestion") as unknown as OrbitQueue<IngestionJobPayload>;
-  readonly normalization = this.queue("normalization") as unknown as OrbitQueue<NormalizationJobPayload>;
-  readonly ledger = this.queue("ledger") as unknown as OrbitQueue<LedgerJobPayload>;
-  readonly scoring = this.queue("scoring") as unknown as OrbitQueue<ScoringJobPayload>;
-  readonly matching = this.queue("matching") as unknown as OrbitQueue<MatchingJobPayload>;
-  readonly deadLetter = this.queue("dead-letter") as unknown as OrbitQueue<DeadLetterJobPayload>;
+  readonly ingestion = this.queue('ingestion') as unknown as OrbitQueue<IngestionJobPayload>;
+  readonly normalization = this.queue(
+    'normalization',
+  ) as unknown as OrbitQueue<NormalizationJobPayload>;
+  readonly ledger = this.queue('ledger') as unknown as OrbitQueue<LedgerJobPayload>;
+  readonly scoring = this.queue('scoring') as unknown as OrbitQueue<ScoringJobPayload>;
+  readonly matching = this.queue('matching') as unknown as OrbitQueue<MatchingJobPayload>;
+  readonly deadLetter = this.queue('dead-letter') as unknown as OrbitQueue<DeadLetterJobPayload>;
 
   setFailureHandler(handler: FailureHandler): void {
     this.failureHandler = handler;
@@ -139,11 +153,15 @@ class MemoryOrbitQueues implements OrbitQueues {
     this.status.clear();
   }
 
-  private async enqueue(name: OrbitQueueName, payload: unknown, options?: EnqueueOptions): Promise<string> {
+  private async enqueue(
+    name: OrbitQueueName,
+    payload: unknown,
+    options?: EnqueueOptions,
+  ): Promise<string> {
     const jobId = options?.jobId ?? crypto.randomUUID();
     if (this.status.has(jobId)) return jobId; // drop duplicate
 
-    this.status.set(jobId, "queued");
+    this.status.set(jobId, 'queued');
     this.pending.get(name)!.push({ jobId, name, payload, attempts: 0, enqueuedAt: Date.now() });
 
     if (this.autoDrain) this.requestDrain();
@@ -204,7 +222,7 @@ class MemoryOrbitQueues implements OrbitQueues {
         return;
       }
 
-      this.status.set(job.jobId, "running");
+      this.status.set(job.jobId, 'running');
       try {
         await processor(job.payload, {
           jobId: job.jobId,
@@ -214,20 +232,20 @@ class MemoryOrbitQueues implements OrbitQueues {
           subjectId: (job.payload as { subjectId?: string }).subjectId,
           subjectType: (job.payload as { subjectType?: SubjectType }).subjectType,
         });
-        this.status.set(job.jobId, "done");
+        this.status.set(job.jobId, 'done');
       } catch (rawError) {
         const error = rawError instanceof Error ? rawError : new Error(String(rawError));
         job.attempts += 1;
         if (job.attempts >= MAX_ATTEMPTS) {
-          this.status.set(job.jobId, "failed");
+          this.status.set(job.jobId, 'failed');
           await this.notifyFailure(job.name, job.payload, error, job.attempts, job.jobId);
         } else {
-          this.status.set(job.jobId, "queued");
+          this.status.set(job.jobId, 'queued');
           this.pending.get(job.name)!.push(job);
         }
       }
     }
-    throw new Error("orbit_drain_guard_exceeded");
+    throw new Error('orbit_drain_guard_exceeded');
   }
 
   private async notifyFailure(
@@ -235,7 +253,7 @@ class MemoryOrbitQueues implements OrbitQueues {
     payload: unknown,
     error: Error,
     attemptsMade: number,
-    jobId: string
+    jobId: string,
   ): Promise<void> {
     if (!this.failureHandler) return;
     await this.failureHandler({ queue, payload, error, attemptsMade, jobId });
@@ -253,7 +271,7 @@ interface RedisQueueHandle {
 }
 
 class RedisOrbitQueues implements OrbitQueues {
-  readonly backend = "redis" as const;
+  readonly backend = 'redis' as const;
   private handles = new Map<OrbitQueueName, RedisQueueHandle>();
   private workers: Array<{ close(): Promise<void> }> = [];
   private failureHandler?: FailureHandler;
@@ -264,12 +282,12 @@ class RedisOrbitQueues implements OrbitQueues {
 
   private connection() {
     // Lazy require so memory-only runs never load these modules.
-    const IORedis = require("ioredis");
+    const IORedis = require('ioredis');
     return new IORedis(this.redisUrl, { maxRetriesPerRequest: null, enableReadyCheck: false });
   }
 
   private createHandle(name: OrbitQueueName): RedisQueueHandle {
-    const { Queue, Worker } = require("bullmq");
+    const { Queue, Worker } = require('bullmq');
     const connection = this.connection();
     const queue = new Queue(name, { connection });
 
@@ -279,7 +297,7 @@ class RedisOrbitQueues implements OrbitQueues {
         await queue.add(name, payload, {
           jobId,
           attempts: MAX_ATTEMPTS,
-          backoff: { type: "exponential", delay: BACKOFF_BASE_MS },
+          backoff: { type: 'exponential', delay: BACKOFF_BASE_MS },
           removeOnComplete: 1_000,
           removeOnFail: 5_000,
         });
@@ -297,20 +315,23 @@ class RedisOrbitQueues implements OrbitQueues {
               subjectId: (job.data as { subjectId?: string }).subjectId,
               subjectType: (job.data as { subjectType?: SubjectType }).subjectType,
             }),
-          { connection: this.connection(), concurrency: 4 }
+          { connection: this.connection(), concurrency: 4 },
         );
 
-        worker.on("failed", (job: { id?: string; data: unknown; attemptsMade: number } | undefined, err: Error) => {
-          if (!job) return;
-          if (job.attemptsMade < MAX_ATTEMPTS) return; // BullMQ will retry
-          void this.failureHandler?.({
-            queue: name,
-            payload: job.data,
-            error: err,
-            attemptsMade: job.attemptsMade,
-            jobId: String(job.id),
-          });
-        });
+        worker.on(
+          'failed',
+          (job: { id?: string; data: unknown; attemptsMade: number } | undefined, err: Error) => {
+            if (!job) return;
+            if (job.attemptsMade < MAX_ATTEMPTS) return; // BullMQ will retry
+            void this.failureHandler?.({
+              queue: name,
+              payload: job.data,
+              error: err,
+              attemptsMade: job.attemptsMade,
+              jobId: String(job.id),
+            });
+          },
+        );
 
         this.workers.push(worker as unknown as { close(): Promise<void> });
       },
@@ -330,12 +351,12 @@ class RedisOrbitQueues implements OrbitQueues {
     };
   }
 
-  readonly ingestion = this.asQueue<IngestionJobPayload>("ingestion");
-  readonly normalization = this.asQueue<NormalizationJobPayload>("normalization");
-  readonly ledger = this.asQueue<LedgerJobPayload>("ledger");
-  readonly scoring = this.asQueue<ScoringJobPayload>("scoring");
-  readonly matching = this.asQueue<MatchingJobPayload>("matching");
-  readonly deadLetter = this.asQueue<DeadLetterJobPayload>("dead-letter");
+  readonly ingestion = this.asQueue<IngestionJobPayload>('ingestion');
+  readonly normalization = this.asQueue<NormalizationJobPayload>('normalization');
+  readonly ledger = this.asQueue<LedgerJobPayload>('ledger');
+  readonly scoring = this.asQueue<ScoringJobPayload>('scoring');
+  readonly matching = this.asQueue<MatchingJobPayload>('matching');
+  readonly deadLetter = this.asQueue<DeadLetterJobPayload>('dead-letter');
 
   setFailureHandler(handler: FailureHandler): void {
     this.failureHandler = handler;

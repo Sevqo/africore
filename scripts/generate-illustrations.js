@@ -3,48 +3,28 @@ const fs = require('node:fs');
 const scenes = {
   business: ['Customer & order', 'Invoice & request', 'Confirmed record'],
   payments: ['Create request', 'Provider confirms', 'Order updated'],
-  reconciliation: [
-    'Invoice: KSh 2,500',
-    'Receipt: KSh 1,500',
-    'Balance: KSh 1,000',
-  ],
+  reconciliation: ['Invoice: KSh 2,500', 'Receipt: KSh 1,500', 'Balance: KSh 1,000'],
   invoicing: ['Issue invoice', 'Track due date', 'Review balance'],
   cashflow: ['Recorded inflows', 'Recorded outflows', 'Net movement'],
-  'protected-payments': [
-    'Agree & confirm',
-    'Deliver & inspect',
-    'Review outcome',
-  ],
+  'protected-payments': ['Agree & confirm', 'Deliver & inspect', 'Review outcome'],
   integrations: ['Permitted source', 'Inspect import', 'Structured record'],
   automation: ['Trigger', 'Check condition', 'In-app follow-up'],
   developers: ['Scoped request', 'Validate event', 'Update your system'],
   education: ['Understand terms', 'Inspect records', 'Choose next step'],
   passport: ['Business identity', 'Signed claim', 'Selected disclosure'],
-  'credential-issuance': [
-    'Issuer reviews',
-    'Holder receives',
-    'Verifier checks',
-  ],
+  'credential-issuance': ['Issuer reviews', 'Holder receives', 'Verifier checks'],
   'trust-network': ['Name relationship', 'Ask counterparty', 'Review evidence'],
   privacy: ['Named recipient', 'Minimal claims', 'Expiry & history'],
   verification: ['Signature & status', 'Issuer policy', 'Evidence quality'],
   anchoring: ['Private records', 'Batch commitment', 'Inclusion proof'],
   credibility: ['Self-reported', 'Document review', 'Source assurance'],
-  'social-commerce': [
-    'Record chat order',
-    'Share payment link',
-    'Inspect confirmation',
-  ],
+  'social-commerce': ['Record chat order', 'Share payment link', 'Inspect confirmation'],
   contractors: ['Delivery evidence', 'Invoice on terms', 'Follow receivable'],
   onboarding: ['Open demo', 'Inspect one sale', 'Plan your setup'],
   'empty-records': ['Add a customer', 'Create an order', 'Follow its history'],
   receivables: ['Amount owed', 'Due date', 'Overdue review'],
   'cash-timing': ['Receipt expected', 'Expense due', 'Timing matters'],
-  'selective-sharing': [
-    'Choose claim',
-    'Exclude private data',
-    'Preview recipient',
-  ],
+  'selective-sharing': ['Choose claim', 'Exclude private data', 'Preview recipient'],
 };
 const esc = (s) => s.replaceAll('&', '&amp;').replaceAll('<', '&lt;');
 function glyph(name, i) {
@@ -66,8 +46,7 @@ function glyph(name, i) {
           ? 'M72 88h90v30H72zM72 137h90v30H72zM84 103l7 7 14-16'
           : 'M80 100h67v85H80zM95 85h67v85M95 124h36M95 145h27';
   else if (/trust-network|integrations/.test(name))
-    d =
-      'M117 85v45m0 0-42 45m42-45 42 45M100 72h34v28h-34zM58 174h34v28H58zM142 174h34v28h-34z';
+    d = 'M117 85v45m0 0-42 45m42-45 42 45M100 72h34v28h-34zM58 174h34v28H58zM142 174h34v28h-34z';
   else if (/passport|credibility/.test(name) && i === 0)
     d =
       'M65 85h104v100H65zM87 113a12 12 0 1 0 24 0 12 12 0 1 0-24 0M80 165q18-40 38 0M131 111h22M131 132h22M131 153h17';
@@ -86,11 +65,7 @@ function glyph(name, i) {
   else if (/payments|social-commerce/.test(name) && i === 0)
     d = 'M88 76h60v123H88zM101 88h34M101 176h34M100 113h36v43h-36z';
   return (
-    '<g ' +
-    common +
-    '><path d="' +
-    d +
-    '"/><path d="m166 202 8 8 16-21" stroke="#426900"/></g>'
+    '<g ' + common + '><path d="' + d + '"/><path d="m166 202 8 8 16-21" stroke="#426900"/></g>'
   );
 }
 for (const [name, steps] of Object.entries(scenes)) {
@@ -121,8 +96,4 @@ for (const [name, steps] of Object.entries(scenes)) {
       '<text x="28" y="467" font-size="13" fill="#666">Illustrative sequence · Check source, permissions and availability</text></svg>',
   );
 }
-console.log(
-  'Generated ' +
-    Object.keys(scenes).length +
-    ' original process illustrations.',
-);
+console.log('Generated ' + Object.keys(scenes).length + ' original process illustrations.');

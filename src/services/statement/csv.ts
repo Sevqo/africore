@@ -8,10 +8,10 @@
  * meaning.
  */
 export function parseCsv(content: string): string[][] {
-  const text = content.replace(/^\uFEFF/, "");
+  const text = content.replace(/^\uFEFF/, '');
   const rows: string[][] = [];
   let row: string[] = [];
-  let field = "";
+  let field = '';
   let inQuotes = false;
 
   for (let i = 0; i < text.length; i++) {
@@ -33,14 +33,14 @@ export function parseCsv(content: string): string[][] {
 
     if (char === '"') {
       inQuotes = true;
-    } else if (char === ",") {
+    } else if (char === ',') {
       row.push(field);
-      field = "";
-    } else if (char === "\n" || char === "\r") {
-      if (char === "\r" && text[i + 1] === "\n") i++;
+      field = '';
+    } else if (char === '\n' || char === '\r') {
+      if (char === '\r' && text[i + 1] === '\n') i++;
       row.push(field);
-      field = "";
-      if (row.some((cell) => cell.trim() !== "")) rows.push(row);
+      field = '';
+      if (row.some((cell) => cell.trim() !== '')) rows.push(row);
       row = [];
     } else {
       field += char;
@@ -49,7 +49,7 @@ export function parseCsv(content: string): string[][] {
 
   if (field.length > 0 || row.length > 0) {
     row.push(field);
-    if (row.some((cell) => cell.trim() !== "")) rows.push(row);
+    if (row.some((cell) => cell.trim() !== '')) rows.push(row);
   }
 
   return rows;

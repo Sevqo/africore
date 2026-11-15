@@ -1,31 +1,341 @@
-import {useEffect,useState} from 'react';
-import {InteractiveChart} from '../charts/InteractiveChart';
-import {DataTable} from '../components/DataTable';
-import {Field,money,type API} from '../operations/UI';
-import {Icon} from '../components/Icon';
-import {SegmentedControl} from '../components/SegmentedControl';
-const palette=['#26966a','#a5dfc4','#ffe075','#bfa9f9','#ef7d91','#cdd5df'];
-function Breakdown({title,rows,currency}:{title:string;rows:{label:string;amount:number}[];currency:string}){const total=rows.reduce((n,r)=>n+r.amount,0);let offset=0;return <section id={title==='Receivables'?'finance-receivables':undefined} className="panel finance-breakdown"><h3>{title}</h3><div className="finance-ring-layout"><svg viewBox="0 0 180 180" role="img" aria-label={title+': '+money(total,currency)}><circle cx="90" cy="90" r="68" fill="none" stroke="#edf1f5" strokeWidth="27"/>{total>0&&rows.map((r,i)=>{const segment=r.amount/total*100,start=offset;offset+=segment;return <circle key={r.label} cx="90" cy="90" r="68" fill="none" stroke={palette[i%palette.length]} strokeWidth="27" pathLength="100" strokeDasharray={segment+' '+(100-segment)} strokeDashoffset={-start} transform="rotate(-90 90 90)"/>;})}<text x="90" y="87" textAnchor="middle" fontSize="12" fill="currentColor">{currency}</text><text x="90" y="107" textAnchor="middle" fontSize="16" fontWeight="700" fill="currentColor">{new Intl.NumberFormat('en-KE',{notation:'compact'}).format(total/(['UGX','RWF'].includes(currency)?1:100))}</text></svg><ul>{rows.map((r,i)=><li key={r.label}><span className="chart-key" style={{background:palette[i%palette.length]}}/><span>{r.label}</span><strong>{money(r.amount,currency)}</strong></li>)}</ul></div>{total===0&&<p>No covered amounts in this period.</p>}</section>;}
-export function FinanceDashboard({api,scope,navigate,openRecord,section='dashboard',writable=false}:{openRecord?:(tab:string,id:string)=>void;writable?:boolean;section?:string;api:API;scope:string;navigate:(tab:string)=>void}){
- const [data,setData]=useState<any>(null),[invoices,setInvoices]=useState<any[]>([]),[error,setError]=useState(''),[currency,setCurrency]=useState('KES'),[months,setMonths]=useState(12),[revision,setRevision]=useState(0);
- const to=new Date().toLocaleDateString('en-CA',{timeZone:'Africa/Nairobi'}),from=new Date(Date.UTC(Number(to.slice(0,4)),Number(to.slice(5,7))-months,1)).toISOString().slice(0,10);
- useEffect(()=>{let current=true;setData(null);setInvoices([]);setError('');Promise.all([api('/financial-summary?'+new URLSearchParams({currency,from,to})),api('/records/invoices?limit=5&currency='+currency)]).then(([r,i])=>{if(current){setData(r);setInvoices(i.data);}}).catch(e=>{if(current)setError(e.message);});return()=>{current=false;};},[scope,currency,months,revision,from,to]);
- useEffect(()=>{if(section==='receivables'&&data)document.getElementById('finance-receivables')?.scrollIntoView({block:'start'});},[section,!!data]);
- return <div className="apps-workspace finance-workspace">
-  <div className="finance-toolbar" aria-label="Finance report controls"><Field label="Reporting currency"><select value={currency} onChange={e=>setCurrency(e.target.value)}>{['KES','USD','EUR','GBP','UGX','TZS','RWF'].map(value=><option key={value}>{value}</option>)}</select></Field><SegmentedControl label="Reporting period" value={months} options={[1,3,6,12].map(value=>({value,label:value+'M'}))} onChange={setMonths}/><button className="quiet-button" onClick={()=>setRevision(v=>v+1)}>Refresh</button></div>
-  {error&&<p className="alert error" role="alert">{error}</p>}{!data&&!error&&<p role="status">Loading covered financial records…</p>}
-  {data&&<>
-   <section className="app-metric-grid finance-app-metrics" aria-label="Financial summary">{[['Confirmed collections',data.totals.confirmed_inflows_minor],['Recorded outflows',data.totals.recorded_outflows_minor],['Net movement',data.totals.net_movement_minor],['Receivables',data.totals.outstanding_minor]].map(([label,value])=><article className="panel" key={label}><span><Icon name={label==='Recorded outflows'?'payment':label==='Receivables'?'document':'chart'}/>{label}</span><strong>{money(Number(value),currency)}</strong><small>{data.period.from} — {data.period.to} · {currency}</small></article>)}</section>
-   <div className="finance-app-main">
-    <section className="panel finance-trend-panel"><div className="finance-panel-heading"><div><span className="eyebrow">CASH FLOW</span><h2>Financial performance</h2></div><span className="finance-period-label">{data.period.from} — {data.period.to}</span></div><InteractiveChart variant="area" compact headingLevel={3} title="Confirmed collections, outflows and recorded movement" currency={currency} points={data.series.map((point:any)=>({...point,net:point.confirmed_inflows_minor-point.recorded_outflows_minor}))} series={[{key:'confirmed_inflows_minor',label:'Confirmed collections',color:'#278a36'},{key:'recorded_outflows_minor',label:'Recorded expenses',color:'#9ecb83'},{key:'net',label:'Net movement',color:'#25323a',dashed:true}]} description={data.definitions.net_movement}/></section>
-    <section className="panel finance-quick-actions"><div className="finance-panel-heading"><div><span className="eyebrow">WORKSPACE</span><h2>Quick actions</h2></div><span className="dashboard-action-mark"><Icon name="bolt"/></span></div>{[['Invoices','Create or manage invoices'],['Expenses','Record an expense'],['Payments','Review payment requests'],['Reconciliation','Match payments']].map(([tab,label])=><button className="finance-action-row" key={tab} onClick={()=>navigate(tab)}><span>{writable?label:'View '+tab.toLowerCase()}</span><Icon name="right"/></button>)}</section>
-   </div>
-   <div className="finance-app-bottom">
-    <Breakdown title="Receivables aging" currency={currency} rows={Object.entries(data.aging).map(([label,amount])=>({label:label.replaceAll('_',' '),amount:Number(amount)}))}/>
-    <section className="panel finance-invoice-panel"><div className="section-heading"><div><span className="eyebrow">ACCOUNTS RECEIVABLE</span><h2>Recent invoices</h2></div><button className="quiet-button" onClick={()=>navigate('Invoices')}>All invoices <Icon name="right"/></button></div><DataTable><thead><tr><th>Invoice</th><th>Issue date</th><th>Amount</th><th>Status</th></tr></thead><tbody>{invoices.map(invoice=><tr key={invoice.id}><td><button className="quiet-button stock-product-link" onClick={()=>openRecord?openRecord('Invoices',invoice.id):navigate('Invoices')}>{invoice.number||invoice.reference||invoice.id.slice(0,8)}</button></td><td>{invoice.issue_date}</td><td>{money(invoice.total_minor,invoice.currency)}</td><td><span className="badge">{invoice.status}</span></td></tr>)}</tbody></DataTable>{!invoices.length&&<p>No invoices in this currency yet.</p>}</section>
-    <Breakdown title="Expense mix" currency={currency} rows={data.expense_categories.map((row:any)=>({label:row.category,amount:row.amount_minor}))}/>
-   </div>
-   <div className="finance-evidence-grid"><section className="panel"><h2>Recorded cash</h2>{typeof data.totals.recorded_cash_receipts_minor==='number'?<><p>Receipts {money(data.totals.recorded_cash_receipts_minor,currency)} · Returns {money(data.totals.recorded_cash_returns_minor,currency)} · Net {money(data.totals.recorded_cash_net_minor,currency)}</p><small>{data.definitions.recorded_cash}</small></>:<p>Recorded cash coverage is not available from this backend version.</p>}</section><details className="panel"><summary>Sources and accounting definitions</summary><p>{data.definitions.net_movement}</p><p>Provider returns: {money(data.totals.returned_minor||0,currency)} · {data.quality.history_days} observed history days · {data.quality.unreconciled_count} unresolved exceptions.</p><p>Net movement is not profit or a bank balance. Expenses retain merchant-stated assurance. Currencies remain separate. Test provider events remain simulations. Receivable aging reflects covered allocations and credits.</p><p>{data.quality.unknown_provider_occurrence_dates||0} provider events have observation dates only.</p></details></div>
-  </>}
- </div>;
+import { useEffect, useState } from 'react';
+import { InteractiveChart } from '../charts/InteractiveChart';
+import { DataTable } from '../components/DataTable';
+import { Field, money, type API } from '../operations/UI';
+import { Icon } from '../components/Icon';
+import { SegmentedControl } from '../components/SegmentedControl';
+const palette = ['#26966a', '#a5dfc4', '#ffe075', '#bfa9f9', '#ef7d91', '#cdd5df'];
+function Breakdown({
+  title,
+  rows,
+  currency,
+}: {
+  title: string;
+  rows: { label: string; amount: number }[];
+  currency: string;
+}) {
+  const total = rows.reduce((n, r) => n + r.amount, 0);
+  let offset = 0;
+  return (
+    <section
+      id={title === 'Receivables' ? 'finance-receivables' : undefined}
+      className="panel finance-breakdown"
+    >
+      <h3>{title}</h3>
+      <div className="finance-ring-layout">
+        <svg viewBox="0 0 180 180" role="img" aria-label={title + ': ' + money(total, currency)}>
+          <circle cx="90" cy="90" r="68" fill="none" stroke="#edf1f5" strokeWidth="27" />
+          {total > 0 &&
+            rows.map((r, i) => {
+              const segment = (r.amount / total) * 100,
+                start = offset;
+              offset += segment;
+              return (
+                <circle
+                  key={r.label}
+                  cx="90"
+                  cy="90"
+                  r="68"
+                  fill="none"
+                  stroke={palette[i % palette.length]}
+                  strokeWidth="27"
+                  pathLength="100"
+                  strokeDasharray={segment + ' ' + (100 - segment)}
+                  strokeDashoffset={-start}
+                  transform="rotate(-90 90 90)"
+                />
+              );
+            })}
+          <text x="90" y="87" textAnchor="middle" fontSize="12" fill="currentColor">
+            {currency}
+          </text>
+          <text
+            x="90"
+            y="107"
+            textAnchor="middle"
+            fontSize="16"
+            fontWeight="700"
+            fill="currentColor"
+          >
+            {new Intl.NumberFormat('en-KE', { notation: 'compact' }).format(
+              total / (['UGX', 'RWF'].includes(currency) ? 1 : 100),
+            )}
+          </text>
+        </svg>
+        <ul>
+          {rows.map((r, i) => (
+            <li key={r.label}>
+              <span className="chart-key" style={{ background: palette[i % palette.length] }} />
+              <span>{r.label}</span>
+              <strong>{money(r.amount, currency)}</strong>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {total === 0 && <p>No covered amounts in this period.</p>}
+    </section>
+  );
+}
+export function FinanceDashboard({
+  api,
+  scope,
+  navigate,
+  openRecord,
+  section = 'dashboard',
+  writable = false,
+}: {
+  openRecord?: (tab: string, id: string) => void;
+  writable?: boolean;
+  section?: string;
+  api: API;
+  scope: string;
+  navigate: (tab: string) => void;
+}) {
+  const [data, setData] = useState<any>(null),
+    [invoices, setInvoices] = useState<any[]>([]),
+    [error, setError] = useState(''),
+    [currency, setCurrency] = useState('KES'),
+    [months, setMonths] = useState(12),
+    [revision, setRevision] = useState(0);
+  const to = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Nairobi' }),
+    from = new Date(Date.UTC(Number(to.slice(0, 4)), Number(to.slice(5, 7)) - months, 1))
+      .toISOString()
+      .slice(0, 10);
+  useEffect(() => {
+    let current = true;
+    setData(null);
+    setInvoices([]);
+    setError('');
+    Promise.all([
+      api('/financial-summary?' + new URLSearchParams({ currency, from, to })),
+      api('/records/invoices?limit=5&currency=' + currency),
+    ])
+      .then(([r, i]) => {
+        if (current) {
+          setData(r);
+          setInvoices(i.data);
+        }
+      })
+      .catch((e) => {
+        if (current) setError(e.message);
+      });
+    return () => {
+      current = false;
+    };
+  }, [scope, currency, months, revision, from, to]);
+  useEffect(() => {
+    if (section === 'receivables' && data)
+      document.getElementById('finance-receivables')?.scrollIntoView({ block: 'start' });
+  }, [section, !!data]);
+  return (
+    <div className="apps-workspace finance-workspace">
+      <div className="finance-toolbar" aria-label="Finance report controls">
+        <Field label="Reporting currency">
+          <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+            {['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF'].map((value) => (
+              <option key={value}>{value}</option>
+            ))}
+          </select>
+        </Field>
+        <SegmentedControl
+          label="Reporting period"
+          value={months}
+          options={[1, 3, 6, 12].map((value) => ({ value, label: value + 'M' }))}
+          onChange={setMonths}
+        />
+        <button className="quiet-button" onClick={() => setRevision((v) => v + 1)}>
+          Refresh
+        </button>
+      </div>
+      {error && (
+        <p className="alert error" role="alert">
+          {error}
+        </p>
+      )}
+      {!data && !error && <p role="status">Loading covered financial records…</p>}
+      {data && (
+        <>
+          <section className="app-metric-grid finance-app-metrics" aria-label="Financial summary">
+            {[
+              ['Confirmed collections', data.totals.confirmed_inflows_minor],
+              ['Recorded outflows', data.totals.recorded_outflows_minor],
+              ['Net movement', data.totals.net_movement_minor],
+              ['Receivables', data.totals.outstanding_minor],
+            ].map(([label, value]) => (
+              <article className="panel" key={label}>
+                <span>
+                  <Icon
+                    name={
+                      label === 'Recorded outflows'
+                        ? 'payment'
+                        : label === 'Receivables'
+                          ? 'document'
+                          : 'chart'
+                    }
+                  />
+                  {label}
+                </span>
+                <strong>{money(Number(value), currency)}</strong>
+                <small>
+                  {data.period.from} — {data.period.to} · {currency}
+                </small>
+              </article>
+            ))}
+          </section>
+          <div className="finance-app-main">
+            <section className="panel finance-trend-panel">
+              <div className="finance-panel-heading">
+                <div>
+                  <span className="eyebrow">CASH FLOW</span>
+                  <h2>Financial performance</h2>
+                </div>
+                <span className="finance-period-label">
+                  {data.period.from} — {data.period.to}
+                </span>
+              </div>
+              <InteractiveChart
+                variant="area"
+                compact
+                headingLevel={3}
+                title="Confirmed collections, outflows and recorded movement"
+                currency={currency}
+                points={data.series.map((point: any) => ({
+                  ...point,
+                  net: point.confirmed_inflows_minor - point.recorded_outflows_minor,
+                }))}
+                series={[
+                  {
+                    key: 'confirmed_inflows_minor',
+                    label: 'Confirmed collections',
+                    color: '#278a36',
+                  },
+                  { key: 'recorded_outflows_minor', label: 'Recorded expenses', color: '#9ecb83' },
+                  { key: 'net', label: 'Net movement', color: '#25323a', dashed: true },
+                ]}
+                description={data.definitions.net_movement}
+              />
+            </section>
+            <section className="panel finance-quick-actions">
+              <div className="finance-panel-heading">
+                <div>
+                  <span className="eyebrow">WORKSPACE</span>
+                  <h2>Quick actions</h2>
+                </div>
+                <span className="dashboard-action-mark">
+                  <Icon name="bolt" />
+                </span>
+              </div>
+              {[
+                ['Invoices', 'Create or manage invoices'],
+                ['Expenses', 'Record an expense'],
+                ['Payments', 'Review payment requests'],
+                ['Reconciliation', 'Match payments'],
+              ].map(([tab, label]) => (
+                <button className="finance-action-row" key={tab} onClick={() => navigate(tab)}>
+                  <span>{writable ? label : 'View ' + tab.toLowerCase()}</span>
+                  <Icon name="right" />
+                </button>
+              ))}
+            </section>
+          </div>
+          <div className="finance-app-bottom">
+            <Breakdown
+              title="Receivables aging"
+              currency={currency}
+              rows={Object.entries(data.aging).map(([label, amount]) => ({
+                label: label.replaceAll('_', ' '),
+                amount: Number(amount),
+              }))}
+            />
+            <section className="panel finance-invoice-panel">
+              <div className="section-heading">
+                <div>
+                  <span className="eyebrow">ACCOUNTS RECEIVABLE</span>
+                  <h2>Recent invoices</h2>
+                </div>
+                <button className="quiet-button" onClick={() => navigate('Invoices')}>
+                  All invoices <Icon name="right" />
+                </button>
+              </div>
+              <DataTable>
+                <thead>
+                  <tr>
+                    <th>Invoice</th>
+                    <th>Issue date</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoices.map((invoice) => (
+                    <tr key={invoice.id}>
+                      <td>
+                        <button
+                          className="quiet-button stock-product-link"
+                          onClick={() =>
+                            openRecord ? openRecord('Invoices', invoice.id) : navigate('Invoices')
+                          }
+                        >
+                          {invoice.number || invoice.reference || invoice.id.slice(0, 8)}
+                        </button>
+                      </td>
+                      <td>{invoice.issue_date}</td>
+                      <td>{money(invoice.total_minor, invoice.currency)}</td>
+                      <td>
+                        <span className="badge">{invoice.status}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </DataTable>
+              {!invoices.length && <p>No invoices in this currency yet.</p>}
+            </section>
+            <Breakdown
+              title="Expense mix"
+              currency={currency}
+              rows={data.expense_categories.map((row: any) => ({
+                label: row.category,
+                amount: row.amount_minor,
+              }))}
+            />
+          </div>
+          <div className="finance-evidence-grid">
+            <section className="panel">
+              <h2>Recorded cash</h2>
+              {typeof data.totals.recorded_cash_receipts_minor === 'number' ? (
+                <>
+                  <p>
+                    Receipts {money(data.totals.recorded_cash_receipts_minor, currency)} · Returns{' '}
+                    {money(data.totals.recorded_cash_returns_minor, currency)} · Net{' '}
+                    {money(data.totals.recorded_cash_net_minor, currency)}
+                  </p>
+                  <small>{data.definitions.recorded_cash}</small>
+                </>
+              ) : (
+                <p>Recorded cash coverage is not available from this backend version.</p>
+              )}
+            </section>
+            <details className="panel">
+              <summary>Sources and accounting definitions</summary>
+              <p>{data.definitions.net_movement}</p>
+              <p>
+                Provider returns: {money(data.totals.returned_minor || 0, currency)} ·{' '}
+                {data.quality.history_days} observed history days ·{' '}
+                {data.quality.unreconciled_count} unresolved exceptions.
+              </p>
+              <p>
+                Net movement is not profit or a bank balance. Expenses retain merchant-stated
+                assurance. Currencies remain separate. Test provider events remain simulations.
+                Receivable aging reflects covered allocations and credits.
+              </p>
+              <p>
+                {data.quality.unknown_provider_occurrence_dates || 0} provider events have
+                observation dates only.
+              </p>
+            </details>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }

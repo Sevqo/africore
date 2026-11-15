@@ -67,8 +67,7 @@ export async function capture(
       resource,
       a.actor,
       options.source || 'africore_service',
-      options.assurance ||
-        (a.environment === 'sandbox' ? 'sandbox_simulated' : 'system_recorded'),
+      options.assurance || (a.environment === 'sandbox' ? 'sandbox_simulated' : 'system_recorded'),
       options.correlation || resource || id,
       key,
       JSON.stringify(payload),

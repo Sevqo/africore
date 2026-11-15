@@ -1,13 +1,13 @@
-import { test, describe, before, after } from "node:test";
-import assert from "node:assert";
-import type { Server } from "http";
-import { configureTestEnv, truncateAll, removeSqliteFile } from "./helpers";
+import { test, describe, before, after } from 'node:test';
+import assert from 'node:assert';
+import type { Server } from 'http';
+import { configureTestEnv, truncateAll, removeSqliteFile } from './helpers';
 
 // Must run before any module that loads the DB adapter.
-const { isPg, sqlitePath } = configureTestEnv("api");
+const { isPg, sqlitePath } = configureTestEnv('api');
 
-import { migrate, dbRun } from "../db";
-import { createApp } from "../app";
+import { migrate, dbRun } from '../db';
+import { createApp } from '../app';
 
 let server: Server;
 let baseUrl: string;
@@ -15,10 +15,14 @@ let baseUrl: string;
 // Silence per-request logging so test output stays readable.
 const originalLog = console.log;
 
-async function api(method: string, urlPath: string, opts: { body?: unknown; apiKey?: string; admin?: boolean } = {}) {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (opts.admin !== false) headers["x-admin-token"] = process.env.AFRISCORE_ADMIN_TOKEN!;
-  if (opts.apiKey) headers["x-api-key"] = opts.apiKey;
+async function api(
+  method: string,
+  urlPath: string,
+  opts: { body?: unknown; apiKey?: string; admin?: boolean } = {},
+) {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (opts.admin !== false) headers['x-admin-token'] = process.env.AFRISCORE_ADMIN_TOKEN!;
+  if (opts.apiKey) headers['x-api-key'] = opts.apiKey;
 
   const res = await fetch(`${baseUrl}${urlPath}`, {
     method,
@@ -35,7 +39,7 @@ async function api(method: string, urlPath: string, opts: { body?: unknown; apiK
   return { status: res.status, body: json, headers: res.headers };
 }
 
-describe("API routes", () => {
+describe('API routes', () => {
   before(async () => {
     // Truncate rather than delete the file: the adapter opened a handle at
     // import time, and removing it mid-run causes SQLITE_IOERR_FSTAT.
@@ -47,7 +51,7 @@ describe("API routes", () => {
       server = app.listen(0, () => resolve());
     });
     const addr = server.address();
-    const port = typeof addr === "object" && addr ? addr.port : 0;
+    const port = typeof addr === 'object' && addr ? addr.port : 0;
     baseUrl = `http://127.0.0.1:${port}`;
   });
 
@@ -57,600 +61,683 @@ describe("API routes", () => {
     removeSqliteFile(sqlitePath);
   });
 
-  test("public health endpoint exposes only non-sensitive status", async () => {
-    const res = await api("GET", "/v1/health");
+  test('public health endpoint exposes only non-sensitive status', async () => {
+    const res = await api('GET', '/v1/health');
     assert.strictEqual(res.status, 200);
-    assert.strictEqual(res.body.status, "ok");
-    assert.deepEqual(res.body,{status:'ok'});
-    assert.ok(res.headers.get("x-request-id"));
-    assert.strictEqual(res.headers.get("x-content-type-options"), "nosniff");
-    assert.strictEqual(res.headers.get("x-powered-by"), null);
+    assert.strictEqual(res.body.status, 'ok');
+    assert.deepEqual(res.body, { status: 'ok' });
+    assert.ok(res.headers.get('x-request-id'));
+    assert.strictEqual(res.headers.get('x-content-type-options'), 'nosniff');
+    assert.strictEqual(res.headers.get('x-powered-by'), null);
     // Global limiter is per-IP (the per-client limiter kicks in after auth).
-    assert.strictEqual(res.headers.get("ratelimit-limit"), "600");
+    assert.strictEqual(res.headers.get('ratelimit-limit'), '600');
   });
 
-  test("admin routes reject anonymous access", async () => {
-    for (const [method, path] of [["GET", "/v1/clients"], ["POST", "/v1/consents"], ["POST", "/v1/businesses"], ["GET", "/v1/sandbox/businesses"]]) {
+  test('admin routes reject anonymous access', async () => {
+    for (const [method, path] of [
+      ['GET', '/v1/clients'],
+      ['POST', '/v1/consents'],
+      ['POST', '/v1/businesses'],
+      ['GET', '/v1/sandbox/businesses'],
+    ]) {
       const res = await api(method, path, { admin: false });
       assert.strictEqual(res.status, 401, `${method} ${path}`);
     }
   });
 
-  test("API key rotation and revocation invalidate old credentials", async () => {
-    const created = await api("POST", "/v1/clients", { body: { name: "lifecycle-client" } });
+  test('API key rotation and revocation invalidate old credentials', async () => {
+    const created = await api('POST', '/v1/clients', { body: { name: 'lifecycle-client' } });
     const oldKey = created.body.api_key;
-    const rotated = await api("POST", `/v1/clients/${created.body.id}/rotate`);
+    const rotated = await api('POST', `/v1/clients/${created.body.id}/rotate`);
     assert.strictEqual(rotated.status, 200);
     assert.notStrictEqual(rotated.body.api_key, oldKey);
-    const old = await api("GET", "/v1/webhooks", { apiKey: oldKey });
+    const old = await api('GET', '/v1/webhooks', { apiKey: oldKey });
     assert.strictEqual(old.status, 401);
-    const current = await api("GET", "/v1/webhooks", { apiKey: rotated.body.api_key });
+    const current = await api('GET', '/v1/webhooks', { apiKey: rotated.body.api_key });
     assert.strictEqual(current.status, 200);
-    await api("DELETE", `/v1/clients/${created.body.id}`);
-    const revoked = await api("GET", "/v1/webhooks", { apiKey: rotated.body.api_key });
+    await api('DELETE', `/v1/clients/${created.body.id}`);
+    const revoked = await api('GET', '/v1/webhooks', { apiKey: rotated.body.api_key });
     assert.strictEqual(revoked.status, 401);
   });
 
   test("account actions reject another business's account", async () => {
-    const a = await api("POST", "/v1/businesses", { body: { legal_name: "Owner A Ltd" } });
-    const b = await api("POST", "/v1/businesses", { body: { legal_name: "Owner B Ltd" } });
-    const account = await api("POST", `/v1/businesses/${a.body.id}/accounts/connect`, { body: { provider: "sandbox", account_identifier: "OWN-A" } });
-    const sync = await api("POST", `/v1/businesses/${b.body.id}/accounts/${account.body.id}/sync`);
-    const disconnect = await api("POST", `/v1/businesses/${b.body.id}/accounts/${account.body.id}/disconnect`);
+    const a = await api('POST', '/v1/businesses', { body: { legal_name: 'Owner A Ltd' } });
+    const b = await api('POST', '/v1/businesses', { body: { legal_name: 'Owner B Ltd' } });
+    const account = await api('POST', `/v1/businesses/${a.body.id}/accounts/connect`, {
+      body: { provider: 'sandbox', account_identifier: 'OWN-A' },
+    });
+    const sync = await api('POST', `/v1/businesses/${b.body.id}/accounts/${account.body.id}/sync`);
+    const disconnect = await api(
+      'POST',
+      `/v1/businesses/${b.body.id}/accounts/${account.body.id}/disconnect`,
+    );
     assert.strictEqual(sync.status, 404);
     assert.strictEqual(disconnect.status, 404);
   });
 
-  test("unknown route returns a structured 404", async () => {
-    const res = await api("GET", "/v1/does-not-exist");
+  test('unknown route returns a structured 404', async () => {
+    const res = await api('GET', '/v1/does-not-exist');
     assert.strictEqual(res.status, 404);
-    assert.strictEqual(res.body.error, "not_found");
+    assert.strictEqual(res.body.error, 'not_found');
   });
 
-  test("business creation validates input", async () => {
-    const res = await api("POST", "/v1/businesses", { body: { legal_name: "X" } }); // too short
+  test('business creation validates input', async () => {
+    const res = await api('POST', '/v1/businesses', { body: { legal_name: 'X' } }); // too short
     assert.strictEqual(res.status, 400);
-    assert.strictEqual(res.body.error, "invalid_input");
+    assert.strictEqual(res.body.error, 'invalid_input');
   });
 
-  test("business lifecycle: create, fetch, verify", async () => {
-    const created = await api("POST", "/v1/businesses", {
-      body: { legal_name: "Test Traders Ltd", registration_number: "R1", kra_pin: "P1" },
+  test('business lifecycle: create, fetch, verify', async () => {
+    const created = await api('POST', '/v1/businesses', {
+      body: { legal_name: 'Test Traders Ltd', registration_number: 'R1', kra_pin: 'P1' },
     });
     assert.strictEqual(created.status, 201);
-    assert.strictEqual(created.body.status, "pending_verification");
+    assert.strictEqual(created.body.status, 'pending_verification');
 
-    const fetched = await api("GET", `/v1/businesses/${created.body.id}`);
+    const fetched = await api('GET', `/v1/businesses/${created.body.id}`);
     assert.strictEqual(fetched.status, 200);
 
-    const verified = await api("POST", `/v1/businesses/${created.body.id}/verify`);
+    const verified = await api('POST', `/v1/businesses/${created.body.id}/verify`);
     assert.strictEqual(verified.status, 200);
-    assert.strictEqual(verified.body.business.status, "verified");
+    assert.strictEqual(verified.body.business.status, 'verified');
     assert.ok(verified.body.business.trust_score > 0);
   });
 
-  test("fetching a nonexistent business returns 404", async () => {
-    const res = await api("GET", "/v1/businesses/00000000-0000-0000-0000-000000000000");
+  test('fetching a nonexistent business returns 404', async () => {
+    const res = await api('GET', '/v1/businesses/00000000-0000-0000-0000-000000000000');
     assert.strictEqual(res.status, 404);
   });
 
   // --- The security-critical cases ---
 
-  test("trust-record REJECTS a request with no API key", async () => {
-    const biz = await api("POST", "/v1/businesses", { body: { legal_name: "Gated Ltd" } });
-    const res = await api("GET", `/v1/businesses/${biz.body.id}/trust-record`);
+  test('trust-record REJECTS a request with no API key', async () => {
+    const biz = await api('POST', '/v1/businesses', { body: { legal_name: 'Gated Ltd' } });
+    const res = await api('GET', `/v1/businesses/${biz.body.id}/trust-record`);
     assert.strictEqual(res.status, 401);
-    assert.strictEqual(res.body.error, "missing_api_key");
+    assert.strictEqual(res.body.error, 'missing_api_key');
   });
 
-  test("trust-record REJECTS a forged API key", async () => {
-    const biz = await api("POST", "/v1/businesses", { body: { legal_name: "Gated Two Ltd" } });
-    const res = await api("GET", `/v1/businesses/${biz.body.id}/trust-record`, { apiKey: "ak_totally_made_up" });
-    assert.strictEqual(res.status, 401);
-    assert.strictEqual(res.body.error, "invalid_api_key");
-  });
-
-  test("trust-record REJECTS a valid key WITHOUT a consent grant", async () => {
-    const client = await api("POST", "/v1/clients", { body: { name: "no-consent-client" } });
-    const biz = await api("POST", "/v1/businesses", { body: { legal_name: "Unconsented Ltd" } });
-
-    const res = await api("GET", `/v1/businesses/${biz.body.id}/trust-record`, { apiKey: client.body.api_key });
-    assert.strictEqual(res.status, 403, "a valid key alone must not grant access");
-    assert.strictEqual(res.body.error, "consent_required");
-  });
-
-  test("trust-record ALLOWS a valid key WITH an active consent grant", async () => {
-    const client = await api("POST", "/v1/clients", { body: { name: "consented-client" } });
-    const biz = await api("POST", "/v1/businesses", {
-      body: { legal_name: "Consented Ltd", registration_number: "R2", kra_pin: "P2" },
+  test('trust-record REJECTS a forged API key', async () => {
+    const biz = await api('POST', '/v1/businesses', { body: { legal_name: 'Gated Two Ltd' } });
+    const res = await api('GET', `/v1/businesses/${biz.body.id}/trust-record`, {
+      apiKey: 'ak_totally_made_up',
     });
-    await api("POST", `/v1/businesses/${biz.body.id}/verify`);
-    await api("POST", "/v1/consents", {
+    assert.strictEqual(res.status, 401);
+    assert.strictEqual(res.body.error, 'invalid_api_key');
+  });
+
+  test('trust-record REJECTS a valid key WITHOUT a consent grant', async () => {
+    const client = await api('POST', '/v1/clients', { body: { name: 'no-consent-client' } });
+    const biz = await api('POST', '/v1/businesses', { body: { legal_name: 'Unconsented Ltd' } });
+
+    const res = await api('GET', `/v1/businesses/${biz.body.id}/trust-record`, {
+      apiKey: client.body.api_key,
+    });
+    assert.strictEqual(res.status, 403, 'a valid key alone must not grant access');
+    assert.strictEqual(res.body.error, 'consent_required');
+  });
+
+  test('trust-record ALLOWS a valid key WITH an active consent grant', async () => {
+    const client = await api('POST', '/v1/clients', { body: { name: 'consented-client' } });
+    const biz = await api('POST', '/v1/businesses', {
+      body: { legal_name: 'Consented Ltd', registration_number: 'R2', kra_pin: 'P2' },
+    });
+    await api('POST', `/v1/businesses/${biz.body.id}/verify`);
+    await api('POST', '/v1/consents', {
       body: {
-        subject_type: "business",
+        subject_type: 'business',
         subject_id: biz.body.id,
-        grantee: "consented-client",
-        purpose: "underwriting",
-        scope: ["trust_score"],
+        grantee: 'consented-client',
+        purpose: 'underwriting',
+        scope: ['trust_score'],
       },
     });
 
-    const res = await api("GET", `/v1/businesses/${biz.body.id}/trust-record`, { apiKey: client.body.api_key });
+    const res = await api('GET', `/v1/businesses/${biz.body.id}/trust-record`, {
+      apiKey: client.body.api_key,
+    });
     assert.strictEqual(res.status, 200);
     assert.strictEqual(res.body.integrity.valid, true);
     assert.ok(res.body.verification_history.length > 0);
   });
 
-  test("REVOKING consent immediately cuts off access", async () => {
-    const client = await api("POST", "/v1/clients", { body: { name: "revoked-client" } });
-    const biz = await api("POST", "/v1/businesses", { body: { legal_name: "Revoked Ltd" } });
-    const consent = await api("POST", "/v1/consents", {
+  test('REVOKING consent immediately cuts off access', async () => {
+    const client = await api('POST', '/v1/clients', { body: { name: 'revoked-client' } });
+    const biz = await api('POST', '/v1/businesses', { body: { legal_name: 'Revoked Ltd' } });
+    const consent = await api('POST', '/v1/consents', {
       body: {
-        subject_type: "business",
+        subject_type: 'business',
         subject_id: biz.body.id,
-        grantee: "revoked-client",
-        purpose: "underwriting",
-        scope: ["trust_score"],
+        grantee: 'revoked-client',
+        purpose: 'underwriting',
+        scope: ['trust_score'],
       },
     });
 
-    const before = await api("GET", `/v1/businesses/${biz.body.id}/trust-record`, { apiKey: client.body.api_key });
-    assert.strictEqual(before.status, 200, "should have access before revocation");
+    const before = await api('GET', `/v1/businesses/${biz.body.id}/trust-record`, {
+      apiKey: client.body.api_key,
+    });
+    assert.strictEqual(before.status, 200, 'should have access before revocation');
 
-    const revoked = await api("DELETE", `/v1/consents/${consent.body.id}`);
+    const revoked = await api('DELETE', `/v1/consents/${consent.body.id}`);
     assert.strictEqual(revoked.status, 200);
 
-    const after = await api("GET", `/v1/businesses/${biz.body.id}/trust-record`, { apiKey: client.body.api_key });
-    assert.strictEqual(after.status, 403, "access must be cut off immediately after revocation");
+    const after = await api('GET', `/v1/businesses/${biz.body.id}/trust-record`, {
+      apiKey: client.body.api_key,
+    });
+    assert.strictEqual(after.status, 403, 'access must be cut off immediately after revocation');
   });
 
-  test("consent expires automatically, and past expiry dates are rejected", async () => {
-    const client = await api("POST", "/v1/clients", { body: { name: "expiring-client" } });
-    const biz = await api("POST", "/v1/businesses", { body: { legal_name: "Expiring Ltd" } });
+  test('consent expires automatically, and past expiry dates are rejected', async () => {
+    const client = await api('POST', '/v1/clients', { body: { name: 'expiring-client' } });
+    const biz = await api('POST', '/v1/businesses', { body: { legal_name: 'Expiring Ltd' } });
 
-    const past = await api("POST", "/v1/consents", {
+    const past = await api('POST', '/v1/consents', {
       body: {
-        subject_type: "business",
+        subject_type: 'business',
         subject_id: biz.body.id,
-        grantee: "expiring-client",
-        purpose: "underwriting",
-        scope: ["trust_score"],
+        grantee: 'expiring-client',
+        purpose: 'underwriting',
+        scope: ['trust_score'],
         expires_at: new Date(Date.now() - 60_000).toISOString(),
       },
     });
-    assert.strictEqual(past.status, 400, "an already-expired consent must not be grantable");
+    assert.strictEqual(past.status, 400, 'an already-expired consent must not be grantable');
 
-    const grant = await api("POST", "/v1/consents", {
+    const grant = await api('POST', '/v1/consents', {
       body: {
-        subject_type: "business",
+        subject_type: 'business',
         subject_id: biz.body.id,
-        grantee: "expiring-client",
-        purpose: "underwriting",
-        scope: ["trust_score"],
+        grantee: 'expiring-client',
+        purpose: 'underwriting',
+        scope: ['trust_score'],
         expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
       },
     });
     assert.strictEqual(grant.status, 201);
     assert.ok(grant.body.expires_at);
 
-    const before = await api("GET", `/v1/businesses/${biz.body.id}/trust-record`, { apiKey: client.body.api_key });
+    const before = await api('GET', `/v1/businesses/${biz.body.id}/trust-record`, {
+      apiKey: client.body.api_key,
+    });
     assert.strictEqual(before.status, 200);
 
     // Move the expiry into the past (as time would): access must stop without
     // any explicit revocation.
-    await dbRun(`UPDATE consents SET expires_at = ? WHERE id = ?`, [new Date(Date.now() - 1000).toISOString(), grant.body.id]);
-    const after = await api("GET", `/v1/businesses/${biz.body.id}/trust-record`, { apiKey: client.body.api_key });
-    assert.strictEqual(after.status, 403, "expired consent must no longer authorise access");
+    await dbRun(`UPDATE consents SET expires_at = ? WHERE id = ?`, [
+      new Date(Date.now() - 1000).toISOString(),
+      grant.body.id,
+    ]);
+    const after = await api('GET', `/v1/businesses/${biz.body.id}/trust-record`, {
+      apiKey: client.body.api_key,
+    });
+    assert.strictEqual(after.status, 403, 'expired consent must no longer authorise access');
   });
 
   test("one client's consent does NOT grant access to a different client", async () => {
-    const clientA = await api("POST", "/v1/clients", { body: { name: "client-a" } });
-    const clientB = await api("POST", "/v1/clients", { body: { name: "client-b" } });
-    const biz = await api("POST", "/v1/businesses", { body: { legal_name: "Scoped Ltd" } });
+    const clientA = await api('POST', '/v1/clients', { body: { name: 'client-a' } });
+    const clientB = await api('POST', '/v1/clients', { body: { name: 'client-b' } });
+    const biz = await api('POST', '/v1/businesses', { body: { legal_name: 'Scoped Ltd' } });
 
-    await api("POST", "/v1/consents", {
+    await api('POST', '/v1/consents', {
       body: {
-        subject_type: "business",
+        subject_type: 'business',
         subject_id: biz.body.id,
-        grantee: "client-a",
-        purpose: "underwriting",
-        scope: ["trust_score"],
+        grantee: 'client-a',
+        purpose: 'underwriting',
+        scope: ['trust_score'],
       },
     });
 
-    const asA = await api("GET", `/v1/businesses/${biz.body.id}/trust-record`, { apiKey: clientA.body.api_key });
-    const asB = await api("GET", `/v1/businesses/${biz.body.id}/trust-record`, { apiKey: clientB.body.api_key });
+    const asA = await api('GET', `/v1/businesses/${biz.body.id}/trust-record`, {
+      apiKey: clientA.body.api_key,
+    });
+    const asB = await api('GET', `/v1/businesses/${biz.body.id}/trust-record`, {
+      apiKey: clientB.body.api_key,
+    });
 
     assert.strictEqual(asA.status, 200);
-    assert.strictEqual(asB.status, 403, "consent is per-grantee, not global");
+    assert.strictEqual(asB.status, 403, 'consent is per-grantee, not global');
   });
 
-  test("financial-profile and insights enforce the same consent gate", async () => {
-    const client = await api("POST", "/v1/clients", { body: { name: "gate-check-client" } });
-    const biz = await api("POST", "/v1/businesses", { body: { legal_name: "Gate Check Ltd" } });
+  test('financial-profile and insights enforce the same consent gate', async () => {
+    const client = await api('POST', '/v1/clients', { body: { name: 'gate-check-client' } });
+    const biz = await api('POST', '/v1/businesses', { body: { legal_name: 'Gate Check Ltd' } });
 
-    for (const suffix of ["financial-profile", "insights"]) {
-      const res = await api("GET", `/v1/businesses/${biz.body.id}/${suffix}`, { apiKey: client.body.api_key });
+    for (const suffix of ['financial-profile', 'insights']) {
+      const res = await api('GET', `/v1/businesses/${biz.body.id}/${suffix}`, {
+        apiKey: client.body.api_key,
+      });
       assert.strictEqual(res.status, 403, `${suffix} must require consent`);
     }
   });
 
-  test("consent scopes do not leak access across capabilities", async () => {
-    const client = await api("POST", "/v1/clients", { body: { name: "least-privilege-client" } });
-    const biz = await api("POST", "/v1/businesses", { body: { legal_name: "Least Privilege Ltd" } });
+  test('consent scopes do not leak access across capabilities', async () => {
+    const client = await api('POST', '/v1/clients', { body: { name: 'least-privilege-client' } });
+    const biz = await api('POST', '/v1/businesses', {
+      body: { legal_name: 'Least Privilege Ltd' },
+    });
 
-    await api("POST", "/v1/consents", {
+    await api('POST', '/v1/consents', {
       body: {
-        subject_type: "business",
+        subject_type: 'business',
         subject_id: biz.body.id,
-        grantee: "least-privilege-client",
-        purpose: "verification",
-        scope: ["trust_score"],
+        grantee: 'least-privilege-client',
+        purpose: 'verification',
+        scope: ['trust_score'],
       },
     });
 
-    const trust = await api("GET", `/v1/businesses/${biz.body.id}/trust-record`, { apiKey: client.body.api_key });
-    const profile = await api("GET", `/v1/businesses/${biz.body.id}/financial-profile`, { apiKey: client.body.api_key });
+    const trust = await api('GET', `/v1/businesses/${biz.body.id}/trust-record`, {
+      apiKey: client.body.api_key,
+    });
+    const profile = await api('GET', `/v1/businesses/${biz.body.id}/financial-profile`, {
+      apiKey: client.body.api_key,
+    });
 
     assert.strictEqual(trust.status, 200);
     assert.strictEqual(profile.status, 403);
-    assert.strictEqual(profile.body.required_scope, "financial_profile");
+    assert.strictEqual(profile.body.required_scope, 'financial_profile');
   });
 
-  test("unknown consent scopes are rejected", async () => {
-    const biz = await api("POST", "/v1/businesses", { body: { legal_name: "Scope Validation Ltd" } });
-    const result = await api("POST", "/v1/consents", {
+  test('unknown consent scopes are rejected', async () => {
+    const biz = await api('POST', '/v1/businesses', {
+      body: { legal_name: 'Scope Validation Ltd' },
+    });
+    const result = await api('POST', '/v1/consents', {
       body: {
-        subject_type: "business",
+        subject_type: 'business',
         subject_id: biz.body.id,
-        grantee: "scope-client",
-        purpose: "test",
-        scope: ["everything_please"],
+        grantee: 'scope-client',
+        purpose: 'test',
+        scope: ['everything_please'],
       },
     });
 
     assert.strictEqual(result.status, 400);
-    assert.strictEqual(result.body.error, "invalid_input");
+    assert.strictEqual(result.body.error, 'invalid_input');
   });
 
-  test("trust-record does not leak KYC fields or identifier hashes", async () => {
-    const person = await api("POST", "/v1/persons", { body: { full_name: "Redacted Person", national_id: "55556666", phone: "254700000001" } });
-    const client = await api("POST", "/v1/clients", { body: { name: "redaction-client" } });
-    await api("POST", "/v1/consents", {
+  test('trust-record does not leak KYC fields or identifier hashes', async () => {
+    const person = await api('POST', '/v1/persons', {
+      body: { full_name: 'Redacted Person', national_id: '55556666', phone: '254700000001' },
+    });
+    const client = await api('POST', '/v1/clients', { body: { name: 'redaction-client' } });
+    await api('POST', '/v1/consents', {
       body: {
-        subject_type: "person",
+        subject_type: 'person',
         subject_id: person.body.id,
-        grantee: "redaction-client",
-        purpose: "underwriting",
-        scope: ["trust_score"],
+        grantee: 'redaction-client',
+        purpose: 'underwriting',
+        scope: ['trust_score'],
       },
     });
 
-    const res = await api("GET", `/v1/persons/${person.body.id}/trust-record`, { apiKey: client.body.api_key });
+    const res = await api('GET', `/v1/persons/${person.body.id}/trust-record`, {
+      apiKey: client.body.api_key,
+    });
     assert.strictEqual(res.status, 200);
     const serialized = JSON.stringify(res.body);
-    assert.ok(!serialized.includes("Redacted Person"), "full name is not part of a trust-score grant");
-    assert.ok(!serialized.includes("national_id_hash"), "identifier hashes must never be exposed");
-    assert.ok(!serialized.includes("phone_hash"), "identifier hashes must never be exposed");
+    assert.ok(
+      !serialized.includes('Redacted Person'),
+      'full name is not part of a trust-score grant',
+    );
+    assert.ok(!serialized.includes('national_id_hash'), 'identifier hashes must never be exposed');
+    assert.ok(!serialized.includes('phone_hash'), 'identifier hashes must never be exposed');
     assert.strictEqual(res.body.identifiers.national_id_present, true);
     assert.strictEqual(res.body.integrity.valid, true);
   });
 
-  test("ledger integrity endpoint 404s for an unknown subject", async () => {
-    const res = await api("GET", "/v1/businesses/00000000-0000-0000-0000-000000000000/ledger/verify");
+  test('ledger integrity endpoint 404s for an unknown subject', async () => {
+    const res = await api(
+      'GET',
+      '/v1/businesses/00000000-0000-0000-0000-000000000000/ledger/verify',
+    );
     assert.strictEqual(res.status, 404);
   });
 
-  test("duplicate account connection is rejected instead of double-ingesting", async () => {
-    const biz = await api("POST", "/v1/businesses", { body: { legal_name: "Dup Account Ltd" } });
-    const first = await api("POST", `/v1/businesses/${biz.body.id}/accounts/connect`, {
-      body: { provider: "sandbox", account_identifier: "DUP-1", scenario: "success" },
+  test('duplicate account connection is rejected instead of double-ingesting', async () => {
+    const biz = await api('POST', '/v1/businesses', { body: { legal_name: 'Dup Account Ltd' } });
+    const first = await api('POST', `/v1/businesses/${biz.body.id}/accounts/connect`, {
+      body: { provider: 'sandbox', account_identifier: 'DUP-1', scenario: 'success' },
     });
     assert.strictEqual(first.status, 201);
 
-    const second = await api("POST", `/v1/businesses/${biz.body.id}/accounts/connect`, {
-      body: { provider: "sandbox", account_identifier: "DUP-1", scenario: "success" },
+    const second = await api('POST', `/v1/businesses/${biz.body.id}/accounts/connect`, {
+      body: { provider: 'sandbox', account_identifier: 'DUP-1', scenario: 'success' },
     });
     assert.strictEqual(second.status, 409);
-    assert.strictEqual(second.body.error, "account_already_connected");
+    assert.strictEqual(second.body.error, 'account_already_connected');
   });
 
-  test("query scope alone cannot read other capabilities through /ask", async () => {
-    const client = await api("POST", "/v1/clients", { body: { name: "query-only-client" } });
-    const biz = await api("POST", "/v1/businesses", { body: { legal_name: "Query Only Ltd" } });
-    await api("POST", "/v1/consents", {
+  test('query scope alone cannot read other capabilities through /ask', async () => {
+    const client = await api('POST', '/v1/clients', { body: { name: 'query-only-client' } });
+    const biz = await api('POST', '/v1/businesses', { body: { legal_name: 'Query Only Ltd' } });
+    await api('POST', '/v1/consents', {
       body: {
-        subject_type: "business",
+        subject_type: 'business',
         subject_id: biz.body.id,
-        grantee: "query-only-client",
-        purpose: "support",
-        scope: ["query"],
+        grantee: 'query-only-client',
+        purpose: 'support',
+        scope: ['query'],
       },
     });
 
-    const escalated = await api("POST", `/v1/businesses/${biz.body.id}/ask`, {
+    const escalated = await api('POST', `/v1/businesses/${biz.body.id}/ask`, {
       apiKey: client.body.api_key,
-      body: { question: "what is our revenue and financial profile?" },
+      body: { question: 'what is our revenue and financial profile?' },
     });
     assert.strictEqual(escalated.status, 403);
-    assert.strictEqual(escalated.body.required_scope, "financial_profile");
+    assert.strictEqual(escalated.body.required_scope, 'financial_profile');
 
     // The narrow scope still allows questions that only need the interface.
-    const unmatched = await api("POST", `/v1/businesses/${biz.body.id}/ask`, {
+    const unmatched = await api('POST', `/v1/businesses/${biz.body.id}/ask`, {
       apiKey: client.body.api_key,
-      body: { question: "what is the weather in Nairobi" },
+      body: { question: 'what is the weather in Nairobi' },
     });
     assert.strictEqual(unmatched.status, 200);
     assert.strictEqual(unmatched.body.matched_intent, null);
   });
 
-  test("webhook subscription rejects unknown event patterns", async () => {
-    const client = await api("POST", "/v1/clients", { body: { name: "pattern-client" } });
-    const res = await api("POST", "/v1/webhooks", {
+  test('webhook subscription rejects unknown event patterns', async () => {
+    const client = await api('POST', '/v1/clients', { body: { name: 'pattern-client' } });
+    const res = await api('POST', '/v1/webhooks', {
       apiKey: client.body.api_key,
-      body: { event_pattern: "invoices.*", target_url: "https://example.com/hook" },
+      body: { event_pattern: 'invoices.*', target_url: 'https://example.com/hook' },
     });
     assert.strictEqual(res.status, 400);
-    assert.strictEqual(res.body.error, "invalid_event_pattern");
+    assert.strictEqual(res.body.error, 'invalid_event_pattern');
   });
 
-  test("the same payment cannot settle two invoices across reconciliations", async () => {
-    const client = await api("POST", "/v1/clients", { body: { name: "double-settle-client" } });
-    const biz = await api("POST", "/v1/businesses", { body: { legal_name: "Double Settle Ltd" } });
-    await api("POST", "/v1/consents", {
-      body: { subject_type: "business", subject_id: biz.body.id, grantee: "double-settle-client", purpose: "analysis", scope: ["all"] },
+  test('the same payment cannot settle two invoices across reconciliations', async () => {
+    const client = await api('POST', '/v1/clients', { body: { name: 'double-settle-client' } });
+    const biz = await api('POST', '/v1/businesses', { body: { legal_name: 'Double Settle Ltd' } });
+    await api('POST', '/v1/consents', {
+      body: {
+        subject_type: 'business',
+        subject_id: biz.body.id,
+        grantee: 'double-settle-client',
+        purpose: 'analysis',
+        scope: ['all'],
+      },
     });
-    const acc = await api("POST", `/v1/businesses/${biz.body.id}/accounts/connect`, {
-      body: { provider: "sandbox", account_identifier: "SETTLE-1", scenario: "success" },
+    const acc = await api('POST', `/v1/businesses/${biz.body.id}/accounts/connect`, {
+      body: { provider: 'sandbox', account_identifier: 'SETTLE-1', scenario: 'success' },
     });
-    await api("POST", `/v1/businesses/${biz.body.id}/accounts/${acc.body.id}/sync`);
-    const txns = await api("GET", `/v1/businesses/${biz.body.id}/transactions`);
-    const credit = txns.body.find((t: any) => t.type === "credit" && t.status === "completed");
+    await api('POST', `/v1/businesses/${biz.body.id}/accounts/${acc.body.id}/sync`);
+    const txns = await api('GET', `/v1/businesses/${biz.body.id}/transactions`);
+    const credit = txns.body.find((t: any) => t.type === 'credit' && t.status === 'completed');
     assert.ok(credit);
 
     // Two invoices for the same amount, only one payment available.
-    await api("POST", `/v1/businesses/${biz.body.id}/invoices`, {
-      body: { customer_reference: "Customer One", amount: credit.amount },
+    await api('POST', `/v1/businesses/${biz.body.id}/invoices`, {
+      body: { customer_reference: 'Customer One', amount: credit.amount },
     });
-    await api("POST", `/v1/businesses/${biz.body.id}/invoices`, {
-      body: { customer_reference: "Customer Two", amount: credit.amount },
+    await api('POST', `/v1/businesses/${biz.body.id}/invoices`, {
+      body: { customer_reference: 'Customer Two', amount: credit.amount },
     });
 
-    const recon = await api("POST", `/v1/businesses/${biz.body.id}/reconcile`);
+    const recon = await api('POST', `/v1/businesses/${biz.body.id}/reconcile`);
     assert.strictEqual(recon.status, 200);
-    assert.strictEqual(recon.body.matched.length, 1, "one payment must settle at most one invoice");
+    assert.strictEqual(recon.body.matched.length, 1, 'one payment must settle at most one invoice');
     assert.strictEqual(recon.body.unmatched_invoices.length, 1);
   });
 
-  test("ask endpoint enforces consent, then answers from real data", async () => {
-    const client = await api("POST", "/v1/clients", { body: { name: "ask-client" } });
-    const biz = await api("POST", "/v1/businesses", {
-      body: { legal_name: "Ask Ltd", registration_number: "R3", kra_pin: "P3" },
+  test('ask endpoint enforces consent, then answers from real data', async () => {
+    const client = await api('POST', '/v1/clients', { body: { name: 'ask-client' } });
+    const biz = await api('POST', '/v1/businesses', {
+      body: { legal_name: 'Ask Ltd', registration_number: 'R3', kra_pin: 'P3' },
     });
-    await api("POST", `/v1/businesses/${biz.body.id}/verify`);
+    await api('POST', `/v1/businesses/${biz.body.id}/verify`);
 
-    const blocked = await api("POST", `/v1/businesses/${biz.body.id}/ask`, {
+    const blocked = await api('POST', `/v1/businesses/${biz.body.id}/ask`, {
       apiKey: client.body.api_key,
-      body: { question: "what is our trust score?" },
+      body: { question: 'what is our trust score?' },
     });
     assert.strictEqual(blocked.status, 403);
 
-    await api("POST", "/v1/consents", {
+    await api('POST', '/v1/consents', {
       body: {
-        subject_type: "business",
+        subject_type: 'business',
         subject_id: biz.body.id,
-        grantee: "ask-client",
-        purpose: "analysis",
-        scope: ["all"],
+        grantee: 'ask-client',
+        purpose: 'analysis',
+        scope: ['all'],
       },
     });
 
-    const allowed = await api("POST", `/v1/businesses/${biz.body.id}/ask`, {
+    const allowed = await api('POST', `/v1/businesses/${biz.body.id}/ask`, {
       apiKey: client.body.api_key,
-      body: { question: "what is our trust score?" },
+      body: { question: 'what is our trust score?' },
     });
     assert.strictEqual(allowed.status, 200);
-    assert.strictEqual(allowed.body.matched_intent, "trust_score");
-    assert.ok(allowed.body.answer.includes("Ask Ltd"));
+    assert.strictEqual(allowed.body.matched_intent, 'trust_score');
+    assert.ok(allowed.body.answer.includes('Ask Ltd'));
   });
 
-  test("ask declines an unrecognized question instead of guessing", async () => {
-    const client = await api("POST", "/v1/clients", { body: { name: "ask-unknown-client" } });
-    const biz = await api("POST", "/v1/businesses", { body: { legal_name: "Unknown Q Ltd" } });
-    await api("POST", "/v1/consents", {
+  test('ask declines an unrecognized question instead of guessing', async () => {
+    const client = await api('POST', '/v1/clients', { body: { name: 'ask-unknown-client' } });
+    const biz = await api('POST', '/v1/businesses', { body: { legal_name: 'Unknown Q Ltd' } });
+    await api('POST', '/v1/consents', {
       body: {
-        subject_type: "business",
+        subject_type: 'business',
         subject_id: biz.body.id,
-        grantee: "ask-unknown-client",
-        purpose: "analysis",
-        scope: ["all"],
+        grantee: 'ask-unknown-client',
+        purpose: 'analysis',
+        scope: ['all'],
       },
     });
 
-    const res = await api("POST", `/v1/businesses/${biz.body.id}/ask`, {
+    const res = await api('POST', `/v1/businesses/${biz.body.id}/ask`, {
       apiKey: client.body.api_key,
-      body: { question: "what is the weather in Nairobi" },
+      body: { question: 'what is the weather in Nairobi' },
     });
     assert.strictEqual(res.status, 200);
     assert.strictEqual(res.body.matched_intent, null);
-    assert.strictEqual(res.body.data, null, "must not fabricate data for an unmatched question");
+    assert.strictEqual(res.body.data, null, 'must not fabricate data for an unmatched question');
   });
 
-  test("ledger integrity endpoint is public and reports a valid chain", async () => {
-    const biz = await api("POST", "/v1/businesses", {
-      body: { legal_name: "Public Ledger Ltd", registration_number: "R4", kra_pin: "P4" },
+  test('ledger integrity endpoint is public and reports a valid chain', async () => {
+    const biz = await api('POST', '/v1/businesses', {
+      body: { legal_name: 'Public Ledger Ltd', registration_number: 'R4', kra_pin: 'P4' },
     });
-    await api("POST", `/v1/businesses/${biz.body.id}/verify`);
+    await api('POST', `/v1/businesses/${biz.body.id}/verify`);
 
-    const res = await api("GET", `/v1/businesses/${biz.body.id}/ledger/verify`);
-    assert.strictEqual(res.status, 200, "integrity proof needs no auth");
+    const res = await api('GET', `/v1/businesses/${biz.body.id}/ledger/verify`);
+    assert.strictEqual(res.status, 200, 'integrity proof needs no auth');
     assert.strictEqual(res.body.valid, true);
   });
 
-  test("API keys are never returned again after creation", async () => {
-    await api("POST", "/v1/clients", { body: { name: "secret-client" } });
-    const list = await api("GET", "/v1/clients");
+  test('API keys are never returned again after creation', async () => {
+    await api('POST', '/v1/clients', { body: { name: 'secret-client' } });
+    const list = await api('GET', '/v1/clients');
     assert.strictEqual(list.status, 200);
     for (const c of list.body) {
-      assert.strictEqual(c.api_key, undefined, "raw key must never be listed");
-      assert.strictEqual(c.api_key_hash, undefined, "key hash must never be exposed");
+      assert.strictEqual(c.api_key, undefined, 'raw key must never be listed');
+      assert.strictEqual(c.api_key_hash, undefined, 'key hash must never be exposed');
     }
   });
 
-  test("duplicate national ID is rejected at the HTTP layer", async () => {
-    const p1 = await api("POST", "/v1/persons", { body: { full_name: "Real Person", national_id: "88887777" } });
-    const v1 = await api("POST", `/v1/persons/${p1.body.id}/verify`);
-    assert.strictEqual(v1.body.person.status, "verified");
+  test('duplicate national ID is rejected at the HTTP layer', async () => {
+    const p1 = await api('POST', '/v1/persons', {
+      body: { full_name: 'Real Person', national_id: '88887777' },
+    });
+    const v1 = await api('POST', `/v1/persons/${p1.body.id}/verify`);
+    assert.strictEqual(v1.body.person.status, 'verified');
 
-    const p2 = await api("POST", "/v1/persons", { body: { full_name: "Impostor", national_id: "88887777" } });
-    const v2 = await api("POST", `/v1/persons/${p2.body.id}/verify`);
+    const p2 = await api('POST', '/v1/persons', {
+      body: { full_name: 'Impostor', national_id: '88887777' },
+    });
+    const v2 = await api('POST', `/v1/persons/${p2.body.id}/verify`);
     assert.strictEqual(v2.body.duplicate, true);
-    assert.strictEqual(v2.body.person.status, "pending_verification", "duplicate must not verify");
+    assert.strictEqual(v2.body.person.status, 'pending_verification', 'duplicate must not verify');
   });
 
-  test("raw national ID is never stored or returned", async () => {
-    const res = await api("POST", "/v1/persons", { body: { full_name: "Privacy Test", national_id: "12129999" } });
+  test('raw national ID is never stored or returned', async () => {
+    const res = await api('POST', '/v1/persons', {
+      body: { full_name: 'Privacy Test', national_id: '12129999' },
+    });
     assert.strictEqual(res.status, 201);
     const serialized = JSON.stringify(res.body);
-    assert.ok(!serialized.includes("12129999"), "raw national ID must never appear in a response");
-    assert.match(res.body.national_id_hash,/^hmac-v2:[a-f0-9]{64}$/);
+    assert.ok(!serialized.includes('12129999'), 'raw national ID must never appear in a response');
+    assert.match(res.body.national_id_hash, /^hmac-v2:[a-f0-9]{64}$/);
   });
 
-  test("webhook subscription returns a secret once, never on listing", async () => {
-    const client = await api("POST", "/v1/clients", { body: { name: "webhook-client" } });
-    const sub = await api("POST", "/v1/webhooks", {
+  test('webhook subscription returns a secret once, never on listing', async () => {
+    const client = await api('POST', '/v1/clients', { body: { name: 'webhook-client' } });
+    const sub = await api('POST', '/v1/webhooks', {
       apiKey: client.body.api_key,
-      body: { event_pattern: "transaction.*", target_url: "https://example.com/hook" },
+      body: { event_pattern: 'transaction.*', target_url: 'https://example.com/hook' },
     });
     assert.strictEqual(sub.status, 201);
-    assert.ok(sub.body.secret.startsWith("whsec_"));
+    assert.ok(sub.body.secret.startsWith('whsec_'));
 
-    const list = await api("GET", "/v1/webhooks", { apiKey: client.body.api_key });
+    const list = await api('GET', '/v1/webhooks', { apiKey: client.body.api_key });
     assert.strictEqual(list.status, 200);
     for (const s of list.body) {
-      assert.strictEqual(s.secret, undefined, "secret must not be re-exposed on listing");
+      assert.strictEqual(s.secret, undefined, 'secret must not be re-exposed on listing');
     }
   });
 
-  test("webhook targets and event audit are protected", async () => {
-    const client = await api("POST", "/v1/clients", { body: { name: "webhook-guard-client" } });
-    const rejected = await api("POST", "/v1/webhooks", {
+  test('webhook targets and event audit are protected', async () => {
+    const client = await api('POST', '/v1/clients', { body: { name: 'webhook-guard-client' } });
+    const rejected = await api('POST', '/v1/webhooks', {
       apiKey: client.body.api_key,
-      body: { event_pattern: "transaction.*", target_url: "http://127.0.0.1:4000/internal" },
+      body: { event_pattern: 'transaction.*', target_url: 'http://127.0.0.1:4000/internal' },
     });
     assert.strictEqual(rejected.status, 400);
-    assert.strictEqual(rejected.body.error, "target_not_allowed");
-    const events = await api("GET", "/v1/webhooks/events", { apiKey: client.body.api_key, admin: false });
+    assert.strictEqual(rejected.body.error, 'target_not_allowed');
+    const events = await api('GET', '/v1/webhooks/events', {
+      apiKey: client.body.api_key,
+      admin: false,
+    });
     assert.strictEqual(events.status, 401);
   });
 
-  test("webhook signing secrets can be rotated, and only by their owner", async () => {
-    const owner = await api("POST", "/v1/clients", { body: { name: "rotate-owner-client" } });
-    const stranger = await api("POST", "/v1/clients", { body: { name: "rotate-stranger-client" } });
-    const sub = await api("POST", "/v1/webhooks", {
+  test('webhook signing secrets can be rotated, and only by their owner', async () => {
+    const owner = await api('POST', '/v1/clients', { body: { name: 'rotate-owner-client' } });
+    const stranger = await api('POST', '/v1/clients', { body: { name: 'rotate-stranger-client' } });
+    const sub = await api('POST', '/v1/webhooks', {
       apiKey: owner.body.api_key,
-      body: { event_pattern: "invoice.paid", target_url: "https://example.com/hook" },
+      body: { event_pattern: 'invoice.paid', target_url: 'https://example.com/hook' },
     });
     assert.strictEqual(sub.status, 201);
 
-    const rotated = await api("POST", `/v1/webhooks/${sub.body.id}/rotate`, { apiKey: owner.body.api_key });
+    const rotated = await api('POST', `/v1/webhooks/${sub.body.id}/rotate`, {
+      apiKey: owner.body.api_key,
+    });
     assert.strictEqual(rotated.status, 200);
-    assert.ok(rotated.body.secret.startsWith("whsec_"));
-    assert.notStrictEqual(rotated.body.secret, sub.body.secret, "rotation must issue a new secret");
+    assert.ok(rotated.body.secret.startsWith('whsec_'));
+    assert.notStrictEqual(rotated.body.secret, sub.body.secret, 'rotation must issue a new secret');
 
-    const stolen = await api("POST", `/v1/webhooks/${sub.body.id}/rotate`, { apiKey: stranger.body.api_key });
+    const stolen = await api('POST', `/v1/webhooks/${sub.body.id}/rotate`, {
+      apiKey: stranger.body.api_key,
+    });
     assert.strictEqual(stolen.status, 404, "a client cannot rotate another client's subscription");
   });
 
-  test("sandbox webhook test returns a timestamped signature", async () => {
-    const client = await api("POST", "/v1/clients", { body: { name: "timestamp-client" } });
-    const res = await api("POST", "/v1/sandbox/webhook-test", {
+  test('sandbox webhook test returns a timestamped signature', async () => {
+    const client = await api('POST', '/v1/clients', { body: { name: 'timestamp-client' } });
+    const res = await api('POST', '/v1/sandbox/webhook-test', {
       apiKey: client.body.api_key,
-      body: { target_url: "https://example.com/hook" },
+      body: { target_url: 'https://example.com/hook' },
     });
     assert.strictEqual(res.status, 200);
     assert.ok(res.body.signature);
-    assert.ok(Number.isInteger(res.body.timestamp), "receivers need a timestamp to enforce replay protection");
-    assert.strictEqual(res.body.status_code, undefined, "must not expose internal reachability");
+    assert.ok(
+      Number.isInteger(res.body.timestamp),
+      'receivers need a timestamp to enforce replay protection',
+    );
+    assert.strictEqual(res.body.status_code, undefined, 'must not expose internal reachability');
   });
 
-  test("list endpoints paginate with limit/offset and expose totals", async () => {
-    const biz = await api("POST", "/v1/businesses", { body: { legal_name: "Pagination Ltd" } });
-    const acc = await api("POST", `/v1/businesses/${biz.body.id}/accounts/connect`, {
-      body: { provider: "sandbox", account_identifier: "PAGE-1", scenario: "success" },
+  test('list endpoints paginate with limit/offset and expose totals', async () => {
+    const biz = await api('POST', '/v1/businesses', { body: { legal_name: 'Pagination Ltd' } });
+    const acc = await api('POST', `/v1/businesses/${biz.body.id}/accounts/connect`, {
+      body: { provider: 'sandbox', account_identifier: 'PAGE-1', scenario: 'success' },
     });
-    await api("POST", `/v1/businesses/${biz.body.id}/accounts/${acc.body.id}/sync`);
+    await api('POST', `/v1/businesses/${biz.body.id}/accounts/${acc.body.id}/sync`);
 
-    const page = await api("GET", `/v1/businesses/${biz.body.id}/transactions?limit=2&offset=1`);
+    const page = await api('GET', `/v1/businesses/${biz.body.id}/transactions?limit=2&offset=1`);
     assert.strictEqual(page.status, 200);
     assert.strictEqual(page.body.length, 2);
-    assert.strictEqual(page.headers.get("x-limit"), "2");
-    assert.strictEqual(page.headers.get("x-offset"), "1");
-    assert.strictEqual(page.headers.get("x-total-count"), "5");
+    assert.strictEqual(page.headers.get('x-limit'), '2');
+    assert.strictEqual(page.headers.get('x-offset'), '1');
+    assert.strictEqual(page.headers.get('x-total-count'), '5');
 
-    const beyond = await api("GET", `/v1/businesses/${biz.body.id}/transactions?limit=500&offset=100`);
+    const beyond = await api(
+      'GET',
+      `/v1/businesses/${biz.body.id}/transactions?limit=500&offset=100`,
+    );
     assert.strictEqual(beyond.body.length, 0);
 
     // Limits are clamped rather than rejected.
-    const clamped = await api("GET", `/v1/businesses/${biz.body.id}/transactions?limit=99999`);
-    assert.strictEqual(clamped.headers.get("x-limit"), "500");
+    const clamped = await api('GET', `/v1/businesses/${biz.body.id}/transactions?limit=99999`);
+    assert.strictEqual(clamped.headers.get('x-limit'), '500');
   });
 
-  test("metrics endpoint is admin-only and Prometheus-formatted", async () => {
-    const anonymous = await api("GET", "/v1/metrics", { admin: false });
+  test('metrics endpoint is admin-only and Prometheus-formatted', async () => {
+    const anonymous = await api('GET', '/v1/metrics', { admin: false });
     assert.strictEqual(anonymous.status, 401);
 
-    const res = await api("GET", "/v1/metrics");
+    const res = await api('GET', '/v1/metrics');
     assert.strictEqual(res.status, 200);
-    assert.ok(res.headers.get("content-type")?.includes("text/plain"));
-    const body = await (await fetch(`${baseUrl}/v1/metrics`, { headers: { "x-admin-token": process.env.AFRISCORE_ADMIN_TOKEN! } })).text();
-    assert.ok(body.includes("afriscore_http_requests_total"));
-    assert.ok(body.includes("afriscore_http_request_duration_ms_count"));
+    assert.ok(res.headers.get('content-type')?.includes('text/plain'));
+    const body = await (
+      await fetch(`${baseUrl}/v1/metrics`, {
+        headers: { 'x-admin-token': process.env.AFRISCORE_ADMIN_TOKEN! },
+      })
+    ).text();
+    assert.ok(body.includes('afriscore_http_requests_total'));
+    assert.ok(body.includes('afriscore_http_request_duration_ms_count'));
   });
 
-  test("full data pipeline: connect, sync, normalize, reconcile", async () => {
-    const client = await api("POST", "/v1/clients", { body: { name: "pipeline-client" } });
-    const biz = await api("POST", "/v1/businesses", {
-      body: { legal_name: "Pipeline Ltd", registration_number: "R5", kra_pin: "P5" },
+  test('full data pipeline: connect, sync, normalize, reconcile', async () => {
+    const client = await api('POST', '/v1/clients', { body: { name: 'pipeline-client' } });
+    const biz = await api('POST', '/v1/businesses', {
+      body: { legal_name: 'Pipeline Ltd', registration_number: 'R5', kra_pin: 'P5' },
     });
-    await api("POST", `/v1/businesses/${biz.body.id}/verify`);
-    await api("POST", "/v1/consents", {
+    await api('POST', `/v1/businesses/${biz.body.id}/verify`);
+    await api('POST', '/v1/consents', {
       body: {
-        subject_type: "business",
+        subject_type: 'business',
         subject_id: biz.body.id,
-        grantee: "pipeline-client",
-        purpose: "analysis",
-        scope: ["all"],
+        grantee: 'pipeline-client',
+        purpose: 'analysis',
+        scope: ['all'],
       },
     });
 
-    const acc = await api("POST", `/v1/businesses/${biz.body.id}/accounts/connect`, {
-      body: { provider: "mpesa", account_identifier: "254700111222" },
+    const acc = await api('POST', `/v1/businesses/${biz.body.id}/accounts/connect`, {
+      body: { provider: 'mpesa', account_identifier: '254700111222' },
     });
     assert.strictEqual(acc.status, 201);
 
-    const sync = await api("POST", `/v1/businesses/${biz.body.id}/accounts/${acc.body.id}/sync`);
-    assert.ok(sync.body.synced > 0, "should ingest transactions");
+    const sync = await api('POST', `/v1/businesses/${biz.body.id}/accounts/${acc.body.id}/sync`);
+    assert.ok(sync.body.synced > 0, 'should ingest transactions');
 
     // Re-syncing must not duplicate.
-    const resync = await api("POST", `/v1/businesses/${biz.body.id}/accounts/${acc.body.id}/sync`);
+    const resync = await api('POST', `/v1/businesses/${biz.body.id}/accounts/${acc.body.id}/sync`);
     assert.strictEqual(resync.body.synced, 0);
-    assert.ok(resync.body.skipped_duplicates > 0, "re-sync must dedupe");
+    assert.ok(resync.body.skipped_duplicates > 0, 're-sync must dedupe');
 
-    const txns = await api("GET", `/v1/businesses/${biz.body.id}/transactions`);
-    const credit = txns.body.find((t: any) => t.type === "credit" && t.status === "completed");
-    assert.ok(credit, "should have a normalized completed credit");
+    const txns = await api('GET', `/v1/businesses/${biz.body.id}/transactions`);
+    const credit = txns.body.find((t: any) => t.type === 'credit' && t.status === 'completed');
+    assert.ok(credit, 'should have a normalized completed credit');
 
     // Invoice 20 KES above the payment -> must still match within tolerance.
-    await api("POST", `/v1/businesses/${biz.body.id}/invoices`, {
-      body: { customer_reference: "Tolerance Customer", amount: Number((credit.amount + 20).toFixed(2)) },
+    await api('POST', `/v1/businesses/${biz.body.id}/invoices`, {
+      body: {
+        customer_reference: 'Tolerance Customer',
+        amount: Number((credit.amount + 20).toFixed(2)),
+      },
     });
 
-    const recon = await api("POST", `/v1/businesses/${biz.body.id}/reconcile`);
+    const recon = await api('POST', `/v1/businesses/${biz.body.id}/reconcile`);
     assert.strictEqual(recon.body.matched.length, 1);
-    assert.strictEqual(recon.body.matched[0].match_type, "tolerance");
+    assert.strictEqual(recon.body.matched[0].match_type, 'tolerance');
 
-    const profile = await api("GET", `/v1/businesses/${biz.body.id}/financial-profile`, {
+    const profile = await api('GET', `/v1/businesses/${biz.body.id}/financial-profile`, {
       apiKey: client.body.api_key,
     });
     assert.strictEqual(profile.status, 200);

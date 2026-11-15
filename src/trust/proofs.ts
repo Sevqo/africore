@@ -51,8 +51,7 @@ export async function makeBatch(a: Access) {
       "SELECT c.id,c.commitment FROM ac3_credentials c LEFT JOIN ac3_batch_items b ON b.credential_id=c.id WHERE c.environment='sandbox' AND c.status='active' AND c.valid_until>? AND b.credential_id IS NULL ORDER BY c.created_at LIMIT 100",
       [now()],
     );
-    if (!candidates.length)
-      fail(409, 'No unbatched eligible sandbox credentials');
+    if (!candidates.length) fail(409, 'No unbatched eligible sandbox credentials');
     const tree = StandardMerkleTree.of(
         candidates.map((c) => [proofDomain, c.commitment]),
         ['bytes32', 'bytes32'],
@@ -73,7 +72,7 @@ export async function makeBatch(a: Access) {
         'sandbox',
         tree.root,
         'queued',
-        seal(JSON.stringify(data),JSON.stringify(['anchor-batch',id])),
+        seal(JSON.stringify(data), JSON.stringify(['anchor-batch', id])),
         now(),
         now(),
         now(),
@@ -83,7 +82,11 @@ export async function makeBatch(a: Access) {
       const c = candidates.find((c) => c.commitment === value[1])!;
       await dbRun(
         'INSERT INTO ac3_batch_items(credential_id,batch_id,proof_sealed) VALUES (?,?,?)',
-        [c.id, id, seal(JSON.stringify(tree.getProof(index)),JSON.stringify(['batch-proof',c.id,id]))],
+        [
+          c.id,
+          id,
+          seal(JSON.stringify(tree.getProof(index)), JSON.stringify(['batch-proof', c.id, id])),
+        ],
       );
     }
     await audit(a.org, a.actor, 'proof.batch_queued', id);
@@ -102,13 +105,9 @@ function config() {
   if (!rpc || !address) return null;
   if (![31337, 11155111].includes(chain))
     fail(503, 'Only local31337 and Sepolia11155111 are allowed');
-  if (chain === 11155111 && !flags().testnet_anchoring)
-    fail(503, 'Testnet anchoring disabled');
+  if (chain === 11155111 && !flags().testnet_anchoring) fail(503, 'Testnet anchoring disabled');
   const url = new URL(rpc);
-  if (
-    chain === 31337 &&
-    !['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname)
-  )
+  if (chain === 31337 && !['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname))
     fail(503, 'Local chain requires loopback RPC');
   return {
     rpc,
@@ -116,9 +115,7 @@ function config() {
     chain,
     confirmations: Math.max(
       1,
-      Number(
-        process.env.AFRICORE_ANCHOR_CONFIRMATIONS || (chain === 31337 ? 1 : 3),
-      ),
+      Number(process.env.AFRICORE_ANCHOR_CONFIRMATIONS || (chain === 31337 ? 1 : 3)),
     ),
   };
 }
@@ -129,8 +126,7 @@ async function connection() {
   request.timeout = 5000;
   const provider = new JsonRpcProvider(request);
   try {
-    if (Number((await provider.getNetwork()).chainId) !== c.chain)
-      throw Error('chain_id_mismatch');
+    if (Number((await provider.getNetwork()).chainId) !== c.chain) throw Error('chain_id_mismatch');
     const code = await provider.getCode(c.address);
     if (code === '0x') throw Error('anchor_contract_missing');
     return {
@@ -160,7 +156,9 @@ export async function runAnchorQueue() {
       for (const row of rows) {
         const attempts = row.attempts + 1,
           data = {
-            ...JSON.parse(unseal(row.data,JSON.stringify(['anchor-batch',row.batch_id||row.id]))),
+            ...JSON.parse(
+              unseal(row.data, JSON.stringify(['anchor-batch', row.batch_id || row.id])),
+            ),
             error: 'anchor_rpc_unavailable',
           };
         await dbRun(
@@ -168,10 +166,8 @@ export async function runAnchorQueue() {
           [
             attempts >= 5 ? 'failed' : 'retrying',
             attempts,
-            seal(JSON.stringify(data),JSON.stringify(['anchor-batch',row.id])),
-            new Date(
-              Date.now() + Math.min(60000, 1000 * 2 ** attempts),
-            ).toISOString(),
+            seal(JSON.stringify(data), JSON.stringify(['anchor-batch', row.id])),
+            new Date(Date.now() + Math.min(60000, 1000 * 2 ** attempts)).toISOString(),
             now(),
             row.id,
           ],
@@ -186,18 +182,15 @@ export async function runAnchorQueue() {
       [now()],
     );
     for (const batch of batches) {
-      let data = JSON.parse(unseal(batch.data,JSON.stringify(['anchor-batch',batch.id])));
+      let data = JSON.parse(unseal(batch.data, JSON.stringify(['anchor-batch', batch.id])));
       try {
         const recorded = await contract.batches(data.batch_ref);
         if (recorded.root !== '0x' + '0'.repeat(64)) {
-          if (recorded.root !== batch.root)
-            throw Error('onchain_root_conflict');
+          if (recorded.root !== batch.root) throw Error('onchain_root_conflict');
           const block = await provider.getBlock(Number(recorded.blockNumber));
           if (!block) throw Error('chain_block_missing');
           const confirmations =
-            (await provider.getBlockNumber()) -
-            Number(recorded.blockNumber) +
-            1;
+            (await provider.getBlockNumber()) - Number(recorded.blockNumber) + 1;
           let receipt = data.transaction_hash
             ? await provider.getTransactionReceipt(data.transaction_hash)
             : null;
@@ -220,18 +213,14 @@ export async function runAnchorQueue() {
               : {}),
             checked_at: now(),
           };
-          const state =
-            confirmations >= c.confirmations ? 'confirmed' : 'submitted';
-          await dbRun(
-            'UPDATE ac3_batches SET state=?,data=?,next_at=?,updated_at=? WHERE id=?',
-            [
-              state,
-              seal(JSON.stringify(data),JSON.stringify(['anchor-batch',batch.id])),
-              new Date(Date.now() + 15000).toISOString(),
-              now(),
-              batch.id,
-            ],
-          );
+          const state = confirmations >= c.confirmations ? 'confirmed' : 'submitted';
+          await dbRun('UPDATE ac3_batches SET state=?,data=?,next_at=?,updated_at=? WHERE id=?', [
+            state,
+            seal(JSON.stringify(data), JSON.stringify(['anchor-batch', batch.id])),
+            new Date(Date.now() + 15000).toISOString(),
+            now(),
+            batch.id,
+          ]);
           if (state === 'confirmed' && batch.state !== 'confirmed') {
             const items = await dbAll(
               'SELECT c.id,c.org_id FROM ac3_batch_items b JOIN ac3_credentials c ON c.id=b.credential_id WHERE b.batch_id=?',
@@ -266,18 +255,19 @@ export async function runAnchorQueue() {
           };
           await dbRun(
             "UPDATE ac3_batches SET state='reorged',data=?,next_at=?,updated_at=? WHERE id=?",
-            [seal(JSON.stringify(data),JSON.stringify(['anchor-batch',batch.id])), now(), now(), batch.id],
+            [
+              seal(JSON.stringify(data), JSON.stringify(['anchor-batch', batch.id])),
+              now(),
+              now(),
+              batch.id,
+            ],
           );
           continue;
         }
         if (data.transaction_hash) {
-          const receipt = await provider.getTransactionReceipt(
-            data.transaction_hash,
-          );
+          const receipt = await provider.getTransactionReceipt(data.transaction_hash);
           if (receipt?.status === 0) throw Error('transaction_reverted');
-          const transaction = await provider.getTransaction(
-            data.transaction_hash,
-          );
+          const transaction = await provider.getTransaction(data.transaction_hash);
           if (transaction) {
             await dbRun('UPDATE ac3_batches SET next_at=? WHERE id=?', [
               new Date(Date.now() + 15000).toISOString(),
@@ -292,12 +282,7 @@ export async function runAnchorQueue() {
         const signer =
           c.chain === 31337
             ? await provider.getSigner()
-            : new NonceManager(
-                new Wallet(
-                  process.env.AFRICORE_ANCHOR_PRIVATE_KEY || '',
-                  provider,
-                ),
-              );
+            : new NonceManager(new Wallet(process.env.AFRICORE_ANCHOR_PRIVATE_KEY || '', provider));
         const tx = await new Contract(c.address, anchorAbi, signer).publish(
           data.batch_ref,
           batch.root,
@@ -314,7 +299,7 @@ export async function runAnchorQueue() {
         await dbRun(
           "UPDATE ac3_batches SET state='submitted',data=?,next_at=?,updated_at=? WHERE id=?",
           [
-            seal(JSON.stringify(data),JSON.stringify(['anchor-batch',batch.id])),
+            seal(JSON.stringify(data), JSON.stringify(['anchor-batch', batch.id])),
             new Date(Date.now() + 1000).toISOString(),
             now(),
             batch.id,
@@ -340,10 +325,8 @@ export async function runAnchorQueue() {
           [
             attempts >= 5 ? 'failed' : 'retrying',
             attempts,
-            seal(JSON.stringify(data),JSON.stringify(['anchor-batch',batch.id])),
-            new Date(
-              Date.now() + Math.min(60000, 1000 * 2 ** attempts),
-            ).toISOString(),
+            seal(JSON.stringify(data), JSON.stringify(['anchor-batch', batch.id])),
+            new Date(Date.now() + Math.min(60000, 1000 * 2 ** attempts)).toISOString(),
             now(),
             batch.id,
           ],
@@ -362,14 +345,21 @@ export async function proofFor(a: Access, credentialId: string) {
     [credentialId, a.org, a.environment],
   );
   if (!row) return { status: 'not_batched' };
-  const data = JSON.parse(unseal(row.data,JSON.stringify(['anchor-batch',row.batch_id||row.id])));
+  const data = JSON.parse(
+    unseal(row.data, JSON.stringify(['anchor-batch', row.batch_id || row.id])),
+  );
   return {
     version: 'africore-merkle-v1',
     status: row.state,
     credential_id: row.id,
     commitment: row.commitment,
-    salt: unseal(row.salt_sealed,JSON.stringify(['credential-salt',a.org,a.environment,row.id])),
-    proof: JSON.parse(unseal(row.proof_sealed,JSON.stringify(['batch-proof',row.id,row.batch_id]))),
+    salt: unseal(
+      row.salt_sealed,
+      JSON.stringify(['credential-salt', a.org, a.environment, row.id]),
+    ),
+    proof: JSON.parse(
+      unseal(row.proof_sealed, JSON.stringify(['batch-proof', row.id, row.batch_id])),
+    ),
     root: row.root,
     batch_id: row.batch_id,
     batch_ref: data.batch_ref,
@@ -387,10 +377,7 @@ export async function proofFor(a: Access, credentialId: string) {
 }
 export async function verifyProof(token: string, proof: any) {
   const calculated = commitmentFor(token, proof.salt);
-  if (
-    calculated !== proof.commitment ||
-    !inclusion(calculated, proof.root, proof.proof)
-  )
+  if (calculated !== proof.commitment || !inclusion(calculated, proof.root, proof.proof))
     return {
       inclusion: false,
       onchain: false,
@@ -406,8 +393,7 @@ export async function verifyProof(token: string, proof: any) {
       reason: 'RPC_unavailable_or_chain_mismatch',
     };
   }
-  if (!conn)
-    return { inclusion: true, onchain: false, reason: 'RPC_not_configured' };
+  if (!conn) return { inclusion: true, onchain: false, reason: 'RPC_not_configured' };
   try {
     const { c, provider, contract } = conn;
     if (
@@ -420,8 +406,7 @@ export async function verifyProof(token: string, proof: any) {
         reason: 'pinned_chain_contract_mismatch',
       };
     const root = await contract.batches(proof.batch_ref),
-      confirmations =
-        (await provider.getBlockNumber()) - Number(root.blockNumber) + 1;
+      confirmations = (await provider.getBlockNumber()) - Number(root.blockNumber) + 1;
     return {
       inclusion: true,
       onchain: root.root === proof.root && confirmations >= c.confirmations,

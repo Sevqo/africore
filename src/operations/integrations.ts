@@ -5,9 +5,20 @@ import { now } from '../platform/crypto';
 import { all, atomic, change, create, get } from './store';
 import { emit } from './events';
 import { notify } from './automation';
-import {requireServices,checkLimits,recordUsage} from '../marketplace/engine';
+import { requireServices, checkLimits, recordUsage } from '../marketplace/engine';
 export const connectorCatalog = [
- {provider:'daraja_sandbox',category:'payments',capabilities:['canonical_payment_evidence_via_pay'],authentication:'existing_pay_configuration',sync_frequency:'authenticated_status_query',direction:'provider_to_canonical_payments',production_available:false,documentation:'/products/pay',limitation:'Uses the Milestone 2 adapter; not a second connector or live collection capability.'},
+  {
+    provider: 'daraja_sandbox',
+    category: 'payments',
+    capabilities: ['canonical_payment_evidence_via_pay'],
+    authentication: 'existing_pay_configuration',
+    sync_frequency: 'authenticated_status_query',
+    direction: 'provider_to_canonical_payments',
+    production_available: false,
+    documentation: '/products/pay',
+    limitation:
+      'Uses the Milestone 2 adapter; not a second connector or live collection capability.',
+  },
   {
     provider: 'sandbox_accounting',
     category: 'accounting',
@@ -77,19 +88,12 @@ export const connectorCatalog = [
 export async function connect(a: Access, input: unknown) {
   const d = z
     .object({
-      provider: z.enum([
-        'sandbox_accounting',
-        'sandbox_courier',
-        'sandbox_store',
-      ]),
-      scenario: z
-        .enum(['success', 'failure', 'transient_failure'])
-        .default('success'),
+      provider: z.enum(['sandbox_accounting', 'sandbox_courier', 'sandbox_store']),
+      scenario: z.enum(['success', 'failure', 'transient_failure']).default('success'),
     })
     .strict()
     .parse(input);
-  if (a.environment !== 'sandbox')
-    fail(503, 'No live connector adapter is enabled');
+  if (a.environment !== 'sandbox') fail(503, 'No live connector adapter is enabled');
   return atomic(a, async () => {
     if (
       (await all(a, 'connectors')).some(
@@ -113,13 +117,13 @@ export async function connect(a: Access, input: unknown) {
 }
 export async function sync(a: Access, id: string, at = new Date()) {
   return atomic(a, async () => {
-    await requireServices(a,['connect']);
+    await requireServices(a, ['connect']);
     let c = await get(a, id, 'connectors');
     if (a.role === 'system') {
-      const member = await dbGet(
-        'SELECT role FROM ac_memberships WHERE org_id=? AND user_id=?',
-        [a.org, c.created_by],
-      );
+      const member = await dbGet('SELECT role FROM ac_memberships WHERE org_id=? AND user_id=?', [
+        a.org,
+        c.created_by,
+      ]);
       if (!member || !['owner', 'admin'].includes(member.role)) {
         return change(a, c, {
           status: 'failed',
@@ -141,17 +145,14 @@ export async function sync(a: Access, id: string, at = new Date()) {
     if (Number(recent.total) >= 12) fail(429, 'Connector sync limit reached');
     const attempt = c.attempts + 1,
       shouldFail =
-        c.scenario === 'failure' ||
-        (c.scenario === 'transient_failure' && attempt === 1);
+        c.scenario === 'failure' || (c.scenario === 'transient_failure' && attempt === 1);
     if (shouldFail) {
       c = await change(a, c, {
         status: attempt >= 3 ? 'failed' : 'retrying',
         attempts: attempt,
         last_error: 'sandbox_provider_unavailable',
         next_retry_at:
-          attempt >= 3
-            ? null
-            : new Date(at.getTime() + 1000 * 2 ** attempt).toISOString(),
+          attempt >= 3 ? null : new Date(at.getTime() + 1000 * 2 ** attempt).toISOString(),
       });
       await emit(a, 'integration.sync_failed', {
         id,
@@ -170,8 +171,11 @@ export async function sync(a: Access, id: string, at = new Date()) {
     }
     // Deterministic reference data is isolated, never represented as a live balance or revenue.
     const batch = 'sandbox-batch-' + id;
-    const alreadyCounted=await dbGet('SELECT id FROM ac_usage_events WHERE org_id=? AND environment=? AND service_id=? AND idempotency_key=?',[a.org,a.environment,'connect','connector:'+batch]);
-    if(!alreadyCounted)await checkLimits(a,'connect',1);
+    const alreadyCounted = await dbGet(
+      'SELECT id FROM ac_usage_events WHERE org_id=? AND environment=? AND service_id=? AND idempotency_key=?',
+      [a.org, a.environment, 'connect', 'connector:' + batch],
+    );
+    if (!alreadyCounted) await checkLimits(a, 'connect', 1);
     const sample = {
       schema_version: '1.0',
       external_id: batch,
@@ -185,8 +189,7 @@ export async function sync(a: Access, id: string, at = new Date()) {
                 kind: 'expense',
                 amount_minor: 125000,
                 currency: 'KES',
-                description:
-                  'Synthetic accounting expense; import explicitly to use in reporting',
+                description: 'Synthetic accounting expense; import explicitly to use in reporting',
               },
             ]
           : c.provider === 'sandbox_courier'
@@ -220,7 +223,7 @@ export async function sync(a: Access, id: string, at = new Date()) {
       { id, provider: c.provider, batch_id: batch },
       { key: 'connector-batch:' + id + ':' + batch },
     );
-    await recordUsage(a,'connect','connector:'+batch,1,'connector_batch_completed');
+    await recordUsage(a, 'connect', 'connector:' + batch, 1, 'connector_batch_completed');
     return c;
   });
 }
@@ -236,8 +239,7 @@ export async function connectorAction(a: Access, id: string, input: unknown) {
     const c = await get(a, id, 'connectors');
     const result = await change(a, c, {
       status: d.action === 'disconnect' ? 'disconnected' : 'configured',
-      authorization_state:
-        d.action === 'disconnect' ? 'revoked' : 'sandbox_simulated',
+      authorization_state: d.action === 'disconnect' ? 'revoked' : 'sandbox_simulated',
       attempts: 0,
       next_retry_at: null,
       last_error: null,
@@ -249,10 +251,7 @@ export async function connectorAction(a: Access, id: string, input: unknown) {
 }
 export async function riskSignals(a: Access) {
   const [events, shipments, disputes, reviews] = await Promise.all([
-    dbAll('SELECT * FROM ac_events WHERE org_id=? AND environment=?', [
-      a.org,
-      a.environment,
-    ]),
+    dbAll('SELECT * FROM ac_events WHERE org_id=? AND environment=?', [a.org, a.environment]),
     all(a, 'shipments'),
     all(a, 'disputes'),
     all(a, 'risk_reviews'),
@@ -284,8 +283,7 @@ export async function riskSignals(a: Access) {
       rule: 'conflicting_delivery_claims',
       severity: 'review',
       evidence_ids: conflicting.map((s) => s.id),
-      explanation:
-        'Seller-reported delivery and an unresolved non-delivery complaint coexist.',
+      explanation: 'Seller-reported delivery and an unresolved non-delivery complaint coexist.',
     });
   const exceptions = await dbAll(
     'SELECT id FROM ac_exceptions WHERE org_id=? AND environment=? AND status=?',
@@ -297,8 +295,7 @@ export async function riskSignals(a: Access) {
       rule: 'multiple_reconciliation_exceptions',
       severity: 'review',
       evidence_ids: exceptions.map((e) => e.id),
-      explanation:
-        'Several unmatched or mismatched payment records require investigation.',
+      explanation: 'Several unmatched or mismatched payment records require investigation.',
     });
   return {
     signals: signals.map((s) => ({

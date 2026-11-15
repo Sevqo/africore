@@ -25,9 +25,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS ac3_single_passport ON ac3_objects(org_id,envi
         'ac3_batches',
         'ac3_batch_items',
       ])
-        await dbExec(
-          `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY; REVOKE ALL ON ${t} FROM PUBLIC;`,
-        );
+        await dbExec(`ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY; REVOKE ALL ON ${t} FROM PUBLIC;`);
     await dbRun(
       'INSERT INTO platform_migrations(version,applied_at) VALUES (?,?) ON CONFLICT(version) DO NOTHING',
       ['003-stage3', new Date().toISOString()],

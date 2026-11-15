@@ -28,17 +28,15 @@ export function EducationalFlow() {
   return (
     <section className="educational-story">
       <div className="section-copy">
-        <span className="eyebrow">
-          UNDERSTAND THE WORKFLOW · SANDBOX EXAMPLE
-        </span>
+        <span className="eyebrow">UNDERSTAND THE WORKFLOW · SANDBOX EXAMPLE</span>
         <h2>
           Trust is a sequence.
           <br />
           Not a single checkmark.
         </h2>
         <p>
-          See how agreement, payment evidence, delivery and a reviewed partner
-          decision fit together.
+          See how agreement, payment evidence, delivery and a reviewed partner decision fit
+          together.
         </p>
         <div
           className="story-steps"
@@ -88,8 +86,7 @@ export function EducationalFlow() {
         <h3>{steps[step].title}</h3>
         <p>{steps[step].text}</p>
         <small>
-          Conceptual illustration · No live transaction or unconditional
-          protection promise.
+          Conceptual illustration · No live transaction or unconditional protection promise.
         </small>
       </div>
     </section>

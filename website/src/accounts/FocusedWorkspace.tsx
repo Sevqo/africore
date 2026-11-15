@@ -1,113 +1,182 @@
-import {NotificationCentre} from '../apps/NotificationCentre';
-import {NotificationBell} from '../apps/NotificationBell';
-import {WorkspaceAccountMenu} from '../apps/WorkspaceAccountMenu';
-import {AppsWorkspace} from '../apps/AppsWorkspace';
-import {ProductCatalog} from '../apps/ProductCatalog';
-import {DataPlatformView} from '../operations/DataPlatformView';
-import {AssistantView} from '../operations/AssistantView';
-import {CustomerTools} from '../finance/CustomerTools';
-import {FinancialOverview} from '../finance/FinancialOverview';
-import {PaymentCentre} from '../finance/PaymentCentre';
-import {RecordFinanceDetails} from '../finance/RecordFinanceDetails';
-import {MoneyTools} from '../marketplace/MoneyTools';
+import { NotificationCentre } from '../apps/NotificationCentre';
+import { NotificationBell } from '../apps/NotificationBell';
+import { WorkspaceAccountMenu } from '../apps/WorkspaceAccountMenu';
+import { AppsWorkspace } from '../apps/AppsWorkspace';
+import { ProductCatalog } from '../apps/ProductCatalog';
+import { DataPlatformView } from '../operations/DataPlatformView';
+import { AssistantView } from '../operations/AssistantView';
+import { CustomerTools } from '../finance/CustomerTools';
+import { FinancialOverview } from '../finance/FinancialOverview';
+import { PaymentCentre } from '../finance/PaymentCentre';
+import { RecordFinanceDetails } from '../finance/RecordFinanceDetails';
+import { MoneyTools } from '../marketplace/MoneyTools';
 import { DateRange } from '../components/DateRange';
 import { InteractiveChart } from '../charts/InteractiveChart';
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import { api } from "../lib/api-client";
-import { Logo } from "../components/Logo";
-import { DataTable } from "../components/DataTable";
-import { managedSignOut } from "./auth";
-import { money, amount, today, Field, Alert, Currency } from "./AccountUI";
-import { DeveloperPanels } from "./DeveloperPanels";
-import {Overlay} from '../components/Overlay';
-import {Icon,type IconName} from '../components/Icon';
-import {useMarketplace,Services,ServiceGate,marketTabs,visibleServiceTab,canReadServiceTab} from '../marketplace/Services';
-import {personalTabs,developerTabs} from '../workspace-navigation';
-export function FocusedWorkspace({
-  workspace: w,
-  account,
-}: {
-  workspace: any;
-  account: any;
-}) {
-  const personal = w.kind === "personal";
-  const [selectedInvoice,setSelectedInvoice]=useState<any>(null);
-  const [navigationOpen,setNavigationOpen]=useState(false);
-  const [sidebarCollapsed,setSidebarCollapsed]=useState(()=>{try{return localStorage.getItem('africore-focused-sidebar-collapsed')==='true';}catch{return false;}});
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { api } from '../lib/api-client';
+import { Logo } from '../components/Logo';
+import { DataTable } from '../components/DataTable';
+import { managedSignOut } from './auth';
+import { money, amount, today, Field, Alert, Currency } from './AccountUI';
+import { DeveloperPanels } from './DeveloperPanels';
+import { Overlay } from '../components/Overlay';
+import { Icon, type IconName } from '../components/Icon';
+import {
+  useMarketplace,
+  Services,
+  ServiceGate,
+  marketTabs,
+  visibleServiceTab,
+  canReadServiceTab,
+} from '../marketplace/Services';
+import { personalTabs, developerTabs } from '../workspace-navigation';
+export function FocusedWorkspace({ workspace: w, account }: { workspace: any; account: any }) {
+  const personal = w.kind === 'personal';
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [navigationOpen, setNavigationOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('africore-focused-sidebar-collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const items = personal ? personalTabs : developerTabs;
   const [tab, setTab] = useState(
     items.includes(decodeURIComponent(location.hash.slice(1)))
       ? decodeURIComponent(location.hash.slice(1))
-      : "Overview",
+      : 'Overview',
   );
-  const [environment, setEnvironment] = useState("sandbox"),
-    [currency, setCurrency] = useState(w.currency||account.profile?.currency || "KES"),
-    [from, setFrom] = useState(""),
-    [to, setTo] = useState("");
-  useEffect(()=>{history.replaceState(null,'',location.pathname+location.search+'#'+encodeURIComponent(tab));},[tab]);
-  const market=useMarketplace(w.id,environment,w.kind,account?.service_catalog);
-  const visibleItems=[...new Set(items)].filter(t=>visibleServiceTab(market,t));
-  const primaryItems=[...(personal?[{tab:'Apps',label:'Apps',icon:'grid'}]:[]),{tab:'Overview',label:'Home',icon:'home'},{tab:'My Services',label:'Services',icon:'network'},{tab:'Notifications',label:'Notifications',icon:'bell'}] as const;
-  const excluded=new Set([...primaryItems.map(item=>item.tab),'Explore Services','Usage & Billing','Settings','Support']);
-  const toolItems=visibleItems.filter(item=>!excluded.has(item));
-  const adminItems=['Usage & Billing','Settings',...(!personal?['Support']:[])].filter(item=>visibleItems.includes(item));
+  const [environment, setEnvironment] = useState('sandbox'),
+    [currency, setCurrency] = useState(w.currency || account.profile?.currency || 'KES'),
+    [from, setFrom] = useState(''),
+    [to, setTo] = useState('');
+  useEffect(() => {
+    history.replaceState(
+      null,
+      '',
+      location.pathname + location.search + '#' + encodeURIComponent(tab),
+    );
+  }, [tab]);
+  const market = useMarketplace(w.id, environment, w.kind, account?.service_catalog);
+  const visibleItems = [...new Set(items)].filter((t) => visibleServiceTab(market, t));
+  const primaryItems = [
+    ...(personal ? [{ tab: 'Apps', label: 'Apps', icon: 'grid' }] : []),
+    { tab: 'Overview', label: 'Home', icon: 'home' },
+    { tab: 'My Services', label: 'Services', icon: 'network' },
+    { tab: 'Notifications', label: 'Notifications', icon: 'bell' },
+  ] as const;
+  const excluded = new Set([
+    ...primaryItems.map((item) => item.tab),
+    'Explore Services',
+    'Usage & Billing',
+    'Settings',
+    'Support',
+  ]);
+  const toolItems = visibleItems.filter((item) => !excluded.has(item));
+  const adminItems = ['Usage & Billing', 'Settings', ...(!personal ? ['Support'] : [])].filter(
+    (item) => visibleItems.includes(item),
+  );
   const [data, setData] = useState<any>({}),
-    [error, setError] = useState(""),
+    [error, setError] = useState(''),
     [busy, setBusy] = useState(false),
     [revision, setRevision] = useState(0),
-    [key, setKey] = useState(""),
-    [result, setResult] = useState("");
-  const creationKeys=useRef(new Map<string,string>());
+    [key, setKey] = useState(''),
+    [result, setResult] = useState('');
+  const creationKeys = useRef(new Map<string, string>());
   const generation = useRef(0),
-    base = "/api/v1/organizations/" + w.id;
-  const call = (suffix:string,method='GET',body?:unknown,headers?:Record<string,string>)=>{
-    const intent=base+'\0'+environment+'\0'+suffix+'\0'+JSON.stringify(body),idempotent=method==='POST'&&(/^\/records\//.test(suffix)||suffix==='/expenses');
-    if(idempotent&&!creationKeys.current.has(intent))creationKeys.current.set(intent,crypto.randomUUID());
-    return api(base+suffix,method,body,environment,idempotent?{'Idempotency-Key':creationKeys.current.get(intent)!,...headers}:headers).then(result=>{if(idempotent)creationKeys.current.delete(intent);return result;});
+    base = '/api/v1/organizations/' + w.id;
+  const call = (
+    suffix: string,
+    method = 'GET',
+    body?: unknown,
+    headers?: Record<string, string>,
+  ) => {
+    const intent = base + '\0' + environment + '\0' + suffix + '\0' + JSON.stringify(body),
+      idempotent = method === 'POST' && (/^\/records\//.test(suffix) || suffix === '/expenses');
+    if (idempotent && !creationKeys.current.has(intent))
+      creationKeys.current.set(intent, crypto.randomUUID());
+    return api(
+      base + suffix,
+      method,
+      body,
+      environment,
+      idempotent ? { 'Idempotency-Key': creationKeys.current.get(intent)!, ...headers } : headers,
+    ).then((result) => {
+      if (idempotent) creationKeys.current.delete(intent);
+      return result;
+    });
   };
   useEffect(() => {
     const change = () => {
       const t = decodeURIComponent(location.hash.slice(1));
       if (items.includes(t)) setTab(t);
     };
-    window.addEventListener("hashchange", change);
-    return () => window.removeEventListener("hashchange", change);
+    window.addEventListener('hashchange', change);
+    return () => window.removeEventListener('hashchange', change);
   }, [personal]);
   useEffect(() => {
     setSelectedInvoice(null);
-    setKey("");
-    setResult("");
-  }, [w.id, environment,tab]);
+    setKey('');
+    setResult('');
+  }, [w.id, environment, tab]);
   useEffect(() => {
     const version = ++generation.current;
     setBusy(true);
-    setError("");
+    setError('');
     setData({});
-    if(['Apps','Products','Notifications'].includes(tab)||marketTabs.includes(tab)||!canReadServiceTab(market,tab)){setBusy(false);return;}
-    const read=(needed:boolean,path:string)=>needed?call(path):Promise.resolve({data:[]});
-    const has=(id:string)=>market.catalog?.services.some((s:any)=>s.id===id&&s.status==='active');
+    if (
+      ['Apps', 'Products', 'Notifications'].includes(tab) ||
+      marketTabs.includes(tab) ||
+      !canReadServiceTab(market, tab)
+    ) {
+      setBusy(false);
+      return;
+    }
+    const read = (needed: boolean, path: string) =>
+      needed ? call(path) : Promise.resolve({ data: [] });
+    const has = (id: string) =>
+      market.catalog?.services.some((s: any) => s.id === id && s.status === 'active');
     const requests = personal
       ? [
-          read(['Overview','Cash Flow','Reports'].includes(tab),
-            "/personal-summary?" +
+          read(
+            ['Overview', 'Cash Flow', 'Reports'].includes(tab),
+            '/personal-summary?' +
               new URLSearchParams({
                 currency,
                 ...(from ? { from } : {}),
                 ...(to ? { to } : {}),
               }),
           ),
-          read(tab==='Income'||tab==='Overview'&&has('income'),"/personal-income"),
-          read(tab==='Expenses',"/expenses?limit=100"),
-          read(['Clients','Invoices'].includes(tab),"/records/customers?limit=100"),
-          read(tab==='Invoices',"/records/invoices?limit=100"),
-          read(tab==='Payment Records',"/records/transactions?limit=100"),
+          read(tab === 'Income' || (tab === 'Overview' && has('income')), '/personal-income'),
+          read(tab === 'Expenses', '/expenses?limit=100'),
+          read(['Clients', 'Invoices'].includes(tab), '/records/customers?limit=100'),
+          read(tab === 'Invoices', '/records/invoices?limit=100'),
+          read(tab === 'Payment Records', '/records/transactions?limit=100'),
         ]
       : [
-          read(has('developer_api')&&['Overview','Usage & Limits','My Applications','API Keys','API Explorer'].includes(tab),"/records/applications?limit=100"),
-          read(has('developer_api')&&['Overview','Usage & Limits','API Keys','API Explorer'].includes(tab),"/credentials"),
-          read(has('webhooks')&&['Overview','Usage & Limits','Webhooks'].includes(tab),"/webhooks"),
-          read(['Request Logs'].includes(tab),"/audit"),
-          read(['Overview','Usage & Limits','Request Logs'].includes(tab),"/request-logs"),
+          read(
+            has('developer_api') &&
+              [
+                'Overview',
+                'Usage & Limits',
+                'My Applications',
+                'API Keys',
+                'API Explorer',
+              ].includes(tab),
+            '/records/applications?limit=100',
+          ),
+          read(
+            has('developer_api') &&
+              ['Overview', 'Usage & Limits', 'API Keys', 'API Explorer'].includes(tab),
+            '/credentials',
+          ),
+          read(
+            has('webhooks') && ['Overview', 'Usage & Limits', 'Webhooks'].includes(tab),
+            '/webhooks',
+          ),
+          read(['Request Logs'].includes(tab), '/audit'),
+          read(['Overview', 'Usage & Limits', 'Request Logs'].includes(tab), '/request-logs'),
         ];
     Promise.all(requests)
       .then((values) => {
@@ -140,11 +209,11 @@ export function FocusedWorkspace({
     return () => {
       generation.current++;
     };
-  }, [w.id, environment, currency, from, to, revision,tab,market.catalog]);
+  }, [w.id, environment, currency, from, to, revision, tab, market.catalog]);
   async function mutate(fn: () => Promise<any>) {
     const version = generation.current;
     setBusy(true);
-    setError("");
+    setError('');
     try {
       const r = await fn();
       if (version === generation.current) {
@@ -178,16 +247,16 @@ export function FocusedWorkspace({
                 <th key={c}>
                   {(
                     {
-                      amount_minor: "Amount",
-                      total_minor: "Total",
-                      occurred_on: "Date",
-                      processing_status: "Status",
-                      type: "Type",
-                      description: "Description",
-                      name: "Name",
-                      email: "Email",
-                      phone: "Phone",
-                      currency: "Currency",
+                      amount_minor: 'Amount',
+                      total_minor: 'Total',
+                      occurred_on: 'Date',
+                      processing_status: 'Status',
+                      type: 'Type',
+                      description: 'Description',
+                      name: 'Name',
+                      email: 'Email',
+                      phone: 'Phone',
+                      currency: 'Currency',
                     } as Record<string, string>
                   )[c] || c}
                 </th>
@@ -199,9 +268,7 @@ export function FocusedWorkspace({
               <tr key={r.id}>
                 {columns.map((c) => (
                   <td key={c}>
-                    {c.endsWith("_minor")
-                      ? money(r[c], r.currency)
-                      : String(r[c] ?? "—")}
+                    {c.endsWith('_minor') ? money(r[c], r.currency) : String(r[c] ?? '—')}
                   </td>
                 ))}
               </tr>
@@ -210,26 +277,213 @@ export function FocusedWorkspace({
         </DataTable>
       ) : (
         <p className="empty">
-          {tab==='Overview'?'No income records are available in this view. Open Income to review access and add a record.':<>No {tab.toLowerCase()} records yet. Add a record using the form above.</>}
+          {tab === 'Overview' ? (
+            'No income records are available in this view. Open Income to review access and add a record.'
+          ) : (
+            <>No {tab.toLowerCase()} records yet. Add a record using the form above.</>
+          )}
         </p>
       );
-  const notificationNavigate=(target:string)=>setTab(personal?(({Customers:'Clients',Payments:'Payment Records',Reconciliation:'Payment Records',Approvals:'Notifications',Automations:'Notifications'} as Record<string,string>)[target]||target):(items.includes(target)?target:'Notifications'));
-  const navigation=<>
-        <div className="sidebar-brand"><Logo/><button className="icon-button sidebar-collapse-toggle" aria-label={sidebarCollapsed?'Expand navigation':'Collapse navigation'} aria-pressed={sidebarCollapsed} onClick={()=>setSidebarCollapsed(value=>{try{localStorage.setItem('africore-focused-sidebar-collapsed',String(!value));}catch{}return !value;})}><Icon name="menu"/></button></div>
-        <p>{personal ? "PERSONAL WORKSPACE" : "DEVELOPER CONSOLE"}</p>
-        <nav aria-label={personal?'Personal navigation':'Developer navigation'} className="focused-primary-nav">{primaryItems.filter(item=>visibleItems.includes(item.tab)).map(item=><a key={item.tab} href={'#'+encodeURIComponent(item.tab)} aria-current={tab===item.tab?'page':undefined} onClick={()=>{setTab(item.tab);setNavigationOpen(false);}}><Icon name={item.icon as IconName}/><span>{item.label}</span></a>)}</nav>
-        {toolItems.length>0&&<details className="focused-nav-group" open={toolItems.includes(tab)||undefined}><summary><Icon name={personal?'users':'code'}/><span>{personal?'Personal tools':'Developer tools'}</span><Icon name="down"/></summary><nav aria-label={personal?'Personal tools':'Developer tools'}>{toolItems.map(t=><a key={t} title={t} href={t==='Learn'?'/learn':'#'+encodeURIComponent(t)} aria-current={tab===t?'page':undefined} onClick={()=>{setTab(t);setNavigationOpen(false);}}><Icon name={/report|cash|income|expense/i.test(t)?'chart':/customer|client|people/i.test(t)?'users':/invoice|payment/i.test(t)?'payment':/api|webhook|developer|request|sandbox/i.test(t)?'code':'document'}/><span>{t}</span></a>)}</nav></details>}
-        {adminItems.length>0&&<details className="focused-nav-group"><summary><Icon name="settings"/><span>Workspace administration</span><Icon name="down"/></summary><nav aria-label="Workspace administration">{adminItems.map(t=><a key={t} title={t} href={t==='Settings'?'/app/account':'#'+encodeURIComponent(t)} aria-current={tab===t?'page':undefined} onClick={()=>{setTab(t);setNavigationOpen(false);}}><Icon name={t==='Usage & Billing'?'chart':t==='Settings'?'settings':'document'}/><span>{t==='Settings'?'Account & security':t}</span></a>)}</nav></details>}
-        <a href="/app/workspaces">Switch or add workspace</a>
-        <button onClick={async()=>{try{await managedSignOut();location.href='/login';}catch(e){setError((e as Error).message);}}}>Sign out</button>
-      </>;
+  const notificationNavigate = (target: string) =>
+    setTab(
+      personal
+        ? (
+            {
+              Customers: 'Clients',
+              Payments: 'Payment Records',
+              Reconciliation: 'Payment Records',
+              Approvals: 'Notifications',
+              Automations: 'Notifications',
+            } as Record<string, string>
+          )[target] || target
+        : items.includes(target)
+          ? target
+          : 'Notifications',
+    );
+  const navigation = (
+    <>
+      <div className="sidebar-brand">
+        <Logo />
+        <button
+          className="icon-button sidebar-collapse-toggle"
+          aria-label={sidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
+          aria-pressed={sidebarCollapsed}
+          onClick={() =>
+            setSidebarCollapsed((value) => {
+              try {
+                localStorage.setItem('africore-focused-sidebar-collapsed', String(!value));
+              } catch {}
+              return !value;
+            })
+          }
+        >
+          <Icon name="menu" />
+        </button>
+      </div>
+      <p>{personal ? 'PERSONAL WORKSPACE' : 'DEVELOPER CONSOLE'}</p>
+      <nav
+        aria-label={personal ? 'Personal navigation' : 'Developer navigation'}
+        className="focused-primary-nav"
+      >
+        {primaryItems
+          .filter((item) => visibleItems.includes(item.tab))
+          .map((item) => (
+            <a
+              key={item.tab}
+              href={'#' + encodeURIComponent(item.tab)}
+              aria-current={tab === item.tab ? 'page' : undefined}
+              onClick={() => {
+                setTab(item.tab);
+                setNavigationOpen(false);
+              }}
+            >
+              <Icon name={item.icon as IconName} />
+              <span>{item.label}</span>
+            </a>
+          ))}
+      </nav>
+      {toolItems.length > 0 && (
+        <details className="focused-nav-group" open={toolItems.includes(tab) || undefined}>
+          <summary>
+            <Icon name={personal ? 'users' : 'code'} />
+            <span>{personal ? 'Personal tools' : 'Developer tools'}</span>
+            <Icon name="down" />
+          </summary>
+          <nav aria-label={personal ? 'Personal tools' : 'Developer tools'}>
+            {toolItems.map((t) => (
+              <a
+                key={t}
+                title={t}
+                href={t === 'Learn' ? '/learn' : '#' + encodeURIComponent(t)}
+                aria-current={tab === t ? 'page' : undefined}
+                onClick={() => {
+                  setTab(t);
+                  setNavigationOpen(false);
+                }}
+              >
+                <Icon
+                  name={
+                    /report|cash|income|expense/i.test(t)
+                      ? 'chart'
+                      : /customer|client|people/i.test(t)
+                        ? 'users'
+                        : /invoice|payment/i.test(t)
+                          ? 'payment'
+                          : /api|webhook|developer|request|sandbox/i.test(t)
+                            ? 'code'
+                            : 'document'
+                  }
+                />
+                <span>{t}</span>
+              </a>
+            ))}
+          </nav>
+        </details>
+      )}
+      {adminItems.length > 0 && (
+        <details className="focused-nav-group">
+          <summary>
+            <Icon name="settings" />
+            <span>Workspace administration</span>
+            <Icon name="down" />
+          </summary>
+          <nav aria-label="Workspace administration">
+            {adminItems.map((t) => (
+              <a
+                key={t}
+                title={t}
+                href={t === 'Settings' ? '/app/account' : '#' + encodeURIComponent(t)}
+                aria-current={tab === t ? 'page' : undefined}
+                onClick={() => {
+                  setTab(t);
+                  setNavigationOpen(false);
+                }}
+              >
+                <Icon
+                  name={
+                    t === 'Usage & Billing' ? 'chart' : t === 'Settings' ? 'settings' : 'document'
+                  }
+                />
+                <span>{t === 'Settings' ? 'Account & security' : t}</span>
+              </a>
+            ))}
+          </nav>
+        </details>
+      )}
+      <a href="/app/workspaces">Switch or add workspace</a>
+      <button
+        onClick={async () => {
+          try {
+            await managedSignOut();
+            location.href = '/login';
+          } catch (e) {
+            setError((e as Error).message);
+          }
+        }}
+      >
+        Sign out
+      </button>
+    </>
+  );
   return (
-    <div className="focused-account" data-platform-density data-workspace-kind={personal?'personal':'developer'}>
-      <a className="workspace-skip" href="#focused-workspace-main" onClick={event=>{event.preventDefault();document.getElementById('focused-workspace-main')?.focus();}}>Skip to workspace content</a>
-      <aside className={'account-nav'+(sidebarCollapsed?' is-collapsed':'')}>{navigation}</aside>
+    <div
+      className="focused-account"
+      data-platform-density
+      data-workspace-kind={personal ? 'personal' : 'developer'}
+    >
+      <a
+        className="workspace-skip"
+        href="#focused-workspace-main"
+        onClick={(event) => {
+          event.preventDefault();
+          document.getElementById('focused-workspace-main')?.focus();
+        }}
+      >
+        Skip to workspace content
+      </a>
+      <aside className={'account-nav' + (sidebarCollapsed ? ' is-collapsed' : '')}>
+        {navigation}
+      </aside>
       <main className="account-content" id="focused-workspace-main" tabIndex={-1}>
-        <div className="focused-mobile-header"><button className="quiet-button" aria-label={'Open '+(personal?'Personal':'Developer')+' navigation'} aria-expanded={navigationOpen} onClick={()=>setNavigationOpen(true)}><Icon name="menu"/></button><span>{w.name}</span><div className="focused-user-actions"><NotificationBell kind={w.kind} api={call} scope={w.id+'\0'+environment} navigate={notificationNavigate}/><WorkspaceAccountMenu name={account.profile?.display_name} email={account.user?.email} role={w.role}/></div></div>
-        {navigationOpen&&<Overlay onClose={()=>setNavigationOpen(false)}><aside role="dialog" aria-modal="true" aria-label="Workspace navigation" className="account-nav focused-drawer"><button onClick={()=>setNavigationOpen(false)}>Close menu <Icon name="close"/></button>{navigation}</aside></Overlay>}
+        <div className="focused-mobile-header">
+          <button
+            className="quiet-button"
+            aria-label={'Open ' + (personal ? 'Personal' : 'Developer') + ' navigation'}
+            aria-expanded={navigationOpen}
+            onClick={() => setNavigationOpen(true)}
+          >
+            <Icon name="menu" />
+          </button>
+          <span>{w.name}</span>
+          <div className="focused-user-actions">
+            <NotificationBell
+              kind={w.kind}
+              api={call}
+              scope={w.id + '\0' + environment}
+              navigate={notificationNavigate}
+            />
+            <WorkspaceAccountMenu
+              name={account.profile?.display_name}
+              email={account.user?.email}
+              role={w.role}
+            />
+          </div>
+        </div>
+        {navigationOpen && (
+          <Overlay onClose={() => setNavigationOpen(false)}>
+            <aside
+              role="dialog"
+              aria-modal="true"
+              aria-label="Workspace navigation"
+              className="account-nav focused-drawer"
+            >
+              <button onClick={() => setNavigationOpen(false)}>
+                Close menu <Icon name="close" />
+              </button>
+              {navigation}
+            </aside>
+          </Overlay>
+        )}
         <header className="account-top">
           <div>
             <span className="eyebrow">
@@ -238,321 +492,416 @@ export function FocusedWorkspace({
             <h1>{w.name}</h1>
           </div>
           <div>
-            {!personal&&<label>
-              Environment{" "}
-              <select
-                value={environment}
-                onChange={(e) => setEnvironment(e.target.value)}
-              >
-                <option value="sandbox">Sandbox</option>
-                {selectedInvoice&&<Overlay onClose={()=>setSelectedInvoice(null)}><section className="service-detail print-invoice" role="dialog" aria-modal="true" aria-label="Invoice financial details"><h2>{selectedInvoice.reference}</h2><RecordFinanceDetails row={{...selectedInvoice,kind:'invoices'}} printDocument api={call} writable={['owner','admin','finance'].includes(w.role)} onChanged={()=>setRevision(v=>v+1)}/><button onClick={()=>setSelectedInvoice(null)}>Close</button></section></Overlay>}
-        {personal && (
-                  <option value="production">Personal records</option>
-                )}
-              </select>
-            </label>}
+            {!personal && (
+              <label>
+                Environment{' '}
+                <select value={environment} onChange={(e) => setEnvironment(e.target.value)}>
+                  <option value="sandbox">Sandbox</option>
+                  {selectedInvoice && (
+                    <Overlay onClose={() => setSelectedInvoice(null)}>
+                      <section
+                        className="service-detail print-invoice"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="Invoice financial details"
+                      >
+                        <h2>{selectedInvoice.reference}</h2>
+                        <RecordFinanceDetails
+                          row={{ ...selectedInvoice, kind: 'invoices' }}
+                          printDocument
+                          api={call}
+                          writable={['owner', 'admin', 'finance'].includes(w.role)}
+                          onChanged={() => setRevision((v) => v + 1)}
+                        />
+                        <button onClick={() => setSelectedInvoice(null)}>Close</button>
+                      </section>
+                    </Overlay>
+                  )}
+                  {personal && <option value="production">Personal records</option>}
+                </select>
+              </label>
+            )}
             <a href="/app/workspaces">All workspaces</a>
           </div>
         </header>
         <p className="environment-note">
-          {personal ? "Personal records · payment simulations stay separate from manual entries." : environment === "sandbox"
-            ? "Sandbox · test records only. No live funds move."
-            : "Recorded personal activity. Manual entries are not provider confirmation."}
+          {personal
+            ? 'Personal records · payment simulations stay separate from manual entries.'
+            : environment === 'sandbox'
+              ? 'Sandbox · test records only. No live funds move.'
+              : 'Recorded personal activity. Manual entries are not provider confirmation.'}
         </p>
         <h2>{tab}</h2>
         <Alert error={error} />
         {busy && <p role="status">Updating workspace…</p>}
-        {tab==='Notifications'?<NotificationCentre api={call} scope={w.id+'\0'+environment} kind={w.kind} navigate={notificationNavigate}/>:tab==='Apps'&&personal?<AppsWorkspace role={w.role} api={call} scope={w.id+'\0'+environment} manager={['owner','admin'].includes(w.role)} navigate={tab=>setTab(({Customers:'Clients',Payments:'Payment Records',Reconciliation:'Payment Records'} as Record<string,string>)[tab]||tab)} services={market.catalog?.services||[]} onServicesChanged={market.reload}/>:tab==='Products'&&!personal?<ServiceGate market={market} tab={tab} navigate={setTab}><ProductCatalog writable={['owner','admin','finance','operations'].includes(w.role)} api={call} scope={w.id+'\0'+environment}/></ServiceGate>:marketTabs.includes(tab)?<Services market={market} view={tab} navigate={setTab} manager={['owner','admin'].includes(w.role)}/>:<ServiceGate market={market} tab={tab} navigate={setTab}>{tab==='Data'&&<DataPlatformView key={w.id+environment} api={call} writable={['owner','admin','finance'].includes(w.role)}/>} {tab==='Assistant'&&<AssistantView key={w.id+environment} api={call} currency={currency}/>}
-        {personal && (
-          <>
-            {['Overview','Cash Flow','Reports'].includes(tab)&&<DateRange from={from} to={to} onApply={(start,end)=>{setFrom(start);setTo(end);}}><Field label="Currency"><Currency value={currency} onChange={(e:any)=>setCurrency(e.target.value)}/></Field></DateRange>}
-
-            {["Overview", "Cash Flow", "Reports"].includes(tab) && (
-              <>
-                <div className="account-metrics">
-                  {[
-                    ["Recorded income", summary.manual_income_minor],
-                    ["Recorded expenses", summary.recorded_expenses_minor],
-                    ["Recorded net", summary.recorded_net_minor],
-                    [
-                      "Outstanding invoices",
-                      summary.outstanding_invoices_minor,
-                    ],
-                  ].map(([label, n]) => (
-                    <section key={String(label)}>
-                      <span>{label}</span>
-                      <strong>
-                        {n === undefined ? "—" : money(Number(n), currency)}
-                      </strong>
-                      <small>
-                        {environment} · {currency}
-                      </small>
-                    </section>
-                  ))}
-                </div>
-                <section className="panel"><InteractiveChart variant="area" compact title="Recorded personal activity" points={summary.series||[]} currency={currency} series={[{key:'income',label:'Recorded income',color:'#426900'},{key:'expenses',label:'Recorded expenses',color:'#595959'},{key:'net',label:'Recorded net',color:'#985b20',dashed:true}]} description="Manual income and expenses; not provider confirmation, profit or a bank balance."/>{tab==='Reports'&&<button className="secondary-button" onClick={()=>{const csv=['Date,Currency,Recorded income minor,Recorded expenses minor,Recorded net minor',...(summary.series||[]).map((p:any)=>[p.date,currency,p.income,p.expenses,p.net].join(','))].join('\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));const a=document.createElement('a');a.href=url;a.download='africore-personal-activity.csv';a.click();URL.revokeObjectURL(url);}}>Export activity CSV</button>}</section>
-                <p>{summary.coverage}</p>
-                <div className="account-type-tabs personal-quick-actions" aria-label="Personal quick actions">
-                  {["Income", "Expenses", "Invoices", "Clients"].map((t) => (
-                    <a className="secondary-button" href={"#" + t} key={t}>
-                      Add {t === "Clients" ? "client" : t.toLowerCase()}
-                    </a>
-                  ))}
-                </div>
-                {list(data.income, [
-                  "description",
-                  "amount_minor",
-                  "currency",
-                  "occurred_on",
-                ])}
-              </>
-            )}
-            {tab==='Clients'&&<CustomerTools api={call} org={w.id} environment={environment} writable={['owner','admin','operations','finance'].includes(w.role)} onChanged={()=>setRevision(v=>v+1)}/>}
-            {tab === "Clients" && (
-              <>
-                <form
-                  className="account-inline-form"
-                  onSubmit={form((d) =>
-                    call("/records/customers", "POST", {
-                      name: d.get("name"),
-                      email: d.get("email"),
-                      phone: d.get("phone"),
-                      type: "individual",
-                    }),
-                  )}
-                >
-                  <h3>Add client</h3>
-                  <Field label="Name">
-                    <input name="name" required maxLength={200} />
-                  </Field>
-                  <Field label="Email (optional)">
-                    <input name="email" type="email" />
-                  </Field>
-                  <Field label="Phone (optional)">
-                    <input name="phone" maxLength={50} />
-                  </Field>
-                  <button className="button" disabled={busy}>
-                    Add client
-                  </button>
-                </form>
-                {list(data.clients, ["name", "email", "phone"])}
-              </>
-            )}
-            {(tab === "Income" || tab === "Expenses") && (
-              <>
-                <form
-                  className="account-inline-form"
-                  onSubmit={form((d) =>
-                    call(
-                      tab === "Income" ? "/personal-income" : "/expenses",
-                      "POST",
-                      {
-                        description: d.get("description"),
-                        amount_minor: amount(
-                          d.get("amount"),
-                          String(d.get("currency")),
-                        ),
-                        currency: d.get("currency"),
-                        occurred_on: d.get("occurred_on"),
-                        ...(tab === "Expenses"
-                          ? { category: d.get("category") }
-                          : {}),
-                      },
-                    ),
-                  )}
-                >
-                  <h3>Add {tab.toLowerCase()}</h3>
-                  <p>
-                    Manually recorded. This does not confirm a provider payment.
-                  </p>
-                  <Field label="Description">
-                    <input name="description" required maxLength={300} />
-                  </Field>
-                  <Field label="Amount">
-                    <input
-                      name="amount"
-                      type="number"
-                      required
-                      min="0.01"
-                      step="0.01"
-                    />
-                  </Field>
-                  <Field label="Currency">
-                    <Currency name="currency" defaultValue={currency} />
-                  </Field>
-                  <Field label="Date">
-                    <input
-                      name="occurred_on"
-                      type="date"
-                      defaultValue={today(
-                        account.profile?.timezone || "Africa/Nairobi",
-                      )}
-                      required
-                    />
-                  </Field>
-                  {tab === "Expenses" && (
-                    <Field label="Category">
-                      <select name="category">
-                        {[
-                          "other",
-                          "rent",
-                          "utilities",
-                          "delivery",
-                          "stock",
-                          "payroll",
-                        ].map((c) => (
-                          <option key={c}>{c}</option>
-                        ))}
-                      </select>
-                    </Field>
-                  )}
-                  <button className="button" disabled={busy}>
-                    Record {tab.toLowerCase()}
-                  </button>
-                </form>
-                {list(tab === "Income" ? data.income : data.expenses, [
-                  "description",
-                  "amount_minor",
-                  "currency",
-                  "occurred_on",
-                ])}
-                <p>
-                  Showing up to 100 most recent records. Summary totals use all
-                  matching records.
-                </p>
-              </>
-            )}
-            {tab === "Invoices" && (
-              <>
-                <form
-                  className="account-inline-form"
-                  onSubmit={form((d) =>
-                    call("/records/invoices", "POST", {
-                      customer_id: d.get("customer_id"),
-                      currency: d.get("currency"),
-                      issue_date: d.get("issue_date"),
-                      due_date: d.get("due_date"),
-                      items: [
-                        {
-                          description: d.get("description"),
-                          quantity: 1,
-                          unit_price_minor: amount(
-                            d.get("amount"),
-                            String(d.get("currency")),
-                          ),
-                        },
-                      ],
-                    }),
-                  )}
-                >
-                  <h3>Create invoice</h3>
-                  <Field label="Client">
-                    <select name="customer_id" required>
-                      <option value="">Select client</option>
-                      {data.clients?.map((c: any) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Work description">
-                    <input name="description" required maxLength={500} />
-                  </Field>
-                  <Field label="Amount">
-                    <input
-                      name="amount"
-                      type="number"
-                      required
-                      min="0.01"
-                      step="0.01"
-                    />
-                  </Field>
-                  <Field label="Currency">
-                    <Currency name="currency" defaultValue={currency} />
-                  </Field>
-                  <Field label="Issue date">
-                    <input
-                      name="issue_date"
-                      type="date"
-                      defaultValue={today(
-                        account.profile?.timezone || "Africa/Nairobi",
-                      )}
-                      required
-                    />
-                  </Field>
-                  <Field label="Due date">
-                    <input name="due_date" type="date" required />
-                  </Field>
-                  <button
-                    className="button"
-                    disabled={busy || !data.clients?.length}
-                  >
-                    Create draft invoice
-                  </button>
-                  {!data.clients?.length && !busy && <p>Add a client first.</p>}
-                </form>
-                {data.invoices?.map((i: any) => (
-                  <article className="account-record" key={i.id}>
-                    <button className="quiet-button" onClick={()=>setSelectedInvoice(i)}>{i.reference} · View balances & actions</button>
-                    <span>
-                      {money(i.total_minor, i.currency)} · {i.status} · Due{" "}
-                      {i.due_date}
-                    </span>
-                    {i.status === "draft" && (
-                      <button
-                        className="secondary-button"
-                        disabled={busy}
-                        onClick={() =>
-                          mutate(() =>
-                            call("/records/invoices/" + i.id, "PATCH", {
-                              status: "issued",
-                            }),
-                          )
-                        }
-                      >
-                        Issue invoice
-                      </button>
-                    )}
-                  </article>
-                ))}
-              </>
-            )}
-            {tab==='Cash Flow'&&<FinancialOverview api={call} scope={w.id+environment}/>}
-            {tab==='Payment Records'&&<PaymentCentre api={call} scope={w.id+environment} writable={['owner','admin','finance'].includes(w.role)}/>}
-            {tab==='Cash Flow'&&<MoneyTools api={call} scope={w.id+environment} cashFlow writable={['owner','admin','finance'].includes(w.role)}/>}
-            {tab === "Payment Records" && (
-              <>
-                <p>
-                  Provider records are kept separately from manually entered
-                  income. Sandbox records are simulations.
-                </p>
-                {list(data.payments, [
-                  "type",
-                  "amount_minor",
-                  "currency",
-                  "processing_status",
-                ])}
-              </>
-            )}
-          </>
-        )}
-        {!personal && (
-          <DeveloperPanels
-            tab={tab}
-            data={data}
-            call={call}
-            mutate={mutate}
-            form={form}
-            busy={busy}
-            keyValue={key}
-            setKey={setKey}
-            result={result}
-            setResult={setResult}
-            workspace={w}
+        {tab === 'Notifications' ? (
+          <NotificationCentre
+            api={call}
+            scope={w.id + '\0' + environment}
+            kind={w.kind}
+            navigate={notificationNavigate}
           />
+        ) : tab === 'Apps' && personal ? (
+          <AppsWorkspace
+            role={w.role}
+            api={call}
+            scope={w.id + '\0' + environment}
+            manager={['owner', 'admin'].includes(w.role)}
+            navigate={(tab) =>
+              setTab(
+                (
+                  {
+                    Customers: 'Clients',
+                    Payments: 'Payment Records',
+                    Reconciliation: 'Payment Records',
+                  } as Record<string, string>
+                )[tab] || tab,
+              )
+            }
+            services={market.catalog?.services || []}
+            onServicesChanged={market.reload}
+          />
+        ) : tab === 'Products' && !personal ? (
+          <ServiceGate market={market} tab={tab} navigate={setTab}>
+            <ProductCatalog
+              writable={['owner', 'admin', 'finance', 'operations'].includes(w.role)}
+              api={call}
+              scope={w.id + '\0' + environment}
+            />
+          </ServiceGate>
+        ) : marketTabs.includes(tab) ? (
+          <Services
+            market={market}
+            view={tab}
+            navigate={setTab}
+            manager={['owner', 'admin'].includes(w.role)}
+          />
+        ) : (
+          <ServiceGate market={market} tab={tab} navigate={setTab}>
+            {tab === 'Data' && (
+              <DataPlatformView
+                key={w.id + environment}
+                api={call}
+                writable={['owner', 'admin', 'finance'].includes(w.role)}
+              />
+            )}{' '}
+            {tab === 'Assistant' && (
+              <AssistantView key={w.id + environment} api={call} currency={currency} />
+            )}
+            {personal && (
+              <>
+                {['Overview', 'Cash Flow', 'Reports'].includes(tab) && (
+                  <DateRange
+                    from={from}
+                    to={to}
+                    onApply={(start, end) => {
+                      setFrom(start);
+                      setTo(end);
+                    }}
+                  >
+                    <Field label="Currency">
+                      <Currency
+                        value={currency}
+                        onChange={(e: any) => setCurrency(e.target.value)}
+                      />
+                    </Field>
+                  </DateRange>
+                )}
+
+                {['Overview', 'Cash Flow', 'Reports'].includes(tab) && (
+                  <>
+                    <div className="account-metrics">
+                      {[
+                        ['Recorded income', summary.manual_income_minor],
+                        ['Recorded expenses', summary.recorded_expenses_minor],
+                        ['Recorded net', summary.recorded_net_minor],
+                        ['Outstanding invoices', summary.outstanding_invoices_minor],
+                      ].map(([label, n]) => (
+                        <section key={String(label)}>
+                          <span>{label}</span>
+                          <strong>{n === undefined ? '—' : money(Number(n), currency)}</strong>
+                          <small>
+                            {environment} · {currency}
+                          </small>
+                        </section>
+                      ))}
+                    </div>
+                    <section className="panel">
+                      <InteractiveChart
+                        variant="area"
+                        compact
+                        title="Recorded personal activity"
+                        points={summary.series || []}
+                        currency={currency}
+                        series={[
+                          { key: 'income', label: 'Recorded income', color: '#426900' },
+                          { key: 'expenses', label: 'Recorded expenses', color: '#595959' },
+                          { key: 'net', label: 'Recorded net', color: '#985b20', dashed: true },
+                        ]}
+                        description="Manual income and expenses; not provider confirmation, profit or a bank balance."
+                      />
+                      {tab === 'Reports' && (
+                        <button
+                          className="secondary-button"
+                          onClick={() => {
+                            const csv = [
+                              'Date,Currency,Recorded income minor,Recorded expenses minor,Recorded net minor',
+                              ...(summary.series || []).map((p: any) =>
+                                [p.date, currency, p.income, p.expenses, p.net].join(','),
+                              ),
+                            ].join('\n');
+                            const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'africore-personal-activity.csv';
+                            a.click();
+                            URL.revokeObjectURL(url);
+                          }}
+                        >
+                          Export activity CSV
+                        </button>
+                      )}
+                    </section>
+                    <p>{summary.coverage}</p>
+                    <div
+                      className="account-type-tabs personal-quick-actions"
+                      aria-label="Personal quick actions"
+                    >
+                      {['Income', 'Expenses', 'Invoices', 'Clients'].map((t) => (
+                        <a className="secondary-button" href={'#' + t} key={t}>
+                          Add {t === 'Clients' ? 'client' : t.toLowerCase()}
+                        </a>
+                      ))}
+                    </div>
+                    {list(data.income, ['description', 'amount_minor', 'currency', 'occurred_on'])}
+                  </>
+                )}
+                {tab === 'Clients' && (
+                  <CustomerTools
+                    api={call}
+                    org={w.id}
+                    environment={environment}
+                    writable={['owner', 'admin', 'operations', 'finance'].includes(w.role)}
+                    onChanged={() => setRevision((v) => v + 1)}
+                  />
+                )}
+                {tab === 'Clients' && (
+                  <>
+                    <form
+                      className="account-inline-form"
+                      onSubmit={form((d) =>
+                        call('/records/customers', 'POST', {
+                          name: d.get('name'),
+                          email: d.get('email'),
+                          phone: d.get('phone'),
+                          type: 'individual',
+                        }),
+                      )}
+                    >
+                      <h3>Add client</h3>
+                      <Field label="Name">
+                        <input name="name" required maxLength={200} />
+                      </Field>
+                      <Field label="Email (optional)">
+                        <input name="email" type="email" />
+                      </Field>
+                      <Field label="Phone (optional)">
+                        <input name="phone" maxLength={50} />
+                      </Field>
+                      <button className="button" disabled={busy}>
+                        Add client
+                      </button>
+                    </form>
+                    {list(data.clients, ['name', 'email', 'phone'])}
+                  </>
+                )}
+                {(tab === 'Income' || tab === 'Expenses') && (
+                  <>
+                    <form
+                      className="account-inline-form"
+                      onSubmit={form((d) =>
+                        call(tab === 'Income' ? '/personal-income' : '/expenses', 'POST', {
+                          description: d.get('description'),
+                          amount_minor: amount(d.get('amount'), String(d.get('currency'))),
+                          currency: d.get('currency'),
+                          occurred_on: d.get('occurred_on'),
+                          ...(tab === 'Expenses' ? { category: d.get('category') } : {}),
+                        }),
+                      )}
+                    >
+                      <h3>Add {tab.toLowerCase()}</h3>
+                      <p>Manually recorded. This does not confirm a provider payment.</p>
+                      <Field label="Description">
+                        <input name="description" required maxLength={300} />
+                      </Field>
+                      <Field label="Amount">
+                        <input name="amount" type="number" required min="0.01" step="0.01" />
+                      </Field>
+                      <Field label="Currency">
+                        <Currency name="currency" defaultValue={currency} />
+                      </Field>
+                      <Field label="Date">
+                        <input
+                          name="occurred_on"
+                          type="date"
+                          defaultValue={today(account.profile?.timezone || 'Africa/Nairobi')}
+                          required
+                        />
+                      </Field>
+                      {tab === 'Expenses' && (
+                        <Field label="Category">
+                          <select name="category">
+                            {['other', 'rent', 'utilities', 'delivery', 'stock', 'payroll'].map(
+                              (c) => (
+                                <option key={c}>{c}</option>
+                              ),
+                            )}
+                          </select>
+                        </Field>
+                      )}
+                      <button className="button" disabled={busy}>
+                        Record {tab.toLowerCase()}
+                      </button>
+                    </form>
+                    {list(tab === 'Income' ? data.income : data.expenses, [
+                      'description',
+                      'amount_minor',
+                      'currency',
+                      'occurred_on',
+                    ])}
+                    <p>
+                      Showing up to 100 most recent records. Summary totals use all matching
+                      records.
+                    </p>
+                  </>
+                )}
+                {tab === 'Invoices' && (
+                  <>
+                    <form
+                      className="account-inline-form"
+                      onSubmit={form((d) =>
+                        call('/records/invoices', 'POST', {
+                          customer_id: d.get('customer_id'),
+                          currency: d.get('currency'),
+                          issue_date: d.get('issue_date'),
+                          due_date: d.get('due_date'),
+                          items: [
+                            {
+                              description: d.get('description'),
+                              quantity: 1,
+                              unit_price_minor: amount(d.get('amount'), String(d.get('currency'))),
+                            },
+                          ],
+                        }),
+                      )}
+                    >
+                      <h3>Create invoice</h3>
+                      <Field label="Client">
+                        <select name="customer_id" required>
+                          <option value="">Select client</option>
+                          {data.clients?.map((c: any) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Work description">
+                        <input name="description" required maxLength={500} />
+                      </Field>
+                      <Field label="Amount">
+                        <input name="amount" type="number" required min="0.01" step="0.01" />
+                      </Field>
+                      <Field label="Currency">
+                        <Currency name="currency" defaultValue={currency} />
+                      </Field>
+                      <Field label="Issue date">
+                        <input
+                          name="issue_date"
+                          type="date"
+                          defaultValue={today(account.profile?.timezone || 'Africa/Nairobi')}
+                          required
+                        />
+                      </Field>
+                      <Field label="Due date">
+                        <input name="due_date" type="date" required />
+                      </Field>
+                      <button className="button" disabled={busy || !data.clients?.length}>
+                        Create draft invoice
+                      </button>
+                      {!data.clients?.length && !busy && <p>Add a client first.</p>}
+                    </form>
+                    {data.invoices?.map((i: any) => (
+                      <article className="account-record" key={i.id}>
+                        <button className="quiet-button" onClick={() => setSelectedInvoice(i)}>
+                          {i.reference} · View balances & actions
+                        </button>
+                        <span>
+                          {money(i.total_minor, i.currency)} · {i.status} · Due {i.due_date}
+                        </span>
+                        {i.status === 'draft' && (
+                          <button
+                            className="secondary-button"
+                            disabled={busy}
+                            onClick={() =>
+                              mutate(() =>
+                                call('/records/invoices/' + i.id, 'PATCH', {
+                                  status: 'issued',
+                                }),
+                              )
+                            }
+                          >
+                            Issue invoice
+                          </button>
+                        )}
+                      </article>
+                    ))}
+                  </>
+                )}
+                {tab === 'Cash Flow' && <FinancialOverview api={call} scope={w.id + environment} />}
+                {tab === 'Payment Records' && (
+                  <PaymentCentre
+                    api={call}
+                    scope={w.id + environment}
+                    writable={['owner', 'admin', 'finance'].includes(w.role)}
+                  />
+                )}
+                {tab === 'Cash Flow' && (
+                  <MoneyTools
+                    api={call}
+                    scope={w.id + environment}
+                    cashFlow
+                    writable={['owner', 'admin', 'finance'].includes(w.role)}
+                  />
+                )}
+                {tab === 'Payment Records' && (
+                  <>
+                    <p>
+                      Provider records are kept separately from manually entered income. Sandbox
+                      records are simulations.
+                    </p>
+                    {list(data.payments, ['type', 'amount_minor', 'currency', 'processing_status'])}
+                  </>
+                )}
+              </>
+            )}
+            {!personal && (
+              <DeveloperPanels
+                tab={tab}
+                data={data}
+                call={call}
+                mutate={mutate}
+                form={form}
+                busy={busy}
+                keyValue={key}
+                setKey={setKey}
+                result={result}
+                setResult={setResult}
+                workspace={w}
+              />
+            )}
+          </ServiceGate>
         )}
-        </ServiceGate>}
       </main>
     </div>
   );

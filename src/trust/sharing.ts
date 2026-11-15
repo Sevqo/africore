@@ -11,8 +11,7 @@ import { credential, signed, verifyCredential } from './credentials';
 export async function verificationRequest(a: Access, input: any) {
   sandbox(a);
   const d = requestInput.parse(input);
-  if (d.holder_org === a.org)
-    fail(400, 'A verification request must name another business');
+  if (d.holder_org === a.org) fail(400, 'A verification request must name another business');
   await organization(d.holder_org);
   return atomic(a, async () => {
     const r = await put(
@@ -23,9 +22,7 @@ export async function verificationRequest(a: Access, input: any) {
         status: 'pending',
         nonce: secret(),
         requested_by: a.actor,
-        expires_at: new Date(
-          Date.now() + d.expires_days * 86400000,
-        ).toISOString(),
+        expires_at: new Date(Date.now() + d.expires_days * 86400000).toISOString(),
       },
       undefined,
       d.holder_org,
@@ -71,8 +68,7 @@ export async function grant(a: Access, input: any) {
         fail(400, 'Required credential types are missing');
       if (types.some((type) => !request.types.includes(type)))
         fail(400, 'Do not disclose unrequested credential types');
-      if (request.purpose !== d.purpose)
-        fail(400, 'Purpose must match the reviewed request');
+      if (request.purpose !== d.purpose) fail(400, 'Purpose must match the reviewed request');
     }
     const { randomUUID } = await import('node:crypto'),
       id = randomUUID(),
@@ -113,7 +109,10 @@ export async function grant(a: Access, input: any) {
         a.environment,
         d.recipient_org,
         hash(token),
-        seal(JSON.stringify({ ...d, nonce, presentation: vp, types }),JSON.stringify(['grant',a.org,a.environment,id])),
+        seal(
+          JSON.stringify({ ...d, nonce, presentation: vp, types }),
+          JSON.stringify(['grant', a.org, a.environment, id]),
+        ),
         expires,
         d.one_time ? 1 : 0,
         now(),
@@ -137,8 +136,7 @@ export async function grant(a: Access, input: any) {
       recipient_org: d.recipient_org,
       one_time: d.one_time,
       disclosed_types: types,
-      copy_limitation:
-        'Revocation stops future access; cannot erase copies already disclosed.',
+      copy_limitation: 'Revocation stops future access; cannot erase copies already disclosed.',
     };
   });
 }
@@ -147,14 +145,12 @@ export async function consume(req: any, token: string) {
     .regex(/^[a-f0-9]{64}$/)
     .parse(token);
   const u = await user(req);
-  const row = await dbGet('SELECT * FROM ac3_grants WHERE token_hash=?', [
-    hash(token),
-  ]);
+  const row = await dbGet('SELECT * FROM ac3_grants WHERE token_hash=?', [hash(token)]);
   if (!row) fail(404, 'Share link not found');
-  const member = await dbGet(
-    'SELECT role FROM ac_memberships WHERE org_id=? AND user_id=?',
-    [row.recipient_org, u.id],
-  );
+  const member = await dbGet('SELECT role FROM ac_memberships WHERE org_id=? AND user_id=?', [
+    row.recipient_org,
+    u.id,
+  ]);
   if (!member) fail(403, 'Sign in as a member of the named recipient business');
   const a: Access = {
     org: row.org_id,
@@ -164,16 +160,19 @@ export async function consume(req: any, token: string) {
     api: false,
   };
   return atomic(a, async () => {
-    const current = await dbGet('SELECT * FROM ac3_grants WHERE id=?', [
-      row.id,
-    ]);
+    const current = await dbGet('SELECT * FROM ac3_grants WHERE id=?', [row.id]);
     if (
       current.revoked_at ||
       current.expires_at < now() ||
       (current.one_time && current.consumed_at)
     )
       fail(410, 'Share expired, revoked or already used');
-    const data = JSON.parse(unseal(current.data,JSON.stringify(['grant',current.org_id,current.environment,current.id])));
+    const data = JSON.parse(
+      unseal(
+        current.data,
+        JSON.stringify(['grant', current.org_id, current.environment, current.id]),
+      ),
+    );
     for (const id of data.credential_ids) {
       const c = await credential(a, id);
       if ((await verifyCredential(c.token)).overall !== 'meets_sandbox_policy')
@@ -214,11 +213,7 @@ export async function revokeGrant(a: Access, id: string) {
   await emit(a, 'sharing.grant_revoked', { id });
   return { id, revoked: true, previous_copies_erased: false };
 }
-export async function verifyPresentation(
-  token: string,
-  audience: string,
-  nonce: string,
-) {
+export async function verifyPresentation(token: string, audience: string, nonce: string) {
   const report: any = {
     signature: 'invalid',
     holder_binding: 'unchecked',
@@ -233,12 +228,7 @@ export async function verifyPresentation(
   try {
     if (token.length > 900000) throw Error('Presentation too large');
     const header = decodeProtectedHeader(token);
-    if (
-      header.alg !== 'ES256' ||
-      header.typ !== 'vp+jwt' ||
-      header.jku ||
-      header.x5u
-    )
+    if (header.alg !== 'ES256' || header.typ !== 'vp+jwt' || header.jku || header.x5u)
       throw Error('Unsupported presentation header');
     const key = await dbGet('SELECT * FROM ac3_keys WHERE id=?', [header.kid]);
     if (!key || !['active', 'retired'].includes(key.state))
@@ -250,21 +240,15 @@ export async function verifyPresentation(
     );
     report.signature = 'valid';
     const vp = JSON.parse(Buffer.from(result.payload).toString());
-    if (vp.holder !== 'urn:uuid:' + key.owner_id)
-      throw Error('Holder binding mismatch');
+    if (vp.holder !== 'urn:uuid:' + key.owner_id) throw Error('Holder binding mismatch');
     report.holder_binding = 'managed_holder_signature';
     if (vp.aud !== audience) throw Error('Audience mismatch');
     report.audience = 'matched';
     if (vp.nonce !== nonce) throw Error('Nonce mismatch');
     report.nonce = 'matched';
-    if (
-      vp.exp < Math.floor(Date.now() / 1000) ||
-      vp.iat > Math.floor(Date.now() / 1000) + 30
-    )
+    if (vp.exp < Math.floor(Date.now() / 1000) || vp.iat > Math.floor(Date.now() / 1000) + 30)
       throw Error('Presentation expired or future-dated');
-    const grant = await dbGet('SELECT * FROM ac3_grants WHERE id=?', [
-      vp.authorization.grant_id,
-    ]);
+    const grant = await dbGet('SELECT * FROM ac3_grants WHERE id=?', [vp.authorization.grant_id]);
     if (
       !grant ||
       grant.revoked_at ||
@@ -272,22 +256,20 @@ export async function verifyPresentation(
       'urn:uuid:' + grant.recipient_org !== audience
     )
       throw Error('Authorization expired or revoked');
-    const data = JSON.parse(unseal(grant.data,JSON.stringify(['grant',grant.org_id,grant.environment,grant.id])));
+    const data = JSON.parse(
+      unseal(grant.data, JSON.stringify(['grant', grant.org_id, grant.environment, grant.id])),
+    );
     if (data.nonce !== nonce || data.presentation !== token)
       throw Error('Request substitution detected');
     report.authorization = 'current_grant';
     for (const envelope of vp.verifiableCredential || []) {
       if (!envelope.id.startsWith('data:application/vc+jwt,'))
         throw Error('Unsupported credential envelope');
-      const result = await verifyCredential(
-        envelope.id.slice('data:application/vc+jwt,'.length),
-      );
+      const result = await verifyCredential(envelope.id.slice('data:application/vc+jwt,'.length));
       report.credentials.push(result);
     }
     if (!report.credentials.length) throw Error('Empty presentation');
-    report.overall = report.credentials.every(
-      (c: any) => c.overall === 'meets_sandbox_policy',
-    )
+    report.overall = report.credentials.every((c: any) => c.overall === 'meets_sandbox_policy')
       ? 'meets_sandbox_policy'
       : 'failed';
     return report;

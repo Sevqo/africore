@@ -44,9 +44,7 @@ export function FulfillmentView({
                     quantity: Number(d['quantity_' + index]),
                   }))
                   .filter((i: any) => i.quantity > 0),
-                ...(d.protected_sale_id
-                  ? { protected_sale_id: d.protected_sale_id }
-                  : {}),
+                ...(d.protected_sale_id ? { protected_sale_id: d.protected_sale_id } : {}),
               }),
             'Shipment created with seller-reported provenance.',
           )
@@ -87,10 +85,7 @@ export function FulfillmentView({
         </div>
         <div className="form-grid">
           {selected?.items.map((item: any, index: number) => (
-            <Field
-              key={index}
-              label={item.description + ' · ordered ' + item.quantity}
-            >
+            <Field key={index} label={item.description + ' · ordered ' + item.quantity}>
               <input
                 name={'quantity_' + index}
                 type="number"
@@ -103,8 +98,8 @@ export function FulfillmentView({
           ))}
         </div>
         <p>
-          Enter quantities in this shipment. Previously shipped quantities are
-          validated when saving.
+          Enter quantities in this shipment. Previously shipped quantities are validated when
+          saving.
         </p>
         <button className="button">Create shipment</button>
       </Form>
@@ -125,11 +120,7 @@ export function FulfillmentView({
                 <button onClick={() => onDetail(s)}>History & evidence</button>
                 <Form
                   className="compact-form"
-                  submit={(d) =>
-                    action(() =>
-                      api('/shipments/' + s.id + '/transition', 'POST', d),
-                    )
-                  }
+                  submit={(d) => action(() => api('/shipments/' + s.id + '/transition', 'POST', d))}
                 >
                   <select name="status">
                     {[
@@ -173,9 +164,8 @@ export function ProtectedView({
   return (
     <>
       <div className="alert">
-        Sandbox partner orchestration. No real funds, wallet, custody or live
-        escrow. Release and dispute decisions require a second authorized
-        reviewer.
+        Sandbox partner orchestration. No real funds, wallet, custody or live escrow. Release and
+        dispute decisions require a second authorized reviewer.
       </div>
       <Form
         submit={async (d) => {
@@ -192,10 +182,7 @@ export function ProtectedView({
               ...(d.order_id ? { order_id: d.order_id } : {}),
             }),
           );
-          if (r?.buyer_url)
-            setNotice(
-              'Save the buyer link now: ' + location.origin + r.buyer_url,
-            );
+          if (r?.buyer_url) setNotice('Save the buyer link now: ' + location.origin + r.buyer_url);
         }}
       >
         <h2>Create a protected sale</h2>
@@ -204,13 +191,7 @@ export function ProtectedView({
             <input name="title" required minLength={2} />
           </Field>
           <Field label="Amount">
-            <input
-              name="amount"
-              type="number"
-              min={0.01}
-              step={0.01}
-              required
-            />
+            <input name="amount" type="number" min={0.01} step={0.01} required />
           </Field>
           <Field label="Currency">
             <select name="currency">
@@ -223,13 +204,7 @@ export function ProtectedView({
             <input name="order_id" />
           </Field>
           <Field label="Inspection period (hours)">
-            <input
-              name="inspection_hours"
-              type="number"
-              min={1}
-              max={168}
-              defaultValue={48}
-            />
+            <input name="inspection_hours" type="number" min={1} max={168} defaultValue={48} />
           </Field>
           <Field label="Merchant support contact">
             <input name="support_contact" required minLength={5} />
@@ -258,8 +233,7 @@ export function ProtectedView({
                   </button>
                 </h3>
                 <p>
-                  {money(s.amount_minor, s.currency)} ·{' '}
-                  {s.state.replaceAll('_', ' ')}
+                  {money(s.amount_minor, s.currency)} · {s.state.replaceAll('_', ' ')}
                 </p>
                 <p className="record-id">Sale: {s.id}</p>
                 <p className="record-id">Order for shipment: {s.order_id}</p>
@@ -278,17 +252,11 @@ export function ProtectedView({
                       )
                     }
                   >
-                    <input
-                      name="approval_id"
-                      required
-                      placeholder="Approved release request ID"
-                    />
+                    <input name="approval_id" required placeholder="Approved release request ID" />
                     <button>Request release</button>
                   </Form>
                 )}
-                {['release_requested', 'refund_requested'].includes(
-                  s.state,
-                ) && (
+                {['release_requested', 'refund_requested'].includes(s.state) && (
                   <button
                     onClick={() =>
                       action(
@@ -330,8 +298,8 @@ export function DisputeView({
     <section className="panel">
       <h2>Dispute review</h2>
       <p>
-        Statements are claims, not proof. Resolution requires a separate
-        approver and does not itself confirm settlement.
+        Statements are claims, not proof. Resolution requires a separate approver and does not
+        itself confirm settlement.
       </p>
       {data?.data?.length ? (
         data.data.map((d: any) => (
@@ -350,9 +318,7 @@ export function DisputeView({
                 <Form
                   className="compact-form"
                   submit={(input) =>
-                    action(() =>
-                      api('/disputes/' + d.id + '/respond', 'POST', input),
-                    )
+                    action(() => api('/disputes/' + d.id + '/respond', 'POST', input))
                   }
                 >
                   <Field label="Seller response">
@@ -364,9 +330,7 @@ export function DisputeView({
                   <Form
                     className="compact-form"
                     submit={(input) =>
-                      action(() =>
-                        api('/disputes/' + d.id + '/resolve', 'POST', input),
-                      )
+                      action(() => api('/disputes/' + d.id + '/resolve', 'POST', input))
                     }
                   >
                     <Field label="Decision">
@@ -381,9 +345,7 @@ export function DisputeView({
                     <Field label="Approved dispute-resolution request ID">
                       <input name="approval_id" required />
                     </Field>
-                    <button className="button">
-                      Record reviewed resolution
-                    </button>
+                    <button className="button">Record reviewed resolution</button>
                   </Form>
                 )}
               </>

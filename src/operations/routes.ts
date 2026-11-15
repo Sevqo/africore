@@ -1,5 +1,5 @@
-import {approvalQueue} from '../erp/approval-privacy';
-import {financialOperation} from '../finance/service';
+import { approvalQueue } from '../erp/approval-privacy';
+import { financialOperation } from '../finance/service';
 import { operationalSnapshot } from '../metrics';
 import { Router } from 'express';
 import { z } from 'zod';
@@ -57,8 +57,7 @@ const pagination = (q: any) =>
       offset: z.coerce.number().int().min(0).default(0),
     })
     .parse(q);
-const key = (req: any) =>
-  z.string().min(8).max(150).parse(req.headers['idempotency-key']);
+const key = (req: any) => z.string().min(8).max(150).parse(req.headers['idempotency-key']);
 operations.get(
   '/organizations/:org/intelligence',
   route(async (req, res) => {
@@ -72,12 +71,7 @@ operations.get(
         .attachment('africore-intelligence.csv')
         .send(
           safeCSV([
-            [
-              'date',
-              'currency',
-              'confirmed_inflows_minor',
-              'recorded_outflows_minor',
-            ],
+            ['date', 'currency', 'confirmed_inflows_minor', 'recorded_outflows_minor'],
             ...snapshot.series.map((p) => [
               p.date,
               q.currency,
@@ -98,7 +92,12 @@ operations.post(
       input = forecastSchema.parse(req.body),
       result = await forecast(a, input);
     await atomic(a, async () => {
-      await create(a,'forecast_snapshots',{forecast:result,configuration:input,captured_at:now(),created_by:a.actor});
+      await create(a, 'forecast_snapshots', {
+        forecast: result,
+        configuration: input,
+        captured_at: now(),
+        created_by: a.actor,
+      });
       await audit(a.org, a.actor, 'forecast.generated');
       await emit(
         a,
@@ -123,7 +122,20 @@ operations.get(
     res.json({ data: await list(a, 'expenses', p.limit, p.offset), ...p });
   }),
 );
-operations.post('/organizations/:org/expenses',route(async(req,res)=>{const a=await access(req,'finance');const run=()=>addExpense(a,req.body);res.status(201).json(req.headers['idempotency-key']?await financialOperation(a,'expense.create',key(req),req.body,run):await run());}));
+operations.post(
+  '/organizations/:org/expenses',
+  route(async (req, res) => {
+    const a = await access(req, 'finance');
+    const run = () => addExpense(a, req.body);
+    res
+      .status(201)
+      .json(
+        req.headers['idempotency-key']
+          ? await financialOperation(a, 'expense.create', key(req), req.body, run)
+          : await run(),
+      );
+  }),
+);
 operations.get(
   '/organizations/:org/obligations',
   route(async (req, res) => {
@@ -140,7 +152,8 @@ operations.post(
     res.status(201).json(
       await atomic(a, () =>
         create(a, 'obligations', {
-          ...d,anchor_day:d.anchor_day||Number(d.next_due_date.slice(8)),
+          ...d,
+          anchor_day: d.anchor_day || Number(d.next_due_date.slice(8)),
           provenance: 'self_reported',
           classification: 'expected_obligation',
         }),
@@ -152,19 +165,18 @@ operations.patch(
   '/organizations/:org/obligations/:id',
   route(async (req, res) => {
     const a = await access(req, 'finance'),
-      d = obligationSchema.partial().refine(value=>Object.keys(value).length>0,'Provide an obligation change').parse(req.body);
+      d = obligationSchema
+        .partial()
+        .refine((value) => Object.keys(value).length > 0, 'Provide an obligation change')
+        .parse(req.body);
     res.json(
-      await atomic(a, async () =>
-        change(a, await get(a, String(req.params.id), 'obligations'), d),
-      ),
+      await atomic(a, async () => change(a, await get(a, String(req.params.id), 'obligations'), d)),
     );
   }),
 );
 operations.post(
   '/organizations/:org/assistant',
-  route(async (req, res) =>
-    res.json(await askAssistant(await access(req), req.body)),
-  ),
+  route(async (req, res) => res.json(await askAssistant(await access(req), req.body))),
 );
 operations.get(
   '/organizations/:org/automations/templates',
@@ -172,7 +184,11 @@ operations.get(
     await access(req);
     res.json({
       data: automationTemplates,
-      available_actions: ['in_app_notification','create_crm_follow_up','replenishment_suggestion'],
+      available_actions: [
+        'in_app_notification',
+        'create_crm_follow_up',
+        'replenishment_suggestion',
+      ],
       external_delivery: 'not_configured',
     });
   }),
@@ -185,7 +201,26 @@ operations.get(
     res.json({ data: await list(a, 'automations', p.limit, p.offset), ...p });
   }),
 );
-operations.post('/organizations/:org/automations',route(async(req,res)=>{const a=await access(req,'finance'),create=()=>createAutomation(a,req.body);res.status(201).json(req.headers['idempotency-key']?await financialOperation(a,'automation.create',String(req.headers['idempotency-key']),req.body,create):await create());}));
+operations.post(
+  '/organizations/:org/automations',
+  route(async (req, res) => {
+    const a = await access(req, 'finance'),
+      create = () => createAutomation(a, req.body);
+    res
+      .status(201)
+      .json(
+        req.headers['idempotency-key']
+          ? await financialOperation(
+              a,
+              'automation.create',
+              String(req.headers['idempotency-key']),
+              req.body,
+              create,
+            )
+          : await create(),
+      );
+  }),
+);
 operations.patch(
   '/organizations/:org/automations/:id',
   route(async (req, res) => {
@@ -196,9 +231,7 @@ operations.patch(
 );
 operations.post(
   '/organizations/:org/automations/process',
-  route(async (req, res) =>
-    res.json(await runAutomations(await access(req, 'finance'))),
-  ),
+  route(async (req, res) => res.json(await runAutomations(await access(req, 'finance')))),
 );
 operations.get(
   '/organizations/:org/automation-runs',
@@ -247,11 +280,15 @@ operations.patch(
 );
 operations.put(
   '/organizations/:org/notification-preferences',
-  route(async (req, res) =>
-    res.json(await notificationPreferences(await access(req), req.body)),
-  ),
+  route(async (req, res) => res.json(await notificationPreferences(await access(req), req.body))),
 );
-operations.get('/organizations/:org/approvals',route(async(req,res)=>{const p=pagination(req.query);res.json(await approvalQueue(await access(req),p.limit,p.offset));}));
+operations.get(
+  '/organizations/:org/approvals',
+  route(async (req, res) => {
+    const p = pagination(req.query);
+    res.json(await approvalQueue(await access(req), p.limit, p.offset));
+  }),
+);
 operations.post(
   '/organizations/:org/approvals',
   route(async (req, res) => {
@@ -262,13 +299,7 @@ operations.post(
 operations.post(
   '/organizations/:org/approvals/:id/decide',
   route(async (req, res) =>
-    res.json(
-      await decideApproval(
-        await access(req),
-        String(req.params.id),
-        req.body,
-      ),
-    ),
+    res.json(await decideApproval(await access(req), String(req.params.id), req.body)),
   ),
 );
 operations.get(
@@ -282,20 +313,14 @@ operations.get(
 operations.post(
   '/organizations/:org/shipments',
   route(async (req, res) =>
-    res
-      .status(201)
-      .json(await shipmentCreate(await access(req, 'operations'), req.body)),
+    res.status(201).json(await shipmentCreate(await access(req, 'operations'), req.body)),
   ),
 );
 operations.post(
   '/organizations/:org/shipments/:id/transition',
   route(async (req, res) =>
     res.json(
-      await shipmentTransition(
-        await access(req, 'operations'),
-        String(req.params.id),
-        req.body,
-      ),
+      await shipmentTransition(await access(req, 'operations'), String(req.params.id), req.body),
     ),
   ),
 );
@@ -305,11 +330,7 @@ operations.post(
     const a = await access(req, 'operations');
     res
       .status(201)
-      .json(
-        await atomic(a, () =>
-          addEvidence(a, String(req.params.id), 'shipments', req.body),
-        ),
-      );
+      .json(await atomic(a, () => addEvidence(a, String(req.params.id), 'shipments', req.body)));
   }),
 );
 operations.get(
@@ -327,17 +348,13 @@ operations.get(
 operations.post(
   '/organizations/:org/protected-sales',
   route(async (req, res) =>
-    res
-      .status(201)
-      .json(await createSale(await access(req, 'finance'), req.body, key(req))),
+    res.status(201).json(await createSale(await access(req, 'finance'), req.body, key(req))),
   ),
 );
 operations.get(
   '/organizations/:org/protected-sales/:id',
   route(async (req, res) =>
-    res.json(
-      await get(await access(req), String(req.params.id), 'protected_sales'),
-    ),
+    res.json(await get(await access(req), String(req.params.id), 'protected_sales')),
   ),
 );
 operations.post(
@@ -369,9 +386,7 @@ operations.post(
 operations.post(
   '/buyer/:token/disputes',
   route(async (req, res) =>
-    res
-      .status(201)
-      .json(await openDispute(String(req.params.token), req.body, key(req))),
+    res.status(201).json(await openDispute(String(req.params.token), req.body, key(req))),
   ),
 );
 operations.post(
@@ -380,15 +395,10 @@ operations.post(
     const { a, sale } = await buyerAccess(String(req.params.token)),
       d = await get(a, String(req.params.id), 'disputes');
     if (d.protected_sale_id !== sale.id) fail(404, 'Dispute not found');
-    if (d.status === 'resolved' || d.deadline < now())
-      fail(409, 'Evidence window is closed');
+    if (d.status === 'resolved' || d.deadline < now()) fail(409, 'Evidence window is closed');
     res
       .status(201)
-      .json(
-        await atomic(a, () =>
-          addEvidence(a, d.id, 'disputes', req.body, 'buyer_reported'),
-        ),
-      );
+      .json(await atomic(a, () => addEvidence(a, d.id, 'disputes', req.body, 'buyer_reported')));
   }),
 );
 operations.get(
@@ -417,11 +427,7 @@ operations.post(
   '/organizations/:org/disputes/:id/respond',
   route(async (req, res) =>
     res.json(
-      await disputeRespond(
-        await access(req, 'operations'),
-        String(req.params.id),
-        req.body,
-      ),
+      await disputeRespond(await access(req, 'operations'), String(req.params.id), req.body),
     ),
   ),
 );
@@ -429,12 +435,7 @@ operations.post(
   '/organizations/:org/disputes/:id/resolve',
   route(async (req, res) =>
     res.json(
-      await disputeResolve(
-        await access(req, 'admin'),
-        String(req.params.id),
-        req.body,
-        key(req),
-      ),
+      await disputeResolve(await access(req, 'admin'), String(req.params.id), req.body, key(req)),
     ),
   ),
 );
@@ -457,19 +458,18 @@ operations.get(
     const a = await access(req);
     const e = await dbGet(
       'SELECT * FROM ac2_evidence WHERE id=? AND resource_id=? AND org_id=? AND environment=? AND retention_until>?',
-      [
-        String(req.params.id),
-        String(req.params.resource),
-        a.org,
-        a.environment,
-        now(),
-      ],
+      [String(req.params.id), String(req.params.resource), a.org, a.environment, now()],
     );
     if (!e || !e.content_base64) fail(404, 'Evidence file not found');
     res.setHeader('Content-Type', 'application/octet-stream');
     res
       .attachment(e.filename)
-      .send(Buffer.from(unseal(e.content_base64,JSON.stringify(['evidence',e.org_id,e.environment,e.id])), 'base64'));
+      .send(
+        Buffer.from(
+          unseal(e.content_base64, JSON.stringify(['evidence', e.org_id, e.environment, e.id])),
+          'base64',
+        ),
+      );
     await audit(a.org, a.actor, 'evidence.downloaded', e.id);
   }),
 );
@@ -503,20 +503,12 @@ operations.post(
 operations.post(
   '/organizations/:org/connectors/:id/action',
   route(async (req, res) =>
-    res.json(
-      await connectorAction(
-        await access(req, 'admin'),
-        String(req.params.id),
-        req.body,
-      ),
-    ),
+    res.json(await connectorAction(await access(req, 'admin'), String(req.params.id), req.body)),
   ),
 );
 operations.get(
   '/organizations/:org/risk-signals',
-  route(async (req, res) =>
-    res.json(await riskSignals(await access(req, 'admin'))),
-  ),
+  route(async (req, res) => res.json(await riskSignals(await access(req, 'admin')))),
 );
 operations.post(
   '/organizations/:org/risk-signals/review',
@@ -534,9 +526,7 @@ operations.post(
     res
       .status(201)
       .json(
-        await atomic(a, () =>
-          create(a, 'risk_reviews', { ...d, reviewer: a.actor, at: now() }),
-        ),
+        await atomic(a, () => create(a, 'risk_reviews', { ...d, reviewer: a.actor, at: now() })),
       );
   }),
 );
@@ -590,10 +580,7 @@ operations.get(
     const data = [];
     for (const name of docNames) {
       try {
-        const text = await fs.readFile(
-          path.join(process.cwd(), 'docs', name + '.md'),
-          'utf8',
-        );
+        const text = await fs.readFile(path.join(process.cwd(), 'docs', name + '.md'), 'utf8');
         if (!q || (name + ' ' + text).toLowerCase().includes(q))
           data.push({ name, text: text.slice(0, 18000) });
       } catch {}
@@ -611,9 +598,7 @@ operations.get(
   '/internal/stage2/operations',
   route(async (req, res) => {
     await engineer(req);
-    const rows = await dbAll(
-        'SELECT status,COUNT(*) AS total FROM ac2_runs GROUP BY status',
-      ),
+    const rows = await dbAll('SELECT status,COUNT(*) AS total FROM ac2_runs GROUP BY status'),
       ai = await dbAll(
         'SELECT provider,model,status,COUNT(*) AS requests,SUM(input_tokens) AS input_tokens,SUM(output_tokens) AS output_tokens FROM ac2_ai_usage GROUP BY provider,model,status',
       );
@@ -626,15 +611,10 @@ operations.get(
       ai_usage: ai,
       ai_cost: {
         available: false,
-        reason:
-          'No verified pricing or billing feed configured; token counts are not costs.',
+        reason: 'No verified pricing or billing feed configured; token counts are not costs.',
       },
-      deliveries: await dbAll(
-        'SELECT status,COUNT(*) AS total FROM ac_deliveries GROUP BY status',
-      ),
-      approvals: await dbAll(
-        'SELECT status,COUNT(*) AS total FROM ac2_approvals GROUP BY status',
-      ),
+      deliveries: await dbAll('SELECT status,COUNT(*) AS total FROM ac_deliveries GROUP BY status'),
+      approvals: await dbAll('SELECT status,COUNT(*) AS total FROM ac2_approvals GROUP BY status'),
       risk_policy: 'Review signals only; no fraud verdicts.',
       production_protected_payments: false,
     });
@@ -644,11 +624,6 @@ operations.get(
 operations.post(
   '/organizations/:org/connectors/:id/import',
   route(async (req, res) =>
-    res.json(
-      await importConnectorBatch(
-        await access(req, 'admin'),
-        String(req.params.id),
-      ),
-    ),
+    res.json(await importConnectorBatch(await access(req, 'admin'), String(req.params.id))),
   ),
 );

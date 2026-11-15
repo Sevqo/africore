@@ -1,7 +1,7 @@
 import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Server } from 'node:http';
-import { configureTestEnv,productFixtureBody } from './helpers';
+import { configureTestEnv, productFixtureBody } from './helpers';
 configureTestEnv('platform');
 import { migrate, dbGet, dbAll, dbRun, closeDb } from '../db';
 import { createApp } from '../app';
@@ -26,7 +26,7 @@ async function request(
       ...(cookie ? { Cookie: cookie } : {}),
       ...headers,
     },
-    body: body === undefined ? undefined : JSON.stringify(productFixtureBody(path,method,body)),
+    body: body === undefined ? undefined : JSON.stringify(productFixtureBody(path, method, body)),
   });
   const data = await res.json();
   return {
@@ -74,8 +74,13 @@ test('integer money, discounts, taxes and permissions', () => {
       items: [{ description: 'A', quantity: 1.0001, unit_price_minor: 10 }],
     }),
   );
-  const fractional=documentSchema.parse({...d,discount_minor:0,tax_bps:0,items:[{description:'Measured service',quantity:1.125,unit_price_minor:101}]});
-  assert.equal(totals(fractional).subtotal_minor,114);
+  const fractional = documentSchema.parse({
+    ...d,
+    discount_minor: 0,
+    tax_bps: 0,
+    items: [{ description: 'Measured service', quantity: 1.125, unit_price_minor: 101 }],
+  });
+  assert.equal(totals(fractional).subtotal_minor, 114);
   assert.equal(permitted('viewer', 'finance'), false);
   assert.equal(permitted('operations', 'admin'), false);
   assert.equal(permitted('finance', 'finance'), true);
@@ -103,14 +108,12 @@ test('sign up, verify, create workspace and isolate another user', async () => {
     ).status,
     400,
   );
-  const otherSignup = (
-    await request('/api/auth/signup', 'POST', {
-      email: email('other'),
-      password: 'a-strong-test-password',
-    })
-  );
-  other=otherSignup.cookie;
-  await request('/api/auth/verify','POST',{token:otherSignup.data.verification_token},other);
+  const otherSignup = await request('/api/auth/signup', 'POST', {
+    email: email('other'),
+    password: 'a-strong-test-password',
+  });
+  other = otherSignup.cookie;
+  await request('/api/auth/verify', 'POST', { token: otherSignup.data.verification_token }, other);
   const r = await request(
     '/api/v1/organizations',
     'POST',
@@ -127,20 +130,11 @@ test('sign up, verify, create workspace and isolate another user', async () => {
   assert.equal(r.status, 201);
   org = r.data.id;
   assert.equal(
-    (
-      await request(
-        `/api/v1/organizations/${org}/records/customers`,
-        'GET',
-        undefined,
-        other,
-      )
-    ).status,
+    (await request(`/api/v1/organizations/${org}/records/customers`, 'GET', undefined, other))
+      .status,
     403,
   );
-  assert.equal(
-    (await request(`/api/v1/organizations/${org}/records/customers`)).status,
-    401,
-  );
+  assert.equal((await request(`/api/v1/organizations/${org}/records/customers`)).status, 401);
   const cross = await request('/api/v1/organizations', 'POST', {}, owner, {
     Origin: 'https://evil.example',
   });
@@ -148,12 +142,7 @@ test('sign up, verify, create workspace and isolate another user', async () => {
 });
 test('customer, order and invoice persist with validated transitions', async () => {
   const prefix = `/api/v1/organizations/${org}`;
-  let r = await request(
-    prefix + '/records/customers',
-    'POST',
-    { name: 'Amina Shop' },
-    owner,
-  );
+  let r = await request(prefix + '/records/customers', 'POST', { name: 'Amina Shop' }, owner);
   assert.equal(r.status, 201);
   customer = r.data.id;
   const d = {
@@ -171,81 +160,45 @@ test('customer, order and invoice persist with validated transitions', async () 
     { status: 'awaiting_payment' },
     owner,
   );
-  r = await request(
-    prefix + '/records/invoices',
-    'POST',
-    { ...d, order_id: order },
-    owner,
-  );
+  r = await request(prefix + '/records/invoices', 'POST', { ...d, order_id: order }, owner);
   assert.equal(r.status, 201);
   invoice = r.data.id;
   assert.equal(
     (
-      await request(
-        prefix + '/payment-requests',
-        'POST',
-        { document_id: invoice },
-        owner,
-        { 'Idempotency-Key': 'draft-denied' },
-      )
+      await request(prefix + '/payment-requests', 'POST', { document_id: invoice }, owner, {
+        'Idempotency-Key': 'draft-denied',
+      })
     ).status,
     409,
   );
   assert.equal(
-    (
-      await request(
-        prefix + '/records/invoices/' + invoice,
-        'PATCH',
-        { status: 'issued' },
-        owner,
-      )
-    ).status,
+    (await request(prefix + '/records/invoices/' + invoice, 'PATCH', { status: 'issued' }, owner))
+      .status,
     200,
   );
   assert.equal(
-    (
-      await request(
-        prefix + '/records/invoices/' + invoice,
-        'PATCH',
-        { status: 'paid' },
-        owner,
-      )
-    ).status,
+    (await request(prefix + '/records/invoices/' + invoice, 'PATCH', { status: 'paid' }, owner))
+      .status,
     400,
   );
   assert.equal(
-    (
-      await request(
-        prefix + '/records/invoices/' + invoice,
-        'GET',
-        undefined,
-        other,
-      )
-    ).status,
+    (await request(prefix + '/records/invoices/' + invoice, 'GET', undefined, other)).status,
     403,
   );
   assert.equal(
     (
-      await request(
-        prefix + '/records/invoices/' + invoice,
-        'GET',
-        undefined,
-        owner,
-        { 'X-Environment': 'production' },
-      )
+      await request(prefix + '/records/invoices/' + invoice, 'GET', undefined, owner, {
+        'X-Environment': 'production',
+      })
     ).status,
     402,
   );
 });
 test('checkout delayed then success, duplicates, reconciliation, balanced journal, reports and export', async () => {
   const prefix = `/api/v1/organizations/${org}`;
-  const r = await request(
-    prefix + '/payment-requests',
-    'POST',
-    { document_id: invoice },
-    owner,
-    { 'Idempotency-Key': 'invoice-payment-001' },
-  );
+  const r = await request(prefix + '/payment-requests', 'POST', { document_id: invoice }, owner, {
+    'Idempotency-Key': 'invoice-payment-001',
+  });
   assert.equal(r.status, 201);
   requestId = r.data.id;
   checkout = r.data.checkout_url.split('/').pop();
@@ -258,10 +211,7 @@ test('checkout delayed then success, duplicates, reconciliation, balanced journa
   );
   assert.equal(retry.status, 200);
   assert.equal(retry.data.id, r.data.id);
-  assert.equal(
-    (await request('/api/v1/checkout/' + checkout)).data.merchant,
-    'Test SME',
-  );
+  assert.equal((await request('/api/v1/checkout/' + checkout)).data.merchant, 'Test SME');
   assert.equal(
     (
       await request('/api/v1/checkout/' + checkout + '/pay', 'POST', {
@@ -286,33 +236,16 @@ test('checkout delayed then success, duplicates, reconciliation, balanced journa
     ).data.duplicate,
     true,
   );
-  const doc = (
-    await request(
-      prefix + '/records/invoices/' + invoice,
-      'GET',
-      undefined,
-      owner,
-    )
-  ).data;
+  const doc = (await request(prefix + '/records/invoices/' + invoice, 'GET', undefined, owner))
+    .data;
   assert.equal(doc.status, 'paid');
   assert.equal(doc.paid_minor, 10000);
   assert.equal(
-    (
-      await request(
-        prefix + '/records/orders/' + order,
-        'GET',
-        undefined,
-        owner,
-      )
-    ).data.payment_status,
+    (await request(prefix + '/records/orders/' + order, 'GET', undefined, owner)).data
+      .payment_status,
     'paid',
   );
-  const reconciliation = await request(
-    prefix + '/reconciliation',
-    'GET',
-    undefined,
-    owner,
-  );
+  const reconciliation = await request(prefix + '/reconciliation', 'GET', undefined, owner);
   assert.equal(reconciliation.data.allocations.length, 1);
   const journal = await dbGet(
     'SELECT SUM(debit_minor) AS debit,SUM(credit_minor) AS credit FROM ac_journal WHERE org_id=?',
@@ -320,8 +253,7 @@ test('checkout delayed then success, duplicates, reconciliation, balanced journa
   );
   assert.equal(Number(journal.debit), Number(journal.credit));
   assert.equal(Number(journal.debit), 10000);
-  const report = (await request(prefix + '/report', 'GET', undefined, owner))
-    .data;
+  const report = (await request(prefix + '/report', 'GET', undefined, owner)).data;
   assert.equal(report.confirmed_inflows_minor, 10000);
   assert.equal(report.outstanding_minor, 0);
   const csv = await fetch(base + prefix + '/report?format=csv', {
@@ -344,11 +276,9 @@ test('out-of-order and mismatched results preserve financial state and enter exc
     currency: 'USD',
   });
   assert.equal(r.reconciliation, 'currency_mismatch');
-  const reversal = await request(
-    '/api/v1/checkout/' + checkout + '/pay',
-    'POST',
-    { scenario: 'reversed' },
-  );
+  const reversal = await request('/api/v1/checkout/' + checkout + '/pay', 'POST', {
+    scenario: 'reversed',
+  });
   assert.equal(reversal.data.reconciliation, 'reversal_requires_review');
   const row = await dbGet('SELECT data FROM ac_records WHERE id=?', [invoice]);
   assert.equal(JSON.parse(row.data).status, 'paid');
@@ -370,27 +300,11 @@ test('scoped API credential isolation, storage and revocation; webhook signature
   assert.equal(key.status, 201);
   const headers = { Authorization: 'Bearer ' + key.data.key };
   assert.equal(
-    (
-      await request(
-        prefix + '/records/customers',
-        'GET',
-        undefined,
-        '',
-        headers,
-      )
-    ).status,
+    (await request(prefix + '/records/customers', 'GET', undefined, '', headers)).status,
     200,
   );
   assert.equal(
-    (
-      await request(
-        prefix + '/records/customers',
-        'POST',
-        { name: 'No' },
-        '',
-        headers,
-      )
-    ).status,
+    (await request(prefix + '/records/customers', 'POST', { name: 'No' }, '', headers)).status,
     403,
   );
   assert.equal(
@@ -402,21 +316,11 @@ test('scoped API credential isolation, storage and revocation; webhook signature
     ).status,
     403,
   );
-  const stored = await dbGet('SELECT key_hash FROM ac_credentials WHERE id=?', [
-    key.data.id,
-  ]);
+  const stored = await dbGet('SELECT key_hash FROM ac_credentials WHERE id=?', [key.data.id]);
   assert.notEqual(stored.key_hash, key.data.key);
   await request(prefix + '/credentials/' + key.data.id, 'DELETE', {}, owner);
   assert.equal(
-    (
-      await request(
-        prefix + '/records/customers',
-        'GET',
-        undefined,
-        '',
-        headers,
-      )
-    ).status,
+    (await request(prefix + '/records/customers', 'GET', undefined, '', headers)).status,
     403,
   );
   const hook = await request(
@@ -426,18 +330,19 @@ test('scoped API credential isolation, storage and revocation; webhook signature
     owner,
   );
   assert.equal(hook.status, 201);
-  const ep = await dbGet('SELECT * FROM ac_endpoints WHERE id=?', [
-    hook.data.id,
-  ]);
+  const ep = await dbGet('SELECT * FROM ac_endpoints WHERE id=?', [hook.data.id]);
   assert.notEqual(ep.secret, hook.data.secret);
-  assert.equal(unseal(ep.secret,JSON.stringify(['endpoint',ep.org_id,ep.environment,ep.id])), hook.data.secret);
-  const signed = createHmac('sha256', unseal(ep.secret,JSON.stringify(['endpoint',ep.org_id,ep.environment,ep.id])))
+  assert.equal(
+    unseal(ep.secret, JSON.stringify(['endpoint', ep.org_id, ep.environment, ep.id])),
+    hook.data.secret,
+  );
+  const signed = createHmac(
+    'sha256',
+    unseal(ep.secret, JSON.stringify(['endpoint', ep.org_id, ep.environment, ep.id])),
+  )
     .update('123.raw')
     .digest('hex');
-  assert.equal(
-    signed,
-    createHmac('sha256', hook.data.secret).update('123.raw').digest('hex'),
-  );
+  assert.equal(signed, createHmac('sha256', hook.data.secret).update('123.raw').digest('hex'));
   assert.equal(unseal(seal('test-secret')), 'test-secret');
   const d = {
     customer_id: customer,
@@ -446,16 +351,10 @@ test('scoped API credential isolation, storage and revocation; webhook signature
     due_date: '2026-10-30',
   };
   await request(prefix + '/records/invoices', 'POST', d, owner);
-  const delivery = await dbGet(
-    'SELECT * FROM ac_deliveries WHERE endpoint_id=?',
-    [hook.data.id],
-  );
+  const delivery = await dbGet('SELECT * FROM ac_deliveries WHERE endpoint_id=?', [hook.data.id]);
   assert.equal(delivery.status, 'pending');
   assert.equal(JSON.parse(delivery.payload).type, 'invoice.created');
-  assert.equal(
-    (await request('/api/v1/internal', 'GET', undefined, owner)).status,
-    403,
-  );
+  assert.equal((await request('/api/v1/internal', 'GET', undefined, owner)).status, 403);
 });
 test('transaction import deduplicates and does not confirm provider payment', async () => {
   const path = `/api/v1/organizations/${org}/import`,
@@ -473,10 +372,9 @@ test('transaction import deduplicates and does not confirm provider payment', as
     };
   assert.equal((await request(path, 'POST', body, owner)).data.imported, 1);
   assert.equal((await request(path, 'POST', body, owner)).data.duplicates, 1);
-  const rows = await dbAll(
-    "SELECT data FROM ac_records WHERE org_id=? AND kind='transactions'",
-    [org],
-  );
+  const rows = await dbAll("SELECT data FROM ac_records WHERE org_id=? AND kind='transactions'", [
+    org,
+  ]);
   assert.equal(JSON.parse(rows[0].data).provider_verified, false);
 });
 test('viewer invitation enforces backend roles and session revocation', async () => {
@@ -488,25 +386,13 @@ test('viewer invitation enforces backend roles and session revocation', async ()
   );
   assert.equal(invite.status, 201);
   assert.equal(
-    (
-      await request(
-        '/api/v1/invitations/accept',
-        'POST',
-        { token: invite.data.token },
-        other,
-      )
-    ).status,
+    (await request('/api/v1/invitations/accept', 'POST', { token: invite.data.token }, other))
+      .status,
     200,
   );
   assert.equal(
-    (
-      await request(
-        `/api/v1/organizations/${org}/records/customers`,
-        'GET',
-        undefined,
-        other,
-      )
-    ).status,
+    (await request(`/api/v1/organizations/${org}/records/customers`, 'GET', undefined, other))
+      .status,
     200,
   );
   assert.equal(
@@ -533,20 +419,14 @@ test('viewer invitation enforces backend roles and session revocation', async ()
     ).status,
     200,
   );
-  assert.equal(
-    (await request('/api/auth/me', 'GET', undefined, other)).status,
-    401,
-  );
+  assert.equal((await request('/api/auth/me', 'GET', undefined, other)).status, 401);
 });
 
 // Cross-process persistence and cryptographic delivery tests use a controlled transport.
 test('webhook worker signs raw payload, retries errors and reaches dead letter with authorized replay', async () => {
   const { deliverWebhooks } = await import('../platform/payments');
   const ep = await dbGet('SELECT * FROM ac_endpoints WHERE org_id=?', [org]);
-  const delivery = await dbGet(
-    'SELECT * FROM ac_deliveries WHERE endpoint_id=?',
-    [ep.id],
-  );
+  const delivery = await dbGet('SELECT * FROM ac_deliveries WHERE endpoint_id=?', [ep.id]);
   let received: any;
   const transport: typeof fetch = async (_url, init) => {
     received = init;
@@ -559,14 +439,16 @@ test('webhook worker signs raw payload, retries errors and reaches dead letter w
     digest = signature.match(/v1=([a-f0-9]+)/)![1];
   assert.equal(
     digest,
-    createHmac('sha256', unseal(ep.secret,JSON.stringify(['endpoint',ep.org_id,ep.environment,ep.id])))
+    createHmac(
+      'sha256',
+      unseal(ep.secret, JSON.stringify(['endpoint', ep.org_id, ep.environment, ep.id])),
+    )
       .update(timestamp + '.' + received.body)
       .digest('hex'),
   );
   assert.equal(headers['AfriCore-Delivery'], delivery.id);
   assert.equal(
-    (await dbGet('SELECT status FROM ac_deliveries WHERE id=?', [delivery.id]))
-      .status,
+    (await dbGet('SELECT status FROM ac_deliveries WHERE id=?', [delivery.id])).status,
     'delivered',
   );
   const replay = await request(
@@ -576,20 +458,14 @@ test('webhook worker signs raw payload, retries errors and reaches dead letter w
     owner,
   );
   assert.equal(replay.status, 200);
-  const failing: typeof fetch = async () =>
-    new Response('fail', { status: 500 });
+  const failing: typeof fetch = async () => new Response('fail', { status: 500 });
   for (let i = 0; i < 5; i++) {
     await (
       await import('../db')
-    ).dbRun('UPDATE ac_deliveries SET next_at=? WHERE id=?', [
-      '2000-01-01T00:00:00Z',
-      delivery.id,
-    ]);
+    ).dbRun('UPDATE ac_deliveries SET next_at=? WHERE id=?', ['2000-01-01T00:00:00Z', delivery.id]);
     await deliverWebhooks(org, failing, async () => ({ allowed: true }));
   }
-  const failed = await dbGet('SELECT * FROM ac_deliveries WHERE id=?', [
-    delivery.id,
-  ]);
+  const failed = await dbGet('SELECT * FROM ac_deliveries WHERE id=?', [delivery.id]);
   assert.equal(failed.status, 'dead_letter');
   assert.equal(failed.attempts, 5);
 });
@@ -602,12 +478,7 @@ test('partial collection and concurrent duplicates never overallocate', async ()
     due_date: '2026-10-30',
   };
   const doc = await request(prefix + '/records/invoices', 'POST', d, owner);
-  await request(
-    prefix + '/records/invoices/' + doc.data.id,
-    'PATCH',
-    { status: 'issued' },
-    owner,
-  );
+  await request(prefix + '/records/invoices/' + doc.data.id, 'PATCH', { status: 'issued' }, owner);
   const payment = await request(
     prefix + '/payment-requests',
     'POST',
@@ -620,14 +491,8 @@ test('partial collection and concurrent duplicates never overallocate', async ()
     scenario: 'partial',
   });
   assert.equal(partial.data.reconciliation, 'matched');
-  const row = (
-    await request(
-      prefix + '/records/invoices/' + doc.data.id,
-      'GET',
-      undefined,
-      owner,
-    )
-  ).data;
+  const row = (await request(prefix + '/records/invoices/' + doc.data.id, 'GET', undefined, owner))
+    .data;
   assert.equal(row.paid_minor, 5000);
   assert.equal(row.status, 'partially_paid');
   const next = await request(
@@ -648,12 +513,7 @@ test('partial collection and concurrent duplicates never overallocate', async ()
   ]);
   assert.equal(results.filter((r) => r.data.duplicate).length, 1);
   const final = (
-    await request(
-      prefix + '/records/invoices/' + doc.data.id,
-      'GET',
-      undefined,
-      owner,
-    )
+    await request(prefix + '/records/invoices/' + doc.data.id, 'GET', undefined, owner)
   ).data;
   assert.equal(final.paid_minor, 10001);
   assert.equal(final.status, 'paid');
@@ -670,21 +530,14 @@ test('signed callbacks reject forged and expired events', async () => {
     currency: 'KES',
   };
   const timestamp = Math.floor(Date.now() / 1000).toString();
-  const signature = createHmac(
-    'sha256',
-    process.env.AFRICORE_SANDBOX_CALLBACK_SECRET,
-  )
+  const signature = createHmac('sha256', process.env.AFRICORE_SANDBOX_CALLBACK_SECRET)
     .update(timestamp + '.' + JSON.stringify(body))
     .digest('hex');
   const headers = {
     'AfriCore-Timestamp': timestamp,
     'AfriCore-Signature': signature,
   };
-  assert.equal(
-    (await request('/api/v1/callbacks/sandbox', 'POST', body, '', headers))
-      .status,
-    200,
-  );
+  assert.equal((await request('/api/v1/callbacks/sandbox', 'POST', body, '', headers)).status, 200);
   assert.equal(
     (
       await request('/api/v1/callbacks/sandbox', 'POST', body, '', {
@@ -703,20 +556,14 @@ test('signed callbacks reject forged and expired events', async () => {
     ).status,
     401,
   );
-  assert.equal(
-    (await request('/api/v1/callbacks/mpesa', 'POST', body, '', headers))
-      .status,
-    503,
-  );
+  assert.equal((await request('/api/v1/callbacks/mpesa', 'POST', body, '', headers)).status, 503);
 });
 
 test('direct order collections update independent payment status and prevent reinvoicing', async () => {
   const prefix = `/api/v1/organizations/${org}`;
   const d = {
     customer_id: customer,
-    items: [
-      { description: 'Direct order', quantity: 1, unit_price_minor: 5000 },
-    ],
+    items: [{ description: 'Direct order', quantity: 1, unit_price_minor: 5000 }],
     issue_date: '2026-10-01',
     due_date: '2026-10-30',
   };
@@ -742,50 +589,29 @@ test('direct order collections update independent payment status and prevent rei
   );
   assert.equal(settled.status, 200);
   const saved = (
-    await request(
-      prefix + '/records/orders/' + order.data.id,
-      'GET',
-      undefined,
-      owner,
-    )
+    await request(prefix + '/records/orders/' + order.data.id, 'GET', undefined, owner)
   ).data;
   assert.equal(saved.payment_status, 'paid');
   assert.equal(saved.fulfillment_status, 'unfulfilled');
   assert.equal(
-    (
-      await request(
-        prefix + '/records/invoices',
-        'POST',
-        { ...d, order_id: order.data.id },
-        owner,
-      )
-    ).status,
+    (await request(prefix + '/records/invoices', 'POST', { ...d, order_id: order.data.id }, owner))
+      .status,
     409,
   );
 });
 
 test('webhook listing and replay respect environment isolation', async () => {
   const prefix = `/api/v1/organizations/${org}`;
-  const production = await request(
-    prefix + '/webhooks',
-    'GET',
-    undefined,
-    owner,
-    { 'X-Environment': 'production' },
-  );
+  const production = await request(prefix + '/webhooks', 'GET', undefined, owner, {
+    'X-Environment': 'production',
+  });
   assert.equal(production.status, 402); // Sandbox service access is not inherited.
-  const delivery = await dbGet('SELECT id FROM ac_deliveries WHERE org_id=?', [
-    org,
-  ]);
+  const delivery = await dbGet('SELECT id FROM ac_deliveries WHERE org_id=?', [org]);
   assert.equal(
     (
-      await request(
-        prefix + '/deliveries/' + delivery.id + '/replay',
-        'POST',
-        {},
-        owner,
-        { 'X-Environment': 'production' },
-      )
+      await request(prefix + '/deliveries/' + delivery.id + '/replay', 'POST', {}, owner, {
+        'X-Environment': 'production',
+      })
     ).status,
     402,
   );
@@ -810,12 +636,7 @@ test('record search and status filters run before stable pagination and keep wil
     '2020-01-01T00:00:00Z',
     target.data.id,
   ]);
-  await request(
-    prefix + '/records/customers',
-    'POST',
-    { name: 'Newer unrelated customer' },
-    owner,
-  );
+  await request(prefix + '/records/customers', 'POST', { name: 'Newer unrelated customer' }, owner);
   const search = await request(
     prefix + '/records/customers?limit=1&q=' + encodeURIComponent('100%_'),
     'GET',
@@ -825,9 +646,7 @@ test('record search and status filters run before stable pagination and keep wil
   assert.equal(search.data.data.length, 1);
   assert.equal(search.data.data[0].id, target.data.id);
   const absent = await request(
-    prefix +
-      '/records/customers?limit=1&q=' +
-      encodeURIComponent('100%_does-not-exist'),
+    prefix + '/records/customers?limit=1&q=' + encodeURIComponent('100%_does-not-exist'),
     'GET',
     undefined,
     owner,
@@ -835,19 +654,12 @@ test('record search and status filters run before stable pagination and keep wil
   assert.deepEqual(absent.data.data, []);
   const doc = {
     customer_id: customer,
-    items: [
-      { description: 'Filter fixture', quantity: 1, unit_price_minor: 100 },
-    ],
+    items: [{ description: 'Filter fixture', quantity: 1, unit_price_minor: 100 }],
     issue_date: '2026-10-01',
     due_date: '2026-10-30',
     notes: 'status-pagination-fixture',
   };
-  const issued = await request(
-    prefix + '/records/invoices',
-    'POST',
-    doc,
-    owner,
-  );
+  const issued = await request(prefix + '/records/invoices', 'POST', doc, owner);
   await request(
     prefix + '/records/invoices/' + issued.data.id,
     'PATCH',
@@ -860,21 +672,20 @@ test('record search and status filters run before stable pagination and keep wil
   ]);
   await request(prefix + '/records/invoices', 'POST', doc, owner);
   const filtered = await request(
-    prefix +
-      '/records/invoices?limit=1&status=issued&q='+issued.data.id,
+    prefix + '/records/invoices?limit=1&status=issued&q=' + issued.data.id,
     'GET',
     undefined,
     owner,
   );
   assert.equal(filtered.data.data[0].id, issued.data.id);
-  const hidden=await request(prefix+'/records/invoices?q=status-pagination-fixture','GET',undefined,owner);
-  assert.deepEqual(hidden.data.data,[],'Private notes must not act as a search oracle');
-  const pageA = await request(
-    prefix + '/records/customers?limit=1',
+  const hidden = await request(
+    prefix + '/records/invoices?q=status-pagination-fixture',
     'GET',
     undefined,
     owner,
   );
+  assert.deepEqual(hidden.data.data, [], 'Private notes must not act as a search oracle');
+  const pageA = await request(prefix + '/records/customers?limit=1', 'GET', undefined, owner);
   const pageB = await request(
     prefix + '/records/customers?limit=1&offset=1',
     'GET',
@@ -883,25 +694,15 @@ test('record search and status filters run before stable pagination and keep wil
   );
   assert.notEqual(pageA.data.data[0].id, pageB.data.data[0].id);
   assert.equal(
-    (
-      await request(
-        prefix + '/records/customers?limit=1&q=target',
-        'GET',
-        undefined,
-        outsider,
-      )
-    ).status,
+    (await request(prefix + '/records/customers?limit=1&q=target', 'GET', undefined, outsider))
+      .status,
     403,
   );
   assert.deepEqual(
     (
-      await request(
-        prefix + '/records/customers?q=target',
-        'GET',
-        undefined,
-        owner,
-        { 'X-Environment': 'production' },
-      )
+      await request(prefix + '/records/customers?q=target', 'GET', undefined, owner, {
+        'X-Environment': 'production',
+      })
     ).status,
     402,
   );
@@ -927,12 +728,7 @@ test('retailer journey allocates KSh 1500 then KSh 1000, updates order and repor
     issue_date: '2026-10-01',
     due_date: '2026-10-30',
   };
-  const saleOrder = await request(
-    prefix + '/records/orders',
-    'POST',
-    doc,
-    owner,
-  );
+  const saleOrder = await request(prefix + '/records/orders', 'POST', doc, owner);
   assert.equal(saleOrder.status, 201);
   await request(
     prefix + '/records/orders/' + saleOrder.data.id,
@@ -947,14 +743,8 @@ test('retailer journey allocates KSh 1500 then KSh 1000, updates order and repor
     owner,
   );
   assert.equal(inv.status, 201);
-  await request(
-    prefix + '/records/invoices/' + inv.data.id,
-    'PATCH',
-    { status: 'issued' },
-    owner,
-  );
-  const baseline = (await request(prefix + '/report', 'GET', undefined, owner))
-    .data;
+  await request(prefix + '/records/invoices/' + inv.data.id, 'PATCH', { status: 'issued' }, owner);
+  const baseline = (await request(prefix + '/report', 'GET', undefined, owner)).data;
   const payment = await request(
     prefix + '/payment-requests',
     'POST',
@@ -965,11 +755,7 @@ test('retailer journey allocates KSh 1500 then KSh 1000, updates order and repor
   assert.equal(payment.status, 201);
   process.env.AFRICORE_SANDBOX_CALLBACK_SECRET =
     'test-only-sandbox-callback-key-at-least-32-characters';
-  async function callback(
-    request_id: string,
-    reference: string,
-    amount_minor: number,
-  ) {
+  async function callback(request_id: string, reference: string, amount_minor: number) {
     const body = {
       request_id,
       reference,
@@ -978,10 +764,7 @@ test('retailer journey allocates KSh 1500 then KSh 1000, updates order and repor
       currency: 'KES',
     };
     const stamp = Math.floor(Date.now() / 1000).toString();
-    const signature = createHmac(
-      'sha256',
-      process.env.AFRICORE_SANDBOX_CALLBACK_SECRET!,
-    )
+    const signature = createHmac('sha256', process.env.AFRICORE_SANDBOX_CALLBACK_SECRET!)
       .update(stamp + '.' + JSON.stringify(body))
       .digest('hex');
     return request('/api/v1/callbacks/sandbox', 'POST', body, '', {
@@ -989,20 +772,11 @@ test('retailer journey allocates KSh 1500 then KSh 1000, updates order and repor
       'AfriCore-Signature': signature,
     });
   }
-  const first = await callback(
-    payment.data.id,
-    'journey-first-' + unique,
-    150000,
-  );
+  const first = await callback(payment.data.id, 'journey-first-' + unique, 150000);
   assert.equal(first.status, 200);
   assert.equal(first.data.reconciliation, 'matched');
   const partial = (
-    await request(
-      prefix + '/records/invoices/' + inv.data.id,
-      'GET',
-      undefined,
-      owner,
-    )
+    await request(prefix + '/records/invoices/' + inv.data.id, 'GET', undefined, owner)
   ).data;
   assert.equal(partial.status, 'partially_paid');
   assert.equal(partial.total_minor - partial.paid_minor, 100000);
@@ -1014,52 +788,28 @@ test('retailer journey allocates KSh 1500 then KSh 1000, updates order and repor
     { 'Idempotency-Key': 'journey-remainder-' + unique },
   );
   assert.equal(remainder.data.amount_minor, 100000);
-  const final = await callback(
-    remainder.data.id,
-    'journey-final-' + unique,
-    100000,
-  );
+  const final = await callback(remainder.data.id, 'journey-final-' + unique, 100000);
   assert.equal(final.status, 200);
-  const replay = await callback(
-    remainder.data.id,
-    'journey-final-' + unique,
-    100000,
-  );
+  const replay = await callback(remainder.data.id, 'journey-final-' + unique, 100000);
   assert.equal(replay.data.duplicate, true);
   for (let read = 0; read < 2; read++) {
     const saved = (
-      await request(
-        prefix + '/records/invoices/' + inv.data.id,
-        'GET',
-        undefined,
-        owner,
-      )
+      await request(prefix + '/records/invoices/' + inv.data.id, 'GET', undefined, owner)
     ).data;
     assert.equal(saved.status, 'paid');
     assert.equal(saved.paid_minor, 250000);
   }
   assert.equal(
-    (
-      await request(
-        prefix + '/records/orders/' + saleOrder.data.id,
-        'GET',
-        undefined,
-        owner,
-      )
-    ).data.payment_status,
+    (await request(prefix + '/records/orders/' + saleOrder.data.id, 'GET', undefined, owner)).data
+      .payment_status,
     'paid',
   );
-  const report = (await request(prefix + '/report', 'GET', undefined, owner))
-    .data;
-  assert.equal(
-    report.confirmed_inflows_minor - baseline.confirmed_inflows_minor,
-    250000,
-  );
+  const report = (await request(prefix + '/report', 'GET', undefined, owner)).data;
+  assert.equal(report.confirmed_inflows_minor - baseline.confirmed_inflows_minor, 250000);
   assert.equal(baseline.outstanding_minor - report.outstanding_minor, 250000);
-  const allocations = await dbAll(
-    'SELECT * FROM ac_allocations WHERE document_id=?',
-    [inv.data.id],
-  );
+  const allocations = await dbAll('SELECT * FROM ac_allocations WHERE document_id=?', [
+    inv.data.id,
+  ]);
   assert.equal(allocations.length, 2);
   assert.equal(
     allocations.reduce((sum, a) => sum + Number(a.amount_minor), 0),
@@ -1071,14 +821,7 @@ test('retailer journey allocates KSh 1500 then KSh 1000, updates order and repor
   assert.equal(csv.status, 200);
   assert.ok((await csv.text()).includes(inv.data.reference));
   assert.equal(
-    (
-      await request(
-        prefix + '/records/invoices/' + inv.data.id,
-        'GET',
-        undefined,
-        outsider,
-      )
-    ).status,
+    (await request(prefix + '/records/invoices/' + inv.data.id, 'GET', undefined, outsider)).status,
     403,
   );
 });
@@ -1100,10 +843,7 @@ test('recovery revokes existing sessions, consumes the token once and permits on
     password: oldPassword,
   });
   assert.equal(signin.status, 200);
-  assert.equal(
-    (await request('/api/auth/me', 'GET', undefined, signin.cookie)).status,
-    200,
-  );
+  assert.equal((await request('/api/auth/me', 'GET', undefined, signin.cookie)).status, 200);
   const recovery = await request('/api/auth/recover', 'POST', {
     email: address,
   });
@@ -1117,10 +857,7 @@ test('recovery revokes existing sessions, consumes the token once and permits on
     ).status,
     200,
   );
-  assert.equal(
-    (await request('/api/auth/me', 'GET', undefined, signin.cookie)).status,
-    401,
-  );
+  assert.equal((await request('/api/auth/me', 'GET', undefined, signin.cookie)).status, 401);
   assert.equal(
     (
       await request('/api/auth/reset', 'POST', {
@@ -1144,14 +881,8 @@ test('recovery revokes existing sessions, consumes the token once and permits on
     password: newPassword,
   });
   assert.equal(fresh.status, 200);
-  assert.equal(
-    (await request('/api/auth/signout', 'POST', {}, fresh.cookie)).status,
-    200,
-  );
-  assert.equal(
-    (await request('/api/auth/me', 'GET', undefined, fresh.cookie)).status,
-    401,
-  );
+  assert.equal((await request('/api/auth/signout', 'POST', {}, fresh.cookie)).status, 200);
+  assert.equal((await request('/api/auth/me', 'GET', undefined, fresh.cookie)).status, 401);
 });
 
 test('customer corrections permit clearing optional contact data and reject blank names without losing history', async () => {
@@ -1189,29 +920,38 @@ test('customer corrections permit clearing optional contact data and reject blan
     400,
   );
   const saved = (
-    await request(
-      prefix + '/records/customers/' + created.data.id,
-      'GET',
-      undefined,
-      owner,
-    )
+    await request(prefix + '/records/customers/' + created.data.id, 'GET', undefined, owner)
   ).data;
   assert.equal(saved.name, 'Updated customer');
   assert.equal(saved.notes, 'Corrected contact');
-  const history = await dbAll('SELECT * FROM ac_audit WHERE resource_id=?', [
-    created.data.id,
-  ]);
+  const history = await dbAll('SELECT * FROM ac_audit WHERE resource_id=?', [created.data.id]);
   assert.ok(history.length >= 2);
 });
 
-test('existing eight-character passwords authenticate and new signup rejects seven characters',async()=>{
-  const {passwordHash}=await import('../platform/crypto');
-  const address=email('existing-short');
-  const account=await request('/api/auth/signup','POST',{email:address,password:'a long unique test phrase'});
-  assert.equal(account.status,201);
-  await dbRun('UPDATE ac_users SET password_hash=? WHERE id=?',[await passwordHash('old-pass'),account.data.id]);
-  const login=await request('/api/auth/signin','POST',{email:address,password:'old-pass'});
-  assert.equal(login.status,200);assert.equal(login.data.id,account.data.id);assert.ok(login.cookie);
-  assert.equal((await request('/api/auth/signup','POST',{email:email('eight-new'),password:'quietbay'})).status,201);
-  assert.equal((await request('/api/auth/signup','POST',{email:email('short-new'),password:'7-chars'})).status,400);
+test('existing eight-character passwords authenticate and new signup rejects seven characters', async () => {
+  const { passwordHash } = await import('../platform/crypto');
+  const address = email('existing-short');
+  const account = await request('/api/auth/signup', 'POST', {
+    email: address,
+    password: 'a long unique test phrase',
+  });
+  assert.equal(account.status, 201);
+  await dbRun('UPDATE ac_users SET password_hash=? WHERE id=?', [
+    await passwordHash('old-pass'),
+    account.data.id,
+  ]);
+  const login = await request('/api/auth/signin', 'POST', { email: address, password: 'old-pass' });
+  assert.equal(login.status, 200);
+  assert.equal(login.data.id, account.data.id);
+  assert.ok(login.cookie);
+  assert.equal(
+    (await request('/api/auth/signup', 'POST', { email: email('eight-new'), password: 'quietbay' }))
+      .status,
+    201,
+  );
+  assert.equal(
+    (await request('/api/auth/signup', 'POST', { email: email('short-new'), password: '7-chars' }))
+      .status,
+    400,
+  );
 });

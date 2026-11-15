@@ -49,11 +49,7 @@ export function Header() {
         >
           <Icon name={searching ? 'close' : 'search'} />
         </button>
-        <a
-          className="icon-button mobile-account"
-          href="/signin"
-          aria-label="Sign in"
-        >
+        <a className="icon-button mobile-account" href="/signin" aria-label="Sign in">
           <Icon name="user" />
         </a>
         <button
@@ -69,11 +65,7 @@ export function Header() {
           <Icon name={open ? 'close' : 'menu'} />
         </button>
       </div>
-      <nav
-        id="main-nav"
-        className={open ? 'open' : ''}
-        aria-label="Main navigation"
-      >
+      <nav id="main-nav" className={open ? 'open' : ''} aria-label="Main navigation">
         {Object.entries(groups).map(([label, links]) => (
           <div className="nav-group" key={label}>
             <button
@@ -87,20 +79,12 @@ export function Header() {
               <Icon name="down" />
             </button>
             {
-              <div
-                className="nav-menu"
-                id={'nav-' + label}
-                hidden={category !== label}
-              >
-                <span className="nav-caption">
-                  Explore {label.toLowerCase()}
-                </span>
+              <div className="nav-menu" id={'nav-' + label} hidden={category !== label}>
+                <span className="nav-caption">Explore {label.toLowerCase()}</span>
                 {(label === 'Products'
                   ? productSections.map((section) => ({
                       title: section.title,
-                      links: section.paths.map((path) =>
-                        links.find(([, url]) => url === path)!,
-                      ),
+                      links: section.paths.map((path) => links.find(([, url]) => url === path)!),
                     }))
                   : [{ title: '', links }]
                 ).map((section) => (
@@ -110,9 +94,7 @@ export function Header() {
                       <a
                         href={url}
                         key={url}
-                        aria-current={
-                          location.pathname === url ? 'page' : undefined
-                        }
+                        aria-current={location.pathname === url ? 'page' : undefined}
                         onClick={close}
                       >
                         {text}
@@ -136,11 +118,7 @@ export function Header() {
         </a>
       </nav>
       {searching && (
-        <section
-          className="site-search"
-          role="search"
-          aria-label="Search AfriCore pages"
-        >
+        <section className="site-search" role="search" aria-label="Search AfriCore pages">
           <label htmlFor="site-query">Find a product or resource</label>
           <input
             id="site-query"
@@ -153,9 +131,7 @@ export function Header() {
           <div className="search-results">
             {Object.values(groups)
               .flat()
-              .filter(([title]) =>
-                title.toLowerCase().includes(query.toLowerCase()),
-              )
+              .filter(([title]) => title.toLowerCase().includes(query.toLowerCase()))
               .map(([title, url]) => (
                 <a key={url} href={url}>
                   {title}

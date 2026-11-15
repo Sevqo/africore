@@ -89,12 +89,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Automations",
-          "Create a workflow",
-          "Your workflows",
-          "Run history"
-        ],
+        "headings": ["Automations", "Create a workflow", "Your workflows", "Run history"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -104,12 +99,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Automations",
-          "Create a workflow",
-          "Your workflows",
-          "Run history"
-        ],
+        "headings": ["Automations", "Create a workflow", "Your workflows", "Run history"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -319,11 +309,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Customer Relationships",
-          "Opportunity pipeline",
-          "Relationship records"
-        ],
+        "headings": ["Customer Relationships", "Opportunity pipeline", "Relationship records"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -333,11 +319,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Customer Relationships",
-          "Opportunity pipeline",
-          "Relationship records"
-        ],
+        "headings": ["Customer Relationships", "Opportunity pipeline", "Relationship records"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -355,9 +337,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Customers"
-        ],
+        "headings": ["Customers"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -367,9 +347,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Customers"
-        ],
+        "headings": ["Customers"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -387,11 +365,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Expenses",
-          "Record an expense",
-          "Recorded expenses"
-        ],
+        "headings": ["Expenses", "Record an expense", "Recorded expenses"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -401,11 +375,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Expenses",
-          "Record an expense",
-          "Recorded expenses"
-        ],
+        "headings": ["Expenses", "Record an expense", "Recorded expenses"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -479,11 +449,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Fulfillment",
-          "Create shipment",
-          "Shipments & delivery evidence"
-        ],
+        "headings": ["Fulfillment", "Create shipment", "Shipments & delivery evidence"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -493,11 +459,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Fulfillment",
-          "Create shipment",
-          "Shipments & delivery evidence"
-        ],
+        "headings": ["Fulfillment", "Create shipment", "Shipments & delivery evidence"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -515,10 +477,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Inventory",
-          "Stock by product"
-        ],
+        "headings": ["Inventory", "Stock by product"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -528,10 +487,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Inventory",
-          "Stock by product"
-        ],
+        "headings": ["Inventory", "Stock by product"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -549,10 +505,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Invoices",
-          "Invoices created"
-        ],
+        "headings": ["Invoices", "Invoices created"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -562,10 +515,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Invoices",
-          "Invoices created"
-        ],
+        "headings": ["Invoices", "Invoices created"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -583,9 +533,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Orders"
-        ],
+        "headings": ["Orders"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -595,9 +543,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Orders"
-        ],
+        "headings": ["Orders"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -615,11 +561,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "People",
-          "People operations",
-          "Authorized employee directory"
-        ],
+        "headings": ["People", "People operations", "Authorized employee directory"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -629,11 +571,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "People",
-          "People operations",
-          "Authorized employee directory"
-        ],
+        "headings": ["People", "People operations", "Authorized employee directory"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -689,10 +627,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Documents",
-          "Private documents"
-        ],
+        "headings": ["Documents", "Private documents"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -702,10 +637,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Documents",
-          "Private documents"
-        ],
+        "headings": ["Documents", "Private documents"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -723,10 +655,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Procurement",
-          "Purchase requests"
-        ],
+        "headings": ["Procurement", "Purchase requests"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -736,10 +665,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Procurement",
-          "Purchase requests"
-        ],
+        "headings": ["Procurement", "Purchase requests"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -757,10 +683,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Products",
-          "Shared product catalog"
-        ],
+        "headings": ["Products", "Shared product catalog"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -770,10 +693,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Products",
-          "Shared product catalog"
-        ],
+        "headings": ["Products", "Shared product catalog"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -791,10 +711,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Work",
-          "Your projects"
-        ],
+        "headings": ["Work", "Your projects"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -804,10 +721,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Work",
-          "Your projects"
-        ],
+        "headings": ["Work", "Your projects"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -825,11 +739,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Quotations",
-          "Quotation to fulfillment",
-          "Quotations"
-        ],
+        "headings": ["Quotations", "Quotation to fulfillment", "Quotations"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,

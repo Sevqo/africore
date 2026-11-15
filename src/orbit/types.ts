@@ -1,5 +1,5 @@
-import { z } from "zod";
-import { StatementSourceType } from "../services/statement/parser";
+import { z } from 'zod';
+import { StatementSourceType } from '../services/statement/parser';
 
 /**
  * Orbit Core: fully-typed queue payloads. Every queue carries a payload whose
@@ -7,7 +7,7 @@ import { StatementSourceType } from "../services/statement/parser";
  * unexpected object at runtime.
  */
 
-export const SUBJECT_TYPE = z.enum(["business", "individual"]);
+export const SUBJECT_TYPE = z.enum(['business', 'individual']);
 export type SubjectType = z.infer<typeof SUBJECT_TYPE>;
 
 /** Statement ingestion: the API uploads content directly (no file storage),
@@ -17,7 +17,7 @@ export const IngestionJobPayload = z.object({
   workflowId: z.string(),
   subjectType: SUBJECT_TYPE,
   subjectId: z.string(),
-  sourceType: z.enum(["individual_mpesa", "business_till", "business_paybill", "bank"]),
+  sourceType: z.enum(['individual_mpesa', 'business_till', 'business_paybill', 'bank']),
   shortcode: z.string().optional(),
   fileName: z.string().optional(),
   label: z.string().optional(),
@@ -30,7 +30,7 @@ export const NormalizationJobPayload = z.object({
   workflowId: z.string(),
   subjectType: SUBJECT_TYPE,
   subjectId: z.string(),
-  sourceType: z.enum(["individual_mpesa", "business_till", "business_paybill", "bank"]),
+  sourceType: z.enum(['individual_mpesa', 'business_till', 'business_paybill', 'bank']),
   shortcode: z.string().optional(),
   fileName: z.string().optional(),
   label: z.string().optional(),
@@ -54,7 +54,7 @@ export const ScoringJobPayload = z.object({
   workflowId: z.string(),
   subjectType: SUBJECT_TYPE,
   subjectId: z.string(),
-  reason: z.enum(["ingestion", "dso_recalc"]),
+  reason: z.enum(['ingestion', 'dso_recalc']),
 });
 export type ScoringJobPayload = z.infer<typeof ScoringJobPayload>;
 
@@ -95,19 +95,25 @@ export type OrbitPayload =
   | MatchingJobPayload
   | DeadLetterJobPayload;
 
-export type OrbitQueueName = "ingestion" | "normalization" | "ledger" | "scoring" | "matching" | "dead-letter";
+export type OrbitQueueName =
+  | 'ingestion'
+  | 'normalization'
+  | 'ledger'
+  | 'scoring'
+  | 'matching'
+  | 'dead-letter';
 
 export const ORBIT_QUEUE_NAMES: readonly OrbitQueueName[] = [
-  "ingestion",
-  "normalization",
-  "ledger",
-  "scoring",
-  "matching",
-  "dead-letter",
+  'ingestion',
+  'normalization',
+  'ledger',
+  'scoring',
+  'matching',
+  'dead-letter',
 ];
 
 export function statementSourceType(value: string): StatementSourceType | undefined {
-  return ["individual_mpesa", "business_till", "business_paybill", "bank"].includes(value)
+  return ['individual_mpesa', 'business_till', 'business_paybill', 'bank'].includes(value)
     ? (value as StatementSourceType)
     : undefined;
 }

@@ -1,4 +1,4 @@
-import {DataPlatformView} from './DataPlatformView';
+import { DataPlatformView } from './DataPlatformView';
 import { Field, Form, Provenance, Empty, type API, type Action } from './UI';
 export function ConnectView({
   data,
@@ -15,7 +15,7 @@ export function ConnectView({
 }) {
   return (
     <>
-      <DataPlatformView api={api} writable={admin}/>
+      <DataPlatformView api={api} writable={admin} />
       <section className="panel">
         <h2>Available connector adapters</h2>
         <div className="connector-catalog">
@@ -23,16 +23,10 @@ export function ConnectView({
             <article key={c.provider}>
               <h3>{c.provider.replaceAll('_', ' ')}</h3>
               <Provenance
-                label={
-                  c.production_available
-                    ? 'authorized_import'
-                    : 'sandbox_or_unavailable'
-                }
+                label={c.production_available ? 'authorized_import' : 'sandbox_or_unavailable'}
               />
               <p>{c.authentication.replaceAll('_', ' ')}</p>
-              <small>
-                {c.capabilities.join(', ') || 'Live access required'}
-              </small>
+              <small>{c.capabilities.join(', ') || 'Live access required'}</small>
             </article>
           ))}
         </div>
@@ -50,9 +44,7 @@ export function ConnectView({
             <Field label="Test scenario">
               <select name="scenario">
                 <option value="success">Success</option>
-                <option value="transient_failure">
-                  Temporary failure, then recovery
-                </option>
+                <option value="transient_failure">Temporary failure, then recovery</option>
                 <option value="failure">Persistent failure</option>
               </select>
             </Field>
@@ -78,18 +70,14 @@ export function ConnectView({
                 </p>
               )}
               <small>
-                Schema {c.normalization_version}. Sandbox samples never silently
-                become live revenue.
+                Schema {c.normalization_version}. Sandbox samples never silently become live
+                revenue.
               </small>
             </div>
             {admin && (
               <div className="row-actions">
                 <button
-                  onClick={() =>
-                    action(() =>
-                      api('/connectors/' + c.id + '/sync', 'POST', {}),
-                    )
-                  }
+                  onClick={() => action(() => api('/connectors/' + c.id + '/sync', 'POST', {}))}
                 >
                   Sync
                 </button>
@@ -97,8 +85,7 @@ export function ConnectView({
                   <button
                     onClick={() =>
                       action(
-                        () =>
-                          api('/connectors/' + c.id + '/import', 'POST', {}),
+                        () => api('/connectors/' + c.id + '/import', 'POST', {}),
                         'Normalized sandbox sample imported. Repeating is safe.',
                       )
                     }
@@ -110,10 +97,7 @@ export function ConnectView({
                   onClick={() =>
                     action(() =>
                       api('/connectors/' + c.id + '/action', 'POST', {
-                        action:
-                          c.status === 'disconnected'
-                            ? 'reconnect'
-                            : 'disconnect',
+                        action: c.status === 'disconnected' ? 'reconnect' : 'disconnect',
                       }),
                     )
                   }
@@ -131,15 +115,7 @@ export function ConnectView({
     </>
   );
 }
-export function RiskView({
-  data,
-  api,
-  action,
-}: {
-  data: any;
-  api: API;
-  action: Action;
-}) {
+export function RiskView({ data, api, action }: { data: any; api: API; action: Action }) {
   return (
     <section className="panel">
       <h2>Explainable review signals</h2>
@@ -164,12 +140,7 @@ export function RiskView({
                   )
                 }
               >
-                <input
-                  name="note"
-                  required
-                  minLength={5}
-                  placeholder="Review note"
-                />
+                <input name="note" required minLength={5} placeholder="Review note" />
                 <button className="secondary-button">Record review</button>
               </Form>
             )}
@@ -191,14 +162,24 @@ export function EngineeringView({
   setQuery: (q: string) => void;
 }) {
   if (!data) return null;
-  if(data.restricted)return <section className="panel"><h2>Restricted engineering access</h2><p>Operational tools use a separately authorized internal channel. They are unavailable through the public workspace. Business ownership and Developer API keys do not grant operator access.</p></section>;
+  if (data.restricted)
+    return (
+      <section className="panel">
+        <h2>Restricted engineering access</h2>
+        <p>
+          Operational tools use a separately authorized internal channel. They are unavailable
+          through the public workspace. Business ownership and Developer API keys do not grant
+          operator access.
+        </p>
+      </section>
+    );
   return (
     <>
       <section className="panel">
         <h2>Orbit · Stage 2 operations</h2>
         <p>
-          Verified engineering allowlist only. Aggregated counts exclude
-          customer records and raw prompts.
+          Verified engineering allowlist only. Aggregated counts exclude customer records and raw
+          prompts.
         </p>
         <h3>Automation runs</h3>
         {data.ops.automations.map((r: any) => (
@@ -209,8 +190,8 @@ export function EngineeringView({
         <h3>AI usage</h3>
         {data.ops.ai_usage.map((r: any, i: number) => (
           <p key={i}>
-            {r.provider} / {r.model} · {r.status}: {r.requests} requests,{' '}
-            {r.input_tokens || 0} input / {r.output_tokens || 0} output tokens
+            {r.provider} / {r.model} · {r.status}: {r.requests} requests, {r.input_tokens || 0}{' '}
+            input / {r.output_tokens || 0} output tokens
           </p>
         ))}
         <p>{data.ops.ai_cost.reason}</p>
@@ -230,9 +211,7 @@ export function EngineeringView({
           onChange={(e) => setQuery(e.target.value)}
         />
         {data.docs
-          .filter((d: any) =>
-            (d.name + ' ' + d.text).toLowerCase().includes(query.toLowerCase()),
-          )
+          .filter((d: any) => (d.name + ' ' + d.text).toLowerCase().includes(query.toLowerCase()))
           .map((d: any) => (
             <details className="engineering-doc" key={d.name}>
               <summary>{d.name.replaceAll('_', ' ')}</summary>
@@ -240,8 +219,8 @@ export function EngineeringView({
             </details>
           ))}
         <p>
-          Kai provides read-only document retrieval. It cannot execute
-          deployments, credential changes or financial actions.
+          Kai provides read-only document retrieval. It cannot execute deployments, credential
+          changes or financial actions.
         </p>
       </section>
     </>

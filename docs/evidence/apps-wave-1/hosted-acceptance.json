@@ -3,10 +3,7 @@
   "checks": [
     {
       "kind": "personal",
-      "apps": [
-        "analytics",
-        "finance"
-      ],
+      "apps": ["analytics", "finance"],
       "installationFee": 0
     },
     {
@@ -17,14 +14,7 @@
     },
     {
       "kind": "business",
-      "apps": [
-        "analytics",
-        "automations",
-        "crm",
-        "finance",
-        "inventory",
-        "sales"
-      ],
+      "apps": ["analytics", "automations", "crm", "finance", "inventory", "sales"],
       "installationFee": 0
     },
     {

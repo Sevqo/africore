@@ -34,11 +34,7 @@ const node = spawn(
 let diagnostics = '';
 node.stdout.on('data', (data) => {
   diagnostics = (
-    diagnostics +
-    String(data).replace(
-      /Private Key:.*$/gm,
-      '[public development key omitted]',
-    )
+    diagnostics + String(data).replace(/Private Key:.*$/gm, '[public development key omitted]')
   ).slice(-2000);
   if (diagnostics.includes('Started HTTP')) ready = true;
 });
@@ -87,10 +83,7 @@ try {
     deployment.contract_address,
   ]);
   const bundle = JSON.parse(
-    fs.readFileSync(
-      path.join(root, '.tmp/stage3-verification-bundle.json'),
-      'utf8',
-    ),
+    fs.readFileSync(path.join(root, '.tmp/stage3-verification-bundle.json'), 'utf8'),
   );
   fs.writeFileSync(
     path.join(root, '.tmp/local-chain-test-report.json'),

@@ -340,10 +340,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Notifications",
-          "Notification history"
-        ],
+        "headings": ["Notifications", "Notification history"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -353,10 +350,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Notifications",
-          "Notification history"
-        ],
+        "headings": ["Notifications", "Notification history"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -374,11 +368,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Approvals",
-          "Request a second-person review",
-          "My review queue"
-        ],
+        "headings": ["Approvals", "Request a second-person review", "My review queue"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -388,11 +378,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Approvals",
-          "Request a second-person review",
-          "My review queue"
-        ],
+        "headings": ["Approvals", "Request a second-person review", "My review queue"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -410,11 +396,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Team",
-          "Members",
-          "Invitations"
-        ],
+        "headings": ["Team", "Members", "Invitations"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -424,11 +406,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Team",
-          "Members",
-          "Invitations"
-        ],
+        "headings": ["Team", "Members", "Invitations"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -446,11 +424,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Settings",
-          "Business profile",
-          "Audit history"
-        ],
+        "headings": ["Settings", "Business profile", "Audit history"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -460,11 +434,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Settings",
-          "Business profile",
-          "Audit history"
-        ],
+        "headings": ["Settings", "Business profile", "Audit history"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -482,10 +452,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Assistant",
-          "AI Business Assistant"
-        ],
+        "headings": ["Assistant", "AI Business Assistant"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -495,10 +462,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Assistant",
-          "AI Business Assistant"
-        ],
+        "headings": ["Assistant", "AI Business Assistant"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -516,10 +480,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Data",
-          "AfriCore Data"
-        ],
+        "headings": ["Data", "AfriCore Data"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -529,10 +490,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Data",
-          "AfriCore Data"
-        ],
+        "headings": ["Data", "AfriCore Data"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -550,10 +508,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Connect",
-          "Connect & data sync"
-        ],
+        "headings": ["Connect", "Connect & data sync"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -563,10 +518,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Connect",
-          "Connect & data sync"
-        ],
+        "headings": ["Connect", "Connect & data sync"],
         "overflow": false,
         "unnamed": [],
         "width": 390,
@@ -584,10 +536,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Forecasts",
-          "Forecasts"
-        ],
+        "headings": ["Forecasts", "Forecasts"],
         "overflow": false,
         "unnamed": [],
         "width": 1440,
@@ -597,10 +546,7 @@
       {
         "alerts": [],
         "brokenImages": [],
-        "headings": [
-          "Forecasts",
-          "Forecasts"
-        ],
+        "headings": ["Forecasts", "Forecasts"],
         "overflow": false,
         "unnamed": [],
         "width": 390,

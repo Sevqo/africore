@@ -1,23 +1,53 @@
-import { DeveloperTutorial } from "./DeveloperTutorial";
-import { ProductExperience, experienceKinds } from "./ProductExperiences";
-import { InteractiveExample } from "./InteractiveExample";
-import { Icon } from "../components/Icon";
-import { MediaBlock } from "../components/Media";
-import { publicPageMedia } from "../editorial";
-import { guides, demoLink, type Guide } from "./guides";
-import {ServiceExplainer} from './ServiceExplainer';
-import {serviceCatalog} from '../../../src/marketplace/catalog';
-function ServiceChoice({path}:{path:string}){
- const products=serviceCatalog.filter(s=>s.documentation===path);
- if(!products.length)return null;
- return <section className="compact-product-help"><h2>Choose the tools you need</h2>{products.map(s=><article key={s.id}><h3>{s.name}</h3><p>{s.detail}</p><p><strong>How it works:</strong> {s.workflow.join(' → ')}.</p><p><strong>Usage measure:</strong> {s.unit}. {s.dependencies.length?'Required services: '+s.dependencies.map(id=>serviceCatalog.find(p=>p.id===id)?.name||id).join(', ')+'.':'No other optional service is required.'}</p><p>Free evaluation is the initial plan. Review the applicable published price, setup and limits before activation. Automated customer charging is disabled.</p><a className="button" href={'/app?service='+encodeURIComponent(s.id)}>Review {s.name} in your workspace <Icon name="right"/></a></article>)}</section>;
+import { DeveloperTutorial } from './DeveloperTutorial';
+import { ProductExperience, experienceKinds } from './ProductExperiences';
+import { InteractiveExample } from './InteractiveExample';
+import { Icon } from '../components/Icon';
+import { MediaBlock } from '../components/Media';
+import { publicPageMedia } from '../editorial';
+import { guides, demoLink, type Guide } from './guides';
+import { ServiceExplainer } from './ServiceExplainer';
+import { serviceCatalog } from '../../../src/marketplace/catalog';
+function ServiceChoice({ path }: { path: string }) {
+  const products = serviceCatalog.filter((s) => s.documentation === path);
+  if (!products.length) return null;
+  return (
+    <section className="compact-product-help">
+      <h2>Choose the tools you need</h2>
+      {products.map((s) => (
+        <article key={s.id}>
+          <h3>{s.name}</h3>
+          <p>{s.detail}</p>
+          <p>
+            <strong>How it works:</strong> {s.workflow.join(' → ')}.
+          </p>
+          <p>
+            <strong>Usage measure:</strong> {s.unit}.{' '}
+            {s.dependencies.length
+              ? 'Required services: ' +
+                s.dependencies
+                  .map((id) => serviceCatalog.find((p) => p.id === id)?.name || id)
+                  .join(', ') +
+                '.'
+              : 'No other optional service is required.'}
+          </p>
+          <p>
+            Free evaluation is the initial plan. Review the applicable published price, setup and
+            limits before activation. Automated customer charging is disabled.
+          </p>
+          <a className="button" href={'/app?service=' + encodeURIComponent(s.id)}>
+            Review {s.name} in your workspace <Icon name="right" />
+          </a>
+        </article>
+      ))}
+    </section>
+  );
 }
-export function ProcessTimeline({ steps }: { steps: Guide["steps"] }) {
+export function ProcessTimeline({ steps }: { steps: Guide['steps'] }) {
   return (
     <ol className="process-timeline">
       {steps.map(([title, text], i) => (
         <li key={title}>
-          <span className="step-number">{String(i + 1).padStart(2, "0")}</span>
+          <span className="step-number">{String(i + 1).padStart(2, '0')}</span>
           <h3>{title}</h3>
           <p>{text}</p>
         </li>
@@ -25,7 +55,7 @@ export function ProcessTimeline({ steps }: { steps: Guide["steps"] }) {
     </ol>
   );
 }
-export function ProductFAQ({ items }: { items: Guide["faqs"] }) {
+export function ProductFAQ({ items }: { items: Guide['faqs'] }) {
   return (
     <section className="product-faq">
       <span className="eyebrow">Questions, answered</span>
@@ -46,83 +76,75 @@ export function ProductFAQ({ items }: { items: Guide["faqs"] }) {
 }
 export function AnnotatedProductVisual({ lesson }: { lesson: string }) {
   const records =
-    lesson === "reconciliation" ||
-    lesson === "receivables" ||
-    lesson === "payment-links";
+    lesson === 'reconciliation' || lesson === 'receivables' || lesson === 'payment-links';
   const trust = [
-    "business-passport",
-    "private-sharing",
-    "digital-credentials",
-    "blockchain-proof",
-    "business-trust",
+    'business-passport',
+    'private-sharing',
+    'digital-credentials',
+    'blockchain-proof',
+    'business-trust',
   ].includes(lesson);
   const cells = records
     ? [
+        ['document', 'Invoice INV-104', 'KSh 2,500 requested', 'The amount the customer owes.'],
         [
-          "document",
-          "Invoice INV-104",
-          "KSh 2,500 requested",
-          "The amount the customer owes.",
+          'payment',
+          'Confirmed receipt',
+          'KSh 1,500 allocated',
+          'A trusted event reduces the balance.',
         ],
         [
-          "payment",
-          "Confirmed receipt",
-          "KSh 1,500 allocated",
-          "A trusted event reduces the balance.",
-        ],
-        [
-          "document",
-          "Still outstanding",
-          "KSh 1,000 remaining",
-          "Partial payment does not mean fully paid.",
+          'document',
+          'Still outstanding',
+          'KSh 1,000 remaining',
+          'Partial payment does not mean fully paid.',
         ],
       ]
     : trust
       ? [
           [
-            "user",
-            "Business profile",
-            "Specific business details",
-            "Self-reported and reviewed facts stay distinct.",
+            'user',
+            'Business profile',
+            'Specific business details',
+            'Self-reported and reviewed facts stay distinct.',
           ],
           [
-            "shield",
-            "Signed credential",
-            "One claim, one issuer",
-            "Signature and assurance are checked separately.",
+            'shield',
+            'Signed credential',
+            'One claim, one issuer',
+            'Signature and assurance are checked separately.',
           ],
           [
-            "network",
-            "Authorized disclosure",
-            "Selected claims only",
-            "A named recipient sees the permitted proof.",
+            'network',
+            'Authorized disclosure',
+            'Selected claims only',
+            'A named recipient sees the permitted proof.',
           ],
         ]
       : [
           [
-            "document",
-            "Permitted records",
-            "Explicit source & currency",
-            "Start with records you are authorized to use.",
+            'document',
+            'Permitted records',
+            'Explicit source & currency',
+            'Start with records you are authorized to use.',
           ],
           [
-            "settings",
-            "Review & organize",
-            "Traceable processing",
-            "Retain provenance and inspect exceptions.",
+            'settings',
+            'Review & organize',
+            'Traceable processing',
+            'Retain provenance and inspect exceptions.',
           ],
           [
-            "chart",
-            "Actionable view",
-            "Coverage stays visible",
-            "Use the result with its limitations in view.",
+            'chart',
+            'Actionable view',
+            'Coverage stays visible',
+            'Use the result with its limitations in view.',
           ],
         ];
   return (
     <figure className="annotated-visual">
       <figcaption>
-        Follow the records{" "}
-        <span>Illustrative explanation · not live business data</span>
+        Follow the records <span>Illustrative explanation · not live business data</span>
       </figcaption>
       <div>
         {cells.map(([icon, title, value, note], i) => (
@@ -143,7 +165,7 @@ export function AnnotatedProductVisual({ lesson }: { lesson: string }) {
 export function ProductEducation({ path }: { path: string }) {
   const guide = guides[path];
   if (!guide) return null;
-  if (path.startsWith("/products/") && experienceKinds[path.split("/").at(-1)!])
+  if (path.startsWith('/products/') && experienceKinds[path.split('/').at(-1)!])
     return (
       <div className="product-education">
         <nav className="breadcrumbs" aria-label="Breadcrumb">
@@ -158,13 +180,11 @@ export function ProductEducation({ path }: { path: string }) {
             <h3>Who this helps</h3>
             <p>{guide.audience}</p>
           </div>
-          {publicPageMedia[path] && (
-            <MediaBlock media={publicPageMedia[path]} />
-          )}
+          {publicPageMedia[path] && <MediaBlock media={publicPageMedia[path]} />}
         </section>
         <ProductExperience path={path} />
-        <ServiceExplainer path={path}/>
-        <ServiceChoice path={path}/>
+        <ServiceExplainer path={path} />
+        <ServiceChoice path={path} />
         <section className="compact-product-help">
           <p className="content-limitation">
             <strong>Current availability:</strong> {guide.limit}
@@ -180,12 +200,12 @@ export function ProductEducation({ path }: { path: string }) {
             <a href={demoLink(path)}>
               Explore this workspace section <Icon name="right" />
             </a>
-            <a href={"/learn/" + guide.lesson}>
+            <a href={'/learn/' + guide.lesson}>
               Read the detailed learning guide <Icon name="right" />
             </a>
             {guide.related.slice(0, 2).map((href) => (
               <a key={href} href={href}>
-                {guides[href]?.name || "API documentation"}
+                {guides[href]?.name || 'API documentation'}
                 <Icon name="right" />
               </a>
             ))}
@@ -214,10 +234,10 @@ export function ProductEducation({ path }: { path: string }) {
         <span className="eyebrow">A practical workflow</span>
         <h2>How {guide.name} works</h2>
         <ProcessTimeline steps={guide.steps} />
-        <ServiceExplainer path={path}/>
+        <ServiceExplainer path={path} />
       </section>
       <AnnotatedProductVisual lesson={guide.lesson} />
-      <ServiceChoice path={path}/>
+      <ServiceChoice path={path} />
       <section className="business-scenario">
         <span className="eyebrow">An illustrative business story</span>
         <h2>What using it could look like</h2>
@@ -237,18 +257,18 @@ export function ProductEducation({ path }: { path: string }) {
         </p>
       </section>
       {[
-        "reconciliation",
-        "receivables",
-        "payment-links",
-        "cash-flow",
-        "forecasts",
-        "business-passport",
-        "private-sharing",
-        "digital-credentials",
-        "blockchain-proof",
-        "business-trust",
+        'reconciliation',
+        'receivables',
+        'payment-links',
+        'cash-flow',
+        'forecasts',
+        'business-passport',
+        'private-sharing',
+        'digital-credentials',
+        'blockchain-proof',
+        'business-trust',
       ].includes(guide.lesson) && <InteractiveExample kind={guide.lesson} />}
-      {path === "/developers" && <DeveloperTutorial />}
+      {path === '/developers' && <DeveloperTutorial />}
       <ProductFAQ items={guide.faqs} />
       <section className="product-connections">
         <h2>Use it with</h2>
@@ -258,26 +278,24 @@ export function ProductEducation({ path }: { path: string }) {
               {guides[href]?.name ||
                 (
                   {
-                    "/docs": "API documentation",
-                    "/demo": "Interactive demo",
-                    "/privacy": "Privacy notice",
+                    '/docs': 'API documentation',
+                    '/demo': 'Interactive demo',
+                    '/privacy': 'Privacy notice',
                   } as Record<string, string>
                 )[href] ||
-                "Explore the related tool"}
+                'Explore the related tool'}
               <Icon name="right" />
             </a>
           ))}
         </div>
-        <a className="text-link" href={"/learn/" + guide.lesson}>
+        <a className="text-link" href={'/learn/' + guide.lesson}>
           Read the plain-language guide
           <Icon name="right" />
         </a>
       </section>
       <section className="product-next">
         <h2>Start with one workflow.</h2>
-        <p>
-          Choose your workspace and begin with one customer, invoice or record.
-        </p>
+        <p>Choose your workspace and begin with one customer, invoice or record.</p>
         <div className="actions">
           <a className="button" href="/get-started">
             Try this workflow

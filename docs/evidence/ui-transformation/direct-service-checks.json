@@ -4,9 +4,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Accounting",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Accounting"
-      ],
+      "headings": ["Accounting"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -20,9 +18,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Payments",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Payments"
-      ],
+      "headings": ["Payments"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -36,9 +32,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Automations",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Automations"
-      ],
+      "headings": ["Automations"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -52,9 +46,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Business%20Passport",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Business Passport"
-      ],
+      "headings": ["Business Passport"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -68,9 +60,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Business%20Passport",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Business Passport"
-      ],
+      "headings": ["Business Passport"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -84,9 +74,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Cash%20Flow",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Cash Flow"
-      ],
+      "headings": ["Cash Flow"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -100,9 +88,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Commerce",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Commerce"
-      ],
+      "headings": ["Commerce"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -116,9 +102,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Customer%20Relationships",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Customer Relationships"
-      ],
+      "headings": ["Customer Relationships"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -132,9 +116,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Customers",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Customers"
-      ],
+      "headings": ["Customers"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -148,9 +130,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Expenses",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Expenses"
-      ],
+      "headings": ["Expenses"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -164,9 +144,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Intelligence",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Intelligence"
-      ],
+      "headings": ["Intelligence"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -180,9 +158,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Fulfillment",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Fulfillment"
-      ],
+      "headings": ["Fulfillment"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -196,9 +172,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Inventory",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Inventory"
-      ],
+      "headings": ["Inventory"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -212,9 +186,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Invoices",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Invoices"
-      ],
+      "headings": ["Invoices"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -228,9 +200,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Orders",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Orders"
-      ],
+      "headings": ["Orders"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -244,9 +214,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#People",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "People"
-      ],
+      "headings": ["People"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -260,9 +228,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Point%20of%20Sale",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Point of Sale"
-      ],
+      "headings": ["Point of Sale"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -276,9 +242,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Documents",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Documents"
-      ],
+      "headings": ["Documents"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -292,9 +256,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Procurement",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Procurement"
-      ],
+      "headings": ["Procurement"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -308,9 +270,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Products",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Products"
-      ],
+      "headings": ["Products"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -324,9 +284,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Work",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Work"
-      ],
+      "headings": ["Work"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -340,9 +298,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Quotations",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Quotations"
-      ],
+      "headings": ["Quotations"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -356,9 +312,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Business%20Passport",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Business Passport"
-      ],
+      "headings": ["Business Passport"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -372,9 +326,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c#Business%20Passport",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Business Passport"
-      ],
+      "headings": ["Business Passport"],
       "scrollWidth": 1440,
       "width": 1440
     },

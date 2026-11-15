@@ -1,4 +1,4 @@
-import {TrustAssessment} from './TrustAssessment';
+import { TrustAssessment } from './TrustAssessment';
 import { Icon } from '../components/Icon';
 import { useEffect, useState } from 'react';
 import { Field, Form, Provenance, request, Timeline } from '../operations/UI';
@@ -39,36 +39,24 @@ export function download(data: any, name: string) {
 }
 export function VerificationReport({ report }: { report: any }) {
   return (
-    <section
-      className="panel verification-report"
-      aria-label="Verification report"
-    >
+    <section className="panel verification-report" aria-label="Verification report">
       <h2>What the checks establish</h2>
       {Object.entries(report)
         .filter(([key]) => !['credentials', 'limitations'].includes(key))
         .map(([key, value]) => (
           <div className="list-row" key={key}>
             <span>{key.replaceAll('_', ' ')}</span>
-            <strong>
-              {typeof value === 'object'
-                ? JSON.stringify(value)
-                : String(value)}
-            </strong>
+            <strong>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</strong>
           </div>
         ))}
       {report.credentials?.map((r: any, i: number) => (
         <VerificationReport key={i} report={r} />
       ))}
       <p>
-        A valid signature protects integrity. It does not establish that every
-        claim is true, that the issuer has institutional authority, or that the
-        business will honor a contract.
+        A valid signature protects integrity. It does not establish that every claim is true, that
+        the issuer has institutional authority, or that the business will honor a contract.
       </p>
-      <p>
-        {Array.isArray(report.limitations)
-          ? report.limitations.join(' ')
-          : report.limitations}
-      </p>
+      <p>{Array.isArray(report.limitations) ? report.limitations.join(' ') : report.limitations}</p>
     </section>
   );
 }
@@ -77,15 +65,15 @@ export function PassportWorkspace({
   environment,
   role,
   serviceIds,
-  initialTab='Overview',
-  holderOnly=false,
+  initialTab = 'Overview',
+  holderOnly = false,
 }: {
   org: string;
   environment: string;
   role: string;
-  serviceIds?:string[];
-  initialTab?:string;
-  holderOnly?:boolean;
+  serviceIds?: string[];
+  initialTab?: string;
+  holderOnly?: boolean;
 }) {
   const [tab, setTab] = useState('Overview'),
     [data, setData] = useState<any>(null),
@@ -104,23 +92,39 @@ export function PassportWorkspace({
     api = (path: string, method = 'GET', body?: any) =>
       request(base + path, method, body, environment);
   async function load() {
-    const [result,sourceRows,historyRows,issuerRows,issuanceRows] = await Promise.all([
-      api('/passport'),api('/sources'),api('/history'),
-      editable&&enabled('credentials')?api('/issuers'):Promise.resolve({data:[]}),
-      editable&&enabled('credentials')?api('/issuance-requests'):Promise.resolve({data:[]}),
+    const [result, sourceRows, historyRows, issuerRows, issuanceRows] = await Promise.all([
+      api('/passport'),
+      api('/sources'),
+      api('/history'),
+      editable && enabled('credentials') ? api('/issuers') : Promise.resolve({ data: [] }),
+      editable && enabled('credentials')
+        ? api('/issuance-requests')
+        : Promise.resolve({ data: [] }),
     ]);
     setData(result);
-    setIssuers(issuerRows.data);setIssuance(issuanceRows.data);
-    setSources(sourceRows.data);setHistory(historyRows.data);
+    setIssuers(issuerRows.data);
+    setIssuance(issuanceRows.data);
+    setSources(sourceRows.data);
+    setHistory(historyRows.data);
   }
-  const enabled=(id:string)=>isDemo()||!serviceIds||serviceIds.includes(id);
-  const serviceScope=serviceIds?.join(',')||'';
-  const tabRequirements:Record<string,string[]>={'Business Identity':['verification'],Credentials:['credentials','blockchain'],'Business Network':['trust_network'],'Issuer Desk':['credentials']};
-  const tabAllowed=(name:string)=>{const required=tabRequirements[name]||[];return !required.length||required.some(enabled);};
-  useEffect(()=>{setTab(tabs.includes(initialTab)&&tabAllowed(initialTab)?initialTab:'Overview');},[initialTab,org,environment,serviceScope]);
+  const enabled = (id: string) => isDemo() || !serviceIds || serviceIds.includes(id);
+  const serviceScope = serviceIds?.join(',') || '';
+  const tabRequirements: Record<string, string[]> = {
+    'Business Identity': ['verification'],
+    Credentials: ['credentials', 'blockchain'],
+    'Business Network': ['trust_network'],
+    'Issuer Desk': ['credentials'],
+  };
+  const tabAllowed = (name: string) => {
+    const required = tabRequirements[name] || [];
+    return !required.length || required.some(enabled);
+  };
+  useEffect(() => {
+    setTab(tabs.includes(initialTab) && tabAllowed(initialTab) ? initialTab : 'Overview');
+  }, [initialTab, org, environment, serviceScope]);
   useEffect(() => {
     load().catch((e) => setError(e.message));
-  }, [org, environment,serviceScope]);
+  }, [org, environment, serviceScope]);
   async function act(fn: () => Promise<any>) {
     setError('');
     setNotice('');
@@ -157,9 +161,7 @@ export function PassportWorkspace({
               checked={selected.includes(e.id)}
               onChange={(event) =>
                 setSelected(
-                  event.target.checked
-                    ? [...selected, e.id]
-                    : selected.filter((id) => id !== e.id),
+                  event.target.checked ? [...selected, e.id] : selected.filter((id) => id !== e.id),
                 )
               }
             />
@@ -179,32 +181,37 @@ export function PassportWorkspace({
     <div className="passport-workspace">
       {isDemo() && (
         <p className="muted">
-          Browser demo: inspect a real signature over synthetic claims. Current
-          issuer status, new issuance and recipient authorization require the
-          connected backend.
+          Browser demo: inspect a real signature over synthetic claims. Current issuer status, new
+          issuance and recipient authorization require the connected backend.
         </p>
       )}
-      {!holderOnly&&<nav className="passport-tabs" aria-label="Business Passport sections">
-        {tabs.filter(t=>{if(holderOnly&&['Issuer Desk','Trust Operations'].includes(t))return false;return tabAllowed(t);}).map((t) => (
-          <button
-            key={t}
-            aria-current={tab === t ? 'page' : undefined}
-            onClick={() => {
-              setTab(t);
-              setReport(null);
-            }}
-          >
-            {t}
-          </button>
-        ))}
-      </nav>}
+      {!holderOnly && (
+        <nav className="passport-tabs" aria-label="Business Passport sections">
+          {tabs
+            .filter((t) => {
+              if (holderOnly && ['Issuer Desk', 'Trust Operations'].includes(t)) return false;
+              return tabAllowed(t);
+            })
+            .map((t) => (
+              <button
+                key={t}
+                aria-current={tab === t ? 'page' : undefined}
+                onClick={() => {
+                  setTab(t);
+                  setReport(null);
+                }}
+              >
+                {t}
+              </button>
+            ))}
+        </nav>
+      )}
       <details className="panel learning-helper">
         <summary>What do the proof checks mean?</summary>
         <p>
-          A signature checks integrity. Current status checks expiry or
-          revocation. Issuer recognition and evidence assurance need separate
-          review. Choose minimal claims for a named recipient rather than
-          sharing the entire profile.
+          A signature checks integrity. Current status checks expiry or revocation. Issuer
+          recognition and evidence assurance need separate review. Choose minimal claims for a named
+          recipient rather than sharing the entire profile.
         </p>
         <a href="/learn/business-passport">Learn about Business Passports</a>
       </details>
@@ -234,16 +241,15 @@ export function PassportWorkspace({
                 source_kind: 'profile',
                 source_id: org,
                 lawful_basis: 'consent',
-                purpose:
-                  'Build my private business passport from my workspace profile.',
+                purpose: 'Build my private business passport from my workspace profile.',
               });
             })
           }
         >
           <h2>Your business identity, with evidence.</h2>
           <p>
-            Create a private Passport. You choose what to share; no records are
-            published to a blockchain.
+            Create a private Passport. You choose what to share; no records are published to a
+            blockchain.
           </p>
           <Field label="Business display name">
             <input name="display_name" required minLength={2} defaultValue="" />
@@ -256,12 +262,7 @@ export function PassportWorkspace({
               <input name="industry" defaultValue="Trade" required />
             </Field>
             <Field label="Country code">
-              <input
-                name="country"
-                defaultValue="KE"
-                pattern="[A-Z]{2}"
-                required
-              />
+              <input name="country" defaultValue="KE" pattern="[A-Z]{2}" required />
             </Field>
           </div>
           {consent}
@@ -272,11 +273,10 @@ export function PassportWorkspace({
       ) : (
         <>
           {tab === 'Overview' && (
-            <><TrustAssessment api={api}/>
+            <>
+              <TrustAssessment api={api} />
               <section className="passport-card">
-                <span className="eyebrow">
-                  AFRICORE BUSINESS PASSPORT · SANDBOX BETA
-                </span>
+                <span className="eyebrow">AFRICORE BUSINESS PASSPORT · SANDBOX BETA</span>
                 <div className="passport-card-title">
                   <div>
                     <h2>{p.display_name}</h2>
@@ -292,10 +292,7 @@ export function PassportWorkspace({
                   <Provenance label={p.verification_status} />
                 </p>
                 <p className="record-id">Passport {p.id}</p>
-                <p>
-                  Private by default · {creds.length} credentials ·
-                  Account-managed identity
-                </p>
+                <p>Private by default · {creds.length} credentials · Account-managed identity</p>
                 {p.public_profile ? (
                   <a href={'/passport/' + p.id}>
                     View minimal public profile <Icon name="right" />
@@ -312,23 +309,17 @@ export function PassportWorkspace({
                   [
                     'Active grants',
                     data.grants?.filter(
-                      (g: any) =>
-                        !g.revoked_at &&
-                        g.expires_at > new Date().toISOString(),
+                      (g: any) => !g.revoked_at && g.expires_at > new Date().toISOString(),
                     ).length || 0,
                   ],
                   [
                     'Relationships',
-                    data.relationships?.filter(
-                      (r: any) => r.status === 'confirmed',
-                    ).length || 0,
+                    data.relationships?.filter((r: any) => r.status === 'confirmed').length || 0,
                   ],
                   [
                     'Expiring in 30 days',
-                    creds.filter(
-                      (c: any) =>
-                        Date.parse(c.valid_until) - Date.now() < 30 * 86400000,
-                    ).length,
+                    creds.filter((c: any) => Date.parse(c.valid_until) - Date.now() < 30 * 86400000)
+                      .length,
                   ],
                 ].map(([label, value]) => (
                   <article className="panel metric-definition" key={label}>
@@ -349,26 +340,25 @@ export function PassportWorkspace({
                       {c.category} · {c.weight}% weight
                     </span>
                     <b>
-                      {c.covered ? 'Recorded' : 'Not observed'} ·{' '}
-                      {c.source_verified_count} source verified
+                      {c.covered ? 'Recorded' : 'Not observed'} · {c.source_verified_count} source
+                      verified
                     </b>
                   </div>
                 ))}
                 <small>
-                  Method {data.index?.methodology} · Missing information is not
-                  evidence of wrongdoing.
+                  Method {data.index?.methodology} · Missing information is not evidence of
+                  wrongdoing.
                 </small>
               </section>
               <section className="panel">
                 <h2>What each assurance level means</h2>
                 <p>
-                  0 Self-reported · 1 Document reviewed · 2 Source verified · 3
-                  Independently corroborated.
+                  0 Self-reported · 1 Document reviewed · 2 Source verified · 3 Independently
+                  corroborated.
                 </p>
                 <p>
-                  Only levels supported by the recorded review method are
-                  assigned. Sandbox APIs do not create source-verified business
-                  history.
+                  Only levels supported by the recorded review method are assigned. Sandbox APIs do
+                  not create source-verified business history.
                 </p>
               </section>
             </>
@@ -378,9 +368,9 @@ export function PassportWorkspace({
               <section className="panel">
                 <h2>Business identity review</h2>
                 <p>
-                  Current: {p.verification_status.replaceAll('_', ' ')}. A
-                  manual document review does not establish government registry
-                  verification or independent representative authority.
+                  Current: {p.verification_status.replaceAll('_', ' ')}. A manual document review
+                  does not establish government registry verification or independent representative
+                  authority.
                 </p>
                 {data.identity_reviews?.map((r: any) => (
                   <article key={r.id}>
@@ -413,22 +403,14 @@ export function PassportWorkspace({
                     </Field>
                     <div className="form-grid">
                       <Field label="Jurisdiction">
-                        <input
-                          name="jurisdiction"
-                          defaultValue="Kenya"
-                          required
-                        />
+                        <input name="jurisdiction" defaultValue="Kenya" required />
                       </Field>
                       <Field label="Registration reference">
                         <input name="registration_number" required />
                       </Field>
                     </div>
                     <Field label="Authority to represent the business">
-                      <textarea
-                        name="representative_statement"
-                        minLength={10}
-                        required
-                      />
+                      <textarea name="representative_statement" minLength={10} required />
                     </Field>
                     {evidencePicker}
                     {consent}
@@ -444,7 +426,12 @@ export function PassportWorkspace({
                       )
                     }
                   >
-                    <h3>Attach a supporting document</h3><p>Files receive type, signature and size checks and encrypted private storage. Malware scanning is not configured. A document upload is not independent verification.</p>
+                    <h3>Attach a supporting document</h3>
+                    <p>
+                      Files receive type, signature and size checks and encrypted private storage.
+                      Malware scanning is not configured. A document upload is not independent
+                      verification.
+                    </p>
                     <Field label="Pending review ID">
                       <input name="review_id" required />
                     </Field>
@@ -465,17 +452,13 @@ export function PassportWorkspace({
                             setFile({
                               filename: f.name,
                               content_type: f.type || 'text/plain',
-                              content_base64: String(reader.result).split(
-                                ',',
-                              )[1],
+                              content_base64: String(reader.result).split(',')[1],
                             });
                           reader.readAsDataURL(f);
                         }}
                       />
                     </Field>
-                    <button className="secondary-button">
-                      Upload privately
-                    </button>
+                    <button className="secondary-button">Upload privately</button>
                   </Form>
                 </>
               )}
@@ -486,10 +469,9 @@ export function PassportWorkspace({
               <section className="panel">
                 <h2>Minimal claims. Inspectable signatures.</h2>
                 <p>
-                  Credentials distinguish issuer authority, evidence level,
-                  expiry, status and technical integrity. Entire minimal signed
-                  credentials are disclosed when shared; cryptographic selective
-                  disclosure is not enabled.
+                  Credentials distinguish issuer authority, evidence level, expiry, status and
+                  technical integrity. Entire minimal signed credentials are disclosed when shared;
+                  cryptographic selective disclosure is not enabled.
                 </p>
                 {creds.length ? (
                   creds.map((c: any) => (
@@ -541,11 +523,7 @@ export function PassportWorkspace({
                         </button>
                         <button
                           onClick={() =>
-                            act(async () =>
-                              setReport(
-                                await api('/credentials/' + c.id + '/proof'),
-                              ),
-                            )
+                            act(async () => setReport(await api('/credentials/' + c.id + '/proof')))
                           }
                         >
                           Check anchor
@@ -555,8 +533,8 @@ export function PassportWorkspace({
                   ))
                 ) : (
                   <p>
-                    No credentials yet. Request one from an approved sandbox
-                    issuer after choosing evidence.
+                    No credentials yet. Request one from an approved sandbox issuer after choosing
+                    evidence.
                   </p>
                 )}
               </section>
@@ -598,9 +576,7 @@ export function PassportWorkspace({
                   </Field>
                   {evidencePicker}
                   {consent}
-                  <button className="button">
-                    Authorize selected evidence
-                  </button>
+                  <button className="button">Authorize selected evidence</button>
                 </Form>
               )}
             </>
@@ -663,13 +639,9 @@ export function PassportWorkspace({
                     <Field label="Specific purpose">
                       <input name="purpose" minLength={10} required />
                     </Field>
-                    <button className="button">
-                      Reference source evidence
-                    </button>
+                    <button className="button">Reference source evidence</button>
                   </Form>
-                  <Form
-                    submit={(d) => act(() => api('/corrections', 'POST', d))}
-                  >
+                  <Form submit={(d) => act(() => api('/corrections', 'POST', d))}>
                     <h3>Challenge an inaccurate record</h3>
                     <Field label="Evidence or credential ID">
                       <input name="resource_id" required />
@@ -686,9 +658,7 @@ export function PassportWorkspace({
                     <Field label="Supporting statement">
                       <textarea name="supporting_statement" />
                     </Field>
-                    <button className="secondary-button">
-                      Request correction
-                    </button>
+                    <button className="secondary-button">Request correction</button>
                   </Form>
                 </>
               )}
@@ -706,9 +676,8 @@ export function PassportWorkspace({
               <section className="panel">
                 <h2>Confirmed commercial relationships</h2>
                 <p>
-                  Counterparty authentication is not proof of independence. No
-                  automatic endorsements, credit ratings or universal trust
-                  score.
+                  Counterparty authentication is not proof of independence. No automatic
+                  endorsements, credit ratings or universal trust score.
                 </p>
                 {data.relationships?.map((r: any) => (
                   <article className="commerce-row" key={r.id}>
@@ -721,41 +690,32 @@ export function PassportWorkspace({
                         {r.org_id} ↔ {r.peer_org}
                       </p>
                     </div>
-                    {editable &&
-                      r.peer_org === org &&
-                      r.status === 'pending' && (
-                        <Form
-                          submit={(d) =>
-                            act(() =>
-                              api(
-                                '/relationships/' + r.id + '/respond',
-                                'POST',
-                                d,
-                              ),
-                            )
-                          }
-                        >
-                          <select name="decision">
-                            <option value="confirm">Confirm</option>
-                            <option value="reject">Reject</option>
-                          </select>
-                          <input
-                            name="statement"
-                            placeholder="Reason / statement"
-                            minLength={10}
-                            required
-                          />
-                          <button>Respond as counterparty</button>
-                        </Form>
-                      )}
+                    {editable && r.peer_org === org && r.status === 'pending' && (
+                      <Form
+                        submit={(d) =>
+                          act(() => api('/relationships/' + r.id + '/respond', 'POST', d))
+                        }
+                      >
+                        <select name="decision">
+                          <option value="confirm">Confirm</option>
+                          <option value="reject">Reject</option>
+                        </select>
+                        <input
+                          name="statement"
+                          placeholder="Reason / statement"
+                          minLength={10}
+                          required
+                        />
+                        <button>Respond as counterparty</button>
+                      </Form>
+                    )}
                     {editable && r.status === 'confirmed' && (
                       <button
                         onClick={() =>
                           act(() =>
                             api('/relationships/' + r.id + '/respond', 'POST', {
                               decision: 'revoke',
-                              statement:
-                                'Relationship revoked by an authorized business member.',
+                              statement: 'Relationship revoked by an authorized business member.',
                             }),
                           )
                         }
@@ -768,11 +728,7 @@ export function PassportWorkspace({
               </section>
               {editable && (
                 <Form
-                  submit={(d) =>
-                    act(() =>
-                      api('/relationships', 'POST', { ...d, consent: true }),
-                    )
-                  }
+                  submit={(d) => act(() => api('/relationships', 'POST', { ...d, consent: true }))}
                 >
                   <h3>Request counterparty confirmation</h3>
                   <Field label="Counterparty organization ID">
@@ -780,12 +736,7 @@ export function PassportWorkspace({
                   </Field>
                   <Field label="Relationship">
                     <select name="relationship">
-                      {[
-                        'supplier',
-                        'customer',
-                        'logistics',
-                        'commercial_partner',
-                      ].map((t) => (
+                      {['supplier', 'customer', 'logistics', 'commercial_partner'].map((t) => (
                         <option key={t}>{t}</option>
                       ))}
                     </select>
@@ -812,8 +763,7 @@ export function PassportWorkspace({
                       Requester {r.org_id} · Holder {r.peer_org}
                     </p>
                     <p>
-                      {r.types.join(', ')} · Expires{' '}
-                      {new Date(r.expires_at).toLocaleString()}
+                      {r.types.join(', ')} · Expires {new Date(r.expires_at).toLocaleString()}
                     </p>
                     <p className="record-id">Request {r.id}</p>
                     {r.peer_org === org && r.status === 'pending' && (
@@ -823,9 +773,7 @@ export function PassportWorkspace({
                         </button>
                         <button
                           onClick={() =>
-                            act(() =>
-                              api('/requests/' + r.id + '/reject', 'POST', {}),
-                            )
+                            act(() => api('/requests/' + r.id + '/reject', 'POST', {}))
                           }
                         >
                           Reject request
@@ -863,13 +811,7 @@ export function PassportWorkspace({
                     <input name="purpose" minLength={10} required />
                   </Field>
                   <Field label="Expires in days">
-                    <input
-                      name="expires_days"
-                      type="number"
-                      min={1}
-                      max={30}
-                      defaultValue={7}
-                    />
+                    <input name="expires_days" type="number" min={1} max={30} defaultValue={7} />
                   </Field>
                   <button className="button">Send verification request</button>
                 </Form>
@@ -881,8 +823,7 @@ export function PassportWorkspace({
               <section className="panel">
                 <h2>Named recipients. Limited access.</h2>
                 <p>
-                  Future access can be revoked. Copies already disclosed cannot
-                  be erased remotely.
+                  Future access can be revoked. Copies already disclosed cannot be erased remotely.
                 </p>
                 {data.grants?.map((g: any) => (
                   <article className="commerce-row" key={g.id}>
@@ -899,17 +840,12 @@ export function PassportWorkspace({
                       </h3>
                       <p>Recipient {g.recipient_org}</p>
                       <small>
-                        {g.id} · Expires{' '}
-                        {new Date(g.expires_at).toLocaleString()}
+                        {g.id} · Expires {new Date(g.expires_at).toLocaleString()}
                       </small>
                     </div>
                     {editable && !g.revoked_at && (
                       <button
-                        onClick={() =>
-                          act(() =>
-                            api('/grants/' + g.id + '/revoke', 'POST', {}),
-                          )
-                        }
+                        onClick={() => act(() => api('/grants/' + g.id + '/revoke', 'POST', {}))}
                       >
                         Revoke future access
                       </button>
@@ -935,9 +871,7 @@ export function PassportWorkspace({
                     );
                     if (result?.url)
                       setNotice(
-                        'Save this recipient-bound link now: ' +
-                          location.origin +
-                          result.url,
+                        'Save this recipient-bound link now: ' + location.origin + result.url,
                       );
                   }}
                 >
@@ -975,9 +909,7 @@ export function PassportWorkspace({
                       ))}
                   </fieldset>
                   {consent}
-                  <button className="button">
-                    Create recipient-bound grant
-                  </button>
+                  <button className="button">Create recipient-bound grant</button>
                 </Form>
               )}
             </>
@@ -999,21 +931,18 @@ export function PassportWorkspace({
             <section className="panel">
               <h2>Your disclosure choices</h2>
               <p>
-                Private financial documents and credential contents stay
-                off-chain. Only randomized batch roots are eligible for
-                anchoring. Secure links require the named recipient's
+                Private financial documents and credential contents stay off-chain. Only randomized
+                batch roots are eligible for anchoring. Secure links require the named recipient's
                 authenticated membership.
               </p>
               <p>
-                Managed custody: the backend holds encrypted disposable sandbox
-                signing keys. Production signing is disabled until managed key
-                infrastructure and governance are reviewed.
+                Managed custody: the backend holds encrypted disposable sandbox signing keys.
+                Production signing is disabled until managed key infrastructure and governance are
+                reviewed.
               </p>
               <p>
-                Public profile currently{' '}
-                {p.public_profile ? 'enabled' : 'disabled'}. Public fields:
-                display name, category, industry, country, reference and review
-                status only.
+                Public profile currently {p.public_profile ? 'enabled' : 'disabled'}. Public fields:
+                display name, category, industry, country, reference and review status only.
               </p>
               {editable && (
                 <button
@@ -1026,13 +955,12 @@ export function PassportWorkspace({
                     )
                   }
                 >
-                  {p.public_profile ? 'Disable' : 'Enable'} minimal public
-                  profile
+                  {p.public_profile ? 'Disable' : 'Enable'} minimal public profile
                 </button>
               )}
               <p>
-                Do not upload real identity documents into this demo. Retention
-                windows do not replace an approved deletion/legal-hold process.
+                Do not upload real identity documents into this demo. Retention windows do not
+                replace an approved deletion/legal-hold process.
               </p>
             </section>
           )}
@@ -1041,8 +969,8 @@ export function PassportWorkspace({
               <section className="panel">
                 <h2>Issuer authority is separately approved</h2>
                 <p>
-                  An account does not confer institutional authority. Sandbox
-                  approval permits labeled test assertions only.
+                  An account does not confer institutional authority. Sandbox approval permits
+                  labeled test assertions only.
                 </p>
                 {issuers.map((i) => (
                   <article className="credential-card" key={i.id}>
@@ -1114,17 +1042,12 @@ export function PassportWorkspace({
                       {r.type} · {r.status}
                     </h3>
                     <p>
-                      Holder {r.org_id} · {r.evidence?.length || 0} authorized
-                      evidence references
+                      Holder {r.org_id} · {r.evidence?.length || 0} authorized evidence references
                     </p>
                     <p className="record-id">{r.id}</p>
                     {r.peer_org === org && r.status === 'pending' && (
                       <button
-                        onClick={() =>
-                          act(() =>
-                            api('/credentials', 'POST', { request_id: r.id }),
-                          )
-                        }
+                        onClick={() => act(() => api('/credentials', 'POST', { request_id: r.id }))}
                       >
                         Review & issue sandbox credential
                       </button>
@@ -1156,16 +1079,18 @@ export function PassportWorkspace({
                 <Field label="Reason">
                   <textarea name="reason" minLength={10} required />
                 </Field>
-                <button className="secondary-button">
-                  Record authorized status change
-                </button>
+                <button className="secondary-button">Record authorized status change</button>
               </Form>
             </>
           )}
           {tab === 'Trust Operations' && (
             <section className="panel">
               <h2>Restricted trust operations</h2>
-              <p>Issuer reviews and platform-wide trust operations require a separately authorized internal channel. They are unavailable through the public workspace. Business ownership does not grant operator access.</p>
+              <p>
+                Issuer reviews and platform-wide trust operations require a separately authorized
+                internal channel. They are unavailable through the public workspace. Business
+                ownership does not grant operator access.
+              </p>
             </section>
           )}
           {report && <VerificationReport report={report} />}

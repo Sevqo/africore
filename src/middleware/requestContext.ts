@@ -1,9 +1,9 @@
-import crypto from "node:crypto";
-import { NextFunction, Request, Response } from "express";
-import { config } from "../config";
+import crypto from 'node:crypto';
+import { NextFunction, Request, Response } from 'express';
+import { config } from '../config';
 
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9._-]{8,128}$/;
-const HSTS_VALUE = "max-age=31536000; includeSubDomains";
+const HSTS_VALUE = 'max-age=31536000; includeSubDomains';
 
 export interface RequestWithContext extends Request {
   requestId?: string;
@@ -25,26 +25,26 @@ export interface RequestWithContext extends Request {
  *   provides the helper and the safe default).
  */
 export function requestContext(req: RequestWithContext, res: Response, next: NextFunction) {
-  const supplied = req.header("x-request-id");
+  const supplied = req.header('x-request-id');
   const requestId = supplied && REQUEST_ID_PATTERN.test(supplied) ? supplied : crypto.randomUUID();
 
   req.requestId = requestId;
-  res.setHeader("x-request-id", requestId);
-  res.setHeader("x-content-type-options", "nosniff");
-  res.setHeader("x-frame-options", "DENY");
-  res.setHeader("referrer-policy", "no-referrer");
-  res.setHeader("permissions-policy", "camera=(), microphone=(), geolocation=()");
-  res.setHeader("content-security-policy", "default-src 'none'; frame-ancestors 'none'");
+  res.setHeader('x-request-id', requestId);
+  res.setHeader('x-content-type-options', 'nosniff');
+  res.setHeader('x-frame-options', 'DENY');
+  res.setHeader('referrer-policy', 'no-referrer');
+  res.setHeader('permissions-policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('content-security-policy', "default-src 'none'; frame-ancestors 'none'");
 
   // One-time secrets are issued by POST /v1/clients/:id/rotate and
   // POST /v1/webhooks today; never let an intermediary cache a write response.
-  if (config.isProduction || !["GET", "HEAD", "OPTIONS"].includes(req.method)) {
-    res.setHeader("cache-control", "no-store");
+  if (config.isProduction || !['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    res.setHeader('cache-control', 'no-store');
   }
 
-  const forwardedProto = req.header("x-forwarded-proto")?.split(",")[0]?.trim().toLowerCase();
-  if (config.isProduction || req.secure || forwardedProto === "https") {
-    res.setHeader("strict-transport-security", HSTS_VALUE);
+  const forwardedProto = req.header('x-forwarded-proto')?.split(',')[0]?.trim().toLowerCase();
+  if (config.isProduction || req.secure || forwardedProto === 'https') {
+    res.setHeader('strict-transport-security', HSTS_VALUE);
   }
 
   next();
@@ -58,7 +58,7 @@ export function requestContext(req: RequestWithContext, res: Response, next: Nex
  * by another workstream; wiring it into the two routes is a follow-up.
  */
 export function noStore(_req: Request, res: Response, next: NextFunction): void {
-  res.setHeader("cache-control", "no-store");
-  res.setHeader("pragma", "no-cache");
+  res.setHeader('cache-control', 'no-store');
+  res.setHeader('pragma', 'no-cache');
   next();
 }

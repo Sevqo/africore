@@ -1,74 +1,111 @@
-import {discoveryPages} from "./discoveryPages";
-import {serviceEducation} from "./serviceEducation";
-import {serviceCatalog} from "../../../src/marketplace/catalog";
-import {appCatalog} from "../../../src/apps/catalog";
-import {learningPaths} from "./learningPaths";
-import { useEffect } from "react";
-import { pages } from "../content";
-import { guides } from "./guides";
-import { lessons } from "./Learn";
+import { discoveryPages } from './discoveryPages';
+import { serviceEducation } from './serviceEducation';
+import { serviceCatalog } from '../../../src/marketplace/catalog';
+import { appCatalog } from '../../../src/apps/catalog';
+import { learningPaths } from './learningPaths';
+import { useEffect } from 'react';
+import { pages } from '../content';
+import { guides } from './guides';
+import { lessons } from './Learn';
 export function pageMetadata(path: string) {
-  if(path==='/apps'||path==='/apps/')return {title:'AfriCore apps | Business tools for everyday work',description:'Browse fourteen focused AfriCore apps for money, customers, stock, people, identity and insight. Apps group work; services remain independently discoverable and activatable.'};
-  if(path.startsWith('/apps/')){const app=appCatalog.find(item=>item.id===path.slice('/apps/'.length).replace(/\/$/,''));if(app)return {title:app.name+' | AfriCore apps',description:app.description};}
-  if(discoveryPages[path])return {title:discoveryPages[path].title+" | AfriCore",description:discoveryPages[path].description};
-  const serviceId=Object.entries(serviceEducation).find(([,c])=>c.route===path)?.[0];
-  if(serviceId)return {title:serviceCatalog.find(s=>s.id===serviceId)!.name+" | AfriCore",description:serviceEducation[serviceId].problem};
-  const learningPath=path.startsWith("/learn/")?learningPaths[path.split("/")[2]]:undefined;
-  if(learningPath)return {title:learningPath.title+" | AfriCore Learn",description:learningPath.objective};
-  if(path==='/get-started'||path==='/signup'||path.startsWith('/sign-up/')||path==='/login'||path==='/signin'||path==='/app'||path.startsWith('/app/')||path==='/auth/callback') {
-    return {title:path==='/get-started'||path==='/signup'?'Choose your AfriCore experience':path.startsWith('/sign-up/')?'Create your AfriCore '+path.split('/')[2]+' account':path==='/login'||path==='/signin'?'Sign in to AfriCore':path.startsWith('/app/personal')?'AfriCore Personal':path.startsWith('/app/developer')?'AfriCore Developer Console':'Your AfriCore workspaces',description:'One identity for your Personal, Business and Developer workspaces. Access follows your current memberships.'};
+  if (path === '/apps' || path === '/apps/')
+    return {
+      title: 'AfriCore apps | Business tools for everyday work',
+      description:
+        'Browse fourteen focused AfriCore apps for money, customers, stock, people, identity and insight. Apps group work; services remain independently discoverable and activatable.',
+    };
+  if (path.startsWith('/apps/')) {
+    const app = appCatalog.find(
+      (item) => item.id === path.slice('/apps/'.length).replace(/\/$/, ''),
+    );
+    if (app) return { title: app.name + ' | AfriCore apps', description: app.description };
   }
-  const lesson = path.startsWith("/learn/")
-      ? lessons[path.split("/")[2]]
-      : undefined,
+  if (discoveryPages[path])
+    return {
+      title: discoveryPages[path].title + ' | AfriCore',
+      description: discoveryPages[path].description,
+    };
+  const serviceId = Object.entries(serviceEducation).find(([, c]) => c.route === path)?.[0];
+  if (serviceId)
+    return {
+      title: serviceCatalog.find((s) => s.id === serviceId)!.name + ' | AfriCore',
+      description: serviceEducation[serviceId].problem,
+    };
+  const learningPath = path.startsWith('/learn/') ? learningPaths[path.split('/')[2]] : undefined;
+  if (learningPath)
+    return { title: learningPath.title + ' | AfriCore Learn', description: learningPath.objective };
+  if (
+    path === '/get-started' ||
+    path === '/signup' ||
+    path.startsWith('/sign-up/') ||
+    path === '/login' ||
+    path === '/signin' ||
+    path === '/app' ||
+    path.startsWith('/app/') ||
+    path === '/auth/callback'
+  ) {
+    return {
+      title:
+        path === '/get-started' || path === '/signup'
+          ? 'Choose your AfriCore experience'
+          : path.startsWith('/sign-up/')
+            ? 'Create your AfriCore ' + path.split('/')[2] + ' account'
+            : path === '/login' || path === '/signin'
+              ? 'Sign in to AfriCore'
+              : path.startsWith('/app/personal')
+                ? 'AfriCore Personal'
+                : path.startsWith('/app/developer')
+                  ? 'AfriCore Developer Console'
+                  : 'Your AfriCore workspaces',
+      description:
+        'One identity for your Personal, Business and Developer workspaces. Access follows your current memberships.',
+    };
+  }
+  const lesson = path.startsWith('/learn/') ? lessons[path.split('/')[2]] : undefined,
     guide = guides[path];
   return {
     title:
-      path === "/verify-credential"
-        ? "Verify a business credential | AfriCore"
-        : path === "/signin"
-          ? "Sign in to AfriCore Business"
-          : path === "/signup"
-            ? "Create your AfriCore workspace"
-            : path === "/"
-              ? "AfriCore — Customers, invoices, payments and business proof"
-              : path === "/learn"
-                ? "AfriCore Learn — Practical business and finance guides"
-                : path === "/learn/glossary"
-                  ? "Financial and business glossary | AfriCore"
+      path === '/verify-credential'
+        ? 'Verify a business credential | AfriCore'
+        : path === '/signin'
+          ? 'Sign in to AfriCore Business'
+          : path === '/signup'
+            ? 'Create your AfriCore workspace'
+            : path === '/'
+              ? 'AfriCore — Customers, invoices, payments and business proof'
+              : path === '/learn'
+                ? 'AfriCore Learn — Practical business and finance guides'
+                : path === '/learn/glossary'
+                  ? 'Financial and business glossary | AfriCore'
                   : lesson
-                    ? lesson.title + " | AfriCore Learn"
+                    ? lesson.title + ' | AfriCore Learn'
                     : guide
-                      ? guide.name + " — How it works | AfriCore"
+                      ? guide.name + ' — How it works | AfriCore'
                       : pages[path]
-                        ? pages[path].category + " | AfriCore"
-                        : "AfriCore Business workspace",
+                        ? pages[path].category + ' | AfriCore'
+                        : 'AfriCore Business workspace',
     description:
       lesson?.definition ||
       guide?.summary ||
       pages[path]?.description ||
-      "Organize business records, follow payment evidence and understand what is still owed. Find the workspace that fits your work.",
+      'Organize business records, follow payment evidence and understand what is still owed. Find the workspace that fits your work.',
   };
 }
 export function usePageMetadata(path: string) {
   useEffect(() => {
     const meta = pageMetadata(path);
     document.title = meta.title;
-    let description = document.querySelector<HTMLMetaElement>(
-      'meta[name="description"]',
-    );
+    let description = document.querySelector<HTMLMetaElement>('meta[name="description"]');
     if (!description) {
-      description = document.createElement("meta");
-      description.name = "description";
+      description = document.createElement('meta');
+      description.name = 'description';
       document.head.append(description);
     }
     description.content = meta.description;
-    let canonical = document.querySelector<HTMLLinkElement>(
-      'link[rel="canonical"]',
-    );
+    let canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
     if (!canonical) {
-      canonical = document.createElement("link");
-      canonical.rel = "canonical";
+      canonical = document.createElement('link');
+      canonical.rel = 'canonical';
       document.head.append(canonical);
     }
     canonical.href = location.origin + path;

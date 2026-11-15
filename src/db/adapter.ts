@@ -1,8 +1,8 @@
-import Database from "better-sqlite3";
-import path from "path";
-import { AsyncLocalStorage } from "node:async_hooks";
+import Database from 'better-sqlite3';
+import path from 'path';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
-import { Pool, PoolClient, types as pgTypes } from "pg";
+import { Pool, PoolClient, types as pgTypes } from 'pg';
 
 /**
  * Dual-engine adapter. Every service in this codebase calls dbGet/dbAll/
@@ -46,7 +46,7 @@ let dbClosed = false;
  */
 function envInt(name: string, fallback: number, min: number, max: number): number {
   const raw = process.env[name];
-  if (raw === undefined || raw.trim() === "") return fallback;
+  if (raw === undefined || raw.trim() === '') return fallback;
   const parsed = Number(raw);
   if (!Number.isFinite(parsed) || parsed < min || parsed > max) return fallback;
   return Math.floor(parsed);
@@ -55,13 +55,13 @@ function envInt(name: string, fallback: number, min: number, max: number): numbe
 if (isPostgres) {
   pgPool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    application_name: "afriscore",
+    application_name: 'afriscore',
     // Bounded pool + connection/query timeouts so a dead or slow database
     // fails requests instead of exhausting sockets/hanging handlers.
-    max: envInt("PG_POOL_MAX", 10, 1, 100),
-    connectionTimeoutMillis: envInt("PG_CONNECTION_TIMEOUT_MS", 5_000, 100, 120_000),
-    idleTimeoutMillis: envInt("PG_IDLE_TIMEOUT_MS", 30_000, 1_000, 600_000),
-    query_timeout: envInt("PG_QUERY_TIMEOUT_MS", 30_000, 0, 600_000),
+    max: envInt('PG_POOL_MAX', 10, 1, 100),
+    connectionTimeoutMillis: envInt('PG_CONNECTION_TIMEOUT_MS', 5_000, 100, 120_000),
+    idleTimeoutMillis: envInt('PG_IDLE_TIMEOUT_MS', 30_000, 1_000, 600_000),
+    query_timeout: envInt('PG_QUERY_TIMEOUT_MS', 30_000, 0, 600_000),
     // Do not keep a process alive just because idle pooled clients exist.
     // The API stays up via its HTTP server; CLI/worker/test processes can exit
     // promptly instead of lingering until idleTimeoutMillis.
@@ -69,14 +69,21 @@ if (isPostgres) {
   });
   // A pool error listener is mandatory: an unhandled 'error' event on an idle
   // client crashes the process.
-  pgPool.on("error", (err) => {
-    console.error(JSON.stringify({ timestamp: new Date().toISOString(), level: "error", event: "pg_pool_error", message: err.message }));
+  pgPool.on('error', (err) => {
+    console.error(
+      JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: 'error',
+        event: 'pg_pool_error',
+        message: err.message,
+      }),
+    );
   });
 } else {
-  const DB_PATH = process.env.DB_PATH || path.join(__dirname, "../../africore.db");
+  const DB_PATH = process.env.DB_PATH || path.join(__dirname, '../../africore.db');
   sqliteDb = new Database(DB_PATH);
-  sqliteDb.pragma("journal_mode = WAL");
-  sqliteDb.pragma("busy_timeout = 5000");
+  sqliteDb.pragma('journal_mode = WAL');
+  sqliteDb.pragma('busy_timeout = 5000');
 }
 
 /** Exposed only for the SQLite-specific migration guard in db/index.ts
@@ -122,7 +129,7 @@ function withSqliteLock<T>(fn: () => Promise<T>): Promise<T> {
   const run = sqliteQueue.then(fn, fn);
   sqliteQueue = run.then(
     () => undefined,
-    () => undefined
+    () => undefined,
   );
   return run;
 }
@@ -151,14 +158,14 @@ export async function dbTransaction<T>(fn: () => Promise<T>): Promise<T> {
 
   if (!isPostgres) {
     return withSqliteLock(async () => {
-      sqliteDb!.exec("BEGIN IMMEDIATE");
+      sqliteDb!.exec('BEGIN IMMEDIATE');
       try {
         const result = await txStore.run({}, fn);
-        sqliteDb!.exec("COMMIT");
+        sqliteDb!.exec('COMMIT');
         return result;
       } catch (err) {
         try {
-          sqliteDb!.exec("ROLLBACK");
+          sqliteDb!.exec('ROLLBACK');
         } catch {
           /* transaction already rolled back by SQLite */
         }
@@ -171,17 +178,19 @@ export async function dbTransaction<T>(fn: () => Promise<T>): Promise<T> {
   // Checked-out clients no longer have the pool's idle error handler. A
   // disconnect between queries must fail this transaction, not the process.
   let clientError: Error | undefined;
-  const onError = (error: Error) => { clientError = error; };
+  const onError = (error: Error) => {
+    clientError = error;
+  };
   client.on('error', onError);
   try {
-    await client.query("BEGIN");
+    await client.query('BEGIN');
     const result = await txStore.run({ pgClient: client, pgFailure: () => clientError }, fn);
     if (clientError) throw clientError;
-    await client.query("COMMIT");
+    await client.query('COMMIT');
     return result;
   } catch (err) {
     try {
-      await client.query("ROLLBACK");
+      await client.query('ROLLBACK');
     } catch {
       /* connection may already be terminating */
     }
@@ -253,12 +262,19 @@ export async function dbExec(sql: string): Promise<void> {
 }
 
 /** Isolate a recoverable workflow action without committing its enclosing transaction. */
-export async function dbSavepoint<T>(fn:()=>Promise<T>):Promise<T>{
-  if(!inTransaction())return dbTransaction(()=>dbSavepoint(fn));
-  const name='operation_'+randomUUID().replace(/-/g,'');
-  await dbExec('SAVEPOINT '+name);
-  try{const value=await fn();await dbExec('RELEASE SAVEPOINT '+name);return value;}
-  catch(error){await dbExec('ROLLBACK TO SAVEPOINT '+name);await dbExec('RELEASE SAVEPOINT '+name);throw error;}
+export async function dbSavepoint<T>(fn: () => Promise<T>): Promise<T> {
+  if (!inTransaction()) return dbTransaction(() => dbSavepoint(fn));
+  const name = 'operation_' + randomUUID().replace(/-/g, '');
+  await dbExec('SAVEPOINT ' + name);
+  try {
+    const value = await fn();
+    await dbExec('RELEASE SAVEPOINT ' + name);
+    return value;
+  } catch (error) {
+    await dbExec('ROLLBACK TO SAVEPOINT ' + name);
+    await dbExec('RELEASE SAVEPOINT ' + name);
+    throw error;
+  }
 }
 
 /** Closes the pool / SQLite handle. Used by graceful shutdown and tests.

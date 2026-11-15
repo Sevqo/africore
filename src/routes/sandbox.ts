@@ -1,10 +1,10 @@
-import { Router } from "express";
-import { z } from "zod";
-import { createBusiness, listSandboxBusinesses } from "../services/businessService";
-import { createPerson, listSandboxPersons } from "../services/personService";
-import { testWebhookDelivery } from "../services/webhookService";
-import { requireApiKey, AuthedRequest } from "../middleware/apiKeyAuth";
-import { requireAdmin } from "../middleware/adminAuth";
+import { Router } from 'express';
+import { z } from 'zod';
+import { createBusiness, listSandboxBusinesses } from '../services/businessService';
+import { createPerson, listSandboxPersons } from '../services/personService';
+import { testWebhookDelivery } from '../services/webhookService';
+import { requireApiKey, AuthedRequest } from '../middleware/apiKeyAuth';
+import { requireAdmin } from '../middleware/adminAuth';
 
 /**
  * Sandbox environment (spec section 33). Every business/person created
@@ -22,15 +22,16 @@ const businessSchema = z.object({
   kra_pin: z.string().optional(),
 });
 
-router.post("/businesses", requireAdmin, async (req, res) => {
+router.post('/businesses', requireAdmin, async (req, res) => {
   const parsed = businessSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: "invalid_input", details: parsed.error.flatten() });
+  if (!parsed.success)
+    return res.status(400).json({ error: 'invalid_input', details: parsed.error.flatten() });
 
   const business = await createBusiness({ ...parsed.data, is_sandbox: true });
   res.status(201).json(business);
 });
 
-router.get("/businesses", requireAdmin, async (_req, res) => {
+router.get('/businesses', requireAdmin, async (_req, res) => {
   res.json(await listSandboxBusinesses());
 });
 
@@ -39,15 +40,16 @@ const personSchema = z.object({
   national_id: z.string().min(4).optional(),
 });
 
-router.post("/persons", requireAdmin, async (req, res) => {
+router.post('/persons', requireAdmin, async (req, res) => {
   const parsed = personSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: "invalid_input", details: parsed.error.flatten() });
+  if (!parsed.success)
+    return res.status(400).json({ error: 'invalid_input', details: parsed.error.flatten() });
 
   const person = await createPerson({ ...parsed.data, is_sandbox: true });
   res.status(201).json(person);
 });
 
-router.get("/persons", requireAdmin, async (_req, res) => {
+router.get('/persons', requireAdmin, async (_req, res) => {
   res.json(await listSandboxPersons());
 });
 
@@ -56,9 +58,10 @@ router.get("/persons", requireAdmin, async (_req, res) => {
 // correctly before wiring up a real subscription.
 const webhookTestSchema = z.object({ target_url: z.string().url() });
 
-router.post("/webhook-test", requireApiKey, async (req: AuthedRequest, res) => {
+router.post('/webhook-test', requireApiKey, async (req: AuthedRequest, res) => {
   const parsed = webhookTestSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: "invalid_input", details: parsed.error.flatten() });
+  if (!parsed.success)
+    return res.status(400).json({ error: 'invalid_input', details: parsed.error.flatten() });
 
   const result = await testWebhookDelivery(parsed.data.target_url);
   res.json(result);

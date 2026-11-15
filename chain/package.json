@@ -1,1 +1,5 @@
-{"name":"africore-local-chain","private":true,"type":"module"}
+{
+  "name": "africore-local-chain",
+  "private": true,
+  "type": "module"
+}

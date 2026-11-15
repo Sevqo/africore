@@ -5,10 +5,7 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 export function compile() {
   const name = 'AfriCoreAnchors.sol',
-    source = fs.readFileSync(
-      new URL('../contracts/' + name, import.meta.url),
-      'utf8',
-    );
+    source = fs.readFileSync(new URL('../contracts/' + name, import.meta.url), 'utf8');
   const output = JSON.parse(
     solc.compile(
       JSON.stringify({
@@ -32,8 +29,7 @@ export function compile() {
     ),
   );
   const errors = (output.errors || []).filter((e) => e.severity === 'error');
-  if (errors.length)
-    throw Error(errors.map((e) => e.formattedMessage).join('\n'));
+  if (errors.length) throw Error(errors.map((e) => e.formattedMessage).join('\n'));
   const contract = output.contracts[name].AfriCoreAnchors;
   return {
     abi: contract.abi,

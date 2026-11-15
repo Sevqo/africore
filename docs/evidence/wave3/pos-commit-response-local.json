@@ -9,7 +9,12 @@
     "other_ci_jobs": "SQLite, Website, type/lint and isolated chain succeeded"
   },
   "repair": "Await the complete outer transaction before sending its response, retaining serialized balance/hold validation",
-  "local_full": { "postgres_passed": 435, "sqlite_passed": 434, "sqlite_pg_only_skipped": 1, "failed": 0 },
+  "local_full": {
+    "postgres_passed": 435,
+    "sqlite_passed": 434,
+    "sqlite_pg_only_skipped": 1,
+    "failed": 0
+  },
   "cross_channel": "14 POS tests passed on each engine, including one public Commerce/POS last-unit race with one successful reservation and no duplicate dispatch",
   "lint": "passed; 164 frontend modules",
   "workspace_contracts": 427,

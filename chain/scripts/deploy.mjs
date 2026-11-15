@@ -13,11 +13,9 @@ try {
     throw Error('Local RPC must be loopback');
   const signer = await provider.getSigner(),
     artifact = compile(),
-    contract = await new ContractFactory(
-      artifact.abi,
-      artifact.bytecode,
-      signer,
-    ).deploy(await signer.getAddress());
+    contract = await new ContractFactory(artifact.abi, artifact.bytecode, signer).deploy(
+      await signer.getAddress(),
+    );
   await contract.waitForDeployment();
   const receipt = await contract.deploymentTransaction().wait();
   const result = {

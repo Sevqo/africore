@@ -1,9 +1,9 @@
 export const inventorySections = [
-  {label: 'Overview', section: 'dashboard'},
-  {label: 'Operations', section: 'operations'},
-  {label: 'Products', section: 'products'},
-  {label: 'Reporting', section: 'reporting'},
-  {label: 'Configuration', section: 'configuration'},
+  { label: 'Overview', section: 'dashboard' },
+  { label: 'Operations', section: 'operations' },
+  { label: 'Products', section: 'products' },
+  { label: 'Reporting', section: 'reporting' },
+  { label: 'Configuration', section: 'configuration' },
 ] as const;
 
 export const inventoryViews = [
@@ -94,20 +94,22 @@ export function shipmentIsOpen(status: string) {
   return !['delivered', 'returned', 'cancelled'].includes(status);
 }
 
-export function shipmentIsLate(shipment: {estimated_delivery?: string; status: string}, today: string) {
-  return shipmentIsOpen(shipment.status) && !!shipment.estimated_delivery && shipment.estimated_delivery < today;
+export function shipmentIsLate(
+  shipment: { estimated_delivery?: string; status: string },
+  today: string,
+) {
+  return (
+    shipmentIsOpen(shipment.status) &&
+    !!shipment.estimated_delivery &&
+    shipment.estimated_delivery < today
+  );
 }
 
-export function incomingIsOverdue(incoming: {due_on?: string; status: string}, today: string) {
+export function incomingIsOverdue(incoming: { due_on?: string; status: string }, today: string) {
   return incoming.status === 'planned' && !!incoming.due_on && incoming.due_on < today;
 }
 
-export function filterProducts(
-  products: any[],
-  filter: string,
-  query: string,
-  warehouse?: string,
-) {
+export function filterProducts(products: any[], filter: string, query: string, warehouse?: string) {
   const text = query.trim().toLowerCase();
   return products.filter((p) => {
     if (warehouse && p.warehouse_id && p.warehouse_id !== warehouse) return false;
@@ -136,7 +138,10 @@ export function transferDestination(movements: any[]) {
   for (const m of movements) {
     if (m.kind === 'receipt' && m.source_id) bySource.set(m.source_id, m);
   }
-  return out.map((m) => ({...m, destination_warehouse_id: bySource.get(m.id)?.warehouse_id || null}));
+  return out.map((m) => ({
+    ...m,
+    destination_warehouse_id: bySource.get(m.id)?.warehouse_id || null,
+  }));
 }
 
 export function shipmentQuantity(items: any[]) {

@@ -1,90 +1,93 @@
-import { test, describe } from "node:test";
-import assert from "node:assert";
-import { normalizeMpesaTransaction, normalizeBankTransaction } from "../services/normalizationService";
+import { test, describe } from 'node:test';
+import assert from 'node:assert';
+import {
+  normalizeMpesaTransaction,
+  normalizeBankTransaction,
+} from '../services/normalizationService';
 
-describe("normalization", () => {
-  test("M-Pesa CR becomes a canonical completed credit", () => {
+describe('normalization', () => {
+  test('M-Pesa CR becomes a canonical completed credit', () => {
     const c = normalizeMpesaTransaction({
-      MpesaReceiptNumber: "Q123",
-      TransactionType: "CustomerPayment",
+      MpesaReceiptNumber: 'Q123',
+      TransactionType: 'CustomerPayment',
       Amount: 1500,
-      MSISDN: "254712345678",
-      TransactionDate: "2026-09-01T10:00:00.000Z",
-      ResultDesc: "CR",
+      MSISDN: '254712345678',
+      TransactionDate: '2026-09-01T10:00:00.000Z',
+      ResultDesc: 'CR',
     });
-    assert.strictEqual(c.type, "credit");
-    assert.strictEqual(c.status, "completed");
-    assert.strictEqual(c.source_provider, "mpesa");
-    assert.strictEqual(c.category, "sales");
-    assert.strictEqual(c.raw_status, "CR"); // original preserved for audit
+    assert.strictEqual(c.type, 'credit');
+    assert.strictEqual(c.status, 'completed');
+    assert.strictEqual(c.source_provider, 'mpesa');
+    assert.strictEqual(c.category, 'sales');
+    assert.strictEqual(c.raw_status, 'CR'); // original preserved for audit
   });
 
-  test("M-Pesa DR becomes a debit", () => {
+  test('M-Pesa DR becomes a debit', () => {
     const c = normalizeMpesaTransaction({
-      MpesaReceiptNumber: "Q124",
-      TransactionType: "B2CPayment",
+      MpesaReceiptNumber: 'Q124',
+      TransactionType: 'B2CPayment',
       Amount: 900,
-      MSISDN: "254712345678",
-      TransactionDate: "2026-09-01T10:00:00.000Z",
-      ResultDesc: "DR",
+      MSISDN: '254712345678',
+      TransactionDate: '2026-09-01T10:00:00.000Z',
+      ResultDesc: 'DR',
     });
-    assert.strictEqual(c.type, "debit");
-    assert.strictEqual(c.category, "payout");
+    assert.strictEqual(c.type, 'debit');
+    assert.strictEqual(c.category, 'payout');
   });
 
-  test("M-Pesa FAILED becomes a failed status", () => {
+  test('M-Pesa FAILED becomes a failed status', () => {
     const c = normalizeMpesaTransaction({
-      MpesaReceiptNumber: "Q125",
-      TransactionType: "CustomerPayment",
+      MpesaReceiptNumber: 'Q125',
+      TransactionType: 'CustomerPayment',
       Amount: 100,
-      MSISDN: "254712345678",
-      TransactionDate: "2026-09-01T10:00:00.000Z",
-      ResultDesc: "FAILED",
+      MSISDN: '254712345678',
+      TransactionDate: '2026-09-01T10:00:00.000Z',
+      ResultDesc: 'FAILED',
     });
-    assert.strictEqual(c.status, "failed");
+    assert.strictEqual(c.status, 'failed');
   });
 
-  test("a FAILED M-Pesa payout stays a debit instead of becoming a credit", () => {
+  test('a FAILED M-Pesa payout stays a debit instead of becoming a credit', () => {
     const c = normalizeMpesaTransaction({
-      MpesaReceiptNumber: "Q126",
-      TransactionType: "B2CPayment",
+      MpesaReceiptNumber: 'Q126',
+      TransactionType: 'B2CPayment',
       Amount: 2500,
-      MSISDN: "254712345678",
-      TransactionDate: "2026-09-01T10:00:00.000Z",
-      ResultDesc: "FAILED",
+      MSISDN: '254712345678',
+      TransactionDate: '2026-09-01T10:00:00.000Z',
+      ResultDesc: 'FAILED',
     });
-    assert.strictEqual(c.status, "failed");
-    assert.strictEqual(c.type, "debit", "a failed payout must never be counted as revenue");
+    assert.strictEqual(c.status, 'failed');
+    assert.strictEqual(c.type, 'debit', 'a failed payout must never be counted as revenue');
   });
 
-  test("an unrecognised M-Pesa status is pending, not completed", () => {
+  test('an unrecognised M-Pesa status is pending, not completed', () => {
     const c = normalizeMpesaTransaction({
-      MpesaReceiptNumber: "Q127",
-      TransactionType: "CustomerPayment",
+      MpesaReceiptNumber: 'Q127',
+      TransactionType: 'CustomerPayment',
       Amount: 100,
-      MSISDN: "254712345678",
-      TransactionDate: "2026-09-01T10:00:00.000Z",
-      ResultDesc: "QUEUED" as any,
+      MSISDN: '254712345678',
+      TransactionDate: '2026-09-01T10:00:00.000Z',
+      ResultDesc: 'QUEUED' as any,
     });
-    assert.strictEqual(c.status, "pending");
+    assert.strictEqual(c.status, 'pending');
   });
 
-  test("bank CREDIT/COMPLETED maps to the SAME canonical shape as M-Pesa CR", () => {
+  test('bank CREDIT/COMPLETED maps to the SAME canonical shape as M-Pesa CR', () => {
     const bank = normalizeBankTransaction({
-      txnRef: "BNK1",
-      narrative: "Supplier payment received",
-      debitCredit: "CREDIT",
+      txnRef: 'BNK1',
+      narrative: 'Supplier payment received',
+      debitCredit: 'CREDIT',
       txnAmount: 1500,
-      valueDate: "2026-09-01T10:00:00.000Z",
-      status: "COMPLETED",
+      valueDate: '2026-09-01T10:00:00.000Z',
+      status: 'COMPLETED',
     });
     const mpesa = normalizeMpesaTransaction({
-      MpesaReceiptNumber: "Q123",
-      TransactionType: "CustomerPayment",
+      MpesaReceiptNumber: 'Q123',
+      TransactionType: 'CustomerPayment',
       Amount: 1500,
-      MSISDN: "254712345678",
-      TransactionDate: "2026-09-01T10:00:00.000Z",
-      ResultDesc: "CR",
+      MSISDN: '254712345678',
+      TransactionDate: '2026-09-01T10:00:00.000Z',
+      ResultDesc: 'CR',
     });
     // This is the whole point of the normalization layer: two providers
     // with totally different vocabularies produce identical canonical fields.
@@ -94,28 +97,28 @@ describe("normalization", () => {
     assert.strictEqual(bank.currency, mpesa.currency);
   });
 
-  test("bank REVERSED maps to failed, not completed", () => {
+  test('bank REVERSED maps to failed, not completed', () => {
     const c = normalizeBankTransaction({
-      txnRef: "BNK2",
-      narrative: "Inventory purchase",
-      debitCredit: "DEBIT",
+      txnRef: 'BNK2',
+      narrative: 'Inventory purchase',
+      debitCredit: 'DEBIT',
       txnAmount: 700,
-      valueDate: "2026-09-01T10:00:00.000Z",
-      status: "REVERSED",
+      valueDate: '2026-09-01T10:00:00.000Z',
+      status: 'REVERSED',
     });
-    assert.strictEqual(c.status, "failed");
-    assert.strictEqual(c.type, "debit");
+    assert.strictEqual(c.status, 'failed');
+    assert.strictEqual(c.type, 'debit');
   });
 
-  test("bank PENDING is preserved as pending", () => {
+  test('bank PENDING is preserved as pending', () => {
     const c = normalizeBankTransaction({
-      txnRef: "BNK3",
-      narrative: "Supplier payment received",
-      debitCredit: "CREDIT",
+      txnRef: 'BNK3',
+      narrative: 'Supplier payment received',
+      debitCredit: 'CREDIT',
       txnAmount: 700,
-      valueDate: "2026-09-01T10:00:00.000Z",
-      status: "PENDING",
+      valueDate: '2026-09-01T10:00:00.000Z',
+      status: 'PENDING',
     });
-    assert.strictEqual(c.status, "pending");
+    assert.strictEqual(c.status, 'pending');
   });
 });

@@ -1,9 +1,14 @@
-import { Router, Request } from "express";
-import { z } from "zod";
-import { requireAdmin } from "../middleware/adminAuth";
-import { sendError } from "../middleware/errorHandler";
-import { listShortcodes, listStatements, OnboardingError, recordOnboardingConsent } from "../services/businessOnboardingService";
-import { startStatementIngestionWorkflow } from "../orbit/orbitService";
+import { Router, Request } from 'express';
+import { z } from 'zod';
+import { requireAdmin } from '../middleware/adminAuth';
+import { sendError } from '../middleware/errorHandler';
+import {
+  listShortcodes,
+  listStatements,
+  OnboardingError,
+  recordOnboardingConsent,
+} from '../services/businessOnboardingService';
+import { startStatementIngestionWorkflow } from '../orbit/orbitService';
 
 /**
  * Business onboarding endpoints. Mounted under /v1/businesses/:id.
@@ -22,13 +27,16 @@ const consentSchema = z.object({
   expires_at: z
     .string()
     .datetime({ offset: true })
-    .refine((value) => new Date(value).getTime() > Date.now(), { message: "expires_at must be in the future" })
+    .refine((value) => new Date(value).getTime() > Date.now(), {
+      message: 'expires_at must be in the future',
+    })
     .optional(),
 });
 
-router.post("/onboarding/consent", requireAdmin, async (req: BusinessRequest, res) => {
+router.post('/onboarding/consent', requireAdmin, async (req: BusinessRequest, res) => {
   const parsed = consentSchema.safeParse(req.body ?? {});
-  if (!parsed.success) return sendError(res, 400, "invalid_input", { details: parsed.error.flatten() });
+  if (!parsed.success)
+    return sendError(res, 400, 'invalid_input', { details: parsed.error.flatten() });
 
   try {
     const consent = await recordOnboardingConsent(String(req.params.id), {
@@ -37,27 +45,28 @@ router.post("/onboarding/consent", requireAdmin, async (req: BusinessRequest, re
     });
     res.status(201).json({
       consent,
-      note: "Consent recorded for business onboarding. It can be revoked with DELETE /v1/consents/{id}.",
+      note: 'Consent recorded for business onboarding. It can be revoked with DELETE /v1/consents/{id}.',
     });
   } catch (err) {
-    if (err instanceof OnboardingError && err.code === "business_not_found") {
-      return sendError(res, 404, "not_found");
+    if (err instanceof OnboardingError && err.code === 'business_not_found') {
+      return sendError(res, 404, 'not_found');
     }
     throw err;
   }
 });
 
 const uploadSchema = z.object({
-  source_type: z.enum(["individual_mpesa", "business_till", "business_paybill", "bank"]),
+  source_type: z.enum(['individual_mpesa', 'business_till', 'business_paybill', 'bank']),
   shortcode: z.string().min(2).max(32).optional(),
   file_name: z.string().min(1).max(255).optional(),
   label: z.string().min(1).max(120).optional(),
   content: z.string().min(10).max(1_000_000),
 });
 
-router.post("/statements", requireAdmin, async (req: BusinessRequest, res) => {
+router.post('/statements', requireAdmin, async (req: BusinessRequest, res) => {
   const parsed = uploadSchema.safeParse(req.body);
-  if (!parsed.success) return sendError(res, 400, "invalid_input", { details: parsed.error.flatten() });
+  if (!parsed.success)
+    return sendError(res, 400, 'invalid_input', { details: parsed.error.flatten() });
 
   try {
     // Orbit ingestion: the request only validates consent and queues the work.
@@ -76,13 +85,13 @@ router.post("/statements", requireAdmin, async (req: BusinessRequest, res) => {
       job_id: result.jobId,
       duplicate: result.duplicate,
       workflow_url: `/v1/orbit/workflows/${result.workflowId}`,
-      status: "accepted",
+      status: 'accepted',
     });
   } catch (err) {
     if (err instanceof OnboardingError) {
-      if (err.code === "business_not_found") return sendError(res, 404, "not_found");
-      if (err.code === "consent_required") {
-        return sendError(res, 403, "consent_required", { extra: { required_scope: "statements" } });
+      if (err.code === 'business_not_found') return sendError(res, 404, 'not_found');
+      if (err.code === 'consent_required') {
+        return sendError(res, 403, 'consent_required', { extra: { required_scope: 'statements' } });
       }
       return sendError(res, 400, err.code, { message: err.message });
     }
@@ -90,13 +99,12 @@ router.post("/statements", requireAdmin, async (req: BusinessRequest, res) => {
   }
 });
 
-router.get("/statements", requireAdmin, async (req: BusinessRequest, res) => {
+router.get('/statements', requireAdmin, async (req: BusinessRequest, res) => {
   res.json(await listStatements(String(req.params.id)));
 });
 
-router.get("/shortcodes", requireAdmin, async (req: BusinessRequest, res) => {
+router.get('/shortcodes', requireAdmin, async (req: BusinessRequest, res) => {
   res.json(await listShortcodes(String(req.params.id)));
 });
 
 export default router;
-

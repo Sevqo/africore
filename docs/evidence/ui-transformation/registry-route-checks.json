@@ -6,9 +6,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=pos&section=report#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore POS"
-      ],
+      "headings": ["AfriCore POS"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -24,9 +22,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=pos&section=counter#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore POS"
-      ],
+      "headings": ["AfriCore POS"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -42,9 +38,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=pos&section=sales#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore POS"
-      ],
+      "headings": ["AfriCore POS"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -60,9 +54,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=pos&section=sessions#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore POS"
-      ],
+      "headings": ["AfriCore POS"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -78,9 +70,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=pos&section=registers#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore POS"
-      ],
+      "headings": ["AfriCore POS"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -96,9 +86,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=commerce&section=dashboard#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Commerce"
-      ],
+      "headings": ["AfriCore Commerce"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -114,9 +102,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=commerce&section=orders#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Commerce"
-      ],
+      "headings": ["AfriCore Commerce"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -132,9 +118,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=reports#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Procurement"
-      ],
+      "headings": ["AfriCore Procurement"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -150,9 +134,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=replenishment#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Procurement"
-      ],
+      "headings": ["AfriCore Procurement"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -168,9 +150,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=request#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Procurement"
-      ],
+      "headings": ["AfriCore Procurement"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -186,9 +166,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=supplier#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Procurement"
-      ],
+      "headings": ["AfriCore Procurement"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -204,9 +182,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=rfq#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Procurement"
-      ],
+      "headings": ["AfriCore Procurement"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -222,9 +198,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=order#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Procurement"
-      ],
+      "headings": ["AfriCore Procurement"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -240,9 +214,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=receipt#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Procurement"
-      ],
+      "headings": ["AfriCore Procurement"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -258,9 +230,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=bill#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Procurement"
-      ],
+      "headings": ["AfriCore Procurement"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -276,9 +246,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=credit#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Procurement"
-      ],
+      "headings": ["AfriCore Procurement"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -294,9 +262,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=procurement&section=payment#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Procurement"
-      ],
+      "headings": ["AfriCore Procurement"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -312,9 +278,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=mine#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Documents"
-      ],
+      "headings": ["AfriCore Documents"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -330,9 +294,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=company#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Documents"
-      ],
+      "headings": ["AfriCore Documents"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -348,9 +310,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=shared#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Documents"
-      ],
+      "headings": ["AfriCore Documents"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -366,9 +326,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=recent#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Documents"
-      ],
+      "headings": ["AfriCore Documents"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -384,9 +342,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=starred#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Documents"
-      ],
+      "headings": ["AfriCore Documents"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -402,9 +358,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=trash#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Documents"
-      ],
+      "headings": ["AfriCore Documents"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -420,9 +374,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=requests#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Documents"
-      ],
+      "headings": ["AfriCore Documents"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -438,9 +390,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=documents&section=settings#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Documents"
-      ],
+      "headings": ["AfriCore Documents"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -456,9 +406,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=dashboard#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore People"
-      ],
+      "headings": ["AfriCore People"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -474,9 +422,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=employees#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore People"
-      ],
+      "headings": ["AfriCore People"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -492,9 +438,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=org-chart#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore People"
-      ],
+      "headings": ["AfriCore People"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -510,9 +454,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=reports#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore People"
-      ],
+      "headings": ["AfriCore People"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -528,9 +470,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=departments#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore People"
-      ],
+      "headings": ["AfriCore People"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -546,9 +486,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=leave#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore People"
-      ],
+      "headings": ["AfriCore People"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -564,9 +502,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=attendance#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore People"
-      ],
+      "headings": ["AfriCore People"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -582,9 +518,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=leave-types#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore People"
-      ],
+      "headings": ["AfriCore People"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -600,9 +534,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=people&section=settings#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore People"
-      ],
+      "headings": ["AfriCore People"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -618,9 +550,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=dashboard#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Business ID"
-      ],
+      "headings": ["AfriCore Business ID"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -636,9 +566,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=profile#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Business ID"
-      ],
+      "headings": ["AfriCore Business ID"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -654,9 +582,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=verification#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Business ID"
-      ],
+      "headings": ["AfriCore Business ID"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -672,9 +598,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=passport#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Business ID"
-      ],
+      "headings": ["AfriCore Business ID"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -690,9 +614,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=credentials#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Business ID"
-      ],
+      "headings": ["AfriCore Business ID"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -708,9 +630,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=evidence#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Business ID"
-      ],
+      "headings": ["AfriCore Business ID"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -726,9 +646,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=sharing#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Business ID"
-      ],
+      "headings": ["AfriCore Business ID"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -744,9 +662,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=relationships#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Business ID"
-      ],
+      "headings": ["AfriCore Business ID"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -762,9 +678,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=history#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Business ID"
-      ],
+      "headings": ["AfriCore Business ID"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -780,9 +694,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=business_id&section=settings#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Business ID"
-      ],
+      "headings": ["AfriCore Business ID"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -798,9 +710,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=accounting&section=dashboard#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Accounting"
-      ],
+      "headings": ["AfriCore Accounting"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -816,9 +726,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=accounting&section=entries#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Accounting"
-      ],
+      "headings": ["AfriCore Accounting"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -834,9 +742,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=accounting&section=sources#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Accounting"
-      ],
+      "headings": ["AfriCore Accounting"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -852,9 +758,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=accounting&section=aging#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Accounting"
-      ],
+      "headings": ["AfriCore Accounting"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -870,9 +774,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=accounting&section=tax#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Accounting"
-      ],
+      "headings": ["AfriCore Accounting"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -888,9 +790,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=accounting&section=settings#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Accounting"
-      ],
+      "headings": ["AfriCore Accounting"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -906,9 +806,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=dashboard#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Work"
-      ],
+      "headings": ["AfriCore Work"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -924,9 +822,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=templates#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Work"
-      ],
+      "headings": ["AfriCore Work"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -942,9 +838,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=my-work#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Work"
-      ],
+      "headings": ["AfriCore Work"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -960,9 +854,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=board#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Work"
-      ],
+      "headings": ["AfriCore Work"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -978,9 +870,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=discussions#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Work"
-      ],
+      "headings": ["AfriCore Work"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -996,9 +886,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=calendar#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Work"
-      ],
+      "headings": ["AfriCore Work"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -1014,9 +902,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=timeline#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Work"
-      ],
+      "headings": ["AfriCore Work"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -1032,9 +918,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=workload#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Work"
-      ],
+      "headings": ["AfriCore Work"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -1050,9 +934,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=work&section=workflows#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Work"
-      ],
+      "headings": ["AfriCore Work"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -1068,9 +950,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=dashboard#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Finance"
-      ],
+      "headings": ["AfriCore Finance"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -1086,9 +966,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=Invoices#Invoices",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Invoices"
-      ],
+      "headings": ["Invoices"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -1104,9 +982,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=Customers#Customers",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Customers"
-      ],
+      "headings": ["Customers"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -1122,9 +998,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=Payments#Payments",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Payments"
-      ],
+      "headings": ["Payments"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -1140,9 +1014,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=Expenses#Expenses",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Expenses"
-      ],
+      "headings": ["Expenses"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -1158,9 +1030,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=Reconciliation#Reconciliation",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Reconciliation"
-      ],
+      "headings": ["Reconciliation"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -1176,9 +1046,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=receivables#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Finance"
-      ],
+      "headings": ["AfriCore Finance"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -1194,9 +1062,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=finance&section=Reports#Reports",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Reports"
-      ],
+      "headings": ["Reports"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -1212,9 +1078,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=crm&section=dashboard#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore CRM"
-      ],
+      "headings": ["AfriCore CRM"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -1230,9 +1094,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=crm&section=Customers#Customers",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Customers"
-      ],
+      "headings": ["Customers"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -1248,9 +1110,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=crm&section=pipeline#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore CRM"
-      ],
+      "headings": ["AfriCore CRM"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -1266,9 +1126,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=crm&section=followups#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore CRM"
-      ],
+      "headings": ["AfriCore CRM"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -1284,9 +1142,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=crm&section=activity#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore CRM"
-      ],
+      "headings": ["AfriCore CRM"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -1302,9 +1158,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=inventory&section=dashboard#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Inventory"
-      ],
+      "headings": ["AfriCore Inventory"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -1320,9 +1174,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=inventory&section=products#Products",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Products"
-      ],
+      "headings": ["Products"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -1338,9 +1190,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=inventory&section=warehouses#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Inventory"
-      ],
+      "headings": ["AfriCore Inventory"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -1356,9 +1206,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=inventory&section=movements#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Inventory"
-      ],
+      "headings": ["AfriCore Inventory"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -1374,9 +1222,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=inventory&section=reservations#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Inventory"
-      ],
+      "headings": ["AfriCore Inventory"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -1392,9 +1238,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=inventory&section=replenishment#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Inventory"
-      ],
+      "headings": ["AfriCore Inventory"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -1410,9 +1254,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=sales&section=dashboard#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Sales"
-      ],
+      "headings": ["AfriCore Sales"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -1428,9 +1270,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=sales&section=quotations#Quotations",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Quotations"
-      ],
+      "headings": ["Quotations"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -1446,9 +1286,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=sales&section=Orders#Orders",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Orders"
-      ],
+      "headings": ["Orders"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -1464,9 +1302,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=sales&section=Fulfillment#Fulfillment",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Fulfillment"
-      ],
+      "headings": ["Fulfillment"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -1482,9 +1318,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=sales&section=Customers#Customers",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Customers"
-      ],
+      "headings": ["Customers"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -1500,9 +1334,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=analytics&section=dashboard#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Analytics"
-      ],
+      "headings": ["AfriCore Analytics"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -1518,9 +1350,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=analytics&section=Intelligence#Intelligence",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Intelligence"
-      ],
+      "headings": ["Intelligence"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -1536,9 +1366,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=analytics&section=saved-reports#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Analytics"
-      ],
+      "headings": ["AfriCore Analytics"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -1554,9 +1382,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=analytics&section=coverage#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Analytics"
-      ],
+      "headings": ["AfriCore Analytics"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -1572,9 +1398,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=automations&section=dashboard#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Automations"
-      ],
+      "headings": ["AfriCore Automations"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -1590,9 +1414,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=automations&section=Automations#Automations",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Automations"
-      ],
+      "headings": ["Automations"],
       "scrollWidth": 1425,
       "width": 1440
     },
@@ -1608,9 +1430,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=automations&section=runs#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Automations"
-      ],
+      "headings": ["AfriCore Automations"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -1626,9 +1446,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=automations&section=private-work#Apps",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "AfriCore Automations"
-      ],
+      "headings": ["AfriCore Automations"],
       "scrollWidth": 1440,
       "width": 1440
     },
@@ -1644,9 +1462,7 @@
     "url": "http://127.0.0.1:4002/app/business/27f62346-ebbd-4ff1-897e-1f85b345865c?app=automations&section=Approvals#Approvals",
     "desktop": {
       "alerts": [],
-      "headings": [
-        "Approvals"
-      ],
+      "headings": ["Approvals"],
       "scrollWidth": 1440,
       "width": 1440
     },

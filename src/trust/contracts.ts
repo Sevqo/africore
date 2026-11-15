@@ -21,14 +21,7 @@ export const passportInput = z
   .strict();
 export const evidenceInput = z
   .object({
-    source_kind: z.enum([
-      'profile',
-      'payment',
-      'invoice',
-      'order',
-      'shipment',
-      'relationship',
-    ]),
+    source_kind: z.enum(['profile', 'payment', 'invoice', 'order', 'shipment', 'relationship']),
     source_id: z.string().uuid(),
     lawful_basis: z.enum(['contract', 'consent', 'legitimate_interests']),
     purpose: z.string().trim().min(10).max(500),
@@ -53,10 +46,7 @@ export const issueInput = z
       .array(z.string().uuid())
       .min(1)
       .max(20)
-      .refine(
-        (ids) => new Set(ids).size === ids.length,
-        'Evidence IDs must be unique',
-      ),
+      .refine((ids) => new Set(ids).size === ids.length, 'Evidence IDs must be unique'),
     valid_days: z.number().int().min(1).max(365).default(90),
     consent: z.literal(true),
   })
@@ -64,12 +54,7 @@ export const issueInput = z
 export const relationshipInput = z
   .object({
     counterparty_org: z.string().uuid(),
-    relationship: z.enum([
-      'supplier',
-      'customer',
-      'logistics',
-      'commercial_partner',
-    ]),
+    relationship: z.enum(['supplier', 'customer', 'logistics', 'commercial_partner']),
     statement: z.string().trim().min(10).max(1000),
     consent: z.literal(true),
   })
@@ -89,10 +74,7 @@ export const grantInput = z
       .array(z.string().uuid())
       .min(1)
       .max(10)
-      .refine(
-        (ids) => new Set(ids).size === ids.length,
-        'Credential IDs must be unique',
-      ),
+      .refine((ids) => new Set(ids).size === ids.length, 'Credential IDs must be unique'),
     purpose: z.string().trim().min(10).max(500),
     expires_hours: z.number().int().min(1).max(720).default(168),
     one_time: z.boolean().default(true),
@@ -131,9 +113,7 @@ export const trustEvents = [
 ] as const;
 export const minimalCredential = z
   .object({
-    '@context': z
-      .array(z.union([z.string(), z.record(z.string(), z.unknown())]))
-      .min(1),
+    '@context': z.array(z.union([z.string(), z.record(z.string(), z.unknown())])).min(1),
     id: z.string().url(),
     type: z.array(z.string()).min(2),
     issuer: z.string().url(),
@@ -150,16 +130,7 @@ export const minimalCredential = z
             claim_summary: z.record(z.string(), z.unknown()).optional(),
             evidence_count: z.number().int().min(1).max(20),
             source_categories: z
-              .array(
-                z.enum([
-                  'profile',
-                  'payment',
-                  'invoice',
-                  'order',
-                  'shipment',
-                  'relationship',
-                ]),
-              )
+              .array(z.enum(['profile', 'payment', 'invoice', 'order', 'shipment', 'relationship']))
               .min(1)
               .max(6),
             assurance_level: z.number().int().min(0).max(3),
@@ -170,9 +141,7 @@ export const minimalCredential = z
           .strict(),
       })
       .strict(),
-    credentialSchema: z
-      .object({ id: z.string().url(), type: z.literal('JsonSchema') })
-      .strict(),
+    credentialSchema: z.object({ id: z.string().url(), type: z.literal('JsonSchema') }).strict(),
     credentialStatus: z
       .array(
         z

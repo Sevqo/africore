@@ -1,17 +1,7 @@
-import {now} from '../platform/crypto';
-import {basisPoints,nextOccurrence,sumMinor,ratioMinor} from '../finance/money';
-import {
-  expenseSchema,
-  obligationSchema,
-  analyticsQuery,
-  forecastSchema,
-} from './contracts';
-export {
-  expenseSchema,
-  obligationSchema,
-  analyticsQuery,
-  forecastSchema,
-} from './contracts';
+import { now } from '../platform/crypto';
+import { basisPoints, nextOccurrence, sumMinor, ratioMinor } from '../finance/money';
+import { expenseSchema, obligationSchema, analyticsQuery, forecastSchema } from './contracts';
+export { expenseSchema, obligationSchema, analyticsQuery, forecastSchema } from './contracts';
 import { z } from 'zod';
 import { dbAll, dbGet } from '../db';
 import { Access, fail } from '../platform/auth';
@@ -25,33 +15,33 @@ function median(values: number[]) {
     m = Math.floor(s.length / 2);
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
-const sum = (rows: any[], field: string) =>
-  sumMinor(rows.map(r=>Number(r[field]||0)));
+const sum = (rows: any[], field: string) => sumMinor(rows.map((r) => Number(r[field] || 0)));
 function effective(rows: any[]) {
   const replaced = new Set(rows.map((r) => r.supersedes_id).filter(Boolean));
-  return rows.filter((r) => !replaced.has(r.id)&&r.status!=='archived');
+  return rows.filter((r) => !replaced.has(r.id) && r.status !== 'archived');
 }
 export async function addExpense(a: Access, input: unknown) {
   const d = expenseSchema.parse(input);
-  if(d.status==='archived'&&!d.supersedes_id)fail(400,'Archive an existing expense through a retained correction');
-  const organization=await dbGet('SELECT profile FROM ac_organizations WHERE id=?',[a.org]);
-  const profile=JSON.parse(organization?.profile||'{}');
-  const obligation=d.obligation_id?(await all(a,'obligations')).find(o=>o.id===d.obligation_id):undefined;
-  const localDay=new Intl.DateTimeFormat('en-CA',{timeZone:obligation?.timezone||profile.timezone||'Africa/Nairobi'}).format(new Date());
-  if (d.occurred_on > localDay)
-    fail(400, 'An expense cannot be recorded in the future');
+  if (d.status === 'archived' && !d.supersedes_id)
+    fail(400, 'Archive an existing expense through a retained correction');
+  const organization = await dbGet('SELECT profile FROM ac_organizations WHERE id=?', [a.org]);
+  const profile = JSON.parse(organization?.profile || '{}');
+  const obligation = d.obligation_id
+    ? (await all(a, 'obligations')).find((o) => o.id === d.obligation_id)
+    : undefined;
+  const localDay = new Intl.DateTimeFormat('en-CA', {
+    timeZone: obligation?.timezone || profile.timezone || 'Africa/Nairobi',
+  }).format(new Date());
+  if (d.occurred_on > localDay) fail(400, 'An expense cannot be recorded in the future');
   return atomic(a, async () => {
     if (d.obligation_id) {
       const obligation = (await all(a, 'obligations')).find(
         (o) => o.id === d.obligation_id && o.currency === d.currency,
       );
-      if (!obligation)
-        fail(400, 'Authorized obligation in the same currency required');
+      if (!obligation) fail(400, 'Authorized obligation in the same currency required');
     }
     if (d.transaction_id) {
-      const tx = (await legacy(a, 'transactions')).find(
-        (t) => t.id === d.transaction_id,
-      );
+      const tx = (await legacy(a, 'transactions')).find((t) => t.id === d.transaction_id);
       if (
         !tx ||
         tx.type !== 'outflow' ||
@@ -61,21 +51,15 @@ export async function addExpense(a: Access, input: unknown) {
         fail(400, 'Expense must match an authorized outflow');
       if (
         effective(await all(a, 'expenses')).some(
-          (e) =>
-            e.transaction_id === d.transaction_id && e.id !== d.supersedes_id,
+          (e) => e.transaction_id === d.transaction_id && e.id !== d.supersedes_id,
         )
       )
         fail(409, 'Transaction already categorized');
     }
     if (d.supersedes_id) {
-      const old = (await all(a, 'expenses')).find(
-        (e) => e.id === d.supersedes_id,
-      );
+      const old = (await all(a, 'expenses')).find((e) => e.id === d.supersedes_id);
       if (!old || old.currency !== d.currency)
-        fail(
-          400,
-          'Correction must reference an authorized expense in the same currency',
-        );
+        fail(400, 'Correction must reference an authorized expense in the same currency');
       if (d.transaction_id && d.transaction_id !== old!.transaction_id)
         fail(400, 'Correction cannot change the source transaction');
       d.transaction_id = old!.transaction_id;
@@ -92,18 +76,14 @@ export async function addExpense(a: Access, input: unknown) {
     return r;
   });
 }
-export async function financialSnapshot(
-  a: Access,
-  input: unknown = {},
-  asOf = day(),
-) {
+export async function financialSnapshot(a: Access, input: unknown = {}, asOf = day()) {
   const query = analyticsQuery.parse(input);
   let from = query.from || addDays(asOf, -89);
   const to = query.to || asOf;
   if (
-    ((query.range!=='all'||query.from)&&from > to) ||
+    ((query.range !== 'all' || query.from) && from > to) ||
     to > asOf ||
-    (query.range!=='all'&&Date.parse(to) - Date.parse(from) > 366 * 86400000)
+    (query.range !== 'all' && Date.parse(to) - Date.parse(from) > 366 * 86400000)
   )
     fail(400, 'Choose a historical range of at most 366 days');
   const [
@@ -139,12 +119,27 @@ export async function financialSnapshot(
     "SELECT * FROM ac_exceptions WHERE org_id=? AND environment=? AND status='pending_review'",
     [a.org, a.environment],
   );
-  if(query.range==='all'&&!query.from){const dates=[...invoices.map(i=>i.issue_date),...events.map(e=>e.created_at.slice(0,10)),...transactions.map(t=>t.occurred_at.slice(0,10)),...expenses.map(e=>e.occurred_on)].filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d)&&d<=to).sort();from=dates[0]||to;}
-  const inPeriod = (d: string) =>
-    d.slice(0, 10) >= from && d.slice(0, 10) <= to;
-  const invoiceCurrencies=new Map(invoices.map(i=>[i.id,i.currency]));
-  const cashObservations=allocations.filter(row=>row.evidence_kind==='cash_observation'&&invoiceCurrencies.get(row.document_id)===query.currency&&inPeriod(row.created_at));
-  const cashReceipts=cashObservations.filter(row=>Number(row.amount_minor)>0),cashReturns=cashObservations.filter(row=>Number(row.amount_minor)<0);
+  if (query.range === 'all' && !query.from) {
+    const dates = [
+      ...invoices.map((i) => i.issue_date),
+      ...events.map((e) => e.created_at.slice(0, 10)),
+      ...transactions.map((t) => t.occurred_at.slice(0, 10)),
+      ...expenses.map((e) => e.occurred_on),
+    ]
+      .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d) && d <= to)
+      .sort();
+    from = dates[0] || to;
+  }
+  const inPeriod = (d: string) => d.slice(0, 10) >= from && d.slice(0, 10) <= to;
+  const invoiceCurrencies = new Map(invoices.map((i) => [i.id, i.currency]));
+  const cashObservations = allocations.filter(
+    (row) =>
+      row.evidence_kind === 'cash_observation' &&
+      invoiceCurrencies.get(row.document_id) === query.currency &&
+      inPeriod(row.created_at),
+  );
+  const cashReceipts = cashObservations.filter((row) => Number(row.amount_minor) > 0),
+    cashReturns = cashObservations.filter((row) => Number(row.amount_minor) < 0);
   const issued = invoices.filter(
     (i) =>
       i.currency === query.currency &&
@@ -156,8 +151,13 @@ export async function financialSnapshot(
     (e) => e.currency === query.currency && inPeriod(e.created_at),
   );
   const confirmed = selectedEvents.filter((e) => e.status === 'succeeded');
-  const returns=selectedEvents.filter(e=>e.related_event_id&&['reversed','refunded'].includes(e.status));
-  const credited=await dbAll('SELECT invoice_id,amount_minor FROM ac_credit_notes WHERE org_id=? AND environment=? AND issued_on<=?',[a.org,a.environment,to]);
+  const returns = selectedEvents.filter(
+    (e) => e.related_event_id && ['reversed', 'refunded'].includes(e.status),
+  );
+  const credited = await dbAll(
+    'SELECT invoice_id,amount_minor FROM ac_credit_notes WHERE org_id=? AND environment=? AND issued_on<=?',
+    [a.org, a.environment, to],
+  );
   const moneyExpenses = effective(expenses).filter(
     (e) => e.currency === query.currency && inPeriod(e.occurred_on),
   );
@@ -173,47 +173,71 @@ export async function financialSnapshot(
       inPeriod(t.occurred_at) &&
       !categorized.has(t.id),
   );
-  const outflows =
-    sum(moneyExpenses, 'amount_minor') + sum(importedOutflows, 'amount_minor');
+  const outflows = sum(moneyExpenses, 'amount_minor') + sum(importedOutflows, 'amount_minor');
   const periods = new Map<
     string,
     {
       date: string;
       confirmed_inflows_minor: number;
       recorded_outflows_minor: number;
-      recorded_cash_receipts_minor:number;
-      recorded_cash_returns_minor:number;
+      recorded_cash_receipts_minor: number;
+      recorded_cash_returns_minor: number;
     }
   >();
-  const point=(date:string)=>{let value=periods.get(date);if(!value){value={date,confirmed_inflows_minor:0,recorded_outflows_minor:0,recorded_cash_receipts_minor:0,recorded_cash_returns_minor:0};periods.set(date,value);}return value;};
-  for(const e of cashReceipts){const row=point(e.created_at.slice(0,10));row.recorded_cash_receipts_minor=sumMinor([row.recorded_cash_receipts_minor,e.amount_minor]);}
-  for(const e of cashReturns){const row=point(e.created_at.slice(0,10));row.recorded_cash_returns_minor=sumMinor([row.recorded_cash_returns_minor,-Number(e.amount_minor)]);}
+  const point = (date: string) => {
+    let value = periods.get(date);
+    if (!value) {
+      value = {
+        date,
+        confirmed_inflows_minor: 0,
+        recorded_outflows_minor: 0,
+        recorded_cash_receipts_minor: 0,
+        recorded_cash_returns_minor: 0,
+      };
+      periods.set(date, value);
+    }
+    return value;
+  };
+  for (const e of cashReceipts) {
+    const row = point(e.created_at.slice(0, 10));
+    row.recorded_cash_receipts_minor = sumMinor([row.recorded_cash_receipts_minor, e.amount_minor]);
+  }
+  for (const e of cashReturns) {
+    const row = point(e.created_at.slice(0, 10));
+    row.recorded_cash_returns_minor = sumMinor([
+      row.recorded_cash_returns_minor,
+      -Number(e.amount_minor),
+    ]);
+  }
   for (const e of confirmed)
-    point(e.created_at.slice(0, 10)).confirmed_inflows_minor += Number(
-      e.amount_minor,
-    );
-  for(const e of returns)point(e.created_at.slice(0,10)).confirmed_inflows_minor-=Number(e.amount_minor);
+    point(e.created_at.slice(0, 10)).confirmed_inflows_minor += Number(e.amount_minor);
+  for (const e of returns)
+    point(e.created_at.slice(0, 10)).confirmed_inflows_minor -= Number(e.amount_minor);
   for (const e of moneyExpenses)
-    point(e.occurred_on).recorded_outflows_minor += Number(
-      e.amount_minor,
-    );
+    point(e.occurred_on).recorded_outflows_minor += Number(e.amount_minor);
   for (const e of importedOutflows)
-    point(e.occurred_at.slice(0, 10)).recorded_outflows_minor += Number(
-      e.amount_minor,
-    );
+    point(e.occurred_at.slice(0, 10)).recorded_outflows_minor += Number(e.amount_minor);
   const balances = issued.map((i) => {
     const paid = allocations
       .filter((p) => p.document_id === i.id && p.created_at.slice(0, 10) <= to)
-      .reduce((s, p) => sumMinor([s,p.amount_minor]), 0);
+      .reduce((s, p) => sumMinor([s, p.amount_minor]), 0);
     return {
       ...i,
       paid_minor: paid,
-      credited_minor:sum(credited.filter(c=>c.invoice_id===i.id),'amount_minor'),
-      outstanding_minor: Math.max(0, i.total_minor - paid-sum(credited.filter(c=>c.invoice_id===i.id),'amount_minor')),
-      overdue_days: Math.max(
-        0,
-        Math.floor((Date.parse(to) - Date.parse(i.due_date)) / 86400000),
+      credited_minor: sum(
+        credited.filter((c) => c.invoice_id === i.id),
+        'amount_minor',
       ),
+      outstanding_minor: Math.max(
+        0,
+        i.total_minor -
+          paid -
+          sum(
+            credited.filter((c) => c.invoice_id === i.id),
+            'amount_minor',
+          ),
+      ),
+      overdue_days: Math.max(0, Math.floor((Date.parse(to) - Date.parse(i.due_date)) / 86400000)),
     };
   });
   const aging = {
@@ -238,23 +262,20 @@ export async function financialSnapshot(
   }
   const behavior = customers.map((c) => {
     const docs = balances.filter((i) => i.customer_id === c.id),
-      paid = docs.filter((i) => i.outstanding_minor === 0 && i.credited_minor===0),
+      paid = docs.filter((i) => i.outstanding_minor === 0 && i.credited_minor === 0),
       observations = paid
         .map((i) => {
           const ps = allocations.filter(
             (p) => p.document_id === i.id && p.created_at.slice(0, 10) <= to,
           );
-          const settled = ps.some(p=>p.time_basis==='observed_confirmation')?undefined:ps[ps.length - 1]?.created_at.slice(0, 10);
+          const settled = ps.some((p) => p.time_basis === 'observed_confirmation')
+            ? undefined
+            : ps[ps.length - 1]?.created_at.slice(0, 10);
           return {
             invoice_id: i.id,
             paid_on: settled,
             delay_days: settled
-              ? Math.max(
-                  0,
-                  Math.round(
-                    (Date.parse(settled) - Date.parse(i.due_date)) / 86400000,
-                  ),
-                )
+              ? Math.max(0, Math.round((Date.parse(settled) - Date.parse(i.due_date)) / 86400000))
               : null,
           };
         })
@@ -273,21 +294,16 @@ export async function financialSnapshot(
         : null,
       median_delay_days: adequate ? median(delays) : null,
       on_time_percent: adequate
-        ? Math.round(
-            (delays.filter((d) => d === 0).length / delays.length) * 100,
-          )
+        ? Math.round((delays.filter((d) => d === 0).length / delays.length) * 100)
         : null,
       most_recent_payment:
         allocations
           .filter(
-            (p) =>
-              docs.some((i) => i.id === p.document_id) &&
-              p.created_at.slice(0, 10) <= to,
+            (p) => docs.some((i) => i.id === p.document_id) && p.created_at.slice(0, 10) <= to,
           )
           .at(-1)?.created_at || null,
       open_disputes: disputes.filter(
-        (d) =>
-          d.customer_id === c.id && !['resolved', 'closed'].includes(d.status),
+        (d) => d.customer_id === c.id && !['resolved', 'closed'].includes(d.status),
       ).length,
       observations,
       limited_data: !adequate,
@@ -298,9 +314,7 @@ export async function financialSnapshot(
       .map((c) => ({
         customer_id: c.customer_id,
         name: c.name,
-        share_bps: issuedTotal
-          ? Math.round((c.total_invoiced_minor / issuedTotal) * 10000)
-          : 0,
+        share_bps: issuedTotal ? Math.round((c.total_invoiced_minor / issuedTotal) * 10000) : 0,
       }))
       .sort((a, b) => b.share_bps - a.share_bps);
   const recordedDates = [
@@ -311,11 +325,7 @@ export async function financialSnapshot(
     .filter((d) => d <= to)
     .sort();
   const historyDays = recordedDates.length
-    ? Math.max(
-        1,
-        Math.round((Date.parse(to) - Date.parse(recordedDates[0])) / 86400000) +
-          1,
-      )
+    ? Math.max(1, Math.round((Date.parse(to) - Date.parse(recordedDates[0])) / 86400000) + 1)
     : 0;
   const quality = {
     history_days: historyDays,
@@ -328,15 +338,16 @@ export async function financialSnapshot(
         .sort()
         .at(-1) || null,
     last_transaction_at:
-      events.filter((e) => e.created_at.slice(0, 10) <= to).at(-1)
-        ?.created_at || null,
+      events.filter((e) => e.created_at.slice(0, 10) <= to).at(-1)?.created_at || null,
     unreconciled_count: exceptions.length,
     unallocated_confirmations: confirmed.filter(
       (e) => !allocations.some((p) => p.event_id === e.id),
     ).length,
     missing_due_dates: issued.filter((i) => !i.due_date).length,
     limited_history: historyDays < 30,
-    unknown_provider_occurrence_dates:events.filter(e=>e.time_basis==='observed_confirmation').length,
+    unknown_provider_occurrence_dates: events.filter(
+      (e) => e.time_basis === 'observed_confirmation',
+    ).length,
     bank_balance_available: false,
     profit_available: false,
     source_labels: [
@@ -401,13 +412,54 @@ export async function financialSnapshot(
     environment: a.environment,
     period: { from, to },
     as_of: to,
-    refreshed_at:now(),
-    metric_metadata:Object.fromEntries(['confirmed_inflows_minor','recorded_outflows_minor','net_movement_minor','outstanding_minor','overdue_minor','recorded_cash_receipts_minor','recorded_cash_returns_minor','recorded_cash_net_minor'].map(key=>[key,{currency:query.currency,period:{from,to},source:key.startsWith('recorded_cash_')?'merchant_observed_physical_cash':'authorized_canonical_records',calculation:key==='net_movement_minor'?'confirmed inflows less linked returns and recorded outflows':key==='outstanding_minor'?'issued invoice value less effective allocations and credits as of period end':key.startsWith('recorded_cash_')?'Scoped recorded cash receipts and linked cash returns only; opening float and adjustments excluded':'See shared metric definitions',completeness:'Covered records only; consult quality notices',refreshed_at:now()}])),
-    expense_categories:[...new Set(moneyExpenses.map(e=>e.category||'other'))].map(category=>({category,amount_minor:sum(moneyExpenses.filter(e=>(e.category||'other')===category),'amount_minor'),currency:query.currency,classification:'merchant_recorded'})),
+    refreshed_at: now(),
+    metric_metadata: Object.fromEntries(
+      [
+        'confirmed_inflows_minor',
+        'recorded_outflows_minor',
+        'net_movement_minor',
+        'outstanding_minor',
+        'overdue_minor',
+        'recorded_cash_receipts_minor',
+        'recorded_cash_returns_minor',
+        'recorded_cash_net_minor',
+      ].map((key) => [
+        key,
+        {
+          currency: query.currency,
+          period: { from, to },
+          source: key.startsWith('recorded_cash_')
+            ? 'merchant_observed_physical_cash'
+            : 'authorized_canonical_records',
+          calculation:
+            key === 'net_movement_minor'
+              ? 'confirmed inflows less linked returns and recorded outflows'
+              : key === 'outstanding_minor'
+                ? 'issued invoice value less effective allocations and credits as of period end'
+                : key.startsWith('recorded_cash_')
+                  ? 'Scoped recorded cash receipts and linked cash returns only; opening float and adjustments excluded'
+                  : 'See shared metric definitions',
+          completeness: 'Covered records only; consult quality notices',
+          refreshed_at: now(),
+        },
+      ]),
+    ),
+    expense_categories: [...new Set(moneyExpenses.map((e) => e.category || 'other'))].map(
+      (category) => ({
+        category,
+        amount_minor: sum(
+          moneyExpenses.filter((e) => (e.category || 'other') === category),
+          'amount_minor',
+        ),
+        currency: query.currency,
+        classification: 'merchant_recorded',
+      }),
+    ),
     definitions: {
       confirmed_inflows:
         'Provider-confirmed collections less linked, confirmed returns in the selected occurrence period. Sandbox provider results are simulations.',
-      recorded_cash:'Merchant-observed physical cash receipts and linked cash returned, reported separately from provider confirmation. Opening float and drawer adjustments are excluded. Neither source establishes bank balance or profit.',
+      recorded_cash:
+        'Merchant-observed physical cash receipts and linked cash returned, reported separately from provider confirmation. Opening float and drawer adjustments are excluded. Neither source establishes bank balance or profit.',
       recorded_outflows:
         'Self-reported expenses plus uncategorized merchant-imported outflows; not a verified expense ledger.',
       net_movement:
@@ -416,12 +468,20 @@ export async function financialSnapshot(
         'Issued invoices at range end, less effective allocations and credit notes as of that date.',
     },
     totals: {
-      confirmed_inflows_minor: sum(confirmed, 'amount_minor')-sum(returns,'amount_minor'),
-      merchant_imported_inflows_minor:sum(transactions.filter(t=>t.type==='inflow'&&t.currency===query.currency&&inPeriod(t.occurred_at)),'amount_minor'),
-      gross_confirmed_inflows_minor:sum(confirmed,'amount_minor'),returned_minor:sum(returns,'amount_minor'),
-      recorded_cash_receipts_minor:sum(cashReceipts,'amount_minor'),recorded_cash_returns_minor:Math.abs(sum(cashReturns,'amount_minor')),recorded_cash_net_minor:sum(cashObservations,'amount_minor'),
+      confirmed_inflows_minor: sum(confirmed, 'amount_minor') - sum(returns, 'amount_minor'),
+      merchant_imported_inflows_minor: sum(
+        transactions.filter(
+          (t) => t.type === 'inflow' && t.currency === query.currency && inPeriod(t.occurred_at),
+        ),
+        'amount_minor',
+      ),
+      gross_confirmed_inflows_minor: sum(confirmed, 'amount_minor'),
+      returned_minor: sum(returns, 'amount_minor'),
+      recorded_cash_receipts_minor: sum(cashReceipts, 'amount_minor'),
+      recorded_cash_returns_minor: Math.abs(sum(cashReturns, 'amount_minor')),
+      recorded_cash_net_minor: sum(cashObservations, 'amount_minor'),
       recorded_outflows_minor: outflows,
-      net_movement_minor: sum(confirmed, 'amount_minor') -sum(returns,'amount_minor')- outflows,
+      net_movement_minor: sum(confirmed, 'amount_minor') - sum(returns, 'amount_minor') - outflows,
       outstanding_minor: outstanding,
       overdue_minor: overdue,
       invoiced_sales_minor: sum(selectedInvoices, 'total_minor'),
@@ -431,7 +491,7 @@ export async function financialSnapshot(
     customers: behavior,
     concentration,
     invoices: balances,
-    series: [...periods.values()].sort((a,b)=>a.date.localeCompare(b.date)),
+    series: [...periods.values()].sort((a, b) => a.date.localeCompare(b.date)),
     insights,
     payments: {
       successful: confirmed.length,
@@ -439,9 +499,7 @@ export async function financialSnapshot(
       reversals: selectedEvents.filter((e) => e.status === 'reversed').length,
       reconciliation_rate: confirmed.length
         ? Math.round(
-            (confirmed.filter((e) =>
-              allocations.some((p) => p.event_id === e.id),
-            ).length /
+            (confirmed.filter((e) => allocations.some((p) => p.event_id === e.id)).length /
               confirmed.length) *
               100,
           )
@@ -459,9 +517,7 @@ export async function financialSnapshot(
     operations: {
       orders_created: orders.filter((o) => inPeriod(o.created_at)).length,
       shipments: shipments.length,
-      seller_reported_delivered: shipments.filter(
-        (s) => s.status === 'delivered',
-      ).length,
+      seller_reported_delivered: shipments.filter((s) => s.status === 'delivered').length,
       confirmed_deliveries: shipments.filter(
         (s) =>
           s.delivery_assurance === 'customer_confirmed' ||
@@ -503,11 +559,7 @@ export async function forecast(a: Access, input: unknown, asOf = day()) {
     net_movement_minor: 0,
     cumulative_net_movement_minor: 0,
   }));
-  const add = (
-    date: string,
-    field: 'inflow_minor' | 'outflow_minor',
-    value: number,
-  ) => {
+  const add = (date: string, field: 'inflow_minor' | 'outflow_minor', value: number) => {
     const p = points.find((p) => p.date === date);
     if (p) p[field] += value;
   };
@@ -518,7 +570,7 @@ export async function forecast(a: Access, input: unknown, asOf = day()) {
         delay = (c?.median_delay_days || 0) + defaults.delay;
       const expected = addDays(i.due_date, delay),
         date = expected <= asOf ? addDays(asOf, 1 + defaults.delay) : expected,
-        amount = basisPoints(i.outstanding_minor,defaults.collection);
+        amount = basisPoints(i.outstanding_minor, defaults.collection);
       add(date, 'inflow_minor', amount);
       return {
         invoice_id: i.id,
@@ -532,17 +584,21 @@ export async function forecast(a: Access, input: unknown, asOf = day()) {
   let recurring = 0;
   for (const o of snapshot.inputs.obligations) {
     let date =
-        o.recurrence === 'once' && o.next_due_date <= asOf
-          ? addDays(asOf, 1)
-          : o.next_due_date,
+        o.recurrence === 'once' && o.next_due_date <= asOf ? addDays(asOf, 1) : o.next_due_date,
       steps = 0;
     while (date <= points[points.length - 1].date && steps++ < 400) {
       if (date > asOf) {
-        const amount = basisPoints(o.amount_minor,defaults.outflow);
+        const amount = basisPoints(o.amount_minor, defaults.outflow);
         add(date, 'outflow_minor', amount);
         recurring += amount;
       }
-      const next=nextOccurrence(date,o.recurrence,o.anchor_day||Number(o.next_due_date.slice(8)));if(!next)break;date=next;
+      const next = nextOccurrence(
+        date,
+        o.recurrence,
+        o.anchor_day || Number(o.next_due_date.slice(8)),
+      );
+      if (!next) break;
+      date = next;
     }
   }
   // Non-invoice collections only: never extrapolate the same invoice receipts twice.
@@ -562,16 +618,32 @@ export async function forecast(a: Access, input: unknown, asOf = day()) {
       e.created_at.slice(0, 10) <= asOf,
   );
   const enough = snapshot.quality.history_days >= 30 && nonInvoice.length >= 5;
-  const returnedNonInvoice=snapshot.inputs.events.filter(e=>['refunded','reversed'].includes(e.status)&&e.related_event_id&&nonInvoice.some(n=>n.id===e.related_event_id)&&e.created_at.slice(0,10)>=snapshot.period.from&&e.created_at.slice(0,10)<=asOf);
-  const baseline = enough?ratioMinor(Math.max(0,sum(nonInvoice,'amount_minor')-sum(returnedNonInvoice,'amount_minor')),defaults.collection,Math.min(90,Math.max(1,snapshot.quality.history_days))*10000):0;
+  const returnedNonInvoice = snapshot.inputs.events.filter(
+    (e) =>
+      ['refunded', 'reversed'].includes(e.status) &&
+      e.related_event_id &&
+      nonInvoice.some((n) => n.id === e.related_event_id) &&
+      e.created_at.slice(0, 10) >= snapshot.period.from &&
+      e.created_at.slice(0, 10) <= asOf,
+  );
+  const baseline = enough
+    ? ratioMinor(
+        Math.max(0, sum(nonInvoice, 'amount_minor') - sum(returnedNonInvoice, 'amount_minor')),
+        defaults.collection,
+        Math.min(90, Math.max(1, snapshot.quality.history_days)) * 10000,
+      )
+    : 0;
   // Historical expense baseline excludes recurring categories to avoid counting rent etc twice.
-  const coveredCategories = new Set(
-    snapshot.inputs.obligations.map((o) => o.id),
-  );
-  const irregular = snapshot.inputs.expenses.filter(
-    (e) => !coveredCategories.has(e.obligation_id),
-  );
-  const outflowBaseline = snapshot.quality.history_days>=30?ratioMinor(sum(irregular,'amount_minor')+sum(snapshot.inputs.imported_outflows,'amount_minor'),defaults.outflow,Math.min(90,Math.max(1,snapshot.quality.history_days))*10000):0;
+  const coveredCategories = new Set(snapshot.inputs.obligations.map((o) => o.id));
+  const irregular = snapshot.inputs.expenses.filter((e) => !coveredCategories.has(e.obligation_id));
+  const outflowBaseline =
+    snapshot.quality.history_days >= 30
+      ? ratioMinor(
+          sum(irregular, 'amount_minor') + sum(snapshot.inputs.imported_outflows, 'amount_minor'),
+          defaults.outflow,
+          Math.min(90, Math.max(1, snapshot.quality.history_days)) * 10000,
+        )
+      : 0;
   let cumulative = 0;
   for (const p of points) {
     p.inflow_minor += baseline;

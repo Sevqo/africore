@@ -1,29 +1,36 @@
-import {appCatalog} from '../../../src/apps/catalog';
-import {serviceCatalog} from "../../../src/marketplace/catalog";
-import { useState, type FormEvent } from "react";
-import { api } from "../lib/api-client";
-import { Logo } from "../components/Logo";
-import { Icon } from "../components/Icon";
-import { types, url, Field, Alert, Currency } from "./AccountUI";
-import {appIntentDestination,requestedAppIntent} from './app-intent';
+import { appCatalog } from '../../../src/apps/catalog';
+import { serviceCatalog } from '../../../src/marketplace/catalog';
+import { useState, type FormEvent } from 'react';
+import { api } from '../lib/api-client';
+import { Logo } from '../components/Logo';
+import { Icon } from '../components/Icon';
+import { types, url, Field, Alert, Currency } from './AccountUI';
+import { appIntentDestination, requestedAppIntent } from './app-intent';
 export function Workspaces({ account }: { account: any }) {
-  const chosen = new URLSearchParams(location.search).get("create");
-  const requestedService=new URLSearchParams(location.search).get("service");
-  const service=serviceCatalog.find(s=>s.id===requestedService);
-  const reviewDestination=(w:any)=>service&&service.kinds.includes(w.kind)?url(w)+"?service="+encodeURIComponent(service.id)+"#Explore%20Services":appIntentDestination(url(w),location.search,appCatalog);
-  const [kind, setKind] = useState(
-    types.some((t) => t.kind === chosen) ? chosen! : "",
-  );
-  const [error, setError] = useState(""),
+  const chosen = new URLSearchParams(location.search).get('create');
+  const requestedService = new URLSearchParams(location.search).get('service');
+  const service = serviceCatalog.find((s) => s.id === requestedService);
+  const reviewDestination = (w: any) =>
+    service && service.kinds.includes(w.kind)
+      ? url(w) + '?service=' + encodeURIComponent(service.id) + '#Explore%20Services'
+      : appIntentDestination(url(w), location.search, appCatalog);
+  const [kind, setKind] = useState(types.some((t) => t.kind === chosen) ? chosen! : '');
+  const [error, setError] = useState(''),
     [busy, setBusy] = useState(false);
   async function create(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(e.currentTarget));
     setBusy(true);
-    setError("");
+    setError('');
     try {
-      const w = await api("/api/auth/workspaces", "POST", { ...d, kind });
-      location.href = reviewDestination(w)+(service||requestedAppIntent(location.search,appCatalog)?'':w.existing?'':'#Explore%20Services');
+      const w = await api('/api/auth/workspaces', 'POST', { ...d, kind });
+      location.href =
+        reviewDestination(w) +
+        (service || requestedAppIntent(location.search, appCatalog)
+          ? ''
+          : w.existing
+            ? ''
+            : '#Explore%20Services');
     } catch (e) {
       setError((e as Error).message);
       setBusy(false);
@@ -32,7 +39,7 @@ export function Workspaces({ account }: { account: any }) {
   async function select(w: any) {
     setBusy(true);
     try {
-      await api("/api/auth/account/workspace", "POST", { workspace_id: w.id });
+      await api('/api/auth/account/workspace', 'POST', { workspace_id: w.id });
       location.href = reviewDestination(w);
     } catch (e) {
       setError((e as Error).message);
@@ -46,12 +53,7 @@ export function Workspaces({ account }: { account: any }) {
       <p>One identity. Separate records and permissions for every workspace.</p>
       <div className="account-options">
         {account.workspaces.map((w: any) => (
-          <button
-            className="account-option"
-            key={w.id}
-            disabled={busy}
-            onClick={() => select(w)}
-          >
+          <button className="account-option" key={w.id} disabled={busy} onClick={() => select(w)}>
             <span className="eyebrow">
               {w.kind} · {w.role}
             </span>
@@ -62,19 +64,11 @@ export function Workspaces({ account }: { account: any }) {
           </button>
         ))}
       </div>
-      <h2>
-        {account.workspaces.length
-          ? "Add a workspace"
-          : "Set up your first workspace"}
-      </h2>
-      <div
-        className="account-type-tabs"
-        role="group"
-        aria-label="New workspace type"
-      >
+      <h2>{account.workspaces.length ? 'Add a workspace' : 'Set up your first workspace'}</h2>
+      <div className="account-type-tabs" role="group" aria-label="New workspace type">
         {types.map((t) => (
           <button
-            className={kind === t.kind ? "button" : "secondary-button"}
+            className={kind === t.kind ? 'button' : 'secondary-button'}
             key={t.kind}
             onClick={() => setKind(t.kind)}
             aria-pressed={kind === t.kind}
@@ -90,38 +84,36 @@ export function Workspaces({ account }: { account: any }) {
           <Field label="Your display name">
             <input
               name="display_name"
-              defaultValue={account.profile?.display_name || ""}
+              defaultValue={account.profile?.display_name || ''}
               required
               maxLength={100}
             />
           </Field>
           <Field
             label={
-              kind === "business"
-                ? "Business name"
-                : kind === "developer"
-                  ? "Developer workspace name"
-                  : "Personal workspace name"
+              kind === 'business'
+                ? 'Business name'
+                : kind === 'developer'
+                  ? 'Developer workspace name'
+                  : 'Personal workspace name'
             }
           >
             <input name="name" required minLength={2} maxLength={100} />
           </Field>
           <Field label="Country code">
-            <input
-              name="country"
-              defaultValue="KE"
-              required
-              pattern="[A-Z]{2}"
-              maxLength={2}
-            />
+            <input name="country" defaultValue="KE" required pattern="[A-Z]{2}" maxLength={2} />
           </Field>
           <Field label="Default currency">
-            <Currency name="currency" defaultValue={account.profile?.currency||'KES'}/>
+            <Currency name="currency" defaultValue={account.profile?.currency || 'KES'} />
           </Field>
           <Field label="Timezone">
-            <input name="timezone" defaultValue={account.profile?.timezone||'Africa/Nairobi'} required />
+            <input
+              name="timezone"
+              defaultValue={account.profile?.timezone || 'Africa/Nairobi'}
+              required
+            />
           </Field>
-          {kind === "business" && (
+          {kind === 'business' && (
             <>
               <Field label="Business type">
                 <select name="business_type">
@@ -139,13 +131,10 @@ export function Workspaces({ account }: { account: any }) {
               <Field label="Business phone">
                 <input name="phone" maxLength={50} />
               </Field>
-              <p>
-                Setup does not verify your business or enable live payment
-                services.
-              </p>
+              <p>Setup does not verify your business or enable live payment services.</p>
             </>
           )}
-          {kind === "developer" && (
+          {kind === 'developer' && (
             <>
               <Field label="Primary use case">
                 <input
@@ -155,21 +144,14 @@ export function Workspaces({ account }: { account: any }) {
                 />
               </Field>
               <Field label="Preferred language (optional)">
-                <input
-                  name="language"
-                  placeholder="TypeScript"
-                  maxLength={80}
-                />
+                <input name="language" placeholder="TypeScript" maxLength={80} />
               </Field>
-              <p>
-                Start with isolated sandbox APIs. Production access requires
-                separate review.
-              </p>
+              <p>Start with isolated sandbox APIs. Production access requires separate review.</p>
             </>
           )}
           <Alert error={error} />
           <button className="button" disabled={busy}>
-            {busy ? "Creating…" : "Create workspace"}
+            {busy ? 'Creating…' : 'Create workspace'}
           </button>
         </form>
       )}
@@ -177,9 +159,31 @@ export function Workspaces({ account }: { account: any }) {
       <p>
         <a href="/app/account">Account settings</a>
       </p>
-      <details className="panel"><summary>Join an invited workspace</summary>
-        <form className="account-inline-form" onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');try{await api('/api/v1/invitations/accept','POST',{token:String(new FormData(e.currentTarget).get('token')||'')});location.href='/app/workspaces';}catch(error){setError((error as Error).message);setBusy(false);}}}>
-          <Field label="Invitation token"><input required name="token" minLength={64} maxLength={64} autoComplete="off"/></Field><button className="button" disabled={busy}>Join workspace</button>
+      <details className="panel">
+        <summary>Join an invited workspace</summary>
+        <form
+          className="account-inline-form"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setBusy(true);
+            setError('');
+            try {
+              await api('/api/v1/invitations/accept', 'POST', {
+                token: String(new FormData(e.currentTarget).get('token') || ''),
+              });
+              location.href = '/app/workspaces';
+            } catch (error) {
+              setError((error as Error).message);
+              setBusy(false);
+            }
+          }}
+        >
+          <Field label="Invitation token">
+            <input required name="token" minLength={64} maxLength={64} autoComplete="off" />
+          </Field>
+          <button className="button" disabled={busy}>
+            Join workspace
+          </button>
           <p>Use the token shared by the workspace owner and the email address they invited.</p>
         </form>
       </details>

@@ -65,8 +65,7 @@ export const pages: Record<
       'Print or save invoices as PDF from your browser.',
       'Track aging in the currency of the invoice.',
     ],
-    availability:
-      'Ordinary commercial invoices; not KRA-validated eTIMS invoices.',
+    availability: 'Ordinary commercial invoices; not KRA-validated eTIMS invoices.',
   },
   '/products/reconciliation': {
     category: 'Payment reconciliation',
@@ -102,8 +101,7 @@ export const pages: Record<
       'Deduplicate imports and preserve provenance.',
       'Prepare for future authorized bank, accounting and tax connectors.',
     ],
-    availability:
-      'CSV and sandbox sources available. Institutional connectors are not live.',
+    availability: 'CSV and sandbox sources available. Institutional connectors are not live.',
   },
   '/products/data': {
     category: 'AfriCore Data',
@@ -153,8 +151,7 @@ export const pages: Record<
   '/solutions/smes': {
     category: 'Small & medium businesses',
     title: 'A clearer view of your working day.',
-    description:
-      'Move from scattered records to connected business operations.',
+    description: 'Move from scattered records to connected business operations.',
     points: [
       'One workspace for your team.',
       'Invoices and customer histories.',
@@ -164,8 +161,7 @@ export const pages: Record<
   '/solutions/contractors': {
     category: 'Contractors & suppliers',
     title: 'Keep delivery and payment in view.',
-    description:
-      'Track itemized orders, invoice customers and monitor overdue receivables.',
+    description: 'Track itemized orders, invoice customers and monitor overdue receivables.',
     points: [
       'Record scope, quantities and prices.',
       'Separate fulfillment from provider payment confirmation.',

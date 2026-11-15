@@ -10,6 +10,4 @@ export const commerceMerchantSections = [
   { section: 'settings', label: 'Settings' },
 ] as const;
 
-export const commerceMerchantSectionIds = commerceMerchantSections.map(
-  (item) => item.section,
-);
+export const commerceMerchantSectionIds = commerceMerchantSections.map((item) => item.section);

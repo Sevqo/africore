@@ -1,8 +1,8 @@
-import crypto from "crypto";
-import { randomUUID } from "node:crypto";
-import { dbGet, dbAll, dbRun, dbTransaction } from "../db";
-import { appendEvent, getLedger, verifyChainIntegrity } from "./ledgerService";
-import { redactLedgerEvents } from "./redaction";
+import crypto from 'crypto';
+import { randomUUID } from 'node:crypto';
+import { dbGet, dbAll, dbRun, dbTransaction } from '../db';
+import { appendEvent, getLedger, verifyChainIntegrity } from './ledgerService';
+import { redactLedgerEvents } from './redaction';
 
 export interface Person {
   id: string;
@@ -23,14 +23,14 @@ export interface Person {
 // history) — fine for local development, but it means anyone can
 // precompute hashes for known IDs and de-anonymize this column. In
 // production ID_HASH_SALT MUST be set to a real secret, or startup fails.
-const DEV_SALT = "africore-dev-salt";
+const DEV_SALT = 'africore-dev-salt';
 
 function getSalt(): string {
   const salt = process.env.ID_HASH_SALT;
   if (!salt) {
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV === 'production') {
       throw new Error(
-        "ID_HASH_SALT is not set. Refusing to start in production with the public dev salt — see .env.example."
+        'ID_HASH_SALT is not set. Refusing to start in production with the public dev salt — see .env.example.',
       );
     }
     return DEV_SALT;
@@ -38,47 +38,79 @@ function getSalt(): string {
   return salt;
 }
 
-function legacyIdentifier(value:string){return crypto.createHash('sha256').update(`${getSalt()}:${value}`).digest('hex');}
-export function hashIdentifier(value: string,purpose:'national_id'|'phone'='national_id'): string {
-  const normalized=purpose==='phone'?value.trim().replace(/[\s()-]/g,''):value.trim().toUpperCase();
-  return 'hmac-v2:'+crypto.createHmac('sha256',getSalt()).update(JSON.stringify(['africore-private-identifier-v2',purpose,normalized])).digest('hex');
+function legacyIdentifier(value: string) {
+  return crypto.createHash('sha256').update(`${getSalt()}:${value}`).digest('hex');
+}
+export function hashIdentifier(
+  value: string,
+  purpose: 'national_id' | 'phone' = 'national_id',
+): string {
+  const normalized =
+    purpose === 'phone' ? value.trim().replace(/[\s()-]/g, '') : value.trim().toUpperCase();
+  return (
+    'hmac-v2:' +
+    crypto
+      .createHmac('sha256', getSalt())
+      .update(JSON.stringify(['africore-private-identifier-v2', purpose, normalized]))
+      .digest('hex')
+  );
 }
 
-export async function createPerson(input: { full_name: string; national_id?: string; phone?: string; is_sandbox?: boolean }): Promise<Person> {
+export async function createPerson(input: {
+  full_name: string;
+  national_id?: string;
+  phone?: string;
+  is_sandbox?: boolean;
+}): Promise<Person> {
   const now = new Date().toISOString();
   const person = {
     id: randomUUID(),
     full_name: input.full_name,
-    national_id_hash: input.national_id ? hashIdentifier(input.national_id,'national_id') : undefined,
-    phone_hash: input.phone ? hashIdentifier(input.phone,'phone') : undefined,
-    status: "pending_verification",
+    national_id_hash: input.national_id
+      ? hashIdentifier(input.national_id, 'national_id')
+      : undefined,
+    phone_hash: input.phone ? hashIdentifier(input.phone, 'phone') : undefined,
+    status: 'pending_verification',
     is_sandbox: input.is_sandbox ? 1 : 0,
     created_at: now,
     updated_at: now,
   };
 
-  return dbTransaction(async()=>{
-  // Upgrade only exact legacy matches when the original identifier is supplied
-  // again. No raw identifier is persisted and no account/identity is merged.
-  for(const [field,raw,replacement] of [['national_id_hash',input.national_id,person.national_id_hash],['phone_hash',input.phone,person.phone_hash]] as const){
-    if(!raw||!replacement)continue;
-    const previous=await dbAll<{id:string}>(`SELECT id FROM persons WHERE ${field}=?`,[legacyIdentifier(raw)]);
-    await dbRun(`UPDATE persons SET ${field}=? WHERE ${field}=?`,[replacement,legacyIdentifier(raw)]);
-    for(const row of previous)await appendEvent('person',row.id,'identifier.protection_upgraded',{field,scheme:'hmac-v2',reason:'identifier supplied again; no raw identifier retained'});
-  }
-  await dbRun(
-    `INSERT INTO persons (id, full_name, national_id_hash, phone_hash, status, is_sandbox, created_at, updated_at)
+  return dbTransaction(async () => {
+    // Upgrade only exact legacy matches when the original identifier is supplied
+    // again. No raw identifier is persisted and no account/identity is merged.
+    for (const [field, raw, replacement] of [
+      ['national_id_hash', input.national_id, person.national_id_hash],
+      ['phone_hash', input.phone, person.phone_hash],
+    ] as const) {
+      if (!raw || !replacement) continue;
+      const previous = await dbAll<{ id: string }>(`SELECT id FROM persons WHERE ${field}=?`, [
+        legacyIdentifier(raw),
+      ]);
+      await dbRun(`UPDATE persons SET ${field}=? WHERE ${field}=?`, [
+        replacement,
+        legacyIdentifier(raw),
+      ]);
+      for (const row of previous)
+        await appendEvent('person', row.id, 'identifier.protection_upgraded', {
+          field,
+          scheme: 'hmac-v2',
+          reason: 'identifier supplied again; no raw identifier retained',
+        });
+    }
+    await dbRun(
+      `INSERT INTO persons (id, full_name, national_id_hash, phone_hash, status, is_sandbox, created_at, updated_at)
      VALUES (@id, @full_name, @national_id_hash, @phone_hash, @status, @is_sandbox, @created_at, @updated_at)`,
-    person
-  );
+      person,
+    );
 
-  await appendEvent("person", person.id, "person.created", {
-    full_name: person.full_name,
-    national_id_hash: person.national_id_hash,
-    is_sandbox: !!person.is_sandbox,
-  });
+    await appendEvent('person', person.id, 'person.created', {
+      full_name: person.full_name,
+      national_id_hash: person.national_id_hash,
+      is_sandbox: !!person.is_sandbox,
+    });
 
-  return { ...person, is_sandbox: !!person.is_sandbox };
+    return { ...person, is_sandbox: !!person.is_sandbox };
   });
 }
 
@@ -89,18 +121,29 @@ export async function getPerson(id: string): Promise<Person | undefined> {
 }
 
 export async function listSandboxPersons(): Promise<Person[]> {
-  const rows = await dbAll<any>(`SELECT * FROM persons WHERE is_sandbox = ? ORDER BY created_at DESC`, [1]);
+  const rows = await dbAll<any>(
+    `SELECT * FROM persons WHERE is_sandbox = ? ORDER BY created_at DESC`,
+    [1],
+  );
   return rows.map((r) => ({ ...r, is_sandbox: !!r.is_sandbox }));
 }
 
 /** Detects if this national ID hash is already registered to a different person. */
-export async function findDuplicateByNationalId(nationalIdHash: string, excludePersonId: string): Promise<Person | undefined> {
-  return dbGet<Person>(`SELECT * FROM persons WHERE national_id_hash = ? AND id != ?`, [nationalIdHash, excludePersonId]);
+export async function findDuplicateByNationalId(
+  nationalIdHash: string,
+  excludePersonId: string,
+): Promise<Person | undefined> {
+  return dbGet<Person>(`SELECT * FROM persons WHERE national_id_hash = ? AND id != ?`, [
+    nationalIdHash,
+    excludePersonId,
+  ]);
 }
 
-export async function runPersonVerification(personId: string): Promise<{ checks: Record<string, boolean>; duplicate: boolean; person: Person }> {
+export async function runPersonVerification(
+  personId: string,
+): Promise<{ checks: Record<string, boolean>; duplicate: boolean; person: Person }> {
   const person = await getPerson(personId);
-  if (!person) throw new Error("person_not_found");
+  if (!person) throw new Error('person_not_found');
 
   const duplicate = person.national_id_hash
     ? !!(await findDuplicateByNationalId(person.national_id_hash, personId))
@@ -112,10 +155,10 @@ export async function runPersonVerification(personId: string): Promise<{ checks:
     no_duplicate_national_id: !duplicate,
   };
 
-  await appendEvent("person", personId, "verification.checks_run", { checks });
+  await appendEvent('person', personId, 'verification.checks_run', { checks });
 
   const passed = Object.values(checks).every(Boolean);
-  const newStatus = passed ? "verified" : "pending_verification";
+  const newStatus = passed ? 'verified' : 'pending_verification';
 
   if (newStatus !== person.status) {
     await dbRun(`UPDATE persons SET status = ?, updated_at = ? WHERE id = ?`, [
@@ -123,7 +166,10 @@ export async function runPersonVerification(personId: string): Promise<{ checks:
       new Date().toISOString(),
       personId,
     ]);
-    await appendEvent("person", personId, "verification.status_changed", { from: person.status, to: newStatus });
+    await appendEvent('person', personId, 'verification.status_changed', {
+      from: person.status,
+      to: newStatus,
+    });
   }
 
   return { checks, duplicate, person: (await getPerson(personId))! };
@@ -140,7 +186,7 @@ export async function getPersonTrustRecord(personId: string) {
   return {
     subject: {
       id: person.id,
-      type: "person" as const,
+      type: 'person' as const,
       status: person.status,
       is_sandbox: person.is_sandbox,
       created_at: person.created_at,
@@ -150,7 +196,7 @@ export async function getPersonTrustRecord(personId: string) {
       national_id_present: !!person.national_id_hash,
       phone_present: !!person.phone_hash,
     },
-    verification_history: redactLedgerEvents(await getLedger("person", personId)),
-    integrity: await verifyChainIntegrity("person", personId),
+    verification_history: redactLedgerEvents(await getLedger('person', personId)),
+    integrity: await verifyChainIntegrity('person', personId),
   };
 }

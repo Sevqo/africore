@@ -1,30 +1,38 @@
-import {lazy,Suspense} from "react";
-import {PublicDiscovery} from "./education/PublicDiscovery";
+import { lazy, Suspense } from 'react';
+import { PublicDiscovery } from './education/PublicDiscovery';
 import { AppsPortfolio } from './apps/AppsPortfolio';
-import {discoveryPages} from "./education/discoveryPages";
-import {ServiceEducationPage} from "./education/ServiceEducationPage";
-import {serviceEducation} from "./education/serviceEducation";
+import { discoveryPages } from './education/discoveryPages';
+import { ServiceEducationPage } from './education/ServiceEducationPage';
+import { serviceEducation } from './education/serviceEducation';
 import { RefinedHome } from './education/RefinedHome';
-import {usePathname} from './lib/navigation';
-const AccountApp=lazy(()=>import('./accounts/Accounts').then(m=>({default:m.AccountApp})));
-import {AccountChooser} from './accounts/AccountChooser';
+import { usePathname } from './lib/navigation';
+const AccountApp = lazy(() =>
+  import('./accounts/Accounts').then((m) => ({ default: m.AccountApp })),
+);
+import { AccountChooser } from './accounts/AccountChooser';
 import { DeveloperTutorial } from './education/DeveloperTutorial';
 import { ProductEducation } from './education/Components';
 import { Learn } from './education/Learn';
 import { guides, demoLink } from './education/guides';
 import { usePageMetadata } from './education/metadata';
 import { groups } from './navigation';
-const TrustPublic=lazy(()=>import('./trust/TrustPublic').then(m=>({default:m.TrustPublic})));
+const TrustPublic = lazy(() =>
+  import('./trust/TrustPublic').then((m) => ({ default: m.TrustPublic })),
+);
 import { startDemo } from './demo/transport';
 import { publicPageMedia } from './editorial';
-const BuyerPortal=lazy(()=>import('./operations/BuyerPortal').then(m=>({default:m.BuyerPortal})));
+const BuyerPortal = lazy(() =>
+  import('./operations/BuyerPortal').then((m) => ({ default: m.BuyerPortal })),
+);
 
 import { Icon } from './components/Icon';
 import { Header } from './components/Header';
 import { pages, media } from './content';
 import { FeatureSection } from './components/Media';
-const PublicStorefront=lazy(()=>import('./commerce/PublicStorefront').then(m=>({default:m.PublicStorefront})));
-const Checkout=lazy(()=>import('./BusinessApp').then(m=>({default:m.Checkout})));
+const PublicStorefront = lazy(() =>
+  import('./commerce/PublicStorefront').then((m) => ({ default: m.PublicStorefront })),
+);
+const Checkout = lazy(() => import('./BusinessApp').then((m) => ({ default: m.Checkout })));
 import { AuthPage } from './accounts/AuthPage';
 import { Logo } from './components/Logo';
 function Footer() {
@@ -51,9 +59,7 @@ function Footer() {
         ))}
       </div>
       <div className="footer-bottom">
-        <span>
-          © {new Date().getFullYear()} AfriCore · Built for what comes next.
-        </span>
+        <span>© {new Date().getFullYear()} AfriCore · Built for what comes next.</span>
         <a href="/privacy">Privacy</a>
         <a href="/terms">Terms</a>
         <span>Kenya · Africa/Nairobi</span>
@@ -86,8 +92,8 @@ function Docs() {
       <span className="eyebrow">DEVELOPER DOCUMENTATION · V1</span>
       <h1>Build with clarity.</h1>
       <p>
-        The workspace API is served at <code>/api/v1</code>. Existing
-        consent-gated infrastructure APIs remain at <code>/v1</code>.
+        The workspace API is served at <code>/api/v1</code>. Existing consent-gated infrastructure
+        APIs remain at <code>/v1</code>.
       </p>
       <a className="button" href="/api/openapi.json">
         Download OpenAPI <Icon name="right" />
@@ -153,17 +159,26 @@ const headlines: Record<string, string> = {
   '/products/cash-flow': 'Understand money in, money out and what is missing.',
   '/products/intelligence': 'Turn covered records into clearer decisions.',
   '/products/automations': 'Give repeatable work a visible follow-up.',
-  '/products/business-passport':
-    'Give your business a profile you can share by choice.',
+  '/products/business-passport': 'Give your business a profile you can share by choice.',
   '/products/trust-network': 'See who confirmed which business relationship.',
-  '/products/verifiable-credentials':
-    'A signed statement. Separate checks for trust.',
-  '/products/blockchain-verification':
-    'Check a proof without publishing private records.',
+  '/products/verifiable-credentials': 'A signed statement. Separate checks for trust.',
+  '/products/blockchain-verification': 'Check a proof without publishing private records.',
   '/solutions/social-commerce': 'Turn conversations into organized orders.',
   '/solutions/contractors': 'Keep deliveries, invoices and payments connected.',
 };
-export function App(){return <Suspense fallback={<main className="account-entry" role="status">Loading your destination…</main>}><Application/></Suspense>;}
+export function App() {
+  return (
+    <Suspense
+      fallback={
+        <main className="account-entry" role="status">
+          Loading your destination…
+        </main>
+      }
+    >
+      <Application />
+    </Suspense>
+  );
+}
 function Application() {
   const path = usePathname();
   usePageMetadata(path);
@@ -171,12 +186,23 @@ function Application() {
   if (path.startsWith('/trust/share/')) return <TrustPublic mode="share" />;
   if (path.startsWith('/passport/')) return <TrustPublic mode="profile" />;
   if (path.startsWith('/buyer/')) return <BuyerPortal />;
-  if (path === '/app' || path.startsWith('/app/') || path==='/auth/callback') return <AccountApp />;
-  if(path==='/get-started'||path==='/signup') return <AccountChooser/>;
-  if(path.startsWith('/sign-up/')) return ['personal','business','developer'].includes(path.split('/')[2]) ? <AuthPage mode="signup" kind={path.split('/')[2]}/> : <AccountChooser/>;
-  if(path==='/login') return <AuthPage mode="signin"/>;
-  if(path==='/forgot-password') return <AuthPage mode="recover"/>;
-  if(/^\/s\/(sandbox|production)\/[a-z0-9]+(?:-[a-z0-9]+)*\/?$/.test(path)){const [, ,environment,slug]=path.split('/');return <PublicStorefront key={environment+'/'+slug} environment={environment} slug={slug}/>;}
+  if (path === '/app' || path.startsWith('/app/') || path === '/auth/callback')
+    return <AccountApp />;
+  if (path === '/get-started' || path === '/signup') return <AccountChooser />;
+  if (path.startsWith('/sign-up/'))
+    return ['personal', 'business', 'developer'].includes(path.split('/')[2]) ? (
+      <AuthPage mode="signup" kind={path.split('/')[2]} />
+    ) : (
+      <AccountChooser />
+    );
+  if (path === '/login') return <AuthPage mode="signin" />;
+  if (path === '/forgot-password') return <AuthPage mode="recover" />;
+  if (/^\/s\/(sandbox|production)\/[a-z0-9]+(?:-[a-z0-9]+)*\/?$/.test(path)) {
+    const [, , environment, slug] = path.split('/');
+    return (
+      <PublicStorefront key={environment + '/' + slug} environment={environment} slug={slug} />
+    );
+  }
   if (path.startsWith('/checkout/')) return <Checkout />;
   if (path === '/demo') {
     startDemo();
@@ -187,7 +213,9 @@ function Application() {
   if (['/signin', '/signup', '/recover', '/verify', '/reset'].includes(path))
     return <AuthPage mode={path.slice(1)} />;
   const page = pages[path];
-  const educationService=Object.entries(serviceEducation).find(([,value])=>value.route===path)?.[0];
+  const educationService = Object.entries(serviceEducation).find(
+    ([, value]) => value.route === path,
+  )?.[0];
   return (
     <>
       <a href="#main" className="skip-link">
@@ -195,7 +223,13 @@ function Application() {
       </a>
       <Header />
       <main id="main">
-        {path === '/apps' || path.startsWith('/apps/') ? <AppsPortfolio path={path}/> : discoveryPages[path]?<PublicDiscovery path={path}/>:educationService ? <ServiceEducationPage id={educationService}/> : path === '/' ? (
+        {path === '/apps' || path.startsWith('/apps/') ? (
+          <AppsPortfolio path={path} />
+        ) : discoveryPages[path] ? (
+          <PublicDiscovery path={path} />
+        ) : educationService ? (
+          <ServiceEducationPage id={educationService} />
+        ) : path === '/' ? (
           <Home />
         ) : path === '/learn' || path.startsWith('/learn/') ? (
           <Learn slug={path.split('/')[2]} />
@@ -208,20 +242,14 @@ function Application() {
               <h1>{headlines[path] || page.title}</h1>
               <p>{guides[path]?.summary || page.description}</p>
               <div className="actions">
-                <a
-                  className="button"
-                  href={guides[path] ? demoLink(path) : '/signup'}
-                >
-                  {guides[path] ? 'Try this workflow' : 'Get started'}{' '}
-                  <Icon name="right" />
+                <a className="button" href={guides[path] ? demoLink(path) : '/signup'}>
+                  {guides[path] ? 'Try this workflow' : 'Get started'} <Icon name="right" />
                 </a>
                 <a className="text-link light" href="/docs">
                   Explore documentation <Icon name="right" />
                 </a>
               </div>
-              {page.availability && (
-                <p className="availability">{page.availability}</p>
-              )}
+              {page.availability && <p className="availability">{page.availability}</p>}
             </section>
             {guides[path] ? (
               <ProductEducation path={path} />

@@ -67,7 +67,13 @@ export function serviceOpenDestination(
   service: { id: string; tabs?: readonly string[] },
   kind: WorkspaceKind = 'business',
 ): ServiceOpenDestination {
-  const override = kind === 'personal' ? personalDestinations[service.id] : kind === 'developer' ? developerDestinations[service.id] : undefined;
-  const destination = override || destinations[service.id] || { tab: service.tabs?.[0] || 'My Services' };
+  const override =
+    kind === 'personal'
+      ? personalDestinations[service.id]
+      : kind === 'developer'
+        ? developerDestinations[service.id]
+        : undefined;
+  const destination = override ||
+    destinations[service.id] || { tab: service.tabs?.[0] || 'My Services' };
   return workspaceTabs[kind].includes(destination.tab) ? destination : { tab: 'My Services' };
 }

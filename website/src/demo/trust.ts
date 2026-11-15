@@ -2,10 +2,7 @@ import sample from './credential-sample.json';
 const decode = (part: string) =>
   JSON.parse(
     new TextDecoder().decode(
-      Uint8Array.from(
-        atob(part.replaceAll('-', '+').replaceAll('_', '/')),
-        (c) => c.charCodeAt(0),
-      ),
+      Uint8Array.from(atob(part.replaceAll('-', '+').replaceAll('_', '/')), (c) => c.charCodeAt(0)),
     ),
   );
 const vc = decode(sample.credential.split('.')[1]);
@@ -55,13 +52,7 @@ export function seedTrust(state: any) {
       methodology: 'evidence-coverage-v1',
       value: 20,
       purpose: 'Evidence coverage only, not a trust or credit score.',
-      components: [
-        'profile',
-        'payment',
-        'order',
-        'shipment',
-        'relationship',
-      ].map((category) => ({
+      components: ['profile', 'payment', 'order', 'shipment', 'relationship'].map((category) => ({
         category,
         weight: 20,
         covered: category === 'profile',
@@ -133,12 +124,10 @@ export async function demoTrust(
       ],
     };
   if (route === '/trust/issuers' && method === 'GET') return state[route];
-  if (route.startsWith('/trust/issuers/') && method === 'GET')
-    return sample.issuer_metadata;
+  if (route.startsWith('/trust/issuers/') && method === 'GET') return sample.issuer_metadata;
   if (route === '/trust/history') return state[route];
   if (route === '/trust/credentials') return { data: d.credentials };
-  const credential =
-    /^\/trust\/credentials\/([^/]+)(?:\/(export|proof|status))?$/.exec(route);
+  const credential = /^\/trust\/credentials\/([^/]+)(?:\/(export|proof|status))?$/.exec(route);
   if (credential) {
     const c = d.credentials.find((c: any) => c.id === credential[1]);
     if (!c) return error('Sample credential not found');
@@ -166,18 +155,14 @@ export async function demoTrust(
       return {
         signature: 'unavailable',
         overall: 'requires_review',
-        reason:
-          'Use HTTPS or localhost for browser cryptographic verification.',
+        reason: 'Use HTTPS or localhost for browser cryptographic verification.',
       };
-    if (input.credential_id)
-      input = { ...input, credential: sample.credential };
+    if (input.credential_id) input = { ...input, credential: sample.credential };
     try {
       const parts = input.credential.split('.'),
         header = decode(parts[0]),
         payload = decode(parts[1]),
-        key: any = sample.issuer_metadata.jwks.keys.find(
-          (k: any) => k.kid === header.kid,
-        );
+        key: any = sample.issuer_metadata.jwks.keys.find((k: any) => k.kid === header.kid);
       if (!key || header.alg !== 'ES256' || header.typ !== 'vc+jwt')
         return {
           signature: 'not_checked',
@@ -191,9 +176,8 @@ export async function demoTrust(
           false,
           ['verify'],
         ),
-        signature = Uint8Array.from(
-          atob(parts[2].replaceAll('-', '+').replaceAll('_', '/')),
-          (c) => c.charCodeAt(0),
+        signature = Uint8Array.from(atob(parts[2].replaceAll('-', '+').replaceAll('_', '/')), (c) =>
+          c.charCodeAt(0),
         ),
         valid = await crypto.subtle.verify(
           { name: 'ECDSA', hash: 'SHA-256' },
@@ -226,8 +210,7 @@ export async function demoTrust(
   }
   if (route === '/trust/evidence' && method === 'POST') {
     const existing = d.evidence.find(
-      (e: any) =>
-        e.source_kind === input.source_kind && e.source_id === input.source_id,
+      (e: any) => e.source_kind === input.source_kind && e.source_id === input.source_id,
     );
     if (existing) return { ...existing, duplicate: true };
     const row = added('evidence', {
@@ -239,11 +222,8 @@ export async function demoTrust(
     });
     d.evidence.push(row);
     const covered = new Set(d.evidence.map((e: any) => e.source_kind));
-    d.index.components.forEach(
-      (c: any) => (c.covered = covered.has(c.category)),
-    );
-    d.index.value =
-      d.index.components.filter((c: any) => c.covered).length * 20;
+    d.index.components.forEach((c: any) => (c.covered = covered.has(c.category)));
+    d.index.value = d.index.components.filter((c: any) => c.covered).length * 20;
     return row;
   }
   if (route === '/trust/identity-reviews' && method === 'POST') {
@@ -266,8 +246,7 @@ export async function demoTrust(
     return error(
       'Use the connected encrypted document workflow; do not save identity documents in a public browser demo.',
     );
-  if (route === '/trust/issuance-requests' && method === 'GET')
-    return state[route];
+  if (route === '/trust/issuance-requests' && method === 'GET') return state[route];
   if (route === '/trust/relationships') {
     if (method === 'GET') return { data: d.relationships };
     const row = added('relationship', {
@@ -296,8 +275,7 @@ export async function demoTrust(
     d.requests.push(row);
     return row;
   }
-  if (route === '/trust/grants' && method === 'GET')
-    return { data: d.grants, access: [] };
+  if (route === '/trust/grants' && method === 'GET') return { data: d.grants, access: [] };
   if (route === '/trust/corrections' && method === 'POST') {
     const row = added('correction', {
       ...input,

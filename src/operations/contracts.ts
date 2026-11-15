@@ -1,7 +1,7 @@
-import {workflowAction,workflowActions,workflowBranchFields} from '../common/workflow-policy';
-export {workflowAction,selectedWorkflowAction} from '../common/workflow-policy';
+import { workflowAction, workflowActions, workflowBranchFields } from '../common/workflow-policy';
+export { workflowAction, selectedWorkflowAction } from '../common/workflow-policy';
 import { z } from 'zod';
-import { currencySchema,quantitySchema } from '../platform/domain';
+import { currencySchema, quantitySchema } from '../platform/domain';
 export const minor = z.number().int().min(1).max(100000000000);
 export const expenseSchema = z
   .object({
@@ -15,8 +15,9 @@ export const expenseSchema = z
     transaction_id: z.string().max(100).optional(),
     obligation_id: z.string().uuid().optional(),
     supersedes_id: z.string().uuid().optional(),
-    supplier:z.string().max(200).default(''),notes:z.string().max(3000).default(''),
-    status:z.enum(['recorded','archived']).default('recorded'),
+    supplier: z.string().max(200).default(''),
+    notes: z.string().max(3000).default(''),
+    status: z.enum(['recorded', 'archived']).default('recorded'),
   })
   .strict();
 export const obligationSchema = z
@@ -26,16 +27,29 @@ export const obligationSchema = z
     currency: currencySchema.default('KES'),
     next_due_date: z.string().date(),
     recurrence: z.enum(['once', 'weekly', 'monthly', 'quarterly', 'yearly']),
-    anchor_day:z.number().int().min(1).max(31).optional(),
-    category:z.enum(['stock','rent','payroll','utilities','delivery','other']).default('other'),
-    supplier:z.string().max(200).default(''),
-    timezone:z.string().max(100).default('Africa/Nairobi').refine(v=>{try{new Intl.DateTimeFormat('en',{timeZone:v});return true;}catch{return false;}},'Invalid timezone'),
-    reminder_days:z.number().int().min(0).max(30).default(3),
+    anchor_day: z.number().int().min(1).max(31).optional(),
+    category: z
+      .enum(['stock', 'rent', 'payroll', 'utilities', 'delivery', 'other'])
+      .default('other'),
+    supplier: z.string().max(200).default(''),
+    timezone: z
+      .string()
+      .max(100)
+      .default('Africa/Nairobi')
+      .refine((v) => {
+        try {
+          new Intl.DateTimeFormat('en', { timeZone: v });
+          return true;
+        } catch {
+          return false;
+        }
+      }, 'Invalid timezone'),
+    reminder_days: z.number().int().min(0).max(30).default(3),
     status: z.enum(['active', 'paused', 'completed', 'cancelled']).default('active'),
   })
   .strict();
 export const analyticsQuery = z.object({
-  range:z.enum(['all']).optional(),
+  range: z.enum(['all']).optional(),
   currency: currencySchema.default('KES'),
   from: z.string().date().optional(),
   to: z.string().date().optional(),
@@ -43,26 +57,62 @@ export const analyticsQuery = z.object({
 export const forecastSchema = z
   .object({
     currency: currencySchema.default('KES'),
-    horizon: z
-      .union([z.literal(7), z.literal(30), z.literal(60), z.literal(90)])
-      .default(30),
-    scenario: z
-      .enum(['expected', 'optimistic', 'conservative', 'custom'])
-      .default('expected'),
+    horizon: z.union([z.literal(7), z.literal(30), z.literal(60), z.literal(90)]).default(30),
+    scenario: z.enum(['expected', 'optimistic', 'conservative', 'custom']).default('expected'),
     collection_bps: z.number().int().min(0).max(10000).optional(),
     delay_days: z.number().int().min(0).max(120).optional(),
     outflow_bps: z.number().int().min(0).max(30000).optional(),
   })
   .strict();
 export const automationTemplates = [
- {id:'crm_stage_follow_up',name:'Follow up a changed CRM stage',trigger:'crm.stage_changed',category:'crm'},
- {id:'invoice_review_task',name:'Prepare an invoice review follow-up',trigger:'invoice.issued',category:'crm'},
- {id:'customer_onboarding',name:'Create customer onboarding task',trigger:'customer.created',category:'crm'},
- {id:'stock_replenishment',name:'Prepare replenishment suggestion',trigger:'inventory.reorder_needed',category:'inventory'},
- {id:'order_sync_review',name:'Review confirmed-order synchronization',trigger:'order.confirmed',category:'orders'},
- {id:'obligation_due',name:'Upcoming obligation reminder',trigger:'schedule',category:'cash_flow'},
- {id:'credential_expiry',name:'Credential expiry reminder',trigger:'schedule',category:'security'},
- {id:'integration_failed',name:'Failed integration notification',trigger:'integration.sync_failed',category:'integrations'},
+  {
+    id: 'crm_stage_follow_up',
+    name: 'Follow up a changed CRM stage',
+    trigger: 'crm.stage_changed',
+    category: 'crm',
+  },
+  {
+    id: 'invoice_review_task',
+    name: 'Prepare an invoice review follow-up',
+    trigger: 'invoice.issued',
+    category: 'crm',
+  },
+  {
+    id: 'customer_onboarding',
+    name: 'Create customer onboarding task',
+    trigger: 'customer.created',
+    category: 'crm',
+  },
+  {
+    id: 'stock_replenishment',
+    name: 'Prepare replenishment suggestion',
+    trigger: 'inventory.reorder_needed',
+    category: 'inventory',
+  },
+  {
+    id: 'order_sync_review',
+    name: 'Review confirmed-order synchronization',
+    trigger: 'order.confirmed',
+    category: 'orders',
+  },
+  {
+    id: 'obligation_due',
+    name: 'Upcoming obligation reminder',
+    trigger: 'schedule',
+    category: 'cash_flow',
+  },
+  {
+    id: 'credential_expiry',
+    name: 'Credential expiry reminder',
+    trigger: 'schedule',
+    category: 'security',
+  },
+  {
+    id: 'integration_failed',
+    name: 'Failed integration notification',
+    trigger: 'integration.sync_failed',
+    category: 'integrations',
+  },
   {
     id: 'invoice_due_soon',
     name: 'Invoice due soon',
@@ -124,13 +174,32 @@ export const automationTemplates = [
     category: 'payments',
   },
 ] as const;
-export const workflowBranch=z.object({conditions:z.array(z.object({field:z.enum(['stage','kind','currency','amount_minor']),operator:z.enum(['eq','gte','lte']),value:z.union([z.string().max(100),z.number().int().min(0).max(1e11)])}).strict()).min(1).max(8),action:z.enum(['in_app_notification','create_crm_follow_up','replenishment_suggestion','skip'])}).strict();
+export const workflowBranch = z
+  .object({
+    conditions: z
+      .array(
+        z
+          .object({
+            field: z.enum(['stage', 'kind', 'currency', 'amount_minor']),
+            operator: z.enum(['eq', 'gte', 'lte']),
+            value: z.union([z.string().max(100), z.number().int().min(0).max(1e11)]),
+          })
+          .strict(),
+      )
+      .min(1)
+      .max(8),
+    action: z.enum([
+      'in_app_notification',
+      'create_crm_follow_up',
+      'replenishment_suggestion',
+      'skip',
+    ]),
+  })
+  .strict();
 export const automationSchema = z
   .object({
     name: z.string().trim().min(1).max(100),
-    template: z.enum(
-      automationTemplates.map((t) => t.id) as [string, ...string[]],
-    ),
+    template: z.enum(automationTemplates.map((t) => t.id) as [string, ...string[]]),
     enabled: z.boolean().default(false),
     conditions: z
       .object({
@@ -143,16 +212,84 @@ export const automationSchema = z
       .object({
         frequency: z.enum(['daily', 'weekly']).default('daily'),
         hour: z.number().int().min(0).max(23).default(9),
-        timezone:z.string().max(100).default('Africa/Nairobi').refine(v=>{try{new Intl.DateTimeFormat('en',{timeZone:v});return true;}catch{return false;}},'Invalid timezone'),
+        timezone: z
+          .string()
+          .max(100)
+          .default('Africa/Nairobi')
+          .refine((v) => {
+            try {
+              new Intl.DateTimeFormat('en', { timeZone: v });
+              return true;
+            } catch {
+              return false;
+            }
+          }, 'Invalid timezone'),
       })
-      .default({ frequency: 'daily', hour: 9, timezone:'Africa/Nairobi' }),
-    branches:z.array(workflowBranch).max(10).default([]),
-    fallback_action:z.enum(['in_app_notification','create_crm_follow_up','replenishment_suggestion','skip']).optional(),
-    retry_policy:z.object({max_attempts:z.number().int().min(1).max(5),base_delay_seconds:z.number().int().min(1).max(3600)}).strict().default({max_attempts:3,base_delay_seconds:2}),
-    delay_minutes:z.number().int().min(0).max(10080).default(0),
-    action: z.enum(['in_app_notification','create_crm_follow_up','replenishment_suggestion']).optional(),
+      .default({ frequency: 'daily', hour: 9, timezone: 'Africa/Nairobi' }),
+    branches: z.array(workflowBranch).max(10).default([]),
+    fallback_action: z
+      .enum(['in_app_notification', 'create_crm_follow_up', 'replenishment_suggestion', 'skip'])
+      .optional(),
+    retry_policy: z
+      .object({
+        max_attempts: z.number().int().min(1).max(5),
+        base_delay_seconds: z.number().int().min(1).max(3600),
+      })
+      .strict()
+      .default({ max_attempts: 3, base_delay_seconds: 2 }),
+    delay_minutes: z.number().int().min(0).max(10080).default(0),
+    action: z
+      .enum(['in_app_notification', 'create_crm_follow_up', 'replenishment_suggestion'])
+      .optional(),
   })
-  .strict().superRefine((d,ctx)=>{const allowed=workflowActions(d.template);for(const branch of d.branches)for(const condition of branch.conditions){if(!workflowBranchFields(d.template).includes(condition.field))ctx.addIssue({code:'custom',path:['branches'],message:'This source field is not supported by the selected trigger'});if(condition.field==='amount_minor'?typeof condition.value!=='number':typeof condition.value!=='string'||condition.operator!=='eq')ctx.addIssue({code:'custom',path:['branches'],message:'Use numeric amount comparisons or text equality'});}for(const action of [...d.branches.map(b=>b.action),...(d.fallback_action?[d.fallback_action]:[])])if(!allowed.includes(action))ctx.addIssue({code:'custom',path:['branches'],message:'Branch actions must be supported by the selected template'});if(['customer_onboarding','stock_replenishment','order_sync_review'].includes(d.template)&&d.conditions.minimum_minor!==0)ctx.addIssue({code:'custom',path:['conditions','minimum_minor'],message:'This event template has no monetary threshold; use zero'});if(d.action&&d.action!==workflowAction(d.template))ctx.addIssue({code:'custom',path:['action'],message:'The action must match its supported template'});});
+  .strict()
+  .superRefine((d, ctx) => {
+    const allowed = workflowActions(d.template);
+    for (const branch of d.branches)
+      for (const condition of branch.conditions) {
+        if (!workflowBranchFields(d.template).includes(condition.field))
+          ctx.addIssue({
+            code: 'custom',
+            path: ['branches'],
+            message: 'This source field is not supported by the selected trigger',
+          });
+        if (
+          condition.field === 'amount_minor'
+            ? typeof condition.value !== 'number'
+            : typeof condition.value !== 'string' || condition.operator !== 'eq'
+        )
+          ctx.addIssue({
+            code: 'custom',
+            path: ['branches'],
+            message: 'Use numeric amount comparisons or text equality',
+          });
+      }
+    for (const action of [
+      ...d.branches.map((b) => b.action),
+      ...(d.fallback_action ? [d.fallback_action] : []),
+    ])
+      if (!allowed.includes(action))
+        ctx.addIssue({
+          code: 'custom',
+          path: ['branches'],
+          message: 'Branch actions must be supported by the selected template',
+        });
+    if (
+      ['customer_onboarding', 'stock_replenishment', 'order_sync_review'].includes(d.template) &&
+      d.conditions.minimum_minor !== 0
+    )
+      ctx.addIssue({
+        code: 'custom',
+        path: ['conditions', 'minimum_minor'],
+        message: 'This event template has no monetary threshold; use zero',
+      });
+    if (d.action && d.action !== workflowAction(d.template))
+      ctx.addIssue({
+        code: 'custom',
+        path: ['action'],
+        message: 'The action must match its supported template',
+      });
+  });
 export const evidenceSchema = z
   .object({
     statement: z.string().trim().min(5).max(3000),
@@ -161,9 +298,7 @@ export const evidenceSchema = z
       .max(120)
       .regex(/^[a-zA-Z0-9 ._-]+$/)
       .optional(),
-    content_type: z
-      .enum(['text/plain', 'image/png', 'image/jpeg', 'application/pdf'])
-      .optional(),
+    content_type: z.enum(['text/plain', 'image/png', 'image/jpeg', 'application/pdf']).optional(),
     content_base64: z.string().max(350000).optional(),
   })
   .strict()
@@ -220,24 +355,40 @@ export const disputeSchema = z
   .strict();
 export const assistantInput = z
   .object({
-    question: z.string().trim().min(3).max(1500).refine(v=>!(/\bsk-[A-Za-z0-9_-]{20,}|postgres(?:ql)?:\/\/|-----BEGIN [A-Z ]*PRIVATE KEY/.test(v)),'Remove credentials and private keys before asking a question'),
-    currency: z
-      .enum(['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF'])
-      .default('KES'),
+    question: z
+      .string()
+      .trim()
+      .min(3)
+      .max(1500)
+      .refine(
+        (v) =>
+          !/\bsk-[A-Za-z0-9_-]{20,}|postgres(?:ql)?:\/\/|-----BEGIN [A-Z ]*PRIVATE KEY/.test(v),
+        'Remove credentials and private keys before asking a question',
+      ),
+    currency: z.enum(['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF']).default('KES'),
     tool: z
-      .enum(['auto','financial_summary', 'receivables', 'forecast', 'reconciliation','expenses','obligations','documentation'])
+      .enum([
+        'auto',
+        'financial_summary',
+        'receivables',
+        'forecast',
+        'reconciliation',
+        'expenses',
+        'obligations',
+        'documentation',
+      ])
       .default('financial_summary'),
-    horizon: z
-      .union([z.literal(7), z.literal(30), z.literal(60), z.literal(90)])
-      .default(30),
-    scenario: z
-      .enum(['expected', 'optimistic', 'conservative', 'custom'])
-      .default('expected'),
+    horizon: z.union([z.literal(7), z.literal(30), z.literal(60), z.literal(90)]).default(30),
+    scenario: z.enum(['expected', 'optimistic', 'conservative', 'custom']).default('expected'),
     consent_to_provider: z.boolean().default(false),
   })
   .strict();
 
-export const workflowEditInput=z.object({expected_version:z.number().int().positive(),configuration:automationSchema}).strict();
-export const workflowControlInput=z.object({action:z.enum(['cancel','retry']),reason:z.string().trim().min(10).max(500)}).strict();
-export const feedbackInput=z.object({rating:z.enum(['helpful','not_helpful'])}).strict();
-export const approvalCancelInput=z.object({reason:z.string().trim().min(5).max(500)}).strict();
+export const workflowEditInput = z
+  .object({ expected_version: z.number().int().positive(), configuration: automationSchema })
+  .strict();
+export const workflowControlInput = z
+  .object({ action: z.enum(['cancel', 'retry']), reason: z.string().trim().min(10).max(500) })
+  .strict();
+export const feedbackInput = z.object({ rating: z.enum(['helpful', 'not_helpful']) }).strict();
+export const approvalCancelInput = z.object({ reason: z.string().trim().min(5).max(500) }).strict();

@@ -6,17 +6,7 @@ import { now, unseal } from '../platform/crypto';
 import { atomic } from '../operations/store';
 import { emit } from '../operations/events';
 import { schemaRegistry, passportInput, credentialTypes } from './contracts';
-import {
-  flags,
-  list,
-  get,
-  put,
-  change,
-  operator,
-  decode,
-  sandbox,
-  origin,
-} from './store';
+import { flags, list, get, put, change, operator, decode, sandbox, origin } from './store';
 import {
   passport,
   createPassport,
@@ -41,13 +31,7 @@ import {
   statusList,
   verifyCredential,
 } from './credentials';
-import {
-  verificationRequest,
-  grant,
-  consume,
-  revokeGrant,
-  verifyPresentation,
-} from './sharing';
+import { verificationRequest, grant, consume, revokeGrant, verifyPresentation } from './sharing';
 import { makeBatch, runAnchorQueue, proofFor, verifyProof } from './proofs';
 export const trust = Router();
 const uuid = (v: unknown) => z.string().uuid().parse(v);
@@ -106,12 +90,7 @@ trust.get(
           properties: {
             evidence: {
               type: 'object',
-              required: [
-                'schema_version',
-                'assurance_level',
-                'source_categories',
-                'limitations',
-              ],
+              required: ['schema_version', 'assurance_level', 'source_categories', 'limitations'],
               properties: {
                 assurance_level: { type: 'integer', minimum: 0, maximum: 3 },
                 schema_version: { const: '1.0' },
@@ -125,17 +104,12 @@ trust.get(
 );
 trust.get(
   '/trust/issuers/:id',
-  route(async (req, res) =>
-    res.json(await issuerMetadata(uuid(req.params.id))),
-  ),
+  route(async (req, res) => res.json(await issuerMetadata(uuid(req.params.id)))),
 );
 trust.get(
   '/trust/status/:issuer/:purpose',
   route(async (req, res) => {
-    const status = await statusList(
-      uuid(req.params.issuer),
-      String(req.params.purpose),
-    );
+    const status = await statusList(uuid(req.params.issuer), String(req.params.purpose));
     res.type('application/vc+jwt').send(status.token);
   }),
 );
@@ -196,10 +170,9 @@ trust.post(
 trust.get(
   '/trust/public/:id',
   route(async (req, res) => {
-    const row = await dbGet(
-      "SELECT * FROM ac3_objects WHERE id=? AND kind='passport'",
-      [uuid(req.params.id)],
-    );
+    const row = await dbGet("SELECT * FROM ac3_objects WHERE id=? AND kind='passport'", [
+      uuid(req.params.id),
+    ]);
     if (!row) fail(404, 'Public profile not found');
     const p = decode(row);
     if (!p.public_profile) fail(404, 'Public profile not enabled');
@@ -218,9 +191,7 @@ trust.get(
 );
 trust.post(
   '/trust/presentations/:token',
-  route(async (req, res) =>
-    res.json(await consume(req, String(req.params.token))),
-  ),
+  route(async (req, res) => res.json(await consume(req, String(req.params.token)))),
 );
 trust.get(
   '/organizations/:org/trust/passport',
@@ -228,9 +199,7 @@ trust.get(
 );
 trust.post(
   '/organizations/:org/trust/passport',
-  route(async (req, res) =>
-    res.status(201).json(await createPassport(await admin(req), req.body)),
-  ),
+  route(async (req, res) => res.status(201).json(await createPassport(await admin(req), req.body))),
 );
 trust.patch(
   '/organizations/:org/trust/passport',
@@ -255,10 +224,7 @@ trust.patch(
             [a.org, a.environment],
           );
           for (const c of dependent) {
-            await dbRun(
-              "UPDATE ac3_credentials SET status='suspended' WHERE id=?",
-              [c.id],
-            );
+            await dbRun("UPDATE ac3_credentials SET status='suspended' WHERE id=?", [c.id]);
             await emit(a, 'credential.suspended', {
               id: c.id,
               reason: 'passport_identity_changed',
@@ -286,9 +252,7 @@ trust.post(
 );
 trust.post(
   '/organizations/:org/trust/documents',
-  route(async (req, res) =>
-    res.status(201).json(await uploadDocument(await admin(req), req.body)),
-  ),
+  route(async (req, res) => res.status(201).json(await uploadDocument(await admin(req), req.body))),
 );
 trust.get(
   '/organizations/:org/trust/documents/:id/download',
@@ -306,15 +270,11 @@ trust.get(
 );
 trust.get(
   '/organizations/:org/trust/credentials',
-  route(async (req, res) =>
-    res.json({ data: await credentials(await access(req)) }),
-  ),
+  route(async (req, res) => res.json({ data: await credentials(await access(req)) })),
 );
 trust.get(
   '/organizations/:org/trust/credentials/:id',
-  route(async (req, res) =>
-    res.json(await credential(await access(req), uuid(req.params.id))),
-  ),
+  route(async (req, res) => res.json(await credential(await access(req), uuid(req.params.id)))),
 );
 trust.post(
   '/organizations/:org/trust/issuance-requests',
@@ -349,30 +309,21 @@ trust.post(
       })
       .strict()
       .parse(req.body);
-    res.json(
-      await changeStatus(
-        await admin(req),
-        uuid(req.params.id),
-        d.status,
-        d.reason,
-      ),
-    );
+    res.json(await changeStatus(await admin(req), uuid(req.params.id), d.status, d.reason));
   }),
 );
 trust.get(
   '/organizations/:org/trust/credentials/:id/proof',
-  route(async (req, res) =>
-    res.json(await proofFor(await access(req), uuid(req.params.id))),
-  ),
+  route(async (req, res) => res.json(await proofFor(await access(req), uuid(req.params.id)))),
 );
 trust.get(
   '/organizations/:org/trust/issuers',
   route(async (req, res) => {
     const a = await access(req, 'admin');
-    const issuers = await dbAll(
-      'SELECT id FROM ac3_issuers WHERE org_id=? AND environment=?',
-      [a.org, a.environment],
-    );
+    const issuers = await dbAll('SELECT id FROM ac3_issuers WHERE org_id=? AND environment=?', [
+      a.org,
+      a.environment,
+    ]);
     res.json({
       data: await Promise.all(issuers.map((i) => issuerMetadata(i.id))),
     });
@@ -397,9 +348,7 @@ trust.post(
         .strict()
         .parse(req.body);
     await audit(a.org, a.actor, 'issuer.rotation_reason', d.reason);
-    res.json(
-      await atomic(a, () => rotateKey(a, uuid(req.params.id), d.compromise)),
-    );
+    res.json(await atomic(a, () => rotateKey(a, uuid(req.params.id), d.compromise)));
   }),
 );
 trust.get(
@@ -419,11 +368,7 @@ trust.post(
   '/organizations/:org/trust/relationships/:id/respond',
   route(async (req, res) => {
     const a = await admin(req);
-    res.json(
-      await atomic(a, () =>
-        respondRelationship(a, uuid(req.params.id), req.body),
-      ),
-    );
+    res.json(await atomic(a, () => respondRelationship(a, uuid(req.params.id), req.body)));
   }),
 );
 trust.get(
@@ -465,15 +410,11 @@ trust.get(
 );
 trust.post(
   '/organizations/:org/trust/grants',
-  route(async (req, res) =>
-    res.status(201).json(await grant(await admin(req), req.body)),
-  ),
+  route(async (req, res) => res.status(201).json(await grant(await admin(req), req.body))),
 );
 trust.post(
   '/organizations/:org/trust/grants/:id/revoke',
-  route(async (req, res) =>
-    res.json(await revokeGrant(await admin(req), uuid(req.params.id))),
-  ),
+  route(async (req, res) => res.json(await revokeGrant(await admin(req), uuid(req.params.id)))),
 );
 trust.get(
   '/organizations/:org/trust/history',
@@ -521,7 +462,10 @@ trust.get(
         await dbAll(
           'SELECT id,environment,root,state,data,attempts,created_at FROM ac3_batches ORDER BY created_at DESC LIMIT 100',
         )
-      ).map((r) => ({ ...r, data: JSON.parse(unseal(r.data,JSON.stringify(['anchor-batch',r.id]))) })),
+      ).map((r) => ({
+        ...r,
+        data: JSON.parse(unseal(r.data, JSON.stringify(['anchor-batch', r.id]))),
+      })),
       credential_status: await dbAll(
         'SELECT status,COUNT(*) AS count FROM ac3_credentials GROUP BY status',
       ),
@@ -550,18 +494,13 @@ trust.post(
   '/internal/trust/identity/:id/review',
   route(async (req, res) => {
     const a = await operations(req),
-      row = await dbGet(
-        "SELECT org_id FROM ac3_objects WHERE id=? AND kind='identity_review'",
-        [uuid(req.params.id)],
-      );
+      row = await dbGet("SELECT org_id FROM ac3_objects WHERE id=? AND kind='identity_review'", [
+        uuid(req.params.id),
+      ]);
     if (!row) fail(404, 'Review not found');
     res.json(
       await atomic({ ...a, org: row.org_id }, () =>
-        reviewIdentity(
-          { ...a, org: row.org_id },
-          String(req.params.id),
-          req.body,
-        ),
+        reviewIdentity({ ...a, org: row.org_id }, String(req.params.id), req.body),
       ),
     );
   }),
@@ -570,10 +509,9 @@ trust.get(
   '/internal/trust/documents/:id/download',
   route(async (req, res) => {
     const a = await operations(req),
-      row = await dbGet(
-        "SELECT * FROM ac3_objects WHERE id=? AND kind='document'",
-        [uuid(req.params.id)],
-      );
+      row = await dbGet("SELECT * FROM ac3_objects WHERE id=? AND kind='document'", [
+        uuid(req.params.id),
+      ]);
     if (!row) fail(404, 'Document not found');
     const d = decode(row);
     if (d.retention_until < now()) fail(410, 'Document expired');
@@ -596,26 +534,21 @@ trust.post(
         })
         .strict()
         .parse(req.body),
-      row = await dbGet(
-        "SELECT * FROM ac3_objects WHERE id=? AND kind='correction'",
-        [uuid(req.params.id)],
-      );
+      row = await dbGet("SELECT * FROM ac3_objects WHERE id=? AND kind='correction'", [
+        uuid(req.params.id),
+      ]);
     if (!row) fail(404, 'Correction not found');
     const owner = { ...a, org: row.org_id };
     res.json(
       await atomic(owner, async () => {
         const record = await get(owner, String(req.params.id), 'correction');
-        if (record.status === 'resolved')
-          fail(409, 'Correction already resolved');
+        if (record.status === 'resolved') fail(409, 'Correction already resolved');
         if (d.decision === 'uphold') {
           if (record.target_kind === 'evidence') {
             const e = await get(owner, record.resource_id, 'evidence');
             await change(owner, e, { status: 'disputed' });
             for (const request of await list(owner, 'issuance_request'))
-              if (
-                request.credential_id &&
-                request.evidence_ids.includes(e.id)
-              ) {
+              if (request.credential_id && request.evidence_ids.includes(e.id)) {
                 await dbRun(
                   "UPDATE ac3_credentials SET status='suspended' WHERE id=? AND org_id=? AND status='active'",
                   [request.credential_id, owner.org],
@@ -638,9 +571,7 @@ trust.post(
         }
         return change(owner, record, {
           status:
-            d.decision === 'request_information'
-              ? 'additional_information_required'
-              : 'resolved',
+            d.decision === 'request_information' ? 'additional_information_required' : 'resolved',
           decision: d.decision,
           reason: d.reason,
           history: [
@@ -671,9 +602,7 @@ trust.get(
   '/organizations/:org/trust/sources',
   route(async (req, res) => {
     const a = await access(req),
-      org = await dbGet('SELECT name FROM ac_organizations WHERE id=?', [
-        a.org,
-      ]);
+      org = await dbGet('SELECT name FROM ac_organizations WHERE id=?', [a.org]);
     const records = await dbAll(
       "SELECT id,kind,data FROM ac_records WHERE org_id=? AND environment=? AND kind IN ('invoices','orders') ORDER BY created_at DESC LIMIT 100",
       [a.org, a.environment],
@@ -682,9 +611,7 @@ trust.get(
       "SELECT id,provider_ref FROM ac_events WHERE org_id=? AND environment=? AND status='succeeded' ORDER BY created_at DESC LIMIT 100",
       [a.org, a.environment],
     );
-    const shipments = await (
-      await import('../operations/store')
-    ).all(a, 'shipments');
+    const shipments = await (await import('../operations/store')).all(a, 'shipments');
     const relations = await list(a, 'relationship', true);
     const data = [
       { kind: 'profile', id: a.org, label: org.name },
@@ -754,13 +681,8 @@ trust.post(
   route(async (req, res) => {
     const a = await admin(req),
       r = await get(a, uuid(req.params.id), 'issuance_request');
-    if (r.status !== 'pending')
-      fail(409, 'Only pending authorization can be cancelled');
-    res.json(
-      await atomic(a, () =>
-        change(a, r, { status: 'cancelled', cancelled_at: now() }),
-      ),
-    );
+    if (r.status !== 'pending') fail(409, 'Only pending authorization can be cancelled');
+    res.json(await atomic(a, () => change(a, r, { status: 'cancelled', cancelled_at: now() })));
   }),
 );
 
@@ -781,9 +703,7 @@ trust.post(
     if (d.verify_anchor) {
       const proof = await proofFor(a, c.id);
       report.anchor =
-        proof.status === 'not_batched'
-          ? 'not_batched'
-          : await verifyProof(c.token, proof);
+        proof.status === 'not_batched' ? 'not_batched' : await verifyProof(c.token, proof);
       if (
         typeof report.anchor === 'object' &&
         !report.anchor.onchain &&
@@ -796,9 +716,7 @@ trust.post(
       await put(a, 'verification_result', report);
       await emit(
         a,
-        report.overall === 'failed'
-          ? 'verification.failed'
-          : 'verification.completed',
+        report.overall === 'failed' ? 'verification.failed' : 'verification.completed',
         { id: c.id, outcome: report.overall },
       );
     });

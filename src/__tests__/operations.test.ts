@@ -2,18 +2,14 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Server } from 'node:http';
 import { randomUUID } from 'node:crypto';
-import { configureTestEnv,productFixtureBody } from './helpers';
+import { configureTestEnv, productFixtureBody } from './helpers';
 configureTestEnv('stage2');
-import {activate} from '../marketplace/engine';
+import { activate } from '../marketplace/engine';
 import { migrate, dbAll, dbGet, dbRun, closeDb } from '../db';
 import { createApp } from '../app';
 import { Access } from '../platform/auth';
 import { day, addDays, atomic, create } from '../operations/store';
-import {
-  forecast,
-  financialSnapshot,
-  forecastSchema,
-} from '../operations/intelligence';
+import { forecast, financialSnapshot, forecastSchema } from '../operations/intelligence';
 import { runAutomations, notify } from '../operations/automation';
 import { askAssistant, ExplanationProvider } from '../operations/assistant';
 import { sync } from '../operations/integrations';
@@ -54,7 +50,7 @@ async function api(
       ...(cookie ? { Cookie: cookie } : {}),
       ...headers,
     },
-    body: body === undefined ? undefined : JSON.stringify(productFixtureBody(path,method,body)),
+    body: body === undefined ? undefined : JSON.stringify(productFixtureBody(path, method, body)),
   });
   let data: any;
   try {
@@ -84,9 +80,7 @@ async function register(label: string) {
 async function newOrder(amount = 10000) {
   const doc = {
     customer_id: customer,
-    items: [
-      { description: 'Equipment', quantity: 2, unit_price_minor: amount / 2 },
-    ],
+    items: [{ description: 'Equipment', quantity: 2, unit_price_minor: amount / 2 }],
     issue_date: today,
     due_date: addDays(today, 7),
   };
@@ -106,8 +100,7 @@ async function newSale(orderId?: string) {
       amount_minor: 10000,
       currency: 'KES',
       delivery_terms: 'Deliver the equipment to the agreed location.',
-      cancellation_terms:
-        'Unpaid sales may be cancelled. Paid refunds require review.',
+      cancellation_terms: 'Unpaid sales may be cancelled. Paid refunds require review.',
       inspection_hours: 48,
       support_contact: 'merchant@example.test',
       ...(orderId ? { order_id: orderId } : {}),
@@ -123,7 +116,7 @@ async function approval(action: string, resource: string) {
     approver: reviewerId,
     action,
     resource_id: resource,
-    parameters:action==='dispute_resolution'?{decision:'refund'}:{},
+    parameters: action === 'dispute_resolution' ? { decision: 'refund' } : {},
   });
   assert.equal(created.status, 201);
   const approved = await api(
@@ -150,7 +143,7 @@ before(async () => {
   const b = await register('reviewer');
   reviewer = b.cookie;
   reviewerId = b.data.id;
-  await api('/api/auth/verify','POST',{token:b.data.verification_token},reviewer);
+  await api('/api/auth/verify', 'POST', { token: b.data.verification_token }, reviewer);
   other = (await register('other')).cookie;
   const body = {
     name: 'Stage 2 SME',
@@ -162,31 +155,18 @@ before(async () => {
   };
   org = (await api('/api/v1/organizations', 'POST', body)).data.id;
   org2 = (
-    await api(
-      '/api/v1/organizations',
-      'POST',
-      { ...body, name: 'Other organization' },
-      other,
-    )
+    await api('/api/v1/organizations', 'POST', { ...body, name: 'Other organization' }, other)
   ).data.id;
   const invite = await api(url('/invitations'), 'POST', {
     email: 'reviewer-' + unique + '@example.test',
     role: 'admin',
   });
   assert.equal(
-    (
-      await api(
-        '/api/v1/invitations/accept',
-        'POST',
-        { token: invite.data.token },
-        reviewer,
-      )
-    ).status,
+    (await api('/api/v1/invitations/accept', 'POST', { token: invite.data.token }, reviewer))
+      .status,
     200,
   );
-  customer = (
-    await api(url('/records/customers'), 'POST', { name: 'Fixture customer' })
-  ).data.id;
+  customer = (await api(url('/records/customers'), 'POST', { name: 'Fixture customer' })).data.id;
 });
 after(async () => {
   await new Promise<void>((r) => server.close(() => r()));
@@ -195,11 +175,7 @@ after(async () => {
 test('additive Stage 2 migration is repeatable and preserves Stage 1 records', async () => {
   await migrate();
   assert.ok(await dbGet('SELECT id FROM ac_records WHERE id=?', [customer]));
-  assert.ok(
-    await dbGet('SELECT version FROM platform_migrations WHERE version=?', [
-      '002-stage2',
-    ]),
-  );
+  assert.ok(await dbGet('SELECT version FROM platform_migrations WHERE version=?', ['002-stage2']));
 });
 test('empty history is labeled, forecasts never manufacture balance or profit', async () => {
   const a = { ...access(), org: org2 };
@@ -277,10 +253,9 @@ test('expenses and imported outflows do not double count; corrections preserve h
       },
     ],
   });
-  const rows = await dbAll(
-    "SELECT id FROM ac_records WHERE org_id=? AND kind='transactions'",
-    [org],
-  );
+  const rows = await dbAll("SELECT id FROM ac_records WHERE org_id=? AND kind='transactions'", [
+    org,
+  ]);
   const e = await api(url('/expenses'), 'POST', {
     description: 'Delivery cost',
     amount_minor: 3000,
@@ -304,12 +279,7 @@ test('expenses and imported outflows do not double count; corrections preserve h
   s = await financialSnapshot(access(), {});
   assert.equal(s.totals.recorded_outflows_minor, 2500);
   assert.equal(
-    (
-      await dbAll('SELECT id FROM ac2_objects WHERE org_id=? AND kind=?', [
-        org,
-        'expenses',
-      ])
-    ).length,
+    (await dbAll('SELECT id FROM ac2_objects WHERE org_id=? AND kind=?', [org, 'expenses'])).length,
     2,
   );
   assert.equal(
@@ -336,18 +306,11 @@ test('Stage 2 APIs deny cross-tenant and cross-environment access', async () => 
     '/notifications',
     '/connectors',
   ])
-    assert.equal(
-      (await api(url(endpoint), 'GET', undefined, other)).status,
-      403,
-      endpoint,
-    );
-  const prod = await api(
-    url('/protected-sales'),
-    'POST',
-    { title: 'No live sale' },
-    owner,
-    { 'X-Environment': 'production', ...idempotent() },
-  );
+    assert.equal((await api(url(endpoint), 'GET', undefined, other)).status, 403, endpoint);
+  const prod = await api(url('/protected-sales'), 'POST', { title: 'No live sale' }, owner, {
+    'X-Environment': 'production',
+    ...idempotent(),
+  });
   assert.equal(prod.status, 402); // No production entitlement was selected.
   assert.equal((await api('/api/v1/internal/stage2/operations')).status, 403);
 });
@@ -362,10 +325,10 @@ test('automations deduplicate schedules, persist runs, pause and respect opt out
   const when = new Date(today + 'T12:00:00Z');
   await runAutomations(access(), when);
   await runAutomations(access(), when);
-  const runs = await dbAll(
-    'SELECT * FROM ac2_runs WHERE org_id=? AND workflow_id=?',
-    [org, r.data.id],
-  );
+  const runs = await dbAll('SELECT * FROM ac2_runs WHERE org_id=? AND workflow_id=?', [
+    org,
+    r.data.id,
+  ]);
   assert.equal(runs.length, 1);
   assert.equal(runs[0].status, 'succeeded');
   assert.equal(runs[0].attempts, 1);
@@ -373,8 +336,7 @@ test('automations deduplicate schedules, persist runs, pause and respect opt out
   assert.ok(notifications.data.data.length > 0);
   const notification = notifications.data.data[0];
   assert.equal(
-    (await api(url('/notifications/' + notification.id), 'PATCH', {}, other))
-      .status,
+    (await api(url('/notifications/' + notification.id), 'PATCH', {}, other)).status,
     403,
   );
   await api(url('/notification-preferences'), 'PUT', {
@@ -407,11 +369,7 @@ test('automations deduplicate schedules, persist runs, pause and respect opt out
   });
   await api(url('/automations/' + r.data.id), 'PATCH', { enabled: false });
   await runAutomations(access(), new Date(addDays(today, 1) + 'T12:00:00Z'));
-  assert.equal(
-    (await dbAll('SELECT id FROM ac2_runs WHERE workflow_id=?', [r.data.id]))
-      .length,
-    1,
-  );
+  assert.equal((await dbAll('SELECT id FROM ac2_runs WHERE workflow_id=?', [r.data.id])).length, 1);
 });
 test('assistant is tool-scoped, minimizes data, fails truthfully and logs usage without prompts', async (t) => {
   const previousKey = process.env.OPENAI_API_KEY;
@@ -430,7 +388,7 @@ test('assistant is tool-scoped, minimizes data, fails truthfully and logs usage 
   // Synthetic value: every configured call below uses an injected fixture provider.
   process.env.OPENAI_API_KEY = 'fixture-only-no-network';
   process.env.AFRICORE_AI_MODEL = 'fixture-model';
-  await activate(access(),'assistant');
+  await activate(access(), 'assistant');
   const fake: ExplanationProvider = {
     name: 'fixture',
     async explain(input) {
@@ -481,14 +439,7 @@ test('assistant is tool-scoped, minimizes data, fails truthfully and logs usage 
   assert.ok(logs.length >= 2);
   assert.ok(!JSON.stringify(logs).includes('Ignore instructions'));
   assert.equal(
-    (
-      await api(
-        url('/assistant'),
-        'POST',
-        { question: 'Show their data' },
-        other,
-      )
-    ).status,
+    (await api(url('/assistant'), 'POST', { question: 'Show their data' }, other)).status,
     403,
   );
 });
@@ -497,10 +448,7 @@ test('protected sale payment, shipment, buyer acceptance, approval and partner r
   const r = await newSale(order);
   sale = r.id;
   buyer = r.buyer_url.split('/').pop();
-  const raw = await dbGet(
-    'SELECT * FROM ac2_buyer_access WHERE agreement_id=?',
-    [sale],
-  );
+  const raw = await dbGet('SELECT * FROM ac2_buyer_access WHERE agreement_id=?', [sale]);
   assert.notEqual(raw.token_hash, buyer);
   assert.equal(
     (await api('/api/v1/buyer/' + buyer, 'GET', undefined, '')).data.custody,
@@ -515,13 +463,7 @@ test('protected sale payment, shipment, buyer acceptance, approval and partner r
   );
   assert.equal(early.status, 409);
   const key = idempotent();
-  const pay = await api(
-    '/api/v1/buyer/' + buyer + '/action',
-    'POST',
-    { action: 'pay' },
-    '',
-    key,
-  );
+  const pay = await api('/api/v1/buyer/' + buyer + '/action', 'POST', { action: 'pay' }, '', key);
   assert.equal(pay.data.state, 'awaiting_shipment');
   const duplicate = await api(
     '/api/v1/buyer/' + buyer + '/action',
@@ -542,13 +484,7 @@ test('protected sale payment, shipment, buyer acceptance, approval and partner r
   assert.equal(shipment.status, 201);
   for (const status of ['processing', 'ready_for_dispatch', 'shipped'])
     assert.equal(
-      (
-        await api(
-          url('/shipments/' + shipment.data.id + '/transition'),
-          'POST',
-          { status },
-        )
-      ).status,
+      (await api(url('/shipments/' + shipment.data.id + '/transition'), 'POST', { status })).status,
       200,
     );
   assert.equal(
@@ -619,32 +555,20 @@ test('protected sale payment, shipment, buyer acceptance, approval and partner r
     ).data.duplicate,
     true,
   );
-  const providerEvents = await dbAll(
-    'SELECT * FROM ac2_events WHERE org_id=? AND event_type=?',
-    [org, 'protected_payment.release_confirmed'],
-  );
+  const providerEvents = await dbAll('SELECT * FROM ac2_events WHERE org_id=? AND event_type=?', [
+    org,
+    'protected_payment.release_confirmed',
+  ]);
   assert.equal(providerEvents.length, 1);
   assert.equal(
-    Number(
-      (
-        await dbGet('SELECT COUNT(*) AS total FROM ac_journal WHERE org_id=?', [
-          org,
-        ])
-      ).total,
-    ),
+    Number((await dbGet('SELECT COUNT(*) AS total FROM ac_journal WHERE org_id=?', [org])).total),
     0,
   );
 });
 test('dispute evidence is isolated and refund requires review, approval and separate partner confirmation', async () => {
   const r = await newSale();
   const token = r.buyer_url.split('/').pop();
-  await api(
-    '/api/v1/buyer/' + token + '/action',
-    'POST',
-    { action: 'pay' },
-    '',
-    idempotent(),
-  );
+  await api('/api/v1/buyer/' + token + '/action', 'POST', { action: 'pay' }, '', idempotent());
   const opened = await api(
     '/api/v1/buyer/' + token + '/disputes',
     'POST',
@@ -678,10 +602,7 @@ test('dispute evidence is isolated and refund requires review, approval and sepa
     '',
   );
   assert.equal(evidence.status, 201);
-  assert.equal(
-    (await api(url('/evidence/' + dispute), 'GET', undefined, other)).status,
-    403,
-  );
+  assert.equal((await api(url('/evidence/' + dispute), 'GET', undefined, other)).status, 403);
   assert.equal(
     (
       await api(
@@ -708,10 +629,7 @@ test('dispute evidence is isolated and refund requires review, approval and sepa
     idempotent(),
   );
   assert.equal(resolved.status, 200);
-  assert.equal(
-    (await api(url('/protected-sales/' + r.id))).data.state,
-    'refund_requested',
-  );
+  assert.equal((await api(url('/protected-sales/' + r.id))).data.state, 'refund_requested');
   assert.equal(
     (
       await api(
@@ -775,30 +693,18 @@ test('connector failure, retry, recovery and disconnect retain truthful status',
   assert.equal(r.status, 201);
   const failed = await sync(access(), r.data.id);
   assert.equal(failed.status, 'retrying');
-  const recovered = await sync(
-    access(),
-    r.data.id,
-    new Date(Date.now() + 10000),
-  );
+  const recovered = await sync(access(), r.data.id, new Date(Date.now() + 10000));
   assert.equal(recovered.status, 'synced');
   assert.equal((recovered as any).last_batch.provenance, 'sandbox_simulated');
   await api(url('/connectors/' + r.data.id + '/action'), 'POST', {
     action: 'disconnect',
   });
-  assert.equal(
-    (await api(url('/connectors/' + r.data.id + '/sync'), 'POST', {})).status,
-    409,
-  );
-  assert.equal(
-    (await api(url('/connectors'), 'POST', { provider: 'bank' })).status,
-    400,
-  );
+  assert.equal((await api(url('/connectors/' + r.data.id + '/sync'), 'POST', {})).status, 409);
+  assert.equal((await api(url('/connectors'), 'POST', { provider: 'bank' })).status, 400);
 });
 
 test('historical customer delays require sufficient fully settled invoices', async () => {
-  const id = (
-    await api(url('/records/customers'), 'POST', { name: 'Observed payer' })
-  ).data.id;
+  const id = (await api(url('/records/customers'), 'POST', { name: 'Observed payer' })).data.id;
   for (let i = 0; i < 3; i++) {
     const invoice = await api(url('/records/invoices'), 'POST', {
       customer_id: id,
@@ -824,17 +730,15 @@ test('historical customer delays require sufficient fully settled invoices', asy
       idempotent(),
     );
     const token = payment.data.checkout_url.split('/').pop();
-    await api(
-      '/api/v1/checkout/' + token + '/pay',
-      'POST',
-      { scenario: 'success' },
-      '',
-    );
+    await api('/api/v1/checkout/' + token + '/pay', 'POST', { scenario: 'success' }, '');
     await dbRun('UPDATE ac_allocations SET created_at=? WHERE document_id=?', [
       addDays(today, -10) + 'T09:00:00Z',
       invoice.data.id,
     ]);
-    await dbRun('UPDATE ac_payment_event_details SET occurred_at=? WHERE event_id IN (SELECT id FROM ac_events WHERE request_id=?)',[addDays(today,-10)+'T09:00:00Z',payment.data.id]);
+    await dbRun(
+      'UPDATE ac_payment_event_details SET occurred_at=? WHERE event_id IN (SELECT id FROM ac_events WHERE request_id=?)',
+      [addDays(today, -10) + 'T09:00:00Z', payment.data.id],
+    );
     await dbRun('UPDATE ac_events SET created_at=? WHERE request_id=?', [
       addDays(today, -10) + 'T09:00:00Z',
       payment.data.id,
@@ -850,24 +754,13 @@ test('historical customer delays require sufficient fully settled invoices', asy
     from: addDays(today, -40),
     to: addDays(today, -15),
   });
-  assert.equal(
-    prior.customers.find((c) => c.customer_id === id)!.total_paid_minor,
-    0,
-  );
+  assert.equal(prior.customers.find((c) => c.customer_id === id)!.total_paid_minor, 0);
 });
 test('protected orders cannot use standard checkout and credentials preserve new API scopes', async () => {
   const id = await newOrder();
   const protectedSale = await newSale(id);
   assert.equal(
-    (
-      await api(
-        url('/payment-requests'),
-        'POST',
-        { document_id: id },
-        owner,
-        idempotent(),
-      )
-    ).status,
+    (await api(url('/payment-requests'), 'POST', { document_id: id }, owner, idempotent())).status,
     409,
   );
   const application = await api(url('/records/applications'), 'POST', {
@@ -878,10 +771,7 @@ test('protected orders cannot use standard checkout and credentials preserve new
     scopes: ['read'],
   });
   const headers = { Authorization: 'Bearer ' + credential.data.key };
-  assert.equal(
-    (await api(url('/intelligence'), 'GET', undefined, '', headers)).status,
-    200,
-  );
+  assert.equal((await api(url('/intelligence'), 'GET', undefined, '', headers)).status, 200);
   assert.equal(
     (
       await api(
@@ -902,23 +792,17 @@ test('protected orders cannot use standard checkout and credentials preserve new
   );
   assert.equal(
     (
-      await api(
-        url('/protected-sales/' + protectedSale.id),
-        'GET',
-        undefined,
-        '',
-        { ...headers, 'X-Environment': 'production' },
-      )
+      await api(url('/protected-sales/' + protectedSale.id), 'GET', undefined, '', {
+        ...headers,
+        'X-Environment': 'production',
+      })
     ).status,
     403,
   );
 });
 test('evidence downloads are authorized attachments and encrypted at rest', async () => {
   const dispute = (
-    await dbAll(
-      "SELECT id FROM ac2_objects WHERE org_id=? AND kind='disputes'",
-      [org],
-    )
+    await dbAll("SELECT id FROM ac2_objects WHERE org_id=? AND kind='disputes'", [org])
   )[0];
   const row = await dbGet(
     'SELECT * FROM ac2_evidence WHERE resource_id=? AND content_base64 IS NOT NULL',
@@ -929,10 +813,9 @@ test('evidence downloads are authorized attachments and encrypted at rest', asyn
     row.content_base64,
     Buffer.from('Synthetic supporting evidence').toString('base64'),
   );
-  const r = await fetch(
-    base + url('/evidence/' + dispute.id + '/' + row.id + '/download'),
-    { headers: { Cookie: owner } },
-  );
+  const r = await fetch(base + url('/evidence/' + dispute.id + '/' + row.id + '/download'), {
+    headers: { Cookie: owner },
+  });
   assert.equal(r.status, 200);
   assert.match(r.headers.get('content-disposition') || '', /attachment/);
   assert.equal(await r.text(), 'Synthetic supporting evidence');
@@ -986,13 +869,7 @@ test('standalone protected purchases create fulfillable orders and partial shipp
   const r = await newSale();
   assert.ok(r.order_id);
   const token = r.buyer_url.split('/').pop();
-  await api(
-    '/api/v1/buyer/' + token + '/action',
-    'POST',
-    { action: 'pay' },
-    '',
-    idempotent(),
-  );
+  await api('/api/v1/buyer/' + token + '/action', 'POST', { action: 'pay' }, '', idempotent());
   const shipment = await api(url('/shipments'), 'POST', {
     order_id: r.order_id,
     protected_sale_id: r.id,
@@ -1033,13 +910,7 @@ test('standalone protected purchases create fulfillable orders and partial shipp
   const partialOrder = await newOrder();
   const p = await newSale(partialOrder);
   const b = p.buyer_url.split('/').pop();
-  await api(
-    '/api/v1/buyer/' + b + '/action',
-    'POST',
-    { action: 'pay' },
-    '',
-    idempotent(),
-  );
+  await api('/api/v1/buyer/' + b + '/action', 'POST', { action: 'pay' }, '', idempotent());
   const sh = await api(url('/shipments'), 'POST', {
     order_id: partialOrder,
     protected_sale_id: p.id,
@@ -1072,13 +943,11 @@ test('explicit connector imports deduplicate and remain unverified sandbox recor
   assert.equal(r.status, 201);
   await api(url('/connectors/' + r.data.id + '/sync'), 'POST', {});
   assert.equal(
-    (await api(url('/connectors/' + r.data.id + '/import'), 'POST', {})).data
-      .imported,
+    (await api(url('/connectors/' + r.data.id + '/import'), 'POST', {})).data.imported,
     1,
   );
   assert.equal(
-    (await api(url('/connectors/' + r.data.id + '/import'), 'POST', {})).data
-      .imported,
+    (await api(url('/connectors/' + r.data.id + '/import'), 'POST', {})).data.imported,
     0,
   );
 });
@@ -1104,9 +973,7 @@ test('protected order guards and expired approvals cannot authorize collection o
   const inv = {
     customer_id: customer,
     order_id: r.order_id,
-    items: [
-      { description: 'Equipment sale', quantity: 1, unit_price_minor: 10000 },
-    ],
+    items: [{ description: 'Equipment sale', quantity: 1, unit_price_minor: 10000 }],
     issue_date: today,
     due_date: today,
   };
@@ -1170,25 +1037,18 @@ test('a broken workspace job cannot starve another tenant and worker retries do 
   try {
     const result = await processOperations();
     assert.ok(result.failed! >= 1);
-    let runs = await dbAll('SELECT * FROM ac2_runs WHERE workflow_id=?', [
-      workflow.data.id,
-    ]);
+    let runs = await dbAll('SELECT * FROM ac2_runs WHERE workflow_id=?', [workflow.data.id]);
     assert.equal(runs.length, 1);
     assert.equal(runs[0].status, 'succeeded');
     await processOperations();
-    runs = await dbAll('SELECT * FROM ac2_runs WHERE workflow_id=?', [
-      workflow.data.id,
-    ]);
+    runs = await dbAll('SELECT * FROM ac2_runs WHERE workflow_id=?', [workflow.data.id]);
     assert.equal(runs.length, 1);
     assert.equal(runs[0].attempts, 1);
     const notices = await dbAll(
       'SELECT * FROM ac2_notifications WHERE org_id=? AND resource_id IS NOT NULL',
       [org2],
     );
-    assert.equal(
-      notices.filter((n) => n.dedupe_key === 'automation:' + runs[0].id).length,
-      1,
-    );
+    assert.equal(notices.filter((n) => n.dedupe_key === 'automation:' + runs[0].id).length, 1);
   } finally {
     await dbRun('DELETE FROM ac2_runs WHERE id=?', [brokenId]);
   }
@@ -1211,12 +1071,7 @@ test('assistant quota is reserved before provider execution and every tool retur
     }
   });
   delete process.env.OPENAI_API_KEY;
-  for (const tool of [
-    'financial_summary',
-    'receivables',
-    'forecast',
-    'reconciliation',
-  ]) {
+  for (const tool of ['financial_summary', 'receivables', 'forecast', 'reconciliation']) {
     const result = await askAssistant(access(), {
       question: 'Explain the permitted records',
       tool,
@@ -1232,16 +1087,16 @@ test('assistant quota is reserved before provider execution and every tool retur
   }
   const existing = Number(
     (
-      await dbGet(
-        'SELECT COUNT(*) AS total FROM ac2_ai_usage WHERE org_id=? AND created_at>=?',
-        [org, new Date().toISOString().slice(0,10) + 'T00:00:00'],
-      )
+      await dbGet('SELECT COUNT(*) AS total FROM ac2_ai_usage WHERE org_id=? AND created_at>=?', [
+        org,
+        new Date().toISOString().slice(0, 10) + 'T00:00:00',
+      ])
     ).total,
   );
   process.env.OPENAI_API_KEY = 'fixture-only-no-network';
   process.env.AFRICORE_AI_MODEL = 'fixture-model';
   process.env.AFRICORE_AI_DAILY_REQUEST_LIMIT = String(existing + 1);
-  await activate(access(),'assistant');
+  await activate(access(), 'assistant');
   let calls = 0;
   const provider: ExplanationProvider = {
     name: 'fixture',

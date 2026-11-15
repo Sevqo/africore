@@ -11,9 +11,7 @@
     <header class="site-header reveal">
       <div class="shell header-inner">
         <a class="brand" href="#top" aria-label="AfriCore Orbit Console">
-          <span class="brand-glyph" aria-hidden="true"
-            ><i></i><i></i><i></i
-          ></span>
+          <span class="brand-glyph" aria-hidden="true"><i></i><i></i><i></i></span>
           <span>AfriCore<b>.</b></span>
         </a>
         <nav class="desktop-nav" aria-label="Sections">
@@ -44,24 +42,18 @@
       <section class="hero shell">
         <div class="hero-grid">
           <div class="hero-copy">
-            <div class="eyebrow reveal">
-              <i></i> ORBIT CORE / ORCHESTRATION LAYER
-            </div>
-            <h1 class="reveal" data-delay="1">
-              Watch the data<br /><em>move.</em>
-            </h1>
+            <div class="eyebrow reveal"><i></i> ORBIT CORE / ORCHESTRATION LAYER</div>
+            <h1 class="reveal" data-delay="1">Watch the data<br /><em>move.</em></h1>
           </div>
           <div class="hero-side reveal" data-delay="2">
             <p class="hero-lead">
-              A statement upload becomes a queue, a parsed transaction, a
-              hash-chained ledger entry and a lender-ready decision — in one
-              observable pipeline.
+              A statement upload becomes a queue, a parsed transaction, a hash-chained ledger entry
+              and a lender-ready decision — in one observable pipeline.
             </p>
             <p class="muted">
-              Orbit runs ingestion, normalization, ledger and scoring as
-              separate workers. Every state transition is stored, every retry is
-              idempotent, and every failure lands in a dead-letter queue instead
-              of a stack trace.
+              Orbit runs ingestion, normalization, ledger and scoring as separate workers. Every
+              state transition is stored, every retry is idempotent, and every failure lands in a
+              dead-letter queue instead of a stack trace.
             </p>
             <div class="hero-actions">
               <button id="run-demo" class="pill-button">
@@ -101,9 +93,8 @@
         </div>
 
         <div class="hero-foot mono reveal" data-delay="3">
-          <span>01 / INGEST</span><span>02 / NORMALIZE</span
-          ><span>03 / LEDGER</span><span>04 / SCORE</span
-          ><span>05 / DECIDE</span>
+          <span>01 / INGEST</span><span>02 / NORMALIZE</span><span>03 / LEDGER</span
+          ><span>04 / SCORE</span><span>05 / DECIDE</span>
         </div>
       </section>
 
@@ -111,15 +102,10 @@
       <section class="system-wrap section-pad" id="system-map">
         <div class="shell">
           <div class="section-line reveal">
-            <span>02 / SYSTEM MAP</span
-            ><span>EVIDENCE IN · USEFUL SIGNAL OUT</span>
+            <span>02 / SYSTEM MAP</span><span>EVIDENCE IN · USEFUL SIGNAL OUT</span>
           </div>
           <div class="system-grid">
-            <div
-              class="system-map reveal"
-              data-delay="1"
-              aria-label="Animated Orbit pipeline"
-            >
+            <div class="system-map reveal" data-delay="1" aria-label="Animated Orbit pipeline">
               <div class="map-top mono">
                 <span>AFRISCORE / ORBIT</span><span>LIVE PIPELINE</span>
               </div>
@@ -132,8 +118,7 @@
                 </div>
 
                 <div class="map-flow" aria-hidden="true">
-                  <i class="dot" style="--d: 0s"></i
-                  ><i class="dot" style="--d: 1.1s"></i
+                  <i class="dot" style="--d: 0s"></i><i class="dot" style="--d: 1.1s"></i
                   ><i class="dot" style="--d: 2.2s"></i>
                 </div>
 
@@ -160,8 +145,7 @@
                 </div>
 
                 <div class="map-flow" aria-hidden="true">
-                  <i class="dot" style="--d: 0.4s"></i
-                  ><i class="dot" style="--d: 1.5s"></i
+                  <i class="dot" style="--d: 0.4s"></i><i class="dot" style="--d: 1.5s"></i
                   ><i class="dot" style="--d: 2.6s"></i>
                 </div>
 
@@ -170,9 +154,7 @@
                   <div class="output-card">
                     <span class="mono">READY STATE</span>
                     <strong>Decision card</strong>
-                    <div class="output-bars">
-                      <i></i><i></i><i></i><i></i><i></i>
-                    </div>
+                    <div class="output-bars"><i></i><i></i><i></i><i></i><i></i></div>
                   </div>
                 </div>
               </div>
@@ -186,26 +168,16 @@
               <div class="eyebrow"><i></i> WHY IT MATTERS</div>
               <h2>Move from records<br /><em>to decisions.</em></h2>
               <p class="muted">
-                Each stage is an isolated queue with its own worker, retry
-                policy and idempotency key. The API returns a workflow id
-                immediately; the console watches the state machine walk from
+                Each stage is an isolated queue with its own worker, retry policy and idempotency
+                key. The API returns a workflow id immediately; the console watches the state
+                machine walk from
                 <code>PENDING</code> to <code>READY</code>.
               </p>
               <ul class="clean system-list">
-                <li>
-                  <strong>ingestion</strong> — consent verified, raw text
-                  extracted
-                </li>
-                <li>
-                  <strong>normalization</strong> — parse, dedupe by receipt,
-                  insert
-                </li>
-                <li>
-                  <strong>ledger</strong> — hash-chain append, once per event
-                </li>
-                <li>
-                  <strong>scoring</strong> — health, DSO and decision card
-                </li>
+                <li><strong>ingestion</strong> — consent verified, raw text extracted</li>
+                <li><strong>normalization</strong> — parse, dedupe by receipt, insert</li>
+                <li><strong>ledger</strong> — hash-chain append, once per event</li>
+                <li><strong>scoring</strong> — health, DSO and decision card</li>
               </ul>
             </div>
           </div>
@@ -223,27 +195,21 @@
               <span class="mono">01 / DETERMINISM</span>
               <div class="principle-icon target"><i></i><i></i><i></i></div>
               <h3>Same inputs, same answers.</h3>
-              <p>
-                Metrics, health bands and limits are explicit formulas — never
-                model guesswork.
-              </p>
+              <p>Metrics, health bands and limits are explicit formulas — never model guesswork.</p>
             </article>
             <article class="principle reveal" data-delay="2">
               <span class="mono">02 / CONTROL</span>
               <div class="principle-icon spark"><i></i></div>
               <h3>Consent before parsing.</h3>
-              <p>
-                A valid key proves the caller; a separate grant proves the
-                subject allowed it.
-              </p>
+              <p>A valid key proves the caller; a separate grant proves the subject allowed it.</p>
             </article>
             <article class="principle reveal" data-delay="3">
               <span class="mono">03 / AUDIT</span>
               <div class="principle-icon arrow"><i></i></div>
               <h3>Every step leaves a hash.</h3>
               <p>
-                Workflows are stored, retries are idempotent, failures are
-                quarantined in a dead-letter queue.
+                Workflows are stored, retries are idempotent, failures are quarantined in a
+                dead-letter queue.
               </p>
             </article>
           </div>
@@ -260,9 +226,9 @@
           <div class="console-head reveal">
             <h2>Run it<br /><em>yourself.</em></h2>
             <p class="muted">
-              One click seeds a demo business, records consent, ingests a
-              statement through Orbit and renders the dashboard and lender card.
-              Everything you see is written to the local SQLite database.
+              One click seeds a demo business, records consent, ingests a statement through Orbit
+              and renders the dashboard and lender card. Everything you see is written to the local
+              SQLite database.
             </p>
             <button id="run-demo-2" class="pill-button pill-light">
               Run live demo
@@ -285,12 +251,10 @@
           <div class="panel plain reveal" id="connect-panel">
             <div class="grid connect-grid">
               <label
-                >Business ID
-                <input id="business-id" placeholder="uuid from onboarding"
+                >Business ID <input id="business-id" placeholder="uuid from onboarding"
               /></label>
               <label
-                >API key (partner)
-                <input id="api-key" placeholder="ak_…" autocomplete="off"
+                >API key (partner) <input id="api-key" placeholder="ak_…" autocomplete="off"
               /></label>
               <label
                 >Admin token (local only)
@@ -302,21 +266,15 @@
               /></label>
             </div>
             <p class="muted small">
-              Served by the API itself, so calls stay same-origin. Credentials
-              live only in this tab's localStorage.
+              Served by the API itself, so calls stay same-origin. Credentials live only in this
+              tab's localStorage.
             </p>
           </div>
 
           <nav class="tabs" id="tabs" aria-label="Console views">
-            <button class="tab active" data-view="onboarding">
-              <b>01</b> Onboard
-            </button>
-            <button class="tab" data-view="owner">
-              <b>02</b> Business dashboard
-            </button>
-            <button class="tab" data-view="lender">
-              <b>03</b> Lender card
-            </button>
+            <button class="tab active" data-view="onboarding"><b>01</b> Onboard</button>
+            <button class="tab" data-view="owner"><b>02</b> Business dashboard</button>
+            <button class="tab" data-view="lender"><b>03</b> Lender card</button>
           </nav>
 
           <section class="view active" id="view-onboarding">
@@ -324,10 +282,7 @@
               <article class="card reveal" data-delay="1">
                 <div class="card-kicker mono">STEP 01</div>
                 <h2>Create business</h2>
-                <label
-                  >Legal name
-                  <input id="legal-name" value="Jua Kali Traders Ltd"
-                /></label>
+                <label>Legal name <input id="legal-name" value="Jua Kali Traders Ltd" /></label>
                 <label>Sector <input id="sector" value="retail" /></label>
                 <button id="create-business" class="pill-button">
                   Create business
@@ -380,26 +335,15 @@
                   <label
                     >Type
                     <select id="source-type">
-                      <option value="business_till">
-                        M-Pesa business till
-                      </option>
+                      <option value="business_till">M-Pesa business till</option>
                       <option value="business_paybill">M-Pesa paybill</option>
                       <option value="bank">Bank statement</option>
-                      <option value="individual_mpesa">
-                        Individual M-Pesa (individual track)
-                      </option>
+                      <option value="individual_mpesa">Individual M-Pesa (individual track)</option>
                     </select>
                   </label>
+                  <label>Shortcode (till/paybill) <input id="shortcode" value="123456" /></label>
                   <label
-                    >Shortcode (till/paybill)
-                    <input id="shortcode" value="123456"
-                  /></label>
-                  <label
-                    >CSV file
-                    <input
-                      id="statement-file"
-                      type="file"
-                      accept=".csv,text/csv"
+                    >CSV file <input id="statement-file" type="file" accept=".csv,text/csv"
                   /></label>
                 </div>
                 <label
@@ -482,8 +426,7 @@
               ></b>
             </button>
             <p class="muted small">
-              Issuing writes every derived metric and the decision to the
-              hash-chained ledger.
+              Issuing writes every derived metric and the decision to the hash-chained ledger.
             </p>
             <div id="lender-output"></div>
           </section>
@@ -496,13 +439,9 @@
     <footer class="site-footer">
       <div class="shell footer-inner">
         <div class="brand small-brand">
-          <span class="brand-glyph"><i></i><i></i><i></i></span> afriscore<b
-            >.</b
-          >
+          <span class="brand-glyph"><i></i><i></i><i></i></span> afriscore<b>.</b>
         </div>
-        <span class="mono"
-          >ORBIT CORE · INGESTION / NORMALIZATION / LEDGER / SCORING</span
-        >
+        <span class="mono">ORBIT CORE · INGESTION / NORMALIZATION / LEDGER / SCORING</span>
         <span class="muted small">workers: <code>npm run worker</code></span>
       </div>
     </footer>

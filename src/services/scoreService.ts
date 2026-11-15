@@ -1,4 +1,4 @@
-import { getLedger } from "./ledgerService";
+import { getLedger } from './ledgerService';
 
 /**
  * Phase 1 trust score: simple and fully explainable, deliberately not
@@ -9,9 +9,9 @@ import { getLedger } from "./ledgerService";
  * Range: 0-100.
  */
 export async function computeTrustScore(businessId: string): Promise<number> {
-  const entries = await getLedger("business", businessId);
+  const entries = await getLedger('business', businessId);
 
-  const checkEntries = entries.filter((e) => e.event_type === "verification.checks_run");
+  const checkEntries = entries.filter((e) => e.event_type === 'verification.checks_run');
   let verificationScore = 0;
   if (checkEntries.length > 0) {
     const latest = JSON.parse(checkEntries[checkEntries.length - 1].event_data);

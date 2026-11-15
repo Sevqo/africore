@@ -1,11 +1,11 @@
-import {serviceSelectionInput,orderedServiceSelection} from '../common/service-selection';
-import {createPaymentRequest} from '../finance/payment-requests';
-import {financialOperation} from '../finance/service';
-import {documentBalance} from '../finance/ledger';
-import {checkoutSummary} from '../finance/checkout';
+import { serviceSelectionInput, orderedServiceSelection } from '../common/service-selection';
+import { createPaymentRequest } from '../finance/payment-requests';
+import { financialOperation } from '../finance/service';
+import { documentBalance } from '../finance/ledger';
+import { checkoutSummary } from '../finance/checkout';
 import { trustEvents } from '../trust/contracts';
-import {reserveWorkspaceCreation} from './workspace-limits';
-import {activate} from '../marketplace/engine';
+import { reserveWorkspaceCreation } from './workspace-limits';
+import { activate } from '../marketplace/engine';
 import { stage2Events } from '../operations/events';
 import { Router } from 'express';
 import { randomUUID, createHmac, timingSafeEqual } from 'node:crypto';
@@ -26,52 +26,177 @@ import {
 } from './payments';
 import { isAllowedWebhookTarget } from '../services/webhookService';
 export const platform = Router();
-async function lockTeam(a:{org:string;actor:string;role:string}){
-  await dbGet('SELECT id FROM ac_organizations WHERE id=?'+(isPostgres?' FOR UPDATE':''),[a.org]);
-  const current=await dbGet('SELECT role FROM ac_memberships WHERE org_id=? AND user_id=?',[a.org,a.actor]);
-  if(!current||!['owner','admin'].includes(current.role)||current.role!==a.role)fail(403,'Your team permissions changed; reload current access');
+async function lockTeam(a: { org: string; actor: string; role: string }) {
+  await dbGet('SELECT id FROM ac_organizations WHERE id=?' + (isPostgres ? ' FOR UPDATE' : ''), [
+    a.org,
+  ]);
+  const current = await dbGet('SELECT role FROM ac_memberships WHERE org_id=? AND user_id=?', [
+    a.org,
+    a.actor,
+  ]);
+  if (!current || !['owner', 'admin'].includes(current.role) || current.role !== a.role)
+    fail(403, 'Your team permissions changed; reload current access');
 }
-platform.get('/organizations/:org/request-logs',route(async(req,res)=>{
-  const a=await access(req,'admin');
-  res.json({data:await dbAll('SELECT id,credential_id,method,route,status_code,created_at FROM ac_api_request_logs WHERE org_id=? AND environment=? ORDER BY created_at DESC,id DESC LIMIT 100',[a.org,a.environment]),coverage:'Most recent 100 scoped credential requests; excludes bodies, keys and query strings.'});
-}));
-platform.get('/organizations/:org/personal-income',route(async(req,res)=>{
-  const a=await access(req);
-  const w=await dbGet("SELECT id FROM ac_workspaces WHERE id=? AND kind='personal'",[a.org]);
-  if(!w) fail(403,'Personal workspace required');
-  res.json({data:await dbAll('SELECT * FROM ac_personal_income WHERE workspace_id=? AND environment=? ORDER BY occurred_on DESC,id DESC LIMIT 100',[a.org,a.environment]),source:'manually_recorded'});
-}));
-platform.post('/organizations/:org/personal-income',route(async(req,res)=>{
-  const a=await access(req,'finance');
-  if(a.api || !await dbGet("SELECT id FROM ac_workspaces WHERE id=? AND kind='personal'",[a.org])) fail(403,'Personal session required');
-  const d=z.object({description:z.string().trim().min(1).max(300),amount_minor:z.number().int().positive().max(100000000000),currency:currencySchema,occurred_on:z.string().date()}).strict().parse(req.body);
-  const id=randomUUID();
-  await dbTransaction(async()=>{
-    await dbRun('INSERT INTO ac_personal_income(id,workspace_id,environment,description,amount_minor,currency,occurred_on,created_at,actor) VALUES (?,?,?,?,?,?,?,?,?)',[id,a.org,a.environment,d.description,d.amount_minor,d.currency,d.occurred_on,now(),a.actor]);
-    await audit(a.org,a.actor,'personal_income.recorded',id);
-  });
-  res.status(201).json({id,...d,source:'manually_recorded',provider_verified:false});
-}));
-platform.get('/organizations/:org/personal-summary',route(async(req,res)=>{
-  const a=await access(req);
-  if(!await dbGet("SELECT id FROM ac_workspaces WHERE id=? AND kind='personal'",[a.org])) fail(403,'Personal workspace required');
-  const q=z.object({currency:currencySchema.default('KES'),from:z.string().date().optional(),to:z.string().date().optional()}).parse(req.query);
-  if(q.from&&q.to&&q.from>q.to) fail(400,'Invalid date range');
-  const within=(date:string)=>(!q.from||date>=q.from)&&(!q.to||date<=q.to);
-  const sum=(values:number[])=>values.reduce((total,n)=>{if(!Number.isSafeInteger(total+n))fail(409,'Recorded totals exceed the supported range');return total+n;},0);
-  const incomes=await dbAll('SELECT * FROM ac_personal_income WHERE workspace_id=? AND environment=? AND currency=?',[a.org,a.environment,q.currency]);
-  const expenseRows=await dbAll("SELECT id,data FROM ac2_objects WHERE org_id=? AND environment=? AND kind='expenses'",[a.org,a.environment]);
-  const expenses=expenseRows.map(r=>JSON.parse(r.data));
-  const superseded=new Set(expenses.map(r=>r.supersedes_id).filter(Boolean));
-  const manual=sum(incomes.filter(r=>within(r.occurred_on)).map(r=>Number(r.amount_minor)));
-  const out=sum(expenseRows.filter(r=>!superseded.has(r.id)).map(r=>JSON.parse(r.data)).filter(r=>r.status!=='archived'&&r.currency===q.currency&&within(r.occurred_on)).map(r=>Number(r.amount_minor)));
-  const activity=new Map<string,{date:string;income:number;expenses:number;net:number}>();
-  for(const [rows,key] of [[incomes,'income'],[expenseRows.filter(r=>!superseded.has(r.id)).map(r=>JSON.parse(r.data)),'expenses']] as const){for(const row of rows){if(row.status==='archived'||row.currency!==q.currency||!within(row.occurred_on))continue;const point=activity.get(row.occurred_on)||{date:row.occurred_on,income:0,expenses:0,net:0};point[key]=sum([point[key],Number(row.amount_minor)]);point.net=point.income-point.expenses;activity.set(row.occurred_on,point);}}
-  const invoices=(await dbAll("SELECT data FROM ac_records WHERE org_id=? AND environment=? AND kind='invoices'",[a.org,a.environment])).map(r=>JSON.parse(r.data));
-  res.json({currency:q.currency,environment:a.environment,from:q.from||null,to:q.to||null,series:[...activity.values()].sort((a,b)=>a.date.localeCompare(b.date)),manual_income_minor:manual,recorded_expenses_minor:out,recorded_net_minor:manual-out,
-    outstanding_invoices_minor:sum(invoices.filter(r=>r.currency===q.currency&&!['draft','voided','paid'].includes(r.status)).map(r=>Math.max(0,r.total_minor-r.paid_minor))),
-    coverage:'Manually recorded income and expenses only; net is not a bank balance or profit. Outstanding invoices cover all open dates. Provider payments remain separate payment records.'});
-}));
+platform.get(
+  '/organizations/:org/request-logs',
+  route(async (req, res) => {
+    const a = await access(req, 'admin');
+    res.json({
+      data: await dbAll(
+        'SELECT id,credential_id,method,route,status_code,created_at FROM ac_api_request_logs WHERE org_id=? AND environment=? ORDER BY created_at DESC,id DESC LIMIT 100',
+        [a.org, a.environment],
+      ),
+      coverage:
+        'Most recent 100 scoped credential requests; excludes bodies, keys and query strings.',
+    });
+  }),
+);
+platform.get(
+  '/organizations/:org/personal-income',
+  route(async (req, res) => {
+    const a = await access(req);
+    const w = await dbGet("SELECT id FROM ac_workspaces WHERE id=? AND kind='personal'", [a.org]);
+    if (!w) fail(403, 'Personal workspace required');
+    res.json({
+      data: await dbAll(
+        'SELECT * FROM ac_personal_income WHERE workspace_id=? AND environment=? ORDER BY occurred_on DESC,id DESC LIMIT 100',
+        [a.org, a.environment],
+      ),
+      source: 'manually_recorded',
+    });
+  }),
+);
+platform.post(
+  '/organizations/:org/personal-income',
+  route(async (req, res) => {
+    const a = await access(req, 'finance');
+    if (
+      a.api ||
+      !(await dbGet("SELECT id FROM ac_workspaces WHERE id=? AND kind='personal'", [a.org]))
+    )
+      fail(403, 'Personal session required');
+    const d = z
+      .object({
+        description: z.string().trim().min(1).max(300),
+        amount_minor: z.number().int().positive().max(100000000000),
+        currency: currencySchema,
+        occurred_on: z.string().date(),
+      })
+      .strict()
+      .parse(req.body);
+    const id = randomUUID();
+    await dbTransaction(async () => {
+      await dbRun(
+        'INSERT INTO ac_personal_income(id,workspace_id,environment,description,amount_minor,currency,occurred_on,created_at,actor) VALUES (?,?,?,?,?,?,?,?,?)',
+        [
+          id,
+          a.org,
+          a.environment,
+          d.description,
+          d.amount_minor,
+          d.currency,
+          d.occurred_on,
+          now(),
+          a.actor,
+        ],
+      );
+      await audit(a.org, a.actor, 'personal_income.recorded', id);
+    });
+    res.status(201).json({ id, ...d, source: 'manually_recorded', provider_verified: false });
+  }),
+);
+platform.get(
+  '/organizations/:org/personal-summary',
+  route(async (req, res) => {
+    const a = await access(req);
+    if (!(await dbGet("SELECT id FROM ac_workspaces WHERE id=? AND kind='personal'", [a.org])))
+      fail(403, 'Personal workspace required');
+    const q = z
+      .object({
+        currency: currencySchema.default('KES'),
+        from: z.string().date().optional(),
+        to: z.string().date().optional(),
+      })
+      .parse(req.query);
+    if (q.from && q.to && q.from > q.to) fail(400, 'Invalid date range');
+    const within = (date: string) => (!q.from || date >= q.from) && (!q.to || date <= q.to);
+    const sum = (values: number[]) =>
+      values.reduce((total, n) => {
+        if (!Number.isSafeInteger(total + n))
+          fail(409, 'Recorded totals exceed the supported range');
+        return total + n;
+      }, 0);
+    const incomes = await dbAll(
+      'SELECT * FROM ac_personal_income WHERE workspace_id=? AND environment=? AND currency=?',
+      [a.org, a.environment, q.currency],
+    );
+    const expenseRows = await dbAll(
+      "SELECT id,data FROM ac2_objects WHERE org_id=? AND environment=? AND kind='expenses'",
+      [a.org, a.environment],
+    );
+    const expenses = expenseRows.map((r) => JSON.parse(r.data));
+    const superseded = new Set(expenses.map((r) => r.supersedes_id).filter(Boolean));
+    const manual = sum(
+      incomes.filter((r) => within(r.occurred_on)).map((r) => Number(r.amount_minor)),
+    );
+    const out = sum(
+      expenseRows
+        .filter((r) => !superseded.has(r.id))
+        .map((r) => JSON.parse(r.data))
+        .filter(
+          (r) => r.status !== 'archived' && r.currency === q.currency && within(r.occurred_on),
+        )
+        .map((r) => Number(r.amount_minor)),
+    );
+    const activity = new Map<
+      string,
+      { date: string; income: number; expenses: number; net: number }
+    >();
+    for (const [rows, key] of [
+      [incomes, 'income'],
+      [expenseRows.filter((r) => !superseded.has(r.id)).map((r) => JSON.parse(r.data)), 'expenses'],
+    ] as const) {
+      for (const row of rows) {
+        if (row.status === 'archived' || row.currency !== q.currency || !within(row.occurred_on))
+          continue;
+        const point = activity.get(row.occurred_on) || {
+          date: row.occurred_on,
+          income: 0,
+          expenses: 0,
+          net: 0,
+        };
+        point[key] = sum([point[key], Number(row.amount_minor)]);
+        point.net = point.income - point.expenses;
+        activity.set(row.occurred_on, point);
+      }
+    }
+    const invoices = (
+      await dbAll(
+        "SELECT data FROM ac_records WHERE org_id=? AND environment=? AND kind='invoices'",
+        [a.org, a.environment],
+      )
+    ).map((r) => JSON.parse(r.data));
+    res.json({
+      currency: q.currency,
+      environment: a.environment,
+      from: q.from || null,
+      to: q.to || null,
+      series: [...activity.values()].sort((a, b) => a.date.localeCompare(b.date)),
+      manual_income_minor: manual,
+      recorded_expenses_minor: out,
+      recorded_net_minor: manual - out,
+      outstanding_invoices_minor: sum(
+        invoices
+          .filter(
+            (r) => r.currency === q.currency && !['draft', 'voided', 'paid'].includes(r.status),
+          )
+          .map((r) => Math.max(0, r.total_minor - r.paid_minor)),
+      ),
+      coverage:
+        'Manually recorded income and expenses only; net is not a bank balance or profit. Outstanding invoices cover all open dates. Provider payments remain separate payment records.',
+    });
+  }),
+);
 const profileSchema = z.object({
   name: z.string().trim().min(2).max(150),
   business_type: z.string().min(2).max(80),
@@ -84,7 +209,7 @@ const profileSchema = z.object({
   registration_number: z.string().max(80).optional(),
   tax_id: z.string().max(80).optional(),
   features: z.array(z.string().max(50)).max(20).default([]),
-  services:serviceSelectionInput,
+  services: serviceSelectionInput,
 });
 platform.get(
   '/organizations',
@@ -106,17 +231,26 @@ platform.post(
       id = randomUUID();
     await dbTransaction(async () => {
       await reserveWorkspaceCreation(u.id);
+      await dbRun('INSERT INTO ac_organizations(id,name,profile,created_at) VALUES (?,?,?,?)', [
+        id,
+        p.name,
+        JSON.stringify(p),
+        now(),
+      ]);
+      await dbRun("INSERT INTO ac_memberships(org_id,user_id,role) VALUES (?,?,'owner')", [
+        id,
+        u.id,
+      ]);
       await dbRun(
-        'INSERT INTO ac_organizations(id,name,profile,created_at) VALUES (?,?,?,?)',
-        [id, p.name, JSON.stringify(p), now()],
+        "INSERT INTO ac_workspaces(id,kind,status,created_at) VALUES (?,'business','active',?)",
+        [id, now()],
       );
-      await dbRun(
-        "INSERT INTO ac_memberships(org_id,user_id,role) VALUES (?,?,'owner')",
-        [id, u.id],
-      );
-      await dbRun("INSERT INTO ac_workspaces(id,kind,status,created_at) VALUES (?,'business','active',?)", [id, now()]);
       await audit(id, u.id, 'organization.created', id);
-      for(const service of orderedServiceSelection(p.services))await activate({org:id,actor:u.id,environment:'sandbox',role:'owner',api:false},service);
+      for (const service of orderedServiceSelection(p.services))
+        await activate(
+          { org: id, actor: u.id, environment: 'sandbox', role: 'owner', api: false },
+          service,
+        );
     });
     res.status(201).json({ id, ...p, verification_status: 'unverified' });
   }),
@@ -169,27 +303,32 @@ platform.post(
         .parse(req.body),
       token = secret(),
       id = randomUUID();
-    await dbTransaction(async()=>{await lockTeam(a);
-    if(await dbGet('SELECT u.id FROM ac_users u JOIN ac_memberships m ON m.user_id=u.id WHERE m.org_id=? AND u.email=?',[a.org,d.email]))fail(409,'This person is already a member');
-    if(await dbGet('SELECT id FROM ac_invitations WHERE org_id=? AND email=? AND accepted_at IS NULL AND expires_at>?',[a.org,d.email,now()]))fail(409,'A pending invitation already exists; renew it instead');
-    await dbRun(
-      'INSERT INTO ac_invitations(id,org_id,email,role,token_hash,expires_at) VALUES (?,?,?,?,?,?)',
-      [
-        id,
-        a.org,
-        d.email,
-        d.role,
-        hash(token),
-        new Date(Date.now() + 604800000).toISOString(),
-      ],
-    );
-    await audit(a.org, a.actor, 'invitation.created', id);
+    await dbTransaction(async () => {
+      await lockTeam(a);
+      if (
+        await dbGet(
+          'SELECT u.id FROM ac_users u JOIN ac_memberships m ON m.user_id=u.id WHERE m.org_id=? AND u.email=?',
+          [a.org, d.email],
+        )
+      )
+        fail(409, 'This person is already a member');
+      if (
+        await dbGet(
+          'SELECT id FROM ac_invitations WHERE org_id=? AND email=? AND accepted_at IS NULL AND expires_at>?',
+          [a.org, d.email, now()],
+        )
+      )
+        fail(409, 'A pending invitation already exists; renew it instead');
+      await dbRun(
+        'INSERT INTO ac_invitations(id,org_id,email,role,token_hash,expires_at) VALUES (?,?,?,?,?,?)',
+        [id, a.org, d.email, d.role, hash(token), new Date(Date.now() + 604800000).toISOString()],
+      );
+      await audit(a.org, a.actor, 'invitation.created', id);
     });
     res.status(201).json({
       id,
       token,
-      message:
-        'Share this invitation token with the intended member. No email was sent.',
+      message: 'Share this invitation token with the intended member. No email was sent.',
     });
   }),
 );
@@ -198,10 +337,11 @@ platform.post(
   route(async (req, res) => {
     const u = await user(req),
       token = z.string().length(64).parse(req.body.token);
-    if(!u.verified)fail(403,'Verify your email before accepting an invitation');
+    if (!u.verified) fail(403, 'Verify your email before accepting an invitation');
     await dbTransaction(async () => {
       const row = await dbGet(
-        'SELECT * FROM ac_invitations WHERE token_hash=? AND email=? AND accepted_at IS NULL AND expires_at>?'+(isPostgres?' FOR UPDATE':''),
+        'SELECT * FROM ac_invitations WHERE token_hash=? AND email=? AND accepted_at IS NULL AND expires_at>?' +
+          (isPostgres ? ' FOR UPDATE' : ''),
         [hash(token), u.email, now()],
       );
       if (!row) fail(400, 'Invalid invitation');
@@ -224,70 +364,115 @@ platform.patch(
   route(async (req, res) => {
     const a = await access(req, 'admin'),
       role = z.enum(roles).parse(req.body.role);
-    if (a.api || a.actor === req.params.member)
-      fail(403, 'Cannot change your own role');
+    if (a.api || a.actor === req.params.member) fail(403, 'Cannot change your own role');
     await dbTransaction(async () => {
       await lockTeam(a);
-    const target = await dbGet(
-      'SELECT role FROM ac_memberships WHERE org_id=? AND user_id=?',
-      [a.org, String(req.params.member)],
-    );
-    if (
-      !target ||
-      ((target.role === 'owner' || role === 'owner') && a.role !== 'owner')
-    )
-      fail(403, 'Owner permission required');
-
-      await dbRun(
-        'UPDATE ac_memberships SET role=? WHERE org_id=? AND user_id=?',
-        [role, a.org, String(req.params.member)],
-      );
-      await audit(
+      const target = await dbGet('SELECT role FROM ac_memberships WHERE org_id=? AND user_id=?', [
         a.org,
-        a.actor,
-        'membership.updated',
         String(req.params.member),
-      );
+      ]);
+      if (!target || ((target.role === 'owner' || role === 'owner') && a.role !== 'owner'))
+        fail(403, 'Owner permission required');
+
+      await dbRun('UPDATE ac_memberships SET role=? WHERE org_id=? AND user_id=?', [
+        role,
+        a.org,
+        String(req.params.member),
+      ]);
+      await audit(a.org, a.actor, 'membership.updated', String(req.params.member));
     });
     res.json({ role });
   }),
 );
-platform.delete('/organizations/:org/team/:member',route(async(req,res)=>{
-  const a=await access(req,'admin');if(a.api)fail(403,'Session required');
-  await dbTransaction(async()=>{
-    await lockTeam(a);
-    const target=await dbGet('SELECT role FROM ac_memberships WHERE org_id=? AND user_id=?',[a.org,String(req.params.member)]);
-    if(!target)fail(404,'Member not found');
-    if(target.role==='owner'){
-      if(a.role!=='owner')fail(403,'Owner permission required');
-      const owners=await dbGet("SELECT COUNT(*) AS n FROM ac_memberships WHERE org_id=? AND role='owner'",[a.org]);
-      if(Number(owners.n)<=1)fail(409,'The last owner cannot be removed');
-    }
-    await dbRun('DELETE FROM ac_memberships WHERE org_id=? AND user_id=?',[a.org,String(req.params.member)]);
-    await audit(a.org,a.actor,'membership.removed',String(req.params.member));
-  });res.json({removed:true});
-}));
-platform.patch('/organizations/:org/invitations/:invitation',route(async(req,res)=>{
-  const a=await access(req,'admin');if(a.api)fail(403,'Session required');const token=secret();
-  await dbTransaction(async()=>{
-    await lockTeam(a);
-    const invitation=await dbGet('SELECT * FROM ac_invitations WHERE id=? AND org_id=?'+(isPostgres?' FOR UPDATE':''),[String(req.params.invitation),a.org]);
-    if(!invitation||invitation.accepted_at)fail(409,'Only an unaccepted invitation can be renewed');
-    if(await dbGet("SELECT id FROM ac_audit WHERE org_id=? AND resource_id=? AND action='invitation.revoked'",[a.org,invitation.id]))fail(409,'Create a new invitation after revocation');
-    await dbRun('UPDATE ac_invitations SET token_hash=?,expires_at=? WHERE id=? AND org_id=?',[hash(token),new Date(Date.now()+604800000).toISOString(),invitation.id,a.org]);
-    await audit(a.org,a.actor,'invitation.renewed',invitation.id);
-  });res.json({token,message:'Invitation renewed. Share the new token with the intended recipient; no email was sent.'});
-}));
-platform.delete('/organizations/:org/invitations/:invitation',route(async(req,res)=>{
-  const a=await access(req,'admin');if(a.api)fail(403,'Session required');
-  await dbTransaction(async()=>{
-    await lockTeam(a);
-    const invitation=await dbGet('SELECT id,accepted_at FROM ac_invitations WHERE id=? AND org_id=?'+(isPostgres?' FOR UPDATE':''),[String(req.params.invitation),a.org]);
-    if(!invitation||invitation.accepted_at)fail(409,'Only an unaccepted invitation can be revoked');
-    await dbRun('UPDATE ac_invitations SET expires_at=? WHERE id=? AND org_id=?',[now(),invitation.id,a.org]);
-    await audit(a.org,a.actor,'invitation.revoked',invitation.id);
-  });res.json({revoked:true});
-}));
+platform.delete(
+  '/organizations/:org/team/:member',
+  route(async (req, res) => {
+    const a = await access(req, 'admin');
+    if (a.api) fail(403, 'Session required');
+    await dbTransaction(async () => {
+      await lockTeam(a);
+      const target = await dbGet('SELECT role FROM ac_memberships WHERE org_id=? AND user_id=?', [
+        a.org,
+        String(req.params.member),
+      ]);
+      if (!target) fail(404, 'Member not found');
+      if (target.role === 'owner') {
+        if (a.role !== 'owner') fail(403, 'Owner permission required');
+        const owners = await dbGet(
+          "SELECT COUNT(*) AS n FROM ac_memberships WHERE org_id=? AND role='owner'",
+          [a.org],
+        );
+        if (Number(owners.n) <= 1) fail(409, 'The last owner cannot be removed');
+      }
+      await dbRun('DELETE FROM ac_memberships WHERE org_id=? AND user_id=?', [
+        a.org,
+        String(req.params.member),
+      ]);
+      await audit(a.org, a.actor, 'membership.removed', String(req.params.member));
+    });
+    res.json({ removed: true });
+  }),
+);
+platform.patch(
+  '/organizations/:org/invitations/:invitation',
+  route(async (req, res) => {
+    const a = await access(req, 'admin');
+    if (a.api) fail(403, 'Session required');
+    const token = secret();
+    await dbTransaction(async () => {
+      await lockTeam(a);
+      const invitation = await dbGet(
+        'SELECT * FROM ac_invitations WHERE id=? AND org_id=?' + (isPostgres ? ' FOR UPDATE' : ''),
+        [String(req.params.invitation), a.org],
+      );
+      if (!invitation || invitation.accepted_at)
+        fail(409, 'Only an unaccepted invitation can be renewed');
+      if (
+        await dbGet(
+          "SELECT id FROM ac_audit WHERE org_id=? AND resource_id=? AND action='invitation.revoked'",
+          [a.org, invitation.id],
+        )
+      )
+        fail(409, 'Create a new invitation after revocation');
+      await dbRun('UPDATE ac_invitations SET token_hash=?,expires_at=? WHERE id=? AND org_id=?', [
+        hash(token),
+        new Date(Date.now() + 604800000).toISOString(),
+        invitation.id,
+        a.org,
+      ]);
+      await audit(a.org, a.actor, 'invitation.renewed', invitation.id);
+    });
+    res.json({
+      token,
+      message:
+        'Invitation renewed. Share the new token with the intended recipient; no email was sent.',
+    });
+  }),
+);
+platform.delete(
+  '/organizations/:org/invitations/:invitation',
+  route(async (req, res) => {
+    const a = await access(req, 'admin');
+    if (a.api) fail(403, 'Session required');
+    await dbTransaction(async () => {
+      await lockTeam(a);
+      const invitation = await dbGet(
+        'SELECT id,accepted_at FROM ac_invitations WHERE id=? AND org_id=?' +
+          (isPostgres ? ' FOR UPDATE' : ''),
+        [String(req.params.invitation), a.org],
+      );
+      if (!invitation || invitation.accepted_at)
+        fail(409, 'Only an unaccepted invitation can be revoked');
+      await dbRun('UPDATE ac_invitations SET expires_at=? WHERE id=? AND org_id=?', [
+        now(),
+        invitation.id,
+        a.org,
+      ]);
+      await audit(a.org, a.actor, 'invitation.revoked', invitation.id);
+    });
+    res.json({ revoked: true });
+  }),
+);
 const kinds = [
   'customers',
   'orders',
@@ -302,35 +487,53 @@ platform.get(
   route(async (req, res) => {
     const a = await access(req),
       kind = kindSchema.parse(req.params.kind),
-      limit = z.coerce
-        .number()
-        .int()
-        .min(1)
-        .max(100)
-        .default(50)
-        .parse(req.query.limit),
-      offset = z.coerce
-        .number()
-        .int()
-        .min(0)
-        .default(0)
-        .parse(req.query.offset);
+      limit = z.coerce.number().int().min(1).max(100).default(50).parse(req.query.limit),
+      offset = z.coerce.number().int().min(0).default(0).parse(req.query.offset);
     const q = z.string().trim().max(200).optional().parse(req.query.q),
       status = z.string().max(100).optional().parse(req.query.status);
     const predicates = ['org_id=?', 'environment=?', 'kind=?'];
     const params: (string | number)[] = [a.org, a.environment, kind];
     if (q) {
       // Literal substring search: SQL wildcard characters in user text stay literal.
-      const fields:Record<string,string[]>={customers:['name','email','phone'],orders:['number','status','customer_id'],invoices:['number','status','customer_id'],transactions:['reference','description','provider','status'],applications:['name'],integrations:['name','provider','status']};
-      const expressions=['id','created_at',...(fields[kind]||[]).map(field=>isPostgres?`COALESCE(data::jsonb ->> '${field}','')`:`COALESCE(json_extract(data, '$.${field}'),'')`)];
-      predicates.push('('+expressions.map(expression=>`LOWER(${expression}) LIKE ? ESCAPE '\\'`).join(' OR ')+')');
-      params.push(...expressions.map(()=>'%'+q.toLowerCase().replace(/[\\%_]/g,'\\$&')+'%'));
+      const fields: Record<string, string[]> = {
+        customers: ['name', 'email', 'phone'],
+        orders: ['number', 'status', 'customer_id'],
+        invoices: ['number', 'status', 'customer_id'],
+        transactions: ['reference', 'description', 'provider', 'status'],
+        applications: ['name'],
+        integrations: ['name', 'provider', 'status'],
+      };
+      const expressions = [
+        'id',
+        'created_at',
+        ...(fields[kind] || []).map((field) =>
+          isPostgres
+            ? `COALESCE(data::jsonb ->> '${field}','')`
+            : `COALESCE(json_extract(data, '$.${field}'),'')`,
+        ),
+      ];
+      predicates.push(
+        '(' +
+          expressions.map((expression) => `LOWER(${expression}) LIKE ? ESCAPE '\\'`).join(' OR ') +
+          ')',
+      );
+      params.push(...expressions.map(() => '%' + q.toLowerCase().replace(/[\\%_]/g, '\\$&') + '%'));
     }
-    if (kind==='invoices'&&['outstanding','overdue'].includes(status||'')) {
-      const statusExpr=isPostgres?"data::jsonb ->> 'status'":"json_extract(data,'$.status')";
-      predicates.push(statusExpr+" IN ('issued','partially_paid')");
-      if(status==='overdue'){predicates.push((isPostgres?"data::jsonb ->> 'due_date'":"json_extract(data,'$.due_date')")+'<?');params.push(now().slice(0,10));}
-    } else if(status){predicates.push(isPostgres?"(data::jsonb ->> 'status')=?":"json_extract(data,'$.status')=?");params.push(status);}
+    if (kind === 'invoices' && ['outstanding', 'overdue'].includes(status || '')) {
+      const statusExpr = isPostgres ? "data::jsonb ->> 'status'" : "json_extract(data,'$.status')";
+      predicates.push(statusExpr + " IN ('issued','partially_paid')");
+      if (status === 'overdue') {
+        predicates.push(
+          (isPostgres ? "data::jsonb ->> 'due_date'" : "json_extract(data,'$.due_date')") + '<?',
+        );
+        params.push(now().slice(0, 10));
+      }
+    } else if (status) {
+      predicates.push(
+        isPostgres ? "(data::jsonb ->> 'status')=?" : "json_extract(data,'$.status')=?",
+      );
+      params.push(status);
+    }
     const rows = await dbAll(
       'SELECT * FROM ac_records WHERE ' +
         predicates.join(' AND ') +
@@ -350,11 +553,7 @@ platform.get(
   '/organizations/:org/records/:kind/:id',
   route(async (req, res) =>
     res.json(
-      await record(
-        await access(req),
-        String(req.params.id),
-        kindSchema.parse(req.params.kind),
-      ),
+      await record(await access(req), String(req.params.id), kindSchema.parse(req.params.kind)),
     ),
   ),
 );
@@ -379,18 +578,17 @@ platform.post(
             type: z.enum(['individual', 'business']).default('individual'),
             email: z.string().email().or(z.literal('')).default(''),
             phone: z.string().max(50).default(''),
-            address:z.string().max(1000).default(''),
+            address: z.string().max(1000).default(''),
             notes: z.string().max(3000).default(''),
           })
           .parse(req.body);
       else if (kind === 'orders' || kind === 'invoices') {
         const parsed = documentSchema.parse(req.body);
-        const customer=await record(a, parsed.customer_id, 'customers');if(customer.status==='archived')fail(409,'Select an active customer');
+        const customer = await record(a, parsed.customer_id, 'customers');
+        if (customer.status === 'archived') fail(409, 'Select an active customer');
         if (parsed.order_id) {
           if (kind !== 'invoices') fail(400, 'Only invoices may link orders');
-          await dbRun('UPDATE ac_organizations SET name=name WHERE id=?', [
-            a.org,
-          ]);
+          await dbRun('UPDATE ac_organizations SET name=name WHERE id=?', [a.org]);
           const linked = await dbAll(
             "SELECT data FROM ac_records WHERE org_id=? AND environment=? AND kind='invoices'",
             [a.org, a.environment],
@@ -407,9 +605,7 @@ platform.post(
           const { all: stage2Objects } = await import('../operations/store');
           if (
             (await stage2Objects(a, 'protected_sales')).some(
-              (s) =>
-                s.order_id === order.id &&
-                !['cancelled', 'expired'].includes(s.state),
+              (s) => s.order_id === order.id && !['cancelled', 'expired'].includes(s.state),
             )
           )
             fail(409, 'Protected orders use the protected purchase workflow');
@@ -421,24 +617,28 @@ platform.post(
             fail(409, 'Paid or cancelled order cannot be invoiced');
           if (order.total_minor !== totals(parsed).total_minor)
             fail(400, 'Linked invoice must equal the order total');
-          if (
-            order.customer_id !== parsed.customer_id ||
-            order.currency !== parsed.currency
-          )
+          if (order.customer_id !== parsed.customer_id || order.currency !== parsed.currency)
             fail(400, 'Order and invoice must share customer and currency');
           await dbRun(
             "UPDATE ac_requests SET status='cancelled' WHERE document_id=? AND org_id=? AND environment=? AND status NOT IN ('paid','cancelled')",
             [parsed.order_id, a.org, a.environment],
           );
         }
-        if(parsed.number){await dbRun('UPDATE ac_organizations SET name=name WHERE id=?',[a.org]);const existing=await dbAll('SELECT data FROM ac_records WHERE org_id=? AND environment=? AND kind=?',[a.org,a.environment,kind]);if(existing.some(r=>JSON.parse(r.data).reference===parsed.number))fail(409,'Document number already exists');}
+        if (parsed.number) {
+          await dbRun('UPDATE ac_organizations SET name=name WHERE id=?', [a.org]);
+          const existing = await dbAll(
+            'SELECT data FROM ac_records WHERE org_id=? AND environment=? AND kind=?',
+            [a.org, a.environment, kind],
+          );
+          if (existing.some((r) => JSON.parse(r.data).reference === parsed.number))
+            fail(409, 'Document number already exists');
+        }
         d = {
           ...parsed,
           ...totals(parsed),
-          reference:parsed.number ||
-            (kind === 'orders' ? 'ORD' : 'INV') +
-            '-' +
-            randomUUID().slice(0, 12).toUpperCase(),
+          reference:
+            parsed.number ||
+            (kind === 'orders' ? 'ORD' : 'INV') + '-' + randomUUID().slice(0, 12).toUpperCase(),
           status: 'draft',
           paid_minor: 0,
           ...(kind === 'orders'
@@ -453,16 +653,22 @@ platform.post(
           })
           .parse(req.body);
       else if (kind === 'integrations') {
-        d = z
-          .object({ provider: z.enum(['csv', 'sandbox', 'africore_pay']) })
-          .parse(req.body);
+        d = z.object({ provider: z.enum(['csv', 'sandbox', 'africore_pay']) }).parse(req.body);
         d = { ...d, status: 'available', authorization_state: 'sandbox_only' };
       } else fail(405, 'Use the transaction import endpoint');
       const saved = await save(a, kind, d);
       if (kind === 'invoices') await enqueue(a, 'invoice.created', saved);
       return saved;
     };
-    const created=req.headers['idempotency-key']?await financialOperation(a,'records.create:'+kind,String(req.headers['idempotency-key']),req.body,createRecord):await dbTransaction(createRecord);
+    const created = req.headers['idempotency-key']
+      ? await financialOperation(
+          a,
+          'records.create:' + kind,
+          String(req.headers['idempotency-key']),
+          req.body,
+          createRecord,
+        )
+      : await dbTransaction(createRecord);
     res.status(201).json(created);
   }),
 );
@@ -485,31 +691,26 @@ platform.patch(
         const { all: stage2Objects } = await import('../operations/store');
         if (
           (await stage2Objects(a, 'protected_sales')).some(
-            (s) =>
-              s.order_id === d.id &&
-              !['cancelled', 'expired'].includes(s.state),
+            (s) => s.order_id === d.id && !['cancelled', 'expired'].includes(s.state),
           )
         )
-          fail(
-            409,
-            'Use the protected purchase and shipment workflows for this order',
-          );
+          fail(409, 'Use the protected purchase and shipment workflows for this order');
       }
-      await dbRun(
-        'UPDATE ac_records SET updated_at=updated_at WHERE id=? AND org_id=?',
-        [d.id, a.org],
-      );
+      await dbRun('UPDATE ac_records SET updated_at=updated_at WHERE id=? AND org_id=?', [
+        d.id,
+        a.org,
+      ]);
       let result: any;
       if (kind === 'customers')
         result = {
           ...d,
           ...z
             .object({
-              status:z.enum(['active','archived']).optional(),
+              status: z.enum(['active', 'archived']).optional(),
               name: z.string().trim().min(1).max(200).optional(),
               email: z.string().email().or(z.literal('')).optional(),
               phone: z.string().max(50).optional(),
-              address:z.string().max(1000).optional(),
+              address: z.string().max(1000).optional(),
               notes: z.string().max(3000).optional(),
             })
             .strict()
@@ -517,20 +718,12 @@ platform.patch(
         };
       else if (kind === 'orders' && req.body.fulfillment_status) {
         const { all: stage2Objects } = await import('../operations/store');
-        if (
-          (await stage2Objects(a, 'shipments')).some((s) => s.order_id === d.id)
-        )
-          fail(
-            409,
-            'Use the shipment workflow to preserve evidence provenance',
-          );
+        if ((await stage2Objects(a, 'shipments')).some((s) => s.order_id === d.id))
+          fail(409, 'Use the shipment workflow to preserve evidence provenance');
         const status = z
           .enum(['processing', 'fulfilled', 'cancelled'])
           .parse(req.body.fulfillment_status);
-        if (
-          d.fulfillment_status === 'cancelled' ||
-          d.fulfillment_status === 'fulfilled'
-        )
+        if (d.fulfillment_status === 'cancelled' || d.fulfillment_status === 'fulfilled')
           fail(409, 'Fulfillment is final');
         result = { ...d, fulfillment_status: status };
         if (status === 'cancelled')
@@ -543,10 +736,7 @@ platform.patch(
           fail(409, 'Only unlinked draft documents can be edited');
         const parsed = documentSchema.parse({ ...d, ...req.body });
         if (parsed.order_id)
-          fail(
-            400,
-            'Create linked invoices with the explicit creation workflow',
-          );
+          fail(400, 'Create linked invoices with the explicit creation workflow');
         await record(a, parsed.customer_id, 'customers');
         result = { ...d, ...parsed, ...totals(parsed) };
       } else if (kind === 'invoices' || kind === 'orders') {
@@ -563,12 +753,10 @@ platform.patch(
           fail(409, 'Invalid document transition');
         if (
           (kind === 'invoices' && !['issued', 'voided'].includes(status)) ||
-          (kind === 'orders' &&
-            !['awaiting_payment', 'cancelled'].includes(status))
+          (kind === 'orders' && !['awaiting_payment', 'cancelled'].includes(status))
         )
           fail(400, 'Invalid state');
-        if (d.paid_minor > 0)
-          fail(409, 'Paid documents require reversal review');
+        if (d.paid_minor > 0) fail(409, 'Paid documents require reversal review');
         result = { ...d, status };
         if (['voided', 'cancelled'].includes(status))
           await dbRun(
@@ -576,31 +764,55 @@ platform.patch(
             [d.id, a.org, a.environment],
           );
       } else fail(405, 'Unsupported update');
-      if(kind==='invoices'&&d.status==='draft'&&result.status==='issued'){const customer=await record(a,result.customer_id,'customers');result={...result,customer_snapshot:{id:customer.id,name:customer.name,email:customer.email||'',phone:customer.phone||'',address:customer.address||''}};}
+      if (kind === 'invoices' && d.status === 'draft' && result.status === 'issued') {
+        const customer = await record(a, result.customer_id, 'customers');
+        result = {
+          ...result,
+          customer_snapshot: {
+            id: customer.id,
+            name: customer.name,
+            email: customer.email || '',
+            phone: customer.phone || '',
+            address: customer.address || '',
+          },
+        };
+      }
       await update(a, d.id, result);
-      if(result.status&&result.status!==d.status)await enqueue(a,(kind==='invoices'?'invoice.':'order.')+(result.status==='awaiting_payment'?'confirmed':result.status),{id:d.id});
+      if (result.status && result.status !== d.status)
+        await enqueue(
+          a,
+          (kind === 'invoices' ? 'invoice.' : 'order.') +
+            (result.status === 'awaiting_payment' ? 'confirmed' : result.status),
+          { id: d.id },
+        );
       await audit(a.org, a.actor, kind + '.updated', d.id);
       return result;
     });
     res.json(updated);
   }),
 );
-platform.post('/organizations/:org/payment-requests',route(async(req,res)=>{const response=await createPaymentRequest(await access(req,'finance'),req.body,String(req.headers['idempotency-key']||''));res.status(response.status).json(response.data);}));
+platform.post(
+  '/organizations/:org/payment-requests',
+  route(async (req, res) => {
+    const response = await createPaymentRequest(
+      await access(req, 'finance'),
+      req.body,
+      String(req.headers['idempotency-key'] || ''),
+    );
+    res.status(response.status).json(response.data);
+  }),
+);
 platform.get(
   '/checkout/:token',
   route(async (req, res) => {
     const token = z.string().length(64).parse(req.params.token),
-      r = await dbGet('SELECT * FROM ac_requests WHERE checkout_hash=?', [
-        hash(token),
-      ]);
+      r = await dbGet('SELECT * FROM ac_requests WHERE checkout_hash=?', [hash(token)]);
     if (!r) fail(404, 'Checkout not found');
-    const org = await dbGet('SELECT name FROM ac_organizations WHERE id=?', [
+    const org = await dbGet('SELECT name FROM ac_organizations WHERE id=?', [r.org_id]);
+    const doc = await dbGet('SELECT data FROM ac_records WHERE id=? AND org_id=?', [
+      r.document_id,
       r.org_id,
     ]);
-    const doc = await dbGet(
-      'SELECT data FROM ac_records WHERE id=? AND org_id=?',
-      [r.document_id, r.org_id],
-    );
     const d = JSON.parse(doc.data);
     res.json({
       id: r.id,
@@ -610,7 +822,7 @@ platform.get(
       amount_minor: Number(r.amount_minor),
       currency: r.currency,
       environment: r.environment,
-      ...await checkoutSummary(r),
+      ...(await checkoutSummary(r)),
       methods: r.environment === 'sandbox' ? ['sandbox'] : [],
     });
   }),
@@ -618,40 +830,40 @@ platform.get(
 platform.post(
   '/checkout/:token/pay',
   route(async (req, res) => {
-   const outcome=await dbTransaction(async()=>{
-    const token = z.string().length(64).parse(req.params.token),
-      scenario = z
-        .enum([
-          'success',
-          'failed',
-          'delayed',
-          'partial',
-          'duplicate',
-          'reversed',
-        ])
-        .parse(req.body.scenario);
-    const scope=await dbGet('SELECT org_id FROM ac_requests WHERE checkout_hash=?',[hash(token)]);
-    if(!scope)fail(404,'Checkout not found');
-    // Serialize the current balance/hold check and local simulation with cash
-    // returns and competing payments. No external provider is called here.
-    await dbRun('UPDATE ac_organizations SET name=name WHERE id=?',[scope.org_id]);
-    const r = await dbGet('SELECT * FROM ac_requests WHERE checkout_hash=?', [
-      hash(token),
-    ]);
-    if (!r) fail(404, 'Checkout not found');
-    if (r.environment !== 'sandbox') fail(503, 'Production checkout disabled');
-    if (r.expires_at < now() || ['cancelled', 'expired'].includes(r.status))
-      fail(410, 'Payment request closed');
-    if (scenario === 'reversed' && r.status !== 'paid')
-      fail(409, 'No completed payment to reverse');
-    // Another request can settle the same invoice. An older open link must not
-    // initiate another collection, while the original receipt replay stays safe.
-    if(scenario!=='reversed'&&['pending','failed'].includes(r.status)&&!(await checkoutSummary(r)).can_pay)
-      fail(409,'This document is already settled or no longer accepts payment. Ask the merchant to review its current balance.');
-    const result = await sandboxProvider.initiate(r, scenario);
-    return processProviderResult(r.id, result);
-   });
-   res.json(outcome);
+    const outcome = await dbTransaction(async () => {
+      const token = z.string().length(64).parse(req.params.token),
+        scenario = z
+          .enum(['success', 'failed', 'delayed', 'partial', 'duplicate', 'reversed'])
+          .parse(req.body.scenario);
+      const scope = await dbGet('SELECT org_id FROM ac_requests WHERE checkout_hash=?', [
+        hash(token),
+      ]);
+      if (!scope) fail(404, 'Checkout not found');
+      // Serialize the current balance/hold check and local simulation with cash
+      // returns and competing payments. No external provider is called here.
+      await dbRun('UPDATE ac_organizations SET name=name WHERE id=?', [scope.org_id]);
+      const r = await dbGet('SELECT * FROM ac_requests WHERE checkout_hash=?', [hash(token)]);
+      if (!r) fail(404, 'Checkout not found');
+      if (r.environment !== 'sandbox') fail(503, 'Production checkout disabled');
+      if (r.expires_at < now() || ['cancelled', 'expired'].includes(r.status))
+        fail(410, 'Payment request closed');
+      if (scenario === 'reversed' && r.status !== 'paid')
+        fail(409, 'No completed payment to reverse');
+      // Another request can settle the same invoice. An older open link must not
+      // initiate another collection, while the original receipt replay stays safe.
+      if (
+        scenario !== 'reversed' &&
+        ['pending', 'failed'].includes(r.status) &&
+        !(await checkoutSummary(r)).can_pay
+      )
+        fail(
+          409,
+          'This document is already settled or no longer accepts payment. Ask the merchant to review its current balance.',
+        );
+      const result = await sandboxProvider.initiate(r, scenario);
+      return processProviderResult(r.id, result);
+    });
+    res.json(outcome);
   }),
 );
 platform.post(
@@ -660,8 +872,7 @@ platform.post(
     if (req.params.provider !== 'sandbox')
       fail(503, 'No verified live callback adapter is enabled');
     const key = process.env.AFRICORE_SANDBOX_CALLBACK_SECRET;
-    if (!key || key.length < 32)
-      fail(503, 'Sandbox callback signing key is not configured');
+    if (!key || key.length < 32) fail(503, 'Sandbox callback signing key is not configured');
     const timestamp = z
       .string()
       .regex(/^\d{10}$/)
@@ -681,15 +892,14 @@ platform.post(
       .object({
         request_id: z.string().uuid(),
         reference: z.string().min(1).max(200),
-        status: z.enum(['pending', 'succeeded', 'failed', 'reversed','refunded']),
-        occurred_at:z.string().datetime().optional(),related_reference:z.string().min(1).max(200).optional(),
+        status: z.enum(['pending', 'succeeded', 'failed', 'reversed', 'refunded']),
+        occurred_at: z.string().datetime().optional(),
+        related_reference: z.string().min(1).max(200).optional(),
         amount_minor: z.number().int().positive().max(100000000000),
         currency: currencySchema,
       })
       .parse(req.body);
-    const r = await dbGet('SELECT environment FROM ac_requests WHERE id=?', [
-      d.request_id,
-    ]);
+    const r = await dbGet('SELECT environment FROM ac_requests WHERE id=?', [d.request_id]);
     if (!r || r.environment !== 'sandbox') fail(403, 'Sandbox requests only');
     res.json(await processProviderResult(d.request_id, d));
   }),
@@ -736,16 +946,10 @@ platform.post(
       [String(req.params.id), a.org, a.environment],
     );
     if (!changed.changes) fail(404, 'Exception not found');
-    await audit(
-      a.org,
-      a.actor,
-      'reconciliation.reviewed: ' + note,
-      String(req.params.id),
-    );
+    await audit(a.org, a.actor, 'reconciliation.reviewed: ' + note, String(req.params.id));
     res.json({
       status: 'reviewed',
-      message:
-        'Review recorded; original provider event and allocation preserved.',
+      message: 'Review recorded; original provider event and allocation preserved.',
     });
   }),
 );
@@ -772,9 +976,7 @@ platform.post(
     await dbTransaction(async () => {
       await dbRun('UPDATE ac_organizations SET name=name WHERE id=?', [a.org]);
       for (const r of rows) {
-        const id = hash(
-          [a.org, a.environment, r.source, r.external_id].join(':'),
-        );
+        const id = hash([a.org, a.environment, r.source, r.external_id].join(':'));
         if (await dbGet('SELECT id FROM ac_records WHERE id=?', [id])) continue;
         await save(
           a,
@@ -805,7 +1007,7 @@ platform.get(
     const from = z.string().date().optional().parse(req.query.from),
       to = z.string().date().optional().parse(req.query.to),
       currency = currencySchema.default('KES').parse(req.query.currency);
-    if(from&&to&&from>to)fail(400,'Invalid date range');
+    if (from && to && from > to) fail(400, 'Invalid date range');
     const customer = z.string().uuid().optional().parse(req.query.customer_id);
     const invoices = rows
       .filter((r) => r.kind === 'invoices')
@@ -821,16 +1023,18 @@ platform.get(
       "SELECT e.*,COALESCE(d.provider_reference,e.provider_ref) AS provider_ref FROM ac_financial_events e LEFT JOIN ac_payment_event_details d ON d.event_id=e.id WHERE e.org_id=? AND e.environment=? AND e.status='succeeded' AND e.currency=?",
       [a.org, a.environment, currency],
     );
-    const {financialSnapshot}=await import('../operations/intelligence');
-    const snapshot=await financialSnapshot(a,{currency,range:'all',...(from?{from}:{}),...(to?{to}:{})});
+    const { financialSnapshot } = await import('../operations/intelligence');
+    const snapshot = await financialSnapshot(a, {
+      currency,
+      range: 'all',
+      ...(from ? { from } : {}),
+      ...(to ? { to } : {}),
+    });
     const selectedEvents = events.filter(
       (e) =>
-        (!from || e.created_at.slice(0, 10) >= from) &&
-        (!to || e.created_at.slice(0, 10) <= to),
+        (!from || e.created_at.slice(0, 10) >= from) && (!to || e.created_at.slice(0, 10) <= to),
     );
-    const open = invoices.filter(
-      (i) => !['draft', 'voided'].includes(i.status),
-    );
+    const open = invoices.filter((i) => !['draft', 'voided'].includes(i.status));
     const aging = {
       current: 0,
       days_1_30: 0,
@@ -850,7 +1054,7 @@ platform.get(
                 : days <= 90
                   ? 'days_61_90'
                   : 'days_over_90';
-      aging[key] += Math.max(0,i.total_minor - i.paid_minor-(i.credited_minor||0));
+      aging[key] += Math.max(0, i.total_minor - i.paid_minor - (i.credited_minor || 0));
     }
     const imported = rows
       .filter((r) => r.kind === 'transactions')
@@ -872,12 +1076,15 @@ platform.get(
       recorded_outflows_minor: snapshot.totals.recorded_outflows_minor,
       net_recorded_movement_minor: snapshot.totals.net_movement_minor,
       outstanding_minor: open.reduce(
-        (s, i) => s + Math.max(0,i.total_minor - i.paid_minor-(i.credited_minor||0)),
+        (s, i) => s + Math.max(0, i.total_minor - i.paid_minor - (i.credited_minor || 0)),
         0,
       ),
       overdue_minor: open
         .filter((i) => i.due_date < now().slice(0, 10))
-        .reduce((s, i) => s + Math.max(0,i.total_minor - i.paid_minor-(i.credited_minor||0)), 0),
+        .reduce(
+          (s, i) => s + Math.max(0, i.total_minor - i.paid_minor - (i.credited_minor || 0)),
+          0,
+        ),
       aging,
       invoices,
       events: selectedEvents,
@@ -933,15 +1140,7 @@ platform.post(
       id = randomUUID();
     await dbRun(
       'INSERT INTO ac_credentials(id,org_id,application_id,environment,key_hash,scopes,created_at) VALUES (?,?,?,?,?,?,?)',
-      [
-        id,
-        a.org,
-        d.application_id,
-        a.environment,
-        hash(value),
-        JSON.stringify(d.scopes),
-        now(),
-      ],
+      [id, a.org, d.application_id, a.environment, hash(value), JSON.stringify(d.scopes), now()],
     );
     await audit(a.org, a.actor, 'credential.created', id);
     res.status(201).json({ id, key: value, display_once: true });
@@ -993,8 +1192,7 @@ platform.post(
           subscriptions: z.array(z.enum(subscriptions)).min(1),
         })
         .parse(req.body);
-    if (!isAllowedWebhookTarget(d.url))
-      fail(400, 'HTTPS public webhook target required');
+    if (!isAllowedWebhookTarget(d.url)) fail(400, 'HTTPS public webhook target required');
     const value = secret(),
       id = randomUUID();
     await dbRun(
@@ -1004,7 +1202,7 @@ platform.post(
         a.org,
         a.environment,
         d.url,
-        seal(value,JSON.stringify(['endpoint',a.org,a.environment,id])),
+        seal(value, JSON.stringify(['endpoint', a.org, a.environment, id])),
         JSON.stringify(d.subscriptions),
         now(),
       ],
@@ -1043,7 +1241,12 @@ platform.post(
       value = secret();
     const change = await dbRun(
       'UPDATE ac_endpoints SET secret=? WHERE id=? AND org_id=? AND environment=?',
-      [seal(value,JSON.stringify(['endpoint',a.org,a.environment,String(req.params.id)])), String(req.params.id), a.org, a.environment],
+      [
+        seal(value, JSON.stringify(['endpoint', a.org, a.environment, String(req.params.id)])),
+        String(req.params.id),
+        a.org,
+        a.environment,
+      ],
     );
     if (!change.changes) fail(404, 'Endpoint not found');
     await audit(a.org, a.actor, 'webhook.rotated', String(req.params.id));
@@ -1082,8 +1285,7 @@ platform.get(
     const allowed = (process.env.AFRICORE_ENGINEERING_EMAILS || '')
       .split(',')
       .map((e) => e.trim().toLowerCase());
-    if (!u.verified || !allowed.includes(u.email))
-      fail(403, 'Engineering access required');
+    if (!u.verified || !allowed.includes(u.email)) fail(403, 'Engineering access required');
     res.json({
       trailhead: {
         documents: [

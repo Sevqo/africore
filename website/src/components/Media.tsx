@@ -1,11 +1,5 @@
 import { Icon } from './Icon';
-import {
-  useId,
-  useRef,
-  useState,
-  type ReactNode,
-  type CSSProperties,
-} from 'react';
+import { useId, useRef, useState, type ReactNode, type CSSProperties } from 'react';
 export type Media =
   | {
       kind: 'image' | 'svg' | 'screenshot';
@@ -58,9 +52,7 @@ export function MediaBlock({ media }: { media: Media }) {
         </video>
       ) : (
         <picture>
-          {media.mobileSrc && (
-            <source media="(max-width: 640px)" srcSet={media.mobileSrc} />
-          )}
+          {media.mobileSrc && <source media="(max-width: 640px)" srcSet={media.mobileSrc} />}
           <img
             src={media.src}
             alt={media.alt}
@@ -98,9 +90,7 @@ export function FeatureSection({
   children?: ReactNode;
 }) {
   return (
-    <section
-      className={`feature ${reverse ? 'reverse' : ''} ${dark ? 'dark' : ''}`}
-    >
+    <section className={`feature ${reverse ? 'reverse' : ''} ${dark ? 'dark' : ''}`}>
       <div className="section-copy">
         <span className="eyebrow">{eyebrow}</span>
         <h2>{title}</h2>
@@ -150,13 +140,10 @@ export function MediaCarousel({ children }: { children: ReactNode }) {
     const el = ref.current;
     if (!el) return;
     const card = el.querySelector('article');
-    const step =
-      (card?.getBoundingClientRect().width || el.clientWidth * 0.85) + 24;
+    const step = (card?.getBoundingClientRect().width || el.clientWidth * 0.85) + 24;
     el.scrollBy({
       left: direction * step,
-      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
-        ? 'instant'
-        : 'smooth',
+      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
     });
   }
   return (

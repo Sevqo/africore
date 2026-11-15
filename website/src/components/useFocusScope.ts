@@ -19,11 +19,7 @@ export function useFocusScope<T extends HTMLElement>(
           'a[href],button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),summary,[tabindex="0"]',
         ),
       ).filter((el) => el.getClientRects().length > 0);
-    (
-      root.querySelector<HTMLElement>('[data-autofocus]') ||
-      focusables()[0] ||
-      root
-    ).focus();
+    (root.querySelector<HTMLElement>('[data-autofocus]') || focusables()[0] || root).focus();
     function key(e: KeyboardEvent) {
       if (e.key === 'Escape') {
         e.preventDefault();

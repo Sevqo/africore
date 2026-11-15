@@ -1,8 +1,8 @@
-import { randomUUID } from "node:crypto";
-import { dbGet, dbAll, dbRun } from "../db";
-import { appendEvent, getLedger, verifyChainIntegrity } from "./ledgerService";
-import { redactLedgerEvents } from "./redaction";
-import { computeTrustScore } from "./scoreService";
+import { randomUUID } from 'node:crypto';
+import { dbGet, dbAll, dbRun } from '../db';
+import { appendEvent, getLedger, verifyChainIntegrity } from './ledgerService';
+import { redactLedgerEvents } from './redaction';
+import { computeTrustScore } from './scoreService';
 
 export interface Business {
   id: string;
@@ -37,10 +37,10 @@ export async function createBusiness(input: {
     trading_name: input.trading_name,
     registration_number: input.registration_number,
     kra_pin: input.kra_pin,
-    jurisdiction: "KE",
+    jurisdiction: 'KE',
     industry: input.industry,
     sector: input.sector,
-    status: "pending_verification",
+    status: 'pending_verification',
     trust_score: 0,
     is_sandbox: input.is_sandbox ? 1 : 0,
     created_at: now,
@@ -50,10 +50,10 @@ export async function createBusiness(input: {
   await dbRun(
     `INSERT INTO businesses (id, legal_name, trading_name, registration_number, kra_pin, jurisdiction, industry, sector, status, trust_score, is_sandbox, created_at, updated_at)
      VALUES (@id, @legal_name, @trading_name, @registration_number, @kra_pin, @jurisdiction, @industry, @sector, @status, @trust_score, @is_sandbox, @created_at, @updated_at)`,
-    business
+    business,
   );
 
-  await appendEvent("business", business.id, "business.created", {
+  await appendEvent('business', business.id, 'business.created', {
     legal_name: business.legal_name,
     registration_number: business.registration_number,
     sector: business.sector,
@@ -75,9 +75,11 @@ export async function getBusiness(id: string): Promise<Business | undefined> {
  * Service. Each check independently appends a tamper-evident ledger
  * entry so partial verification progress is always auditable.
  */
-export async function runVerificationChecks(businessId: string): Promise<{ checks: Record<string, boolean>; business: Business }> {
+export async function runVerificationChecks(
+  businessId: string,
+): Promise<{ checks: Record<string, boolean>; business: Business }> {
   const business = await getBusiness(businessId);
-  if (!business) throw new Error("business_not_found");
+  if (!business) throw new Error('business_not_found');
 
   const checks = {
     registration_number_present: !!business.registration_number,
@@ -85,10 +87,10 @@ export async function runVerificationChecks(businessId: string): Promise<{ check
     legal_name_present: !!business.legal_name,
   };
 
-  await appendEvent("business", businessId, "verification.checks_run", { checks });
+  await appendEvent('business', businessId, 'verification.checks_run', { checks });
 
   const passed = Object.values(checks).every(Boolean);
-  const newStatus = passed ? "verified" : "pending_verification";
+  const newStatus = passed ? 'verified' : 'pending_verification';
 
   if (newStatus !== business.status) {
     await dbRun(`UPDATE businesses SET status = ?, updated_at = ? WHERE id = ?`, [
@@ -96,7 +98,10 @@ export async function runVerificationChecks(businessId: string): Promise<{ check
       new Date().toISOString(),
       businessId,
     ]);
-    await appendEvent("business", businessId, "verification.status_changed", { from: business.status, to: newStatus });
+    await appendEvent('business', businessId, 'verification.status_changed', {
+      from: business.status,
+      to: newStatus,
+    });
   }
 
   const score = await computeTrustScore(businessId);
@@ -105,13 +110,16 @@ export async function runVerificationChecks(businessId: string): Promise<{ check
     new Date().toISOString(),
     businessId,
   ]);
-  await appendEvent("business", businessId, "score.updated", { trust_score: score });
+  await appendEvent('business', businessId, 'score.updated', { trust_score: score });
 
   return { checks, business: (await getBusiness(businessId))! };
 }
 
 export async function listSandboxBusinesses(): Promise<Business[]> {
-  const rows = await dbAll<any>(`SELECT * FROM businesses WHERE is_sandbox = ? ORDER BY created_at DESC`, [1]);
+  const rows = await dbAll<any>(
+    `SELECT * FROM businesses WHERE is_sandbox = ? ORDER BY created_at DESC`,
+    [1],
+  );
   return rows.map((r) => ({ ...r, is_sandbox: !!r.is_sandbox }));
 }
 
@@ -125,7 +133,7 @@ export async function getTrustRecord(businessId: string) {
   return {
     subject: {
       id: business.id,
-      type: "business" as const,
+      type: 'business' as const,
       status: business.status,
       trust_score: business.trust_score,
       jurisdiction: business.jurisdiction,
@@ -134,7 +142,7 @@ export async function getTrustRecord(businessId: string) {
       created_at: business.created_at,
       updated_at: business.updated_at,
     },
-    verification_history: redactLedgerEvents(await getLedger("business", businessId)),
-    integrity: await verifyChainIntegrity("business", businessId),
+    verification_history: redactLedgerEvents(await getLedger('business', businessId)),
+    integrity: await verifyChainIntegrity('business', businessId),
   };
 }

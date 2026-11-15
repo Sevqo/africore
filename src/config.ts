@@ -1,5 +1,5 @@
-import fs from "node:fs";
-import path from "node:path";
+import fs from 'node:fs';
+import path from 'node:path';
 
 /**
  * Central runtime configuration.
@@ -21,10 +21,10 @@ import path from "node:path";
  * engine — it only affects optional values such as LOG_LEVEL.
  */
 
-export type NodeEnv = "development" | "test" | "production";
-export type LogLevelName = "debug" | "info" | "warn" | "error";
+export type NodeEnv = 'development' | 'test' | 'production';
+export type LogLevelName = 'debug' | 'info' | 'warn' | 'error';
 
-export const LOG_LEVELS: readonly LogLevelName[] = ["debug", "info", "warn", "error"] as const;
+export const LOG_LEVELS: readonly LogLevelName[] = ['debug', 'info', 'warn', 'error'] as const;
 
 export interface PgPoolSettings {
   /** PG_POOL_MAX — maximum pooled connections. */
@@ -76,7 +76,7 @@ function rawEnv(name: string): string | undefined {
   const value = process.env[name];
   if (value === undefined) return undefined;
   const trimmed = value.trim();
-  return trimmed === "" ? undefined : trimmed;
+  return trimmed === '' ? undefined : trimmed;
 }
 
 /**
@@ -88,13 +88,15 @@ function rawEnv(name: string): string | undefined {
  *
  * Returns the file path it tried to load, or undefined when no file exists.
  */
-export function loadEnvFile(filePath: string = path.resolve(process.cwd(), ".env")): string | undefined {
+export function loadEnvFile(
+  filePath: string = path.resolve(process.cwd(), '.env'),
+): string | undefined {
   let contents: string;
   try {
-    contents = fs.readFileSync(filePath, "utf8");
+    contents = fs.readFileSync(filePath, 'utf8');
   } catch (err: unknown) {
     const code = (err as NodeJS.ErrnoException)?.code;
-    if (code !== "ENOENT") {
+    if (code !== 'ENOENT') {
       parseWarnings.push(`Could not read ${filePath}: ${(err as Error).message}`);
     }
     return undefined;
@@ -102,10 +104,12 @@ export function loadEnvFile(filePath: string = path.resolve(process.cwd(), ".env
 
   for (const line of contents.split(/\r?\n/)) {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
+    if (!trimmed || trimmed.startsWith('#')) continue;
 
-    const withoutExport = trimmed.startsWith("export ") ? trimmed.slice("export ".length).trim() : trimmed;
-    const separator = withoutExport.indexOf("=");
+    const withoutExport = trimmed.startsWith('export ')
+      ? trimmed.slice('export '.length).trim()
+      : trimmed;
+    const separator = withoutExport.indexOf('=');
     if (separator <= 0) continue;
 
     const key = withoutExport.slice(0, separator).trim();
@@ -132,30 +136,34 @@ function readInt(name: string, fallback: number, min: number, max: number): numb
   }
   const parsed = Number(value);
   if (!Number.isSafeInteger(parsed) || parsed < min || parsed > max) {
-    parseWarnings.push(`${name} must be between ${min} and ${max} (got "${value}"); using ${fallback}.`);
+    parseWarnings.push(
+      `${name} must be between ${min} and ${max} (got "${value}"); using ${fallback}.`,
+    );
     return fallback;
   }
   return parsed;
 }
 
 function readNodeEnv(): NodeEnv {
-  const value = rawEnv("NODE_ENV");
-  if (value === undefined || value === "") return "development";
-  if (value === "production" || value === "test" || value === "development") return value;
+  const value = rawEnv('NODE_ENV');
+  if (value === undefined || value === '') return 'development';
+  if (value === 'production' || value === 'test' || value === 'development') return value;
   parseWarnings.push(`Unrecognized NODE_ENV "${value}"; treating it as development.`);
-  return "development";
+  return 'development';
 }
 
 function readLogLevel(): LogLevelName {
-  const value = rawEnv("LOG_LEVEL")?.toLowerCase();
-  if (value === undefined) return "info";
+  const value = rawEnv('LOG_LEVEL')?.toLowerCase();
+  if (value === undefined) return 'info';
   if ((LOG_LEVELS as readonly string[]).includes(value)) return value as LogLevelName;
-  parseWarnings.push(`Unrecognized LOG_LEVEL "${value}"; using info (expected one of ${LOG_LEVELS.join(", ")}).`);
-  return "info";
+  parseWarnings.push(
+    `Unrecognized LOG_LEVEL "${value}"; using info (expected one of ${LOG_LEVELS.join(', ')}).`,
+  );
+  return 'info';
 }
 
 function readTrustProxy(): number | string | undefined {
-  const value = rawEnv("TRUST_PROXY");
+  const value = rawEnv('TRUST_PROXY');
   if (value === undefined) return undefined;
   return /^\d+$/.test(value) ? Number(value) : value;
 }
@@ -169,28 +177,28 @@ export const loadedEnvFile: string | undefined = envFile;
 
 export const config: AppConfig = Object.freeze({
   nodeEnv,
-  isProduction: nodeEnv === "production",
-  isTest: nodeEnv === "test",
-  port: readInt("PORT", 4000, 1, 65535),
+  isProduction: nodeEnv === 'production',
+  isTest: nodeEnv === 'test',
+  port: readInt('PORT', 4000, 1, 65535),
   // Keep the same default location the adapter uses: repo root, independent
   // of whether we run from src/ (ts-node) or dist/ (compiled).
-  dbPath: rawEnv("DB_PATH") ?? path.join(__dirname, "../africore.db"),
-  databaseUrl: rawEnv("DATABASE_URL"),
-  adminToken: rawEnv("AFRISCORE_ADMIN_TOKEN"),
-  idHashSalt: rawEnv("ID_HASH_SALT"),
-  ledgerHmacKey: rawEnv("LEDGER_HMAC_KEY"),
-  webhookAllowedHosts: rawEnv("AFRISCORE_WEBHOOK_ALLOWED_HOSTS"),
+  dbPath: rawEnv('DB_PATH') ?? path.join(__dirname, '../africore.db'),
+  databaseUrl: rawEnv('DATABASE_URL'),
+  adminToken: rawEnv('AFRISCORE_ADMIN_TOKEN'),
+  idHashSalt: rawEnv('ID_HASH_SALT'),
+  ledgerHmacKey: rawEnv('LEDGER_HMAC_KEY'),
+  webhookAllowedHosts: rawEnv('AFRISCORE_WEBHOOK_ALLOWED_HOSTS'),
   trustProxy: readTrustProxy(),
   logLevel: readLogLevel(),
-  shutdownTimeoutMs: readInt("SHUTDOWN_TIMEOUT_MS", 10_000, 1_000, 120_000),
+  shutdownTimeoutMs: readInt('SHUTDOWN_TIMEOUT_MS', 10_000, 1_000, 120_000),
   pg: Object.freeze({
     // Read again by the adapter directly from process.env at import time so
     // that importing the adapter never has to import this module (and thus
     // never triggers the .env side effect on the test path).
-    max: readInt("PG_POOL_MAX", 10, 1, 100),
-    connectionTimeoutMs: readInt("PG_CONNECTION_TIMEOUT_MS", 5_000, 100, 120_000),
-    idleTimeoutMs: readInt("PG_IDLE_TIMEOUT_MS", 30_000, 1_000, 600_000),
-    queryTimeoutMs: readInt("PG_QUERY_TIMEOUT_MS", 30_000, 0, 600_000),
+    max: readInt('PG_POOL_MAX', 10, 1, 100),
+    connectionTimeoutMs: readInt('PG_CONNECTION_TIMEOUT_MS', 5_000, 100, 120_000),
+    idleTimeoutMs: readInt('PG_IDLE_TIMEOUT_MS', 30_000, 1_000, 600_000),
+    queryTimeoutMs: readInt('PG_QUERY_TIMEOUT_MS', 30_000, 0, 600_000),
   }),
 });
 
@@ -217,43 +225,67 @@ export function validateConfig(appConfig: AppConfig = config): ConfigValidation 
   const prod = appConfig.isProduction;
 
   if (appConfig.databaseUrl && !/^postgres(ql)?:\/\//i.test(appConfig.databaseUrl)) {
-    errors.push("DATABASE_URL must be a postgres:// or postgresql:// connection string.");
+    errors.push('DATABASE_URL must be a postgres:// or postgresql:// connection string.');
   }
 
   if (prod) {
-    if (!isSecret(appConfig.gatewaySecret ?? process.env.AFRICORE_GATEWAY_SECRET)) errors.push('AFRICORE_GATEWAY_SECRET is required in production (minimum 32 characters).');
-    if (process.env.AFRICORE_GATEWAY_SECRET_PREVIOUS && !isSecret(process.env.AFRICORE_GATEWAY_SECRET_PREVIOUS)) errors.push('AFRICORE_GATEWAY_SECRET_PREVIOUS must contain at least 32 characters when set.');
-    if (!appConfig.databaseUrl) errors.push("DATABASE_URL is required in production (PostgreSQL).");
-    if (!isSecret(appConfig.adminToken)) errors.push("AFRISCORE_ADMIN_TOKEN is required in production (minimum 32 characters).");
-    if (!isSecret(appConfig.idHashSalt)) errors.push("ID_HASH_SALT is required in production (minimum 32 characters).");
-    if (!isSecret(appConfig.ledgerHmacKey)) errors.push("LEDGER_HMAC_KEY is required in production (minimum 32 characters).");
+    if (!isSecret(appConfig.gatewaySecret ?? process.env.AFRICORE_GATEWAY_SECRET))
+      errors.push('AFRICORE_GATEWAY_SECRET is required in production (minimum 32 characters).');
+    if (
+      process.env.AFRICORE_GATEWAY_SECRET_PREVIOUS &&
+      !isSecret(process.env.AFRICORE_GATEWAY_SECRET_PREVIOUS)
+    )
+      errors.push('AFRICORE_GATEWAY_SECRET_PREVIOUS must contain at least 32 characters when set.');
+    if (!appConfig.databaseUrl) errors.push('DATABASE_URL is required in production (PostgreSQL).');
+    if (!isSecret(appConfig.adminToken))
+      errors.push('AFRISCORE_ADMIN_TOKEN is required in production (minimum 32 characters).');
+    if (!isSecret(appConfig.idHashSalt))
+      errors.push('ID_HASH_SALT is required in production (minimum 32 characters).');
+    if (!isSecret(appConfig.ledgerHmacKey))
+      errors.push('LEDGER_HMAC_KEY is required in production (minimum 32 characters).');
     if (!appConfig.webhookAllowedHosts) {
-      errors.push("AFRISCORE_WEBHOOK_ALLOWED_HOSTS is required in production (comma-separated HTTPS hostnames).");
-    } else if (appConfig.webhookAllowedHosts.split(",").some((host) => /[:/]/.test(host.trim()))) {
-      warnings.push("AFRISCORE_WEBHOOK_ALLOWED_HOSTS entries must be bare hostnames (no scheme, path or port).");
+      errors.push(
+        'AFRISCORE_WEBHOOK_ALLOWED_HOSTS is required in production (comma-separated HTTPS hostnames).',
+      );
+    } else if (appConfig.webhookAllowedHosts.split(',').some((host) => /[:/]/.test(host.trim()))) {
+      warnings.push(
+        'AFRISCORE_WEBHOOK_ALLOWED_HOSTS entries must be bare hostnames (no scheme, path or port).',
+      );
     }
     if (appConfig.trustProxy === undefined) {
-      warnings.push("TRUST_PROXY is unset in production; if you run behind a proxy every caller will share one rate-limit bucket.");
+      warnings.push(
+        'TRUST_PROXY is unset in production; if you run behind a proxy every caller will share one rate-limit bucket.',
+      );
     }
-    if (appConfig.logLevel === "debug") {
-      warnings.push("LOG_LEVEL=debug in production increases log volume and may expose request metadata.");
+    if (appConfig.logLevel === 'debug') {
+      warnings.push(
+        'LOG_LEVEL=debug in production increases log volume and may expose request metadata.',
+      );
     }
   } else {
     // Development / test: insecure defaults are allowed, but say so loudly.
     if (!isSecret(appConfig.adminToken)) {
-      warnings.push("AFRISCORE_ADMIN_TOKEN is unset or shorter than 32 characters; admin routes will return 503.");
+      warnings.push(
+        'AFRISCORE_ADMIN_TOKEN is unset or shorter than 32 characters; admin routes will return 503.',
+      );
     }
     if (!appConfig.idHashSalt) {
-      warnings.push("ID_HASH_SALT is unset; PII hashes use the public development salt. Never use this data in production.");
+      warnings.push(
+        'ID_HASH_SALT is unset; PII hashes use the public development salt. Never use this data in production.',
+      );
     }
     if (!appConfig.ledgerHmacKey) {
-      warnings.push("LEDGER_HMAC_KEY is unset; ledger anchors fall back to ID_HASH_SALT (or a public dev key).");
+      warnings.push(
+        'LEDGER_HMAC_KEY is unset; ledger anchors fall back to ID_HASH_SALT (or a public dev key).',
+      );
     }
     if (!appConfig.databaseUrl) {
       warnings.push(`DATABASE_URL is unset; using SQLite at ${appConfig.dbPath}.`);
     }
     if (!appConfig.webhookAllowedHosts) {
-      warnings.push("AFRISCORE_WEBHOOK_ALLOWED_HOSTS is unset; webhook target hosts are not restricted outside production.");
+      warnings.push(
+        'AFRISCORE_WEBHOOK_ALLOWED_HOSTS is unset; webhook target hosts are not restricted outside production.',
+      );
     }
   }
 
@@ -264,6 +296,6 @@ export function validateConfig(appConfig: AppConfig = config): ConfigValidation 
 export function assertConfigValid(appConfig: AppConfig = config): void {
   const { errors } = validateConfig(appConfig);
   if (errors.length > 0) {
-    throw new Error(`Invalid configuration:\n${errors.map((e) => ` - ${e}`).join("\n")}`);
+    throw new Error(`Invalid configuration:\n${errors.map((e) => ` - ${e}`).join('\n')}`);
   }
 }

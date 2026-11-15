@@ -12,8 +12,20 @@
   "local_chain": "passed isolated contract/credential/authorization/anchor checks",
   "browser": {
     "data": "Fictional local sandbox fixture",
-    "observed": ["cash tender and change", "paid explicit dispatch", "original-dispatch physical return", "cash return with collection hold", "zero-variance counted closure", "receipt after closure", "app refresh", "stale calendar-day quote rejected"],
-    "mobile": [ { "viewport": 320, "document": 305, "scroll": 305 }, { "viewport": 390, "document": 375, "scroll": 375 } ],
+    "observed": [
+      "cash tender and change",
+      "paid explicit dispatch",
+      "original-dispatch physical return",
+      "cash return with collection hold",
+      "zero-variance counted closure",
+      "receipt after closure",
+      "app refresh",
+      "stale calendar-day quote rejected"
+    ],
+    "mobile": [
+      { "viewport": 320, "document": 305, "scroll": 305 },
+      { "viewport": 390, "document": 375, "scroll": 375 }
+    ],
     "physical_devices_printers_and_terminals": "not qualified"
   },
   "hosted": { "deployed": false, "migrations_017_018_019": "not applied" },

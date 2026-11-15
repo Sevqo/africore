@@ -1,5 +1,5 @@
-import type { BusinessMetrics } from "./businessMetricsService";
-import type { ReceivablesSummary } from "./receivablesService";
+import type { BusinessMetrics } from './businessMetricsService';
+import type { ReceivablesSummary } from './receivablesService';
 
 /**
  * Supply-chain-finance readiness signals.
@@ -12,9 +12,13 @@ import type { ReceivablesSummary } from "./receivablesService";
  *   4. If one buyer dominates but is not a verified anchor, is that a risk?
  */
 
-export type AnchorBuyerSignal = "verified_anchor_candidate" | "concentration_risk" | "no_anchor";
-export type SupplierSignal = "established" | "developing" | "none";
-export type ReceivableVerifiabilitySignal = "verifiable" | "partial" | "unverifiable" | "no_invoice_data";
+export type AnchorBuyerSignal = 'verified_anchor_candidate' | 'concentration_risk' | 'no_anchor';
+export type SupplierSignal = 'established' | 'developing' | 'none';
+export type ReceivableVerifiabilitySignal =
+  | 'verifiable'
+  | 'partial'
+  | 'unverifiable'
+  | 'no_invoice_data';
 
 export interface SupplyChainReadiness {
   available: boolean;
@@ -62,73 +66,79 @@ export const SUPPLY_CHAIN_THRESHOLDS = {
 
 export function computeSupplyChainReadiness(
   metrics: BusinessMetrics,
-  receivables: ReceivablesSummary | null
+  receivables: ReceivablesSummary | null,
 ): SupplyChainReadiness {
   const top = metrics.counterparties.top_customers[0] ?? null;
   const share = top?.share_of_inflow_pct ?? 0;
   const payments = top?.transaction_count ?? 0;
   const months = top?.active_months ?? 0;
 
-  let anchorSignal: AnchorBuyerSignal = "no_anchor";
+  let anchorSignal: AnchorBuyerSignal = 'no_anchor';
   if (
     top &&
     payments >= SUPPLY_CHAIN_THRESHOLDS.anchorMinPayments &&
     months >= SUPPLY_CHAIN_THRESHOLDS.anchorMinMonths &&
     share >= SUPPLY_CHAIN_THRESHOLDS.anchorMinSharePct
   ) {
-    anchorSignal = "verified_anchor_candidate";
+    anchorSignal = 'verified_anchor_candidate';
   } else if (top && share > SUPPLY_CHAIN_THRESHOLDS.largeBuyerSharePct) {
-    anchorSignal = "concentration_risk";
+    anchorSignal = 'concentration_risk';
   }
 
   const concentrationWarning =
-    share > SUPPLY_CHAIN_THRESHOLDS.largeBuyerSharePct && anchorSignal !== "verified_anchor_candidate";
+    share > SUPPLY_CHAIN_THRESHOLDS.largeBuyerSharePct &&
+    anchorSignal !== 'verified_anchor_candidate';
 
   const supplierScore = metrics.counterparties.supplier.regularity_score;
   const supplierSignal: SupplierSignal =
     metrics.counterparties.supplier.repeat_supplier_count === 0
-      ? "none"
+      ? 'none'
       : supplierScore >= SUPPLY_CHAIN_THRESHOLDS.supplierEstablishedRegularity
-        ? "established"
-        : "developing";
+        ? 'established'
+        : 'developing';
 
   const matchedRatio = receivables?.matched_payment_ratio ?? null;
-  let verifiabilitySignal: ReceivableVerifiabilitySignal = "no_invoice_data";
+  let verifiabilitySignal: ReceivableVerifiabilitySignal = 'no_invoice_data';
   if (matchedRatio !== null) {
-    if (matchedRatio >= SUPPLY_CHAIN_THRESHOLDS.receivableVerifiableRatio) verifiabilitySignal = "verifiable";
-    else if (matchedRatio > SUPPLY_CHAIN_THRESHOLDS.receivablePartialRatio) verifiabilitySignal = "partial";
-    else verifiabilitySignal = "unverifiable";
+    if (matchedRatio >= SUPPLY_CHAIN_THRESHOLDS.receivableVerifiableRatio)
+      verifiabilitySignal = 'verifiable';
+    else if (matchedRatio > SUPPLY_CHAIN_THRESHOLDS.receivablePartialRatio)
+      verifiabilitySignal = 'partial';
+    else verifiabilitySignal = 'unverifiable';
   }
 
   const anchorDetail =
-    anchorSignal === "verified_anchor_candidate"
+    anchorSignal === 'verified_anchor_candidate'
       ? `${top?.counterparty} paid ${payments} times across ${months} months (${share}% of inflow) — a plausible reverse-factoring anchor.`
-      : anchorSignal === "concentration_risk"
+      : anchorSignal === 'concentration_risk'
         ? `${top?.counterparty} is ${share}% of inflow but has only ${payments} payment(s) across ${months} month(s) — concentration risk, not a verified anchor.`
-        : "No single repeat buyer is large enough to anchor a reverse-factoring programme yet.";
+        : 'No single repeat buyer is large enough to anchor a reverse-factoring programme yet.';
 
   const supplierDetail =
-    supplierSignal === "established"
+    supplierSignal === 'established'
       ? `${metrics.counterparties.supplier.repeat_supplier_count} repeat supplier(s) paid with ${Math.round(supplierScore * 100)}% cross-month regularity.`
-      : supplierSignal === "developing"
+      : supplierSignal === 'developing'
         ? `${metrics.counterparties.supplier.repeat_supplier_count} repeat supplier(s) detected, but payments are irregular across months.`
-        : "No repeat supplier relationships detected in the window.";
+        : 'No repeat supplier relationships detected in the window.';
 
   const verifiabilityDetail =
-    verifiabilitySignal === "no_invoice_data"
-      ? "No invoice data — receivable verifiability cannot be assessed."
-      : verifiabilitySignal === "verifiable"
+    verifiabilitySignal === 'no_invoice_data'
+      ? 'No invoice data — receivable verifiability cannot be assessed.'
+      : verifiabilitySignal === 'verifiable'
         ? `${Math.round((matchedRatio as number) * 100)}% of open invoices have a matched verified receipt.`
-        : verifiabilitySignal === "partial"
+        : verifiabilitySignal === 'partial'
           ? `${Math.round((matchedRatio as number) * 100)}% of open invoices have a matched verified receipt; the rest are unverified.`
-          : "Open invoices are not yet backed by verified receipts.";
+          : 'Open invoices are not yet backed by verified receipts.';
 
   const summaryParts: string[] = [];
-  if (concentrationWarning) summaryParts.push("Concentration warning: one unverified buyer dominates inflow.");
-  else if (anchorSignal === "verified_anchor_candidate") summaryParts.push("Anchor-buyer candidate exists for reverse factoring.");
-  if (supplierSignal === "established") summaryParts.push("Supplier relationship is established.");
-  if (verifiabilitySignal === "verifiable") summaryParts.push("Receivables are receipt-verified.");
-  else if (verifiabilitySignal === "no_invoice_data") summaryParts.push("No invoice data for receivable verification.");
+  if (concentrationWarning)
+    summaryParts.push('Concentration warning: one unverified buyer dominates inflow.');
+  else if (anchorSignal === 'verified_anchor_candidate')
+    summaryParts.push('Anchor-buyer candidate exists for reverse factoring.');
+  if (supplierSignal === 'established') summaryParts.push('Supplier relationship is established.');
+  if (verifiabilitySignal === 'verifiable') summaryParts.push('Receivables are receipt-verified.');
+  else if (verifiabilitySignal === 'no_invoice_data')
+    summaryParts.push('No invoice data for receivable verification.');
 
   return {
     available: metrics.totals.inflow > 0,
@@ -153,6 +163,6 @@ export function computeSupplyChainReadiness(
       detail: verifiabilityDetail,
     },
     concentration_warning: concentrationWarning,
-    summary: summaryParts.join(" "),
+    summary: summaryParts.join(' '),
   };
 }

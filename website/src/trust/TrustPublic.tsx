@@ -2,11 +2,7 @@ import { useEffect, useState } from 'react';
 import { Header } from '../components/Header';
 import { Form, Field, request } from '../operations/UI';
 import { VerificationReport, download } from './PassportWorkspace';
-export function TrustPublic({
-  mode,
-}: {
-  mode: 'verify' | 'share' | 'profile';
-}) {
+export function TrustPublic({ mode }: { mode: 'verify' | 'share' | 'profile' }) {
   const [error, setError] = useState(''),
     [result, setResult] = useState<any>(null),
     [credential, setCredential] = useState(''),
@@ -33,9 +29,7 @@ export function TrustPublic({
     <>
       <Header />
       <main className="trust-public">
-        <span className="eyebrow">
-          AFRICORE VERIFICATION GATEWAY · SANDBOX BETA
-        </span>
+        <span className="eyebrow">AFRICORE VERIFICATION GATEWAY · SANDBOX BETA</span>
         <h1>
           {mode === 'share'
             ? 'A specific disclosure. A named recipient.'
@@ -44,9 +38,9 @@ export function TrustPublic({
               : 'Check the credential. Understand the evidence.'}
         </h1>
         <p>
-          Cryptographic integrity, issuer authority, current status and evidence
-          quality are separate questions. No account is needed to verify a
-          credential you are authorized to hold.
+          Cryptographic integrity, issuer authority, current status and evidence quality are
+          separate questions. No account is needed to verify a credential you are authorized to
+          hold.
         </p>
         {error && (
           <div className="alert error" role="alert">
@@ -85,11 +79,7 @@ export function TrustPublic({
                   }
                   const text = await file.text();
                   try {
-                    setCredential(
-                      JSON.parse(text).credential ||
-                        JSON.parse(text).token ||
-                        '',
-                    );
+                    setCredential(JSON.parse(text).credential || JSON.parse(text).token || '');
                   } catch {
                     setCredential(text.trim());
                   }
@@ -97,10 +87,9 @@ export function TrustPublic({
               />
             </Field>
             <p>
-              Processed for this check. Uploaded credential contents are not
-              retained in the verification report. Issuer keys are pinned to the
-              configured registry; unrecognized issuer keys need an independent
-              verifier.
+              Processed for this check. Uploaded credential contents are not retained in the
+              verification report. Issuer keys are pinned to the configured registry; unrecognized
+              issuer keys need an independent verifier.
             </p>
             <button className="button" disabled={busy}>
               {busy ? 'Checking…' : 'Verify credential'}
@@ -111,30 +100,21 @@ export function TrustPublic({
           <section className="panel">
             <h2>Recipient-bound presentation</h2>
             <p>
-              Sign in as a member of the recipient business before opening this
-              disclosure. An expiring one-time link may only be opened once.
+              Sign in as a member of the recipient business before opening this disclosure. An
+              expiring one-time link may only be opened once.
             </p>
             <button
               className="button"
               disabled={busy}
-              onClick={() =>
-                action(() =>
-                  request('/trust/presentations/' + last, 'POST', {}),
-                )
-              }
+              onClick={() => action(() => request('/trust/presentations/' + last, 'POST', {}))}
             >
               {busy ? 'Checking access…' : 'Open as the named recipient'}
             </button>
             {result?.presentation && (
               <>
                 <p>Purpose: {result.purpose}</p>
-                <p>
-                  Disclosed credential types:{' '}
-                  {result.disclosed_types.join(', ')}
-                </p>
-                <button
-                  onClick={() => download(result, 'africore-presentation.json')}
-                >
+                <p>Disclosed credential types: {result.disclosed_types.join(', ')}</p>
+                <button onClick={() => download(result, 'africore-presentation.json')}>
                   Save authorized presentation
                 </button>
                 <button
@@ -150,10 +130,7 @@ export function TrustPublic({
                 >
                   Verify presentation checks
                 </button>
-                <p>
-                  Revocation stops future access; it cannot delete copies
-                  already disclosed.
-                </p>
+                <p>Revocation stops future access; it cannot delete copies already disclosed.</p>
               </>
             )}
           </section>
@@ -175,19 +152,17 @@ export function TrustPublic({
         <section className="panel">
           <h2>Independent checking</h2>
           <p>
-            Credential exports include public issuer metadata, short-lived
-            signed status snapshots and any available Merkle proof. The
-            independently runnable verifier uses Node crypto and can query a
-            pinned local EVM contract.
+            Credential exports include public issuer metadata, short-lived signed status snapshots
+            and any available Merkle proof. The independently runnable verifier uses Node crypto and
+            can query a pinned local EVM contract.
           </p>
           <code>
-            node scripts/verify-credential.mjs --file bundle.json --rpc YOUR_RPC
-            --contract PINNED_ADDRESS
+            node scripts/verify-credential.mjs --file bundle.json --rpc YOUR_RPC --contract
+            PINNED_ADDRESS
           </code>
           <p>
-            Fresh status and independently assessed issuer authority remain
-            necessary. No production issuer network, public testnet deployment
-            or OpenID wallet conformance is claimed.
+            Fresh status and independently assessed issuer authority remain necessary. No production
+            issuer network, public testnet deployment or OpenID wallet conformance is claimed.
           </p>
         </section>
       </main>

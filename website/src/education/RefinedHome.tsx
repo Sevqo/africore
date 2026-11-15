@@ -1,4 +1,4 @@
-import {ServiceFinder} from "./ServiceFinder";
+import { ServiceFinder } from './ServiceFinder';
 import { Icon } from '../components/Icon';
 import { EditorialCard, MediaCarousel } from '../components/Media';
 import { editorial } from '../editorial';
@@ -34,9 +34,7 @@ export function ProductComposition() {
         <strong>KSh 650</strong>
         <span>Issued · Awaiting payment</span>
       </div>
-      <figcaption>
-        Example interfaces · illustrative records
-      </figcaption>
+      <figcaption>Example interfaces · illustrative records</figcaption>
     </figure>
   );
 }
@@ -77,8 +75,8 @@ export function RefinedHome() {
             <br /> all connected.
           </h1>
           <p>
-            Manage payments, invoices and business records in one place. Know
-            what’s paid, what’s outstanding, and what needs your attention.
+            Manage payments, invoices and business records in one place. Know what’s paid, what’s
+            outstanding, and what needs your attention.
           </p>
           <div className="actions">
             <a className="button" href="/get-started">
@@ -112,12 +110,12 @@ export function RefinedHome() {
           <span className="eyebrow">One sale, followed through</span>
           <h2>A payment is part of a bigger record.</h2>
           <p>
-            A fictional shop issues an invoice for KSh 2,500. A trusted receipt
-            covers KSh 1,500. Matching the receipt leaves KSh 1,000 still owed.
+            A fictional shop issues an invoice for KSh 2,500. A trusted receipt covers KSh 1,500.
+            Matching the receipt leaves KSh 1,000 still owed.
           </p>
           <p>
-            Requesting a payment, confirming it and allocating it are separate
-            steps. Settlement depends on the payment provider.
+            Requesting a payment, confirming it and allocating it are separate steps. Settlement
+            depends on the payment provider.
           </p>
           <a className="text-link" href="/products/reconciliation">
             Try the matching exercise <Icon name="right" />
@@ -132,24 +130,17 @@ export function RefinedHome() {
           <li>
             <b>01</b>
             <h3>Record the work</h3>
-            <p>
-              Add the customer, order and invoice with an amount and due date.
-            </p>
+            <p>Add the customer, order and invoice with an amount and due date.</p>
           </li>
           <li>
             <b>02</b>
             <h3>Follow the evidence</h3>
-            <p>
-              Inspect confirmed payment events and review unmatched records.
-            </p>
+            <p>Inspect confirmed payment events and review unmatched records.</p>
           </li>
           <li>
             <b>03</b>
             <h3>Decide what comes next</h3>
-            <p>
-              Follow unpaid invoices, plan expenses and share only the proof
-              needed.
-            </p>
+            <p>Follow unpaid invoices, plan expenses and share only the proof needed.</p>
           </li>
         </ol>
       </section>
@@ -196,9 +187,9 @@ export function RefinedHome() {
           <span className="eyebrow">Trust and security</span>
           <h2>Know what a record can prove.</h2>
           <p>
-            Workspace permissions control access. Source labels distinguish a
-            merchant statement from provider evidence. Credential signatures,
-            issuer recognition and claim quality remain separate checks.
+            Workspace permissions control access. Source labels distinguish a merchant statement
+            from provider evidence. Credential signatures, issuer recognition and claim quality
+            remain separate checks.
           </p>
           <a className="text-link" href="/security">
             Review the safeguards <Icon name="right" />
@@ -208,20 +199,20 @@ export function RefinedHome() {
           <span className="eyebrow">Availability</span>
           <h3>Know what is available.</h3>
           <p>
-            Payments and protected purchase outcomes are simulated. Live
-            provider collection, regulated settlement and institutional
-            connections are not enabled. Capital remains deferred.
+            Payments and protected purchase outcomes are simulated. Live provider collection,
+            regulated settlement and institutional connections are not enabled. Capital remains
+            deferred.
           </p>
           <p>Kenya first. Built for the continent.</p>
         </div>
       </section>
-      <ServiceFinder/><section className="home-resources">
+      <ServiceFinder />
+      <section className="home-resources">
         <article>
           <span className="eyebrow">For developers</span>
           <h2>Build against explicit records and states.</h2>
           <p>
-            Start with a scoped sandbox request, then verify signed webhook
-            events and safe retries.
+            Start with a scoped sandbox request, then verify signed webhook events and safe retries.
           </p>
           <a className="text-link" href="/developers">
             Open the developer guide <Icon name="right" />
@@ -231,8 +222,8 @@ export function RefinedHome() {
           <span className="eyebrow">AfriCore Learn</span>
           <h2>Understand the work behind the numbers.</h2>
           <p>
-            Learn what reconciliation, receivables, forecasts and business proof
-            mean in everyday operations.
+            Learn what reconciliation, receivables, forecasts and business proof mean in everyday
+            operations.
           </p>
           <a className="text-link" href="/learn">
             Find a practical guide <Icon name="right" />

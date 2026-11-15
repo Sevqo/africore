@@ -3,25 +3,63 @@ export type WorkspaceKind = 'personal' | 'business' | 'developer';
 export const marketTabs = ['My Services', 'Explore Services', 'Usage & Billing'];
 
 export const directAppTabs = [
-  'Point of Sale', 'Commerce', 'Procurement', 'Customer Relationships', 'Products',
-  'Inventory', 'Quotations', 'Work', 'Accounting', 'People', 'Documents',
+  'Point of Sale',
+  'Commerce',
+  'Procurement',
+  'Customer Relationships',
+  'Products',
+  'Inventory',
+  'Quotations',
+  'Work',
+  'Accounting',
+  'People',
+  'Documents',
 ];
 
 export const businessNavigationGroups: { label: string; icon: string; items: string[] }[] = [
   {
     label: 'Workspace',
     icon: 'grid',
-    items: ['Overview', 'Apps', 'My Services', 'Customer Relationships', 'Products', 'Inventory', 'Quotations', ...marketTabs, 'Customers', 'Orders', 'Invoices', 'Payments'],
+    items: [
+      'Overview',
+      'Apps',
+      'My Services',
+      'Customer Relationships',
+      'Products',
+      'Inventory',
+      'Quotations',
+      ...marketTabs,
+      'Customers',
+      'Orders',
+      'Invoices',
+      'Payments',
+    ],
   },
   {
     label: 'Finance & intelligence',
     icon: 'chart',
-    items: ['Intelligence', 'Cash Flow', 'Expenses', 'Forecasts', 'Transactions', 'Reconciliation', 'Reports', 'Assistant'],
+    items: [
+      'Intelligence',
+      'Cash Flow',
+      'Expenses',
+      'Forecasts',
+      'Transactions',
+      'Reconciliation',
+      'Reports',
+      'Assistant',
+    ],
   },
   {
     label: 'Operations',
     icon: 'document',
-    items: ['Automations', 'Notifications', 'Approvals', 'Fulfillment', 'Protected Payments', 'Disputes'],
+    items: [
+      'Automations',
+      'Notifications',
+      'Approvals',
+      'Fulfillment',
+      'Protected Payments',
+      'Disputes',
+    ],
   },
   {
     label: 'Business trust',
@@ -31,7 +69,15 @@ export const businessNavigationGroups: { label: string; icon: string; items: str
   {
     label: 'Build & connect',
     icon: 'code',
-    items: ['Connect', 'Data', 'Integrations', 'Developers', 'Webhooks', 'Verification APIs', 'Engineering'],
+    items: [
+      'Connect',
+      'Data',
+      'Integrations',
+      'Developers',
+      'Webhooks',
+      'Verification APIs',
+      'Engineering',
+    ],
   },
   { label: 'Administration', icon: 'settings', items: ['Team', 'Settings'] },
 ];
@@ -41,15 +87,41 @@ export const businessTabs = [
 ];
 
 export const personalTabs = [
-  'Overview', 'Apps', 'Notifications', ...marketTabs, 'Assistant', 'Income', 'Expenses',
-  'Invoices', 'Clients', 'Payment Records', 'Cash Flow', 'Reports', 'Learn', 'Settings',
+  'Overview',
+  'Apps',
+  'Notifications',
+  ...marketTabs,
+  'Assistant',
+  'Income',
+  'Expenses',
+  'Invoices',
+  'Clients',
+  'Payment Records',
+  'Cash Flow',
+  'Reports',
+  'Learn',
+  'Settings',
 ];
 
 export const developerTabs = [
-  'Overview', 'Notifications', 'Products', ...marketTabs, 'Assistant', 'Data',
-  'My Applications', 'API Keys', 'API Explorer', 'Sandbox', 'Webhooks', 'Request Logs',
-  'Usage & Limits', 'API Documentation', 'SDKs & Examples', 'Verification APIs',
-  'Settings', 'Support',
+  'Overview',
+  'Notifications',
+  'Products',
+  ...marketTabs,
+  'Assistant',
+  'Data',
+  'My Applications',
+  'API Keys',
+  'API Explorer',
+  'Sandbox',
+  'Webhooks',
+  'Request Logs',
+  'Usage & Limits',
+  'API Documentation',
+  'SDKs & Examples',
+  'Verification APIs',
+  'Settings',
+  'Support',
 ];
 
 export const workspaceTabs: Record<WorkspaceKind, string[]> = {
@@ -61,9 +133,20 @@ export const workspaceTabs: Record<WorkspaceKind, string[]> = {
 // Installed apps normally share canonical service tabs, but an app with its own
 // operational sections (Commerce, Sales) must keep sidebar navigation inside
 // the app workspace instead of leaving for the standalone service.
-const appOwnedWorkspaces = new Set(['commerce', 'sales', 'inventory', 'procurement', 'accounting', 'pos']);
+const appOwnedWorkspaces = new Set([
+  'commerce',
+  'sales',
+  'inventory',
+  'procurement',
+  'accounting',
+  'pos',
+]);
 
-export function appSectionTarget(app: { id: string }, section: string, direct: Record<string, string>): string {
+export function appSectionTarget(
+  app: { id: string },
+  section: string,
+  direct: Record<string, string>,
+): string {
   return appOwnedWorkspaces.has(app.id) ? 'Apps' : direct[section] || 'Apps';
 }
 

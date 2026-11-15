@@ -1,53 +1,134 @@
-import {test} from 'node:test';
+import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import {calculateTender,calculateDrawer,remainingCashReturn} from '../pos/settlement';
-import {calendarDay} from '../finance/money';
-import {registerDayWindow} from '../pos/calendar';
+import { calculateTender, calculateDrawer, remainingCashReturn } from '../pos/settlement';
+import { calendarDay } from '../finance/money';
+import { registerDayWindow } from '../pos/calendar';
 
-test('register report windows preserve local midnight, DST and skipped calendar dates',()=>{
- assert.deepEqual(registerDayWindow('2026-11-12','Africa/Nairobi'),{from:'2026-11-11T21:00:00.000Z',to:'2026-11-12T21:00:00.000Z'});
- const spring=registerDayWindow('2026-03-08','America/New_York'),fall=registerDayWindow('2026-11-01','America/New_York');
- assert.equal(Date.parse(spring.to)-Date.parse(spring.from),23*3600000);
- assert.equal(Date.parse(fall.to)-Date.parse(fall.from),25*3600000);
- assert.throws(()=>registerDayWindow('2011-12-30','Pacific/Apia'),/does not exist/);
- assert.throws(()=>registerDayWindow('2026-02-30','UTC'),/Invalid/);
+test('register report windows preserve local midnight, DST and skipped calendar dates', () => {
+  assert.deepEqual(registerDayWindow('2026-11-12', 'Africa/Nairobi'), {
+    from: '2026-11-11T21:00:00.000Z',
+    to: '2026-11-12T21:00:00.000Z',
+  });
+  const spring = registerDayWindow('2026-03-08', 'America/New_York'),
+    fall = registerDayWindow('2026-11-01', 'America/New_York');
+  assert.equal(Date.parse(spring.to) - Date.parse(spring.from), 23 * 3600000);
+  assert.equal(Date.parse(fall.to) - Date.parse(fall.from), 25 * 3600000);
+  assert.throws(() => registerDayWindow('2011-12-30', 'Pacific/Apia'), /does not exist/);
+  assert.throws(() => registerDayWindow('2026-02-30', 'UTC'), /Invalid/);
 });
 
-const policy={outstanding_minor:12000,cash_minor:12000,tendered_minor:15000,intent:'cash' as const,allow_cash:true,allow_electronic:false,allow_pending:false};
-test('channel document calendars preserve the local date across UTC midnight boundaries',()=>{
- const at='2026-11-11T22:30:00.000Z';assert.equal(calendarDay(at),'2026-11-11');assert.equal(calendarDay(at,'Africa/Nairobi'),'2026-11-12');assert.equal(calendarDay(at,'Pacific/Honolulu'),'2026-11-11');assert.throws(()=>calendarDay(at,'Fictional/Timezone'));assert.throws(()=>calendarDay('not-an-instant'));
+const policy = {
+  outstanding_minor: 12000,
+  cash_minor: 12000,
+  tendered_minor: 15000,
+  intent: 'cash' as const,
+  allow_cash: true,
+  allow_electronic: false,
+  allow_pending: false,
+};
+test('channel document calendars preserve the local date across UTC midnight boundaries', () => {
+  const at = '2026-11-11T22:30:00.000Z';
+  assert.equal(calendarDay(at), '2026-11-11');
+  assert.equal(calendarDay(at, 'Africa/Nairobi'), '2026-11-12');
+  assert.equal(calendarDay(at, 'Pacific/Honolulu'), '2026-11-11');
+  assert.throws(() => calendarDay(at, 'Fictional/Timezone'));
+  assert.throws(() => calendarDay('not-an-instant'));
 });
-test('POS full cash applies only the invoice balance and gives exact change',()=>{
- assert.deepEqual(calculateTender(policy),{cash_applied_minor:12000,tendered_cash_minor:15000,change_minor:3000,electronic_request_minor:0,pending_minor:0});
- for(const change of [{cash_minor:12001},{cash_minor:10000},{tendered_minor:11999},{allow_cash:false},{outstanding_minor:0}])assert.throws(()=>calculateTender({...policy,...change}));
+test('POS full cash applies only the invoice balance and gives exact change', () => {
+  assert.deepEqual(calculateTender(policy), {
+    cash_applied_minor: 12000,
+    tendered_cash_minor: 15000,
+    change_minor: 3000,
+    electronic_request_minor: 0,
+    pending_minor: 0,
+  });
+  for (const change of [
+    { cash_minor: 12001 },
+    { cash_minor: 10000 },
+    { tendered_minor: 11999 },
+    { allow_cash: false },
+    { outstanding_minor: 0 },
+  ])
+    assert.throws(() => calculateTender({ ...policy, ...change }));
 });
-test('POS split tender requests only the unpaid electronic remainder',()=>{
- assert.deepEqual(calculateTender({...policy,intent:'split',cash_minor:4000,tendered_minor:5000,allow_electronic:true}),{cash_applied_minor:4000,tendered_cash_minor:5000,change_minor:1000,electronic_request_minor:8000,pending_minor:0});
- for(const cash_minor of [0,12000,13000])assert.throws(()=>calculateTender({...policy,intent:'split',cash_minor,allow_electronic:true}));
- assert.throws(()=>calculateTender({...policy,intent:'split',cash_minor:4000}));
+test('POS split tender requests only the unpaid electronic remainder', () => {
+  assert.deepEqual(
+    calculateTender({
+      ...policy,
+      intent: 'split',
+      cash_minor: 4000,
+      tendered_minor: 5000,
+      allow_electronic: true,
+    }),
+    {
+      cash_applied_minor: 4000,
+      tendered_cash_minor: 5000,
+      change_minor: 1000,
+      electronic_request_minor: 8000,
+      pending_minor: 0,
+    },
+  );
+  for (const cash_minor of [0, 12000, 13000])
+    assert.throws(() =>
+      calculateTender({ ...policy, intent: 'split', cash_minor, allow_electronic: true }),
+    );
+  assert.throws(() => calculateTender({ ...policy, intent: 'split', cash_minor: 4000 }));
 });
-test('POS electronic and pending intents cannot smuggle cash or bypass disabled methods',()=>{
- for(const intent of ['electronic','pending'] as const){
-  const input={...policy,intent,cash_minor:0,tendered_minor:0,allow_electronic:true,allow_pending:true};
-  const result=calculateTender(input);assert.equal(result.electronic_request_minor+result.pending_minor,12000);assert.equal(result.cash_applied_minor,0);
-  assert.throws(()=>calculateTender({...input,cash_minor:1,tendered_minor:1}));
-  assert.throws(()=>calculateTender({...input,tendered_minor:1}));
-  assert.throws(()=>calculateTender({...input,allow_electronic:false,allow_pending:false}));
- }
+test('POS electronic and pending intents cannot smuggle cash or bypass disabled methods', () => {
+  for (const intent of ['electronic', 'pending'] as const) {
+    const input = {
+      ...policy,
+      intent,
+      cash_minor: 0,
+      tendered_minor: 0,
+      allow_electronic: true,
+      allow_pending: true,
+    };
+    const result = calculateTender(input);
+    assert.equal(result.electronic_request_minor + result.pending_minor, 12000);
+    assert.equal(result.cash_applied_minor, 0);
+    assert.throws(() => calculateTender({ ...input, cash_minor: 1, tendered_minor: 1 }));
+    assert.throws(() => calculateTender({ ...input, tendered_minor: 1 }));
+    assert.throws(() =>
+      calculateTender({ ...input, allow_electronic: false, allow_pending: false }),
+    );
+  }
 });
-test('POS drawer counts retain float, returns, adjustments and exact variance',()=>{
- assert.deepEqual(calculateDrawer(2000,[{kind:'receipt',amount_minor:12000},{kind:'return',amount_minor:-3000},{kind:'adjustment',amount_minor:-1000}],9500),{expected_minor:10000,counted_minor:9500,variance_minor:-500});
- assert.deepEqual(calculateDrawer(0,[],0),{expected_minor:0,counted_minor:0,variance_minor:0});
- for(const movement of [{kind:'receipt' as const,amount_minor:-1},{kind:'return' as const,amount_minor:1},{kind:'adjustment' as const,amount_minor:0}])assert.throws(()=>calculateDrawer(100,[movement]));
- assert.throws(()=>calculateDrawer(0,[{kind:'return',amount_minor:-1}]));
+test('POS drawer counts retain float, returns, adjustments and exact variance', () => {
+  assert.deepEqual(
+    calculateDrawer(
+      2000,
+      [
+        { kind: 'receipt', amount_minor: 12000 },
+        { kind: 'return', amount_minor: -3000 },
+        { kind: 'adjustment', amount_minor: -1000 },
+      ],
+      9500,
+    ),
+    { expected_minor: 10000, counted_minor: 9500, variance_minor: -500 },
+  );
+  assert.deepEqual(calculateDrawer(0, [], 0), {
+    expected_minor: 0,
+    counted_minor: 0,
+    variance_minor: 0,
+  });
+  for (const movement of [
+    { kind: 'receipt' as const, amount_minor: -1 },
+    { kind: 'return' as const, amount_minor: 1 },
+    { kind: 'adjustment' as const, amount_minor: 0 },
+  ])
+    assert.throws(() => calculateDrawer(100, [movement]));
+  assert.throws(() => calculateDrawer(0, [{ kind: 'return', amount_minor: -1 }]));
 });
-test('POS return capacity retains signs and rejects over-return and unsafe arithmetic',()=>{
- assert.equal(remainingCashReturn(12000,[-2000,-3000],7000),0);
- assert.throws(()=>remainingCashReturn(12000,[-2000,-3000],7001));
- assert.throws(()=>remainingCashReturn(12000,[2000],1));
- assert.throws(()=>remainingCashReturn(12000,[],0));
- for(const value of [NaN,Infinity,0.5,100_000_000_001,Number.MAX_SAFE_INTEGER]){
-  assert.throws(()=>calculateTender({...policy,cash_minor:value}));assert.throws(()=>calculateDrawer(value,[]));assert.throws(()=>remainingCashReturn(value,[],1));
- }
- assert.throws(()=>calculateDrawer(100_000_000_000,[{kind:'receipt',amount_minor:1}]));
+test('POS return capacity retains signs and rejects over-return and unsafe arithmetic', () => {
+  assert.equal(remainingCashReturn(12000, [-2000, -3000], 7000), 0);
+  assert.throws(() => remainingCashReturn(12000, [-2000, -3000], 7001));
+  assert.throws(() => remainingCashReturn(12000, [2000], 1));
+  assert.throws(() => remainingCashReturn(12000, [], 0));
+  for (const value of [NaN, Infinity, 0.5, 100_000_000_001, Number.MAX_SAFE_INTEGER]) {
+    assert.throws(() => calculateTender({ ...policy, cash_minor: value }));
+    assert.throws(() => calculateDrawer(value, []));
+    assert.throws(() => remainingCashReturn(value, [], 1));
+  }
+  assert.throws(() => calculateDrawer(100_000_000_000, [{ kind: 'receipt', amount_minor: 1 }]));
 });

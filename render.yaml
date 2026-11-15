@@ -27,7 +27,7 @@ services:
         sync: false
       # Compatible readers were deployed before this write version was activated.
       - key: AFRICORE_ENCRYPTION_WRITE_VERSION
-        value: "2"
+        value: '2'
       - key: ID_HASH_SALT
         sync: false
       - key: LEDGER_HMAC_KEY
@@ -39,6 +39,6 @@ services:
       - key: AFRISCORE_WEBHOOK_ALLOWED_HOSTS
         value: disabled.invalid
       - key: AFRICORE_TESTNET_ANCHORING
-        value: "false"
+        value: 'false'
       - key: TRUST_PROXY
-        value: "1"
+        value: '1'

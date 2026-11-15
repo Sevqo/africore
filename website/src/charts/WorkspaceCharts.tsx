@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { InteractiveChart, financialSeries } from "./InteractiveChart";
-import { groupDatedAmounts } from "./model";
+import { useEffect, useRef, useState } from 'react';
+import { InteractiveChart, financialSeries } from './InteractiveChart';
+import { groupDatedAmounts } from './model';
 export function FinancialActivity({
   load,
   scope,
@@ -17,16 +17,24 @@ export function FinancialActivity({
   const loader = useRef(load);
   loader.current = load;
   const [data, setData] = useState<any>(null),
-    [error, setError] = useState(""),
+    [error, setError] = useState(''),
     [retry, setRetry] = useState(0);
   useEffect(() => {
     let cancelled = false;
     setData(null);
-    setError("");
-    const params=new URLSearchParams(filters);params.set('currency',currency);
-    if(!params.has('from')&&!params.has('to')){const today=new Date().toLocaleDateString('en-CA',{timeZone:'Africa/Nairobi'});params.set('to',today);params.set('from',new Date(Date.parse(today+'T00:00:00Z')-364*86400000).toISOString().slice(0,10));}
+    setError('');
+    const params = new URLSearchParams(filters);
+    params.set('currency', currency);
+    if (!params.has('from') && !params.has('to')) {
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Nairobi' });
+      params.set('to', today);
+      params.set(
+        'from',
+        new Date(Date.parse(today + 'T00:00:00Z') - 364 * 86400000).toISOString().slice(0, 10),
+      );
+    }
     loader
-      .current("/intelligence?" + params)
+      .current('/intelligence?' + params)
       .then((r) => {
         if (!cancelled) setData(r);
       })
@@ -39,15 +47,17 @@ export function FinancialActivity({
   }, [scope, currency, retry, filters]);
   return (
     <section className="panel activity-panel">
-      {testOnly&&<p className="environment-note">Test payment inflows · recorded expenses remain manually reported. Up to one year of loaded history.</p>}
+      {testOnly && (
+        <p className="environment-note">
+          Test payment inflows · recorded expenses remain manually reported. Up to one year of
+          loaded history.
+        </p>
+      )}
       {error ? (
         <div role="status">
           <h2>Activity chart unavailable</h2>
           <p>{error}</p>
-          <button
-            className="secondary-button"
-            onClick={() => setRetry(retry + 1)}
-          >
+          <button className="secondary-button" onClick={() => setRetry(retry + 1)}>
             Try again
           </button>
         </div>
@@ -80,17 +90,15 @@ export function RecordAnalytics({
   kind,
 }: {
   records: any[];
-  kind: "payments" | "invoices";
+  kind: 'payments' | 'invoices';
 }) {
-  const currencies = [
-    ...new Set(records.map((r) => r.currency).filter(Boolean)),
-  ] as string[];
-  const [chosen, setChosen] = useState("KES");
+  const currencies = [...new Set(records.map((r) => r.currency).filter(Boolean))] as string[];
+  const [chosen, setChosen] = useState('KES');
   const currency = currencies.includes(chosen) ? chosen : currencies[0];
   if (!currency) return null;
   const rows = records.filter((r) => r.currency === currency),
-    key = kind === "payments" ? "amount_minor" : "total_minor";
-  const states = [...new Set(rows.map((r) => r.status || "unknown"))];
+    key = kind === 'payments' ? 'amount_minor' : 'total_minor';
+  const states = [...new Set(rows.map((r) => r.status || 'unknown'))];
   return (
     <section className="panel record-analytics">
       <label className="analytics-currency">
@@ -103,35 +111,30 @@ export function RecordAnalytics({
       </label>
       <InteractiveChart
         compact
-        title={
-          kind === "payments" ? "Payment requests created" : "Invoices created"
-        }
-        points={groupDatedAmounts(rows, "created_at", key)}
+        title={kind === 'payments' ? 'Payment requests created' : 'Invoices created'}
+        points={groupDatedAmounts(rows, 'created_at', key)}
         series={[
           {
-            key: "value",
-            label:
-              kind === "payments" ? "Requested amount" : "Invoice face value",
-            color: "#426900",
+            key: 'value',
+            label: kind === 'payments' ? 'Requested amount' : 'Invoice face value',
+            color: '#426900',
           },
         ]}
         currency={currency}
         description={
-          kind === "payments"
-            ? "Amounts requested, not confirmed receipts or settlement. Only loaded payment requests are included."
-            : "Face value on the creation date, not cash received. This is a view of loaded invoices, not historical outstanding balances."
+          kind === 'payments'
+            ? 'Amounts requested, not confirmed receipts or settlement. Only loaded payment requests are included.'
+            : 'Face value on the creation date, not cash received. This is a view of loaded invoices, not historical outstanding balances.'
         }
       />
       <div className="status-breakdown" aria-label="Current record statuses">
         {states.map((state) => {
-          const count = rows.filter(
-            (r) => (r.status || "unknown") === state,
-          ).length;
+          const count = rows.filter((r) => (r.status || 'unknown') === state).length;
           return (
             <div key={state}>
-              <span>{state.replaceAll("_", " ")}</span>
+              <span>{state.replaceAll('_', ' ')}</span>
               <div>
-                <i style={{ width: (count / rows.length) * 100 + "%" }} />
+                <i style={{ width: (count / rows.length) * 100 + '%' }} />
               </div>
               <strong>
                 {count} of {rows.length}
@@ -146,21 +149,19 @@ export function RecordAnalytics({
 export function ReconciliationOverview({ data }: { data: any }) {
   const rows = [
     [
-      "Confirmed allocations",
+      'Confirmed allocations',
       data?.allocations?.length || 0,
-      "Allocations associate trusted payment amounts with documents.",
+      'Allocations associate trusted payment amounts with documents.',
     ],
     [
-      "Pending review",
-      (data?.exceptions || []).filter((r: any) => r.status === "pending_review")
-        .length,
-      "These exception records need a documented review; do not force them into a match.",
+      'Pending review',
+      (data?.exceptions || []).filter((r: any) => r.status === 'pending_review').length,
+      'These exception records need a documented review; do not force them into a match.',
     ],
     [
-      "Reviewed exceptions",
-      (data?.exceptions || []).filter((r: any) => r.status !== "pending_review")
-        .length,
-      "Review history is retained alongside the original financial event.",
+      'Reviewed exceptions',
+      (data?.exceptions || []).filter((r: any) => r.status !== 'pending_review').length,
+      'Review history is retained alongside the original financial event.',
     ],
   ] as const;
   const [selected, setSelected] = useState(0),
@@ -169,8 +170,8 @@ export function ReconciliationOverview({ data }: { data: any }) {
     <section className="panel reconciliation-overview">
       <h2>Matching and review</h2>
       <p>
-        Counts of loaded records. Allocations and exceptions are different
-        record types and are not parts of a shared total.
+        Counts of loaded records. Allocations and exceptions are different record types and are not
+        parts of a shared total.
       </p>
       <div className="review-bars">
         {rows.map(([label, count], i) => (
@@ -182,7 +183,7 @@ export function ReconciliationOverview({ data }: { data: any }) {
           >
             <span>{label}</span>
             <i>
-              <b style={{ width: (count / max) * 100 + "%" }} />
+              <b style={{ width: (count / max) * 100 + '%' }} />
             </i>
             <strong>{count}</strong>
           </button>

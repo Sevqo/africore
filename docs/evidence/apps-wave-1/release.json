@@ -17,10 +17,7 @@
     "version": "29e6ed7d-0300-4444-85f9-e4056c192563",
     "url": "https://africore-web.cypriankiprop41.workers.dev"
   },
-  "migrations": [
-    "010-business-apps",
-    "011-connected-business-operations"
-  ],
+  "migrations": ["010-business-apps", "011-connected-business-operations"],
   "finalInteractiveVisualQA": "unverified-owner-approved-waiver",
   "noRealFunds": true
 }

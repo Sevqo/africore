@@ -290,10 +290,10 @@
   font-size: 16px;
 }
 .example-controls label:has(select),
-.example-controls label:has(input[type="range"]) {
+.example-controls label:has(input[type='range']) {
   display: grid;
 }
-.example-controls input[type="checkbox"] {
+.example-controls input[type='checkbox'] {
   width: 18px;
   min-height: 18px;
 }
@@ -571,7 +571,7 @@
   font-size: 13px;
   color: var(--muted);
 }
-.chart-ranges button[aria-pressed="true"] {
+.chart-ranges button[aria-pressed='true'] {
   border-bottom-color: var(--ink);
   color: var(--ink);
   font-weight: 700;
@@ -621,7 +621,7 @@
   font-size: 12px;
   color: var(--muted);
 }
-.chart-legend button[aria-pressed="true"] {
+.chart-legend button[aria-pressed='true'] {
   color: var(--text);
   border-color: #999;
 }
@@ -629,7 +629,7 @@
   opacity: 1;
   cursor: default;
 }
-.chart-legend button[aria-pressed="false"] {
+.chart-legend button[aria-pressed='false'] {
   text-decoration: line-through;
 }
 .chart-description {
@@ -1048,7 +1048,7 @@
   font-size: 14px;
   min-height: 35.2px;
 }
-.review-bars button[aria-pressed="true"] {
+.review-bars button[aria-pressed='true'] {
   border-color: var(--line);
   background: var(--surface);
 }
@@ -1073,8 +1073,94 @@
   }
 }
 
-.learning-paths{margin-block:28px;padding:24px;border:1px solid var(--line,#d1d1d1);border-radius:8px}.learning-paths fieldset{border:0;padding:0;margin:16px 0}.learning-paths fieldset label{display:flex;gap:12px;align-items:center;min-height:44px;padding:8px 0}.learning-paths input[type=radio]{flex:0 0 auto;width:20px;height:20px}.learning-paths li{padding-block:10px;overflow-wrap:anywhere}.learning-paths button{margin-block:12px}@media(max-width:560px){.learning-paths{padding:16px}.learning-paths .lesson-grid{grid-template-columns:minmax(0,1fr)}}
+.learning-paths {
+  margin-block: 28px;
+  padding: 24px;
+  border: 1px solid var(--line, #d1d1d1);
+  border-radius: 8px;
+}
+.learning-paths fieldset {
+  border: 0;
+  padding: 0;
+  margin: 16px 0;
+}
+.learning-paths fieldset label {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 0;
+}
+.learning-paths input[type='radio'] {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+}
+.learning-paths li {
+  padding-block: 10px;
+  overflow-wrap: anywhere;
+}
+.learning-paths button {
+  margin-block: 12px;
+}
+@media (max-width: 560px) {
+  .learning-paths {
+    padding: 16px;
+  }
+  .learning-paths .lesson-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 
-.learning-paths input:not([type=radio]),.learning-paths select{min-width:0;max-width:100%;font-size:16px}.learning-paths>label{display:grid;gap:8px;margin-block:12px}.invoice-lab fieldset label{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr)}.learning-paths .secondary-button{white-space:normal;margin-right:8px}.learning-paths article{min-width:0;overflow-wrap:anywhere}.learning-paths .lesson-grid article{border:1px solid var(--line,#d1d1d1);padding:16px;border-radius:8px}@media(max-width:560px){.invoice-lab fieldset label{grid-template-columns:minmax(0,1fr)}}
+.learning-paths input:not([type='radio']),
+.learning-paths select {
+  min-width: 0;
+  max-width: 100%;
+  font-size: 16px;
+}
+.learning-paths > label {
+  display: grid;
+  gap: 8px;
+  margin-block: 12px;
+}
+.invoice-lab fieldset label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+}
+.learning-paths .secondary-button {
+  white-space: normal;
+  margin-right: 8px;
+}
+.learning-paths article {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.learning-paths .lesson-grid article {
+  border: 1px solid var(--line, #d1d1d1);
+  padding: 16px;
+  border-radius: 8px;
+}
+@media (max-width: 560px) {
+  .invoice-lab fieldset label {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 
-.learn-home>.learning-paths,#main>.learning-paths{width:calc(100% - 48px);max-width:1280px;margin:28px auto}.learning-paths .lesson-grid{grid-template-columns:repeat(2,minmax(0,1fr))}@media(max-width:560px){.learn-home>.learning-paths,#main>.learning-paths{width:calc(100% - 32px)}.learning-paths .lesson-grid{grid-template-columns:minmax(0,1fr)}}
+.learn-home > .learning-paths,
+#main > .learning-paths {
+  width: calc(100% - 48px);
+  max-width: 1280px;
+  margin: 28px auto;
+}
+.learning-paths .lesson-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 560px) {
+  .learn-home > .learning-paths,
+  #main > .learning-paths {
+    width: calc(100% - 32px);
+  }
+  .learning-paths .lesson-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

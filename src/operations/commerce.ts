@@ -1,15 +1,5 @@
-import {
-  evidenceSchema,
-  shipmentSchema,
-  saleSchema,
-  disputeSchema,
-} from './contracts';
-export {
-  evidenceSchema,
-  shipmentSchema,
-  saleSchema,
-  disputeSchema,
-} from './contracts';
+import { evidenceSchema, shipmentSchema, saleSchema, disputeSchema } from './contracts';
+export { evidenceSchema, shipmentSchema, saleSchema, disputeSchema } from './contracts';
 import { z } from 'zod';
 import { createHash, randomUUID } from 'node:crypto';
 import { dbAll, dbGet, dbRun } from '../db';
@@ -20,8 +10,8 @@ import { record, update, save } from '../platform/payments';
 import { atomic, change, create, day, get, all, minor } from './store';
 import { emit } from './events';
 import { notify, requireApproval } from './automation';
-import {quantityMilli} from '../inventory/quantity';
-import {dispatchShipmentStock} from '../inventory/service';
+import { quantityMilli } from '../inventory/quantity';
+import { dispatchShipmentStock } from '../inventory/service';
 
 const shipmentNext: Record<string, string[]> = {
   pending: ['processing', 'cancelled'],
@@ -38,17 +28,12 @@ export async function shipmentCreate(a: Access, input: unknown) {
   const d = shipmentSchema.parse(input);
   return atomic(a, async () => {
     const order = await record(a, d.order_id, 'orders');
-    if (
-      order.fulfillment_status === 'cancelled' ||
-      order.status === 'cancelled'
-    )
+    if (order.fulfillment_status === 'cancelled' || order.status === 'cancelled')
       fail(409, 'Cancelled order cannot ship');
     if (new Set(d.items.map((i) => i.item_index)).size !== d.items.length)
       fail(400, 'Each order item must appear once per shipment');
     const previous = (await all(a, 'shipments')).filter(
-      (s) =>
-        s.order_id === order.id &&
-        !['cancelled', 'returned'].includes(s.status),
+      (s) => s.order_id === order.id && !['cancelled', 'returned'].includes(s.status),
     );
     for (const item of d.items) {
       const line = order.items[item.item_index];
@@ -68,8 +53,7 @@ export async function shipmentCreate(a: Access, input: unknown) {
         fail(400, 'Shipment quantity exceeds the remaining order quantity');
     }
     const activeSale = (await all(a, 'protected_sales')).find(
-      (s) =>
-        s.order_id === order.id && !['cancelled', 'expired'].includes(s.state),
+      (s) => s.order_id === order.id && !['cancelled', 'expired'].includes(s.state),
     );
     if (activeSale) {
       if (d.protected_sale_id && d.protected_sale_id !== activeSale.id)
@@ -78,10 +62,7 @@ export async function shipmentCreate(a: Access, input: unknown) {
     }
     if (d.protected_sale_id) {
       const sale = await get(a, d.protected_sale_id, 'protected_sales');
-      if (
-        sale.order_id !== order.id ||
-        !['awaiting_shipment', 'shipped'].includes(sale.state)
-      )
+      if (sale.order_id !== order.id || !['awaiting_shipment', 'shipped'].includes(sale.state))
         fail(409, 'Protected arrangement must be confirmed before shipment');
     }
     const result = await create(a, 'shipments', {
@@ -101,11 +82,7 @@ export async function shipmentCreate(a: Access, input: unknown) {
     return result;
   });
 }
-export async function shipmentTransition(
-  a: Access,
-  id: string,
-  input: unknown,
-) {
+export async function shipmentTransition(a: Access, id: string, input: unknown) {
   const d = z
     .object({
       status: z.enum([
@@ -124,9 +101,8 @@ export async function shipmentTransition(
     .parse(input);
   return atomic(a, async () => {
     const s = await get(a, id, 'shipments');
-    if (!shipmentNext[s.status]?.includes(d.status))
-      fail(409, 'Invalid fulfillment transition');
-    if(d.status==='shipped')await dispatchShipmentStock(a,s);
+    if (!shipmentNext[s.status]?.includes(d.status)) fail(409, 'Invalid fulfillment transition');
+    if (d.status === 'shipped') await dispatchShipmentStock(a, s);
     const result = await change(a, s, {
       status: d.status,
       delivery_assurance: 'seller_reported',
@@ -143,9 +119,7 @@ export async function shipmentTransition(
     });
     const order = await record(a, s.order_id, 'orders');
     const siblings = (await all(a, 'shipments')).filter(
-      (x) =>
-        x.order_id === order.id &&
-        !['cancelled', 'returned'].includes(x.status),
+      (x) => x.order_id === order.id && !['cancelled', 'returned'].includes(x.status),
     );
     const complete = order.items.every(
       (line: any, index: number) =>
@@ -185,25 +159,14 @@ export async function shipmentTransition(
 }
 function evidenceBytes(d: z.infer<typeof evidenceSchema>) {
   if (!d.content_base64) return null;
-  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(d.content_base64))
-    fail(400, 'Invalid file encoding');
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(d.content_base64)) fail(400, 'Invalid file encoding');
   const b = Buffer.from(d.content_base64, 'base64');
-  if (!b.length || b.length > 250000)
-    fail(400, 'Evidence file must be 1–250000 bytes');
-  if (
-    d.content_type === 'image/png' &&
-    b.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a'
-  )
+  if (!b.length || b.length > 250000) fail(400, 'Evidence file must be 1–250000 bytes');
+  if (d.content_type === 'image/png' && b.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a')
     fail(400, 'Invalid PNG');
-  if (
-    d.content_type === 'image/jpeg' &&
-    b.subarray(0, 3).toString('hex') !== 'ffd8ff'
-  )
+  if (d.content_type === 'image/jpeg' && b.subarray(0, 3).toString('hex') !== 'ffd8ff')
     fail(400, 'Invalid JPEG');
-  if (
-    d.content_type === 'application/pdf' &&
-    b.subarray(0, 5).toString() !== '%PDF-'
-  )
+  if (d.content_type === 'application/pdf' && b.subarray(0, 5).toString() !== '%PDF-')
     fail(400, 'Invalid PDF');
   return b;
 }
@@ -232,7 +195,7 @@ export async function addEvidence(
       d.statement,
       d.filename || null,
       d.content_type || null,
-      b ? seal(b.toString('base64'),JSON.stringify(['evidence',a.org,a.environment,id])) : null,
+      b ? seal(b.toString('base64'), JSON.stringify(['evidence', a.org, a.environment, id])) : null,
       b ? createHash('sha256').update(b).digest('hex') : null,
       now(),
       new Date(Date.now() + 365 * 86400000).toISOString(),
@@ -295,13 +258,7 @@ export const livePartner: ProtectedPartner = {
     return fail(503, 'Live settlement is disabled');
   },
 };
-export async function saleState(
-  a: Access,
-  s: any,
-  state: string,
-  source: string,
-  extra: any = {},
-) {
+export async function saleState(a: Access, s: any, state: string, source: string, extra: any = {}) {
   const result = await change(a, s, {
     ...extra,
     state,
@@ -320,9 +277,7 @@ async function command(
 ) {
   z.string().min(8).max(150).parse(key);
   return atomic(a, async () => {
-    const fingerprint = hash(
-        JSON.stringify({ id, action, input, actor: a.actor }),
-      ),
+    const fingerprint = hash(JSON.stringify({ id, action, input, actor: a.actor })),
       dedupe = 'commerce-command:' + key;
     const previous = await dbGet(
       'SELECT payload FROM ac2_events WHERE org_id=? AND environment=? AND dedupe_key=?',
@@ -335,19 +290,13 @@ async function command(
       return { ...p.result, duplicate: true };
     }
     const result = await fn();
-    await emit(
-      a,
-      'commerce.command_completed',
-      { id, fingerprint, result },
-      { key: dedupe },
-    );
+    await emit(a, 'commerce.command_completed', { id, fingerprint, result }, { key: dedupe });
     return result;
   });
 }
 export async function createSale(a: Access, input: unknown, key: string) {
   const d = saleSchema.parse(input);
-  if (a.environment !== 'sandbox')
-    fail(503, 'Protected payments are sandbox-only');
+  if (a.environment !== 'sandbox') fail(503, 'Protected payments are sandbox-only');
   z.string().min(8).max(150).parse(key);
   return atomic(a, async () => {
     const previous = await dbGet(
@@ -356,8 +305,7 @@ export async function createSale(a: Access, input: unknown, key: string) {
     );
     if (previous) {
       const p = JSON.parse(previous.payload);
-      if (p.fingerprint !== hash(JSON.stringify(d)))
-        fail(409, 'Idempotency conflict');
+      if (p.fingerprint !== hash(JSON.stringify(d))) fail(409, 'Idempotency conflict');
       return {
         ...(await get(a, p.id, 'protected_sales')),
         buyer_url: null,
@@ -372,9 +320,7 @@ export async function createSale(a: Access, input: unknown, key: string) {
       );
       if (
         invoices.some(
-          (r) =>
-            JSON.parse(r.data).order_id === order.id &&
-            JSON.parse(r.data).status !== 'voided',
+          (r) => JSON.parse(r.data).order_id === order.id && JSON.parse(r.data).status !== 'voided',
         )
       )
         fail(409, 'Use an uninvoiced order for protected sale orchestration');
@@ -386,9 +332,7 @@ export async function createSale(a: Access, input: unknown, key: string) {
         fail(409, 'Use an unpaid order with the same amount and currency');
       if (
         (await all(a, 'protected_sales')).some(
-          (s) =>
-            s.order_id === order.id &&
-            !['cancelled', 'expired'].includes(s.state),
+          (s) => s.order_id === order.id && !['cancelled', 'expired'].includes(s.state),
         )
       )
         fail(409, 'Order already has a protected arrangement');
@@ -507,16 +451,12 @@ export async function buyerAccess(token: string) {
     role: 'buyer',
     api: false,
   };
-  if (a.environment !== 'sandbox')
-    fail(503, 'Live buyer protection is disabled');
+  if (a.environment !== 'sandbox') fail(503, 'Live buyer protection is disabled');
   return { a, sale: await get(a, r.agreement_id, 'protected_sales') };
 }
 export async function buyerView(token: string) {
   const { a, sale } = await buyerAccess(token),
-    org = await dbGet(
-      'SELECT name,verification_status FROM ac_organizations WHERE id=?',
-      [a.org],
-    );
+    org = await dbGet('SELECT name,verification_status FROM ac_organizations WHERE id=?', [a.org]);
   const disputes = (await all(a, 'disputes'))
     .filter((d) => d.protected_sale_id === sale.id)
     .map((d) => ({
@@ -573,36 +513,25 @@ export async function buyerAction(token: string, input: unknown, key: string) {
   return command(a, sale.id, key, d.action, d, async () => {
     let s = await get(a, sale.id, 'protected_sales');
     if (d.action === 'pay') {
-      if (s.state !== 'awaiting_buyer_payment')
-        fail(409, 'Sale is not awaiting payment');
+      if (s.state !== 'awaiting_buyer_payment') fail(409, 'Sale is not awaiting payment');
       s = await saleState(a, s, 'payment_pending', 'buyer_link_action', {
         payment_state: 'pending',
       });
       const proof = await sandboxPartner.confirmPayment(s.id);
       if (!proof.payment_confirmed || !proof.arrangement_confirmed)
         fail(503, 'Partner did not confirm protection');
-      s = await saleState(
-        a,
-        s,
-        'payment_confirmed_by_provider',
-        'sandbox_partner',
-        {
-          payment_state: 'provider_confirmed',
-          provider_reference: proof.reference,
-        },
-      );
+      s = await saleState(a, s, 'payment_confirmed_by_provider', 'sandbox_partner', {
+        payment_state: 'provider_confirmed',
+        provider_reference: proof.reference,
+      });
       await emit(a, 'protected_payment.payment_confirmed', {
         id: s.id,
         provider: sandboxPartner.name,
         simulation: true,
       });
-      s = await saleState(
-        a,
-        s,
-        'protected_arrangement_confirmed',
-        'sandbox_partner',
-        { arrangement_state: 'sandbox_confirmed' },
-      );
+      s = await saleState(a, s, 'protected_arrangement_confirmed', 'sandbox_partner', {
+        arrangement_state: 'sandbox_confirmed',
+      });
       s = await saleState(a, s, 'awaiting_shipment', 'africore_service');
       if (s.order_id) {
         const order = await record(a, s.order_id, 'orders');
@@ -612,12 +541,9 @@ export async function buyerAction(token: string, input: unknown, key: string) {
         });
       }
     } else if (d.action === 'confirm_receipt') {
-      if (s.state !== 'shipped')
-        fail(409, 'Shipment is required before receipt confirmation');
+      if (s.state !== 'shipped') fail(409, 'Shipment is required before receipt confirmation');
       const shipments = (await all(a, 'shipments')).filter(
-        (x) =>
-          x.protected_sale_id === s.id &&
-          !['cancelled', 'returned'].includes(x.status),
+        (x) => x.protected_sale_id === s.id && !['cancelled', 'returned'].includes(x.status),
       );
       const order = await record(a, s.order_id, 'orders');
       const eligible = shipments.filter((x) =>
@@ -636,15 +562,10 @@ export async function buyerAction(token: string, input: unknown, key: string) {
             ) >= line.quantity,
         )
       )
-        fail(
-          409,
-          'All purchased quantities must ship before confirming full receipt',
-        );
+        fail(409, 'All purchased quantities must ship before confirming full receipt');
       s = await saleState(a, s, 'delivered', 'buyer_link_confirmation');
       s = await saleState(a, s, 'inspection_period', 'africore_service', {
-        inspection_deadline: new Date(
-          Date.now() + s.inspection_hours * 3600000,
-        ).toISOString(),
+        inspection_deadline: new Date(Date.now() + s.inspection_hours * 3600000).toISOString(),
       });
       for (const shipment of eligible) {
         await change(a, shipment, {
@@ -667,8 +588,7 @@ export async function buyerAction(token: string, input: unknown, key: string) {
         assurance: 'buyer_link_confirmed',
       });
     } else if (d.action === 'accept') {
-      if (s.state !== 'inspection_period')
-        fail(409, 'Confirm receipt before accepting');
+      if (s.state !== 'inspection_period') fail(409, 'Confirm receipt before accepting');
       if (
         (await all(a, 'disputes')).some(
           (x) => x.protected_sale_id === s.id && x.status !== 'resolved',
@@ -695,14 +615,7 @@ export async function openDispute(token: string, input: unknown, key: string) {
     { a, sale } = await buyerAccess(token);
   return command(a, sale.id, key, 'dispute', d, async () => {
     const s = await get(a, sale.id, 'protected_sales');
-    if (
-      ![
-        'awaiting_shipment',
-        'shipped',
-        'inspection_period',
-        'accepted',
-      ].includes(s.state)
-    )
+    if (!['awaiting_shipment', 'shipped', 'inspection_period', 'accepted'].includes(s.state))
       fail(409, 'Sale cannot be disputed in its current state');
     if (s.inspection_deadline && s.inspection_deadline < now())
       fail(409, 'Inspection deadline expired; contact support for escalation');
@@ -727,13 +640,7 @@ export async function openDispute(token: string, input: unknown, key: string) {
       ],
       deadline: new Date(Date.now() + 14 * 86400000).toISOString(),
     });
-    await addEvidence(
-      a,
-      dispute.id,
-      'disputes',
-      { statement: d.statement },
-      'buyer_reported',
-    );
+    await addEvidence(a, dispute.id, 'disputes', { statement: d.statement }, 'buyer_reported');
     await saleState(a, s, 'disputed', 'buyer_reported');
     await emit(a, 'protected_payment.disputed', {
       id: s.id,
@@ -756,10 +663,7 @@ export async function disputeRespond(a: Access, id: string, input: unknown) {
     .parse(input);
   return atomic(a, async () => {
     const dispute = await get(a, id, 'disputes');
-    if (
-      !['open', 'under_review'].includes(dispute.status) ||
-      dispute.deadline < now()
-    )
+    if (!['open', 'under_review'].includes(dispute.status) || dispute.deadline < now())
       fail(409, 'Dispute response window is closed');
     await addEvidence(a, id, 'disputes', d, 'seller_reported');
     return change(a, dispute, {
@@ -776,12 +680,7 @@ export async function disputeRespond(a: Access, id: string, input: unknown) {
     });
   });
 }
-export async function disputeResolve(
-  a: Access,
-  id: string,
-  input: unknown,
-  key: string,
-) {
+export async function disputeResolve(a: Access, id: string, input: unknown, key: string) {
   if (a.api) fail(403, 'Human reviewer required');
   const d = z
     .object({
@@ -793,9 +692,8 @@ export async function disputeResolve(
     .parse(input);
   return command(a, id, key, 'resolve', d, async () => {
     const dispute = await get(a, id, 'disputes');
-    if (!['open', 'under_review'].includes(dispute.status))
-      fail(409, 'Dispute already resolved');
-    await requireApproval(a, d.approval_id, 'dispute_resolution', id,{decision:d.decision});
+    if (!['open', 'under_review'].includes(dispute.status)) fail(409, 'Dispute already resolved');
+    await requireApproval(a, d.approval_id, 'dispute_resolution', id, { decision: d.decision });
     const result = await change(a, dispute, {
       status: 'resolved',
       decision: d.decision,
@@ -831,22 +729,11 @@ export async function disputeResolve(
     return { id: result.id, status: result.status, decision: d.decision };
   });
 }
-export async function sellerSaleAction(
-  a: Access,
-  id: string,
-  input: unknown,
-  key: string,
-) {
-  if (a.environment !== 'sandbox')
-    fail(503, 'Live protected settlement disabled');
+export async function sellerSaleAction(a: Access, id: string, input: unknown, key: string) {
+  if (a.environment !== 'sandbox') fail(503, 'Live protected settlement disabled');
   const d = z
     .object({
-      action: z.enum([
-        'request_release',
-        'confirm_partner_settlement',
-        'expire',
-        'cancel',
-      ]),
+      action: z.enum(['request_release', 'confirm_partner_settlement', 'expire', 'cancel']),
       approval_id: z.string().uuid().optional(),
     })
     .strict()
@@ -857,13 +744,9 @@ export async function sellerSaleAction(
       if (a.api) fail(403, 'Human requester required');
       if (s.state !== 'accepted') fail(409, 'Buyer acceptance required');
       await requireApproval(a, d.approval_id, 'protected_release', id);
-      s = await saleState(
-        a,
-        s,
-        'release_requested',
-        'authorized_seller_request',
-        { settlement_state: 'release_requested' },
-      );
+      s = await saleState(a, s, 'release_requested', 'authorized_seller_request', {
+        settlement_state: 'release_requested',
+      });
     } else if (d.action === 'confirm_partner_settlement') {
       if (!['release_requested', 'refund_requested'].includes(s.state))
         fail(409, 'Approved release or refund request required');
@@ -888,30 +771,20 @@ export async function sellerSaleAction(
       );
       await emit(
         a,
-        'protected_payment.' +
-          (outcome === 'release' ? 'release_confirmed' : 'refund_confirmed'),
+        'protected_payment.' + (outcome === 'release' ? 'release_confirmed' : 'refund_confirmed'),
         { id, provider_reference: proof.reference, simulation: true },
       );
     } else {
       if (s.state !== 'awaiting_buyer_payment')
         fail(409, 'Only unpaid sales may be cancelled or expired');
       if (d.action === 'expire') {
-        const link = await dbGet(
-          'SELECT expires_at FROM ac2_buyer_access WHERE agreement_id=?',
-          [id],
-        );
+        const link = await dbGet('SELECT expires_at FROM ac2_buyer_access WHERE agreement_id=?', [
+          id,
+        ]);
         if (link.expires_at > now()) fail(409, 'Agreement has not expired');
       }
-      s = await saleState(
-        a,
-        s,
-        d.action === 'expire' ? 'expired' : 'cancelled',
-        'seller_reported',
-      );
-      await dbRun(
-        'UPDATE ac2_buyer_access SET revoked_at=? WHERE agreement_id=?',
-        [now(), id],
-      );
+      s = await saleState(a, s, d.action === 'expire' ? 'expired' : 'cancelled', 'seller_reported');
+      await dbRun('UPDATE ac2_buyer_access SET revoked_at=? WHERE agreement_id=?', [now(), id]);
     }
     return { id: s.id, state: s.state, settlement_state: s.settlement_state };
   });

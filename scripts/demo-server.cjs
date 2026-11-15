@@ -14,10 +14,7 @@ process.env.AFRICORE_ANCHOR_RPC = '';
 process.env.AFRICORE_ANCHOR_ADDRESS = '';
 if (process.env.AFRICORE_DEMO_CHAIN === 'true') {
   const deployment = JSON.parse(
-    fs.readFileSync(
-      path.resolve(__dirname, '../.tmp/chain-deployment.json'),
-      'utf8',
-    ),
+    fs.readFileSync(path.resolve(__dirname, '../.tmp/chain-deployment.json'), 'utf8'),
   );
   process.env.AFRICORE_ANCHOR_RPC = 'http://127.0.0.1:8545';
   process.env.AFRICORE_ANCHOR_ADDRESS = deployment.contract_address;
@@ -45,8 +42,7 @@ async function api(p, method = 'GET', body) {
   } catch {
     data = {};
   }
-  if (!r.ok)
-    throw Error(p + ': ' + r.status + ' ' + (data.message || data.error));
+  if (!r.ok) throw Error(p + ': ' + r.status + ' ' + (data.message || data.error));
   const session = r.headers.get('set-cookie');
   if (session) cookie = session.split(';')[0];
   return data;
@@ -75,18 +71,9 @@ async function account(email, name) {
   await migrate();
   const server = createApp().listen(4001, '127.0.0.1');
   await new Promise((r) => server.once('listening', r));
-  const owner = await account(
-      'owner@africore.localdemo',
-      'Amani Supplies · Connected Demo',
-    ),
-    issuer = await account(
-      'issuer@africore.localdemo',
-      'AfriCore Sandbox Issuer · Demo',
-    ),
-    partner = await account(
-      'partner@africore.localdemo',
-      'Demo Commercial Partner',
-    );
+  const owner = await account('owner@africore.localdemo', 'Amani Supplies · Connected Demo'),
+    issuer = await account('issuer@africore.localdemo', 'AfriCore Sandbox Issuer · Demo'),
+    partner = await account('partner@africore.localdemo', 'Demo Commercial Partner');
   cookie = owner.cookie;
   const p = '/api/v1/organizations/' + owner.org;
   if (!(await api(p + '/trust/passport')).passport) {
@@ -158,10 +145,8 @@ async function account(email, name) {
       title: 'Synthetic protected delivery',
       amount_minor: 150000,
       currency: 'KES',
-      delivery_terms:
-        'Deliver synthetic sample goods to an agreed collection point.',
-      cancellation_terms:
-        'Unpaid agreements can be cancelled. Paid outcomes require review.',
+      delivery_terms: 'Deliver synthetic sample goods to an agreed collection point.',
+      cancellation_terms: 'Unpaid agreements can be cancelled. Paid outcomes require review.',
       support_contact: 'demo@example.test',
       inspection_hours: 48,
     });
@@ -186,17 +171,12 @@ async function account(email, name) {
     const issuerResult = await api(i + '/trust/issuers', 'POST', {
       name: 'AfriCore Disposable Sandbox Issuer',
       types,
-      statement:
-        'Disposable local demo issuer; no institutional authority claimed.',
+      statement: 'Disposable local demo issuer; no institutional authority claimed.',
     });
-    await api(
-      '/api/v1/internal/trust/issuers/' + issuerResult.id + '/review',
-      'POST',
-      {
-        decision: 'approve_sandbox',
-        reason: 'Approved for synthetic sandbox demonstration only.',
-      },
-    );
+    await api('/api/v1/internal/trust/issuers/' + issuerResult.id + '/review', 'POST', {
+      decision: 'approve_sandbox',
+      reason: 'Approved for synthetic sandbox demonstration only.',
+    });
     cookie = owner.cookie;
     const request = await api(p + '/trust/issuance-requests', 'POST', {
       issuer_id: issuerResult.id,
@@ -212,8 +192,7 @@ async function account(email, name) {
     await api(p + '/trust/relationships', 'POST', {
       counterparty_org: partner.org,
       relationship: 'supplier',
-      statement:
-        'Synthetic supply relationship awaiting separate partner confirmation.',
+      statement: 'Synthetic supply relationship awaiting separate partner confirmation.',
       consent: true,
     });
   }
@@ -234,8 +213,7 @@ async function account(email, name) {
         source_kind: 'profile',
         source_id: account.org,
         lawful_basis: 'consent',
-        purpose:
-          'Create a private synthetic participant passport for demo workflows.',
+        purpose: 'Create a private synthetic participant passport for demo workflows.',
       });
     }
   }
@@ -254,8 +232,7 @@ async function account(email, name) {
           issuer: issuer.org,
           partner: partner.org,
         },
-        database:
-          'Disposable .tmp/connected-demo.db; no normal application database touched.',
+        database: 'Disposable .tmp/connected-demo.db; no normal application database touched.',
       },
       null,
       2,

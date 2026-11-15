@@ -24,9 +24,7 @@ CREATE TABLE IF NOT EXISTS ac2_ai_usage (id TEXT PRIMARY KEY, org_id TEXT NOT NU
         'ac2_buyer_access',
         'ac2_ai_usage',
       ])
-        await dbExec(
-          `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY; REVOKE ALL ON ${t} FROM PUBLIC;`,
-        );
+        await dbExec(`ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY; REVOKE ALL ON ${t} FROM PUBLIC;`);
     await dbRun(
       'INSERT INTO platform_migrations(version,applied_at) VALUES (?,?) ON CONFLICT(version) DO NOTHING',
       ['002-stage2', new Date().toISOString()],

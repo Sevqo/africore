@@ -1,15 +1,15 @@
-import { dbGet, dbTransaction } from "../db";
-import { Business } from "./businessService";
-import { appendEvent } from "./ledgerService";
+import { dbGet, dbTransaction } from '../db';
+import { Business } from './businessService';
+import { appendEvent } from './ledgerService';
 import {
   BusinessHealthScore,
   BusinessMetrics,
   loadBusinessContext,
   MetricsOptions,
-} from "./businessMetricsService";
-import { listShortcodes } from "./businessOnboardingService";
-import { getReceivablesSummary, ReceivablesSummary } from "./receivablesService";
-import { computeSupplyChainReadiness, SupplyChainReadiness } from "./supplyChainService";
+} from './businessMetricsService';
+import { listShortcodes } from './businessOnboardingService';
+import { getReceivablesSummary, ReceivablesSummary } from './receivablesService';
+import { computeSupplyChainReadiness, SupplyChainReadiness } from './supplyChainService';
 
 /**
  * Lender-facing decision cards.
@@ -25,9 +25,9 @@ import { computeSupplyChainReadiness, SupplyChainReadiness } from "./supplyChain
  * the decision itself.
  */
 
-export type RiskBand = "low" | "moderate" | "elevated" | "high";
-export type DecisionVerdict = "approve" | "review" | "decline";
-export type EvidenceImpact = "positive" | "negative" | "neutral";
+export type RiskBand = 'low' | 'moderate' | 'elevated' | 'high';
+export type DecisionVerdict = 'approve' | 'review' | 'decline';
+export type EvidenceImpact = 'positive' | 'negative' | 'neutral';
 
 export interface DecisionEvidence {
   key: string;
@@ -47,7 +47,7 @@ export interface DecisionConfidence {
 }
 
 export interface DecisionCard {
-  subject: { type: "business" | "individual"; id: string; name: string };
+  subject: { type: 'business' | 'individual'; id: string; name: string };
   generated_at: string;
   currency: string;
   recommended_limit: number;
@@ -80,12 +80,17 @@ export interface BusinessDecisionCard extends DecisionCard {
   supply_chain_readiness: SupplyChainReadiness;
 }
 
-export type BusinessDecisionCardDraft = Omit<BusinessDecisionCard, "audit_trail_ref">;
+export type BusinessDecisionCardDraft = Omit<BusinessDecisionCard, 'audit_trail_ref'>;
 
-const CURRENCY = "KES";
+const CURRENCY = 'KES';
 const MAX_LIMIT = 10_000_000;
 
-const RISK_MULTIPLIER: Record<RiskBand, number> = { low: 1.5, moderate: 1.0, elevated: 0.5, high: 0.25 };
+const RISK_MULTIPLIER: Record<RiskBand, number> = {
+  low: 1.5,
+  moderate: 1.0,
+  elevated: 0.5,
+  high: 0.25,
+};
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -101,41 +106,46 @@ function roundDownTo(value: number, step: number): number {
 
 function bandToRisk(health: BusinessHealthScore): RiskBand {
   switch (health.band) {
-    case "strong":
-      return "low";
-    case "stable":
-      return "moderate";
-    case "watch":
-      return "elevated";
+    case 'strong':
+      return 'low';
+    case 'stable':
+      return 'moderate';
+    case 'watch':
+      return 'elevated';
     default:
-      return "high";
+      return 'high';
   }
 }
 
 function riskier(band: RiskBand): RiskBand {
   switch (band) {
-    case "low":
-      return "moderate";
-    case "moderate":
-      return "elevated";
-    case "elevated":
-      return "high";
+    case 'low':
+      return 'moderate';
+    case 'moderate':
+      return 'elevated';
+    case 'elevated':
+      return 'high';
     default:
-      return "high";
+      return 'high';
   }
 }
 
-function adverseIndicators(metrics: BusinessMetrics, health: BusinessHealthScore, statementsCount: number): string[] {
+function adverseIndicators(
+  metrics: BusinessMetrics,
+  health: BusinessHealthScore,
+  statementsCount: number,
+): string[] {
   const indicators: string[] = [];
   const concentration = metrics.counterparties.top_customers[0]?.share_of_inflow_pct ?? 0;
 
-  if (concentration > 40) indicators.push("top_customer_concentration_above_40pct");
-  if (metrics.totals.failed_ratio > 0.05) indicators.push("failed_payment_ratio_above_5pct");
-  if (metrics.cash_flow.revenue_trend.direction === "declining") indicators.push("revenue_trend_declining");
-  if ((metrics.cash_flow.inflow_volatility ?? 0) > 0.5) indicators.push("high_inflow_volatility");
-  if (metrics.totals.months_of_history < 3) indicators.push("insufficient_history");
-  if (health.score < 40) indicators.push("health_score_at_risk");
-  if (statementsCount === 0) indicators.push("no_statements_ingested");
+  if (concentration > 40) indicators.push('top_customer_concentration_above_40pct');
+  if (metrics.totals.failed_ratio > 0.05) indicators.push('failed_payment_ratio_above_5pct');
+  if (metrics.cash_flow.revenue_trend.direction === 'declining')
+    indicators.push('revenue_trend_declining');
+  if ((metrics.cash_flow.inflow_volatility ?? 0) > 0.5) indicators.push('high_inflow_volatility');
+  if (metrics.totals.months_of_history < 3) indicators.push('insufficient_history');
+  if (health.score < 40) indicators.push('health_score_at_risk');
+  if (statementsCount === 0) indicators.push('no_statements_ingested');
 
   return indicators;
 }
@@ -149,7 +159,11 @@ function adverseIndicators(metrics: BusinessMetrics, health: BusinessHealthScore
  *   × 0.5 if the health score is below 50
  * rounded down to the nearest KES 1,000 and capped at KES 10,000,000.
  */
-export function computeRecommendedLimit(metrics: BusinessMetrics, health: BusinessHealthScore, riskBand: RiskBand): number {
+export function computeRecommendedLimit(
+  metrics: BusinessMetrics,
+  health: BusinessHealthScore,
+  riskBand: RiskBand,
+): number {
   const activeMonths = Math.max(1, metrics.totals.months_of_history);
   const monthlyInflowAvg = metrics.totals.inflow / activeMonths;
   const concentration = metrics.counterparties.top_customers[0]?.share_of_inflow_pct ?? 0;
@@ -157,17 +171,26 @@ export function computeRecommendedLimit(metrics: BusinessMetrics, health: Busine
   const failedHaircut = 1 - clamp(metrics.totals.failed_ratio, 0, 0.2);
   const healthHaircut = health.score < 50 ? 0.5 : 1;
 
-  const raw = monthlyInflowAvg * RISK_MULTIPLIER[riskBand] * concentrationHaircut * failedHaircut * healthHaircut;
+  const raw =
+    monthlyInflowAvg *
+    RISK_MULTIPLIER[riskBand] *
+    concentrationHaircut *
+    failedHaircut *
+    healthHaircut;
   return clamp(roundDownTo(raw, 1000), 0, MAX_LIMIT);
 }
 
 function verdictFor(riskBand: RiskBand, confidenceOverall: number): DecisionVerdict {
-  if (riskBand === "low" && confidenceOverall >= 0.6) return "approve";
-  if (riskBand === "elevated" || riskBand === "high") return "decline";
-  return "review";
+  if (riskBand === 'low' && confidenceOverall >= 0.6) return 'approve';
+  if (riskBand === 'elevated' || riskBand === 'high') return 'decline';
+  return 'review';
 }
 
-function buildEvidence(metrics: BusinessMetrics, health: BusinessHealthScore, confidence: DecisionConfidence): DecisionEvidence[] {
+function buildEvidence(
+  metrics: BusinessMetrics,
+  health: BusinessHealthScore,
+  confidence: DecisionConfidence,
+): DecisionEvidence[] {
   const concentration = metrics.counterparties.top_customers[0]?.share_of_inflow_pct ?? 0;
   const activeMonths = Math.max(1, metrics.totals.months_of_history);
   const monthlyInflowAvg = round2(metrics.totals.inflow / activeMonths);
@@ -175,59 +198,63 @@ function buildEvidence(metrics: BusinessMetrics, health: BusinessHealthScore, co
 
   return [
     {
-      key: "monthly_inflow_avg",
-      label: "Average monthly inflow",
+      key: 'monthly_inflow_avg',
+      label: 'Average monthly inflow',
       value: monthlyInflowAvg,
-      impact: monthlyInflowAvg > 0 ? "positive" : "negative",
+      impact: monthlyInflowAvg > 0 ? 'positive' : 'negative',
       detail: `${metrics.totals.credit_count} incoming payment(s) across ${metrics.totals.months_of_history} active month(s).`,
     },
     {
-      key: "business_health_score",
-      label: "Business health score",
+      key: 'business_health_score',
+      label: 'Business health score',
       value: health.score,
-      impact: health.score >= 60 ? "positive" : health.score >= 40 ? "neutral" : "negative",
+      impact: health.score >= 60 ? 'positive' : health.score >= 40 ? 'neutral' : 'negative',
       detail: `${health.band_label} band from ${health.components.filter((c) => c.available).length} available component(s).`,
     },
     {
-      key: "revenue_trend",
-      label: "Revenue trend",
+      key: 'revenue_trend',
+      label: 'Revenue trend',
       value: trend.change_pct ?? 0,
-      impact: trend.direction === "growing" ? "positive" : trend.direction === "declining" ? "negative" : "neutral",
+      impact:
+        trend.direction === 'growing'
+          ? 'positive'
+          : trend.direction === 'declining'
+            ? 'negative'
+            : 'neutral',
       detail: trend.detail,
     },
     {
-      key: "top_customer_concentration",
-      label: "Top-customer concentration",
+      key: 'top_customer_concentration',
+      label: 'Top-customer concentration',
       value: concentration,
-      impact: concentration > 40 ? "negative" : "neutral",
-      detail:
-        metrics.counterparties.top_customers[0]
-          ? `${metrics.counterparties.top_customers[0].counterparty} is ${concentration}% of inflow.`
-          : "No customer concentration measurable.",
+      impact: concentration > 40 ? 'negative' : 'neutral',
+      detail: metrics.counterparties.top_customers[0]
+        ? `${metrics.counterparties.top_customers[0].counterparty} is ${concentration}% of inflow.`
+        : 'No customer concentration measurable.',
     },
     {
-      key: "inflow_volatility",
-      label: "Inflow volatility",
+      key: 'inflow_volatility',
+      label: 'Inflow volatility',
       value: metrics.cash_flow.inflow_volatility ?? 0,
-      impact: (metrics.cash_flow.inflow_volatility ?? 0) > 0.5 ? "negative" : "positive",
+      impact: (metrics.cash_flow.inflow_volatility ?? 0) > 0.5 ? 'negative' : 'positive',
       detail:
         metrics.cash_flow.inflow_volatility === null
-          ? "Not enough monthly data to measure volatility."
-          : "Coefficient of variation of monthly inflow.",
+          ? 'Not enough monthly data to measure volatility.'
+          : 'Coefficient of variation of monthly inflow.',
     },
     {
-      key: "repeat_customers",
-      label: "Repeat-customer share of inflow",
+      key: 'repeat_customers',
+      label: 'Repeat-customer share of inflow',
       value: round2(metrics.counterparties.repeat_customer_ratio * 100),
-      impact: metrics.counterparties.repeat_customer_ratio >= 0.5 ? "positive" : "neutral",
+      impact: metrics.counterparties.repeat_customer_ratio >= 0.5 ? 'positive' : 'neutral',
       detail: `${metrics.counterparties.supplier.repeat_supplier_count} repeat supplier relationship(s) detected.`,
     },
     {
-      key: "data_completeness",
-      label: "Data completeness",
+      key: 'data_completeness',
+      label: 'Data completeness',
       value: round2(confidence.data_completeness * 100),
-      impact: confidence.data_completeness >= 0.6 ? "positive" : "negative",
-      detail: `${confidence.months_of_history} month(s) of history; ${confidence.reconciliation_score === null ? "no invoice reconciliation data" : "invoice data reconciled"}.`,
+      impact: confidence.data_completeness >= 0.6 ? 'positive' : 'negative',
+      detail: `${confidence.months_of_history} month(s) of history; ${confidence.reconciliation_score === null ? 'no invoice reconciliation data' : 'invoice data reconciled'}.`,
     },
   ];
 }
@@ -253,7 +280,7 @@ export function buildBusinessDecisionCard(input: {
   const dataCompleteness = round2(
     0.5 * (availableComponents / health.components.length) +
       0.3 * Math.min(metrics.totals.months_of_history / 6, 1) +
-      0.2 * (statementsCount > 0 ? 1 : 0)
+      0.2 * (statementsCount > 0 ? 1 : 0),
   );
   const reconciliationScore = receivables?.matched_payment_ratio ?? null;
   const overallConfidence =
@@ -268,8 +295,8 @@ export function buildBusinessDecisionCard(input: {
     months_of_history: metrics.totals.months_of_history,
     method:
       reconciliationScore === null
-        ? "data_completeness_only (no invoice reconciliation data)"
-        : "0.7*data_completeness + 0.3*reconciliation_score",
+        ? 'data_completeness_only (no invoice reconciliation data)'
+        : '0.7*data_completeness + 0.3*reconciliation_score',
   };
 
   const adverse = adverseIndicators(metrics, health, statementsCount);
@@ -281,20 +308,32 @@ export function buildBusinessDecisionCard(input: {
   const concentration = metrics.counterparties.top_customers[0]?.share_of_inflow_pct ?? 0;
 
   const card: BusinessDecisionCardDraft = {
-    subject: { type: "business", id: business.id, name: business.legal_name },
+    subject: { type: 'business', id: business.id, name: business.legal_name },
     generated_at: now.toISOString(),
-    currency: metrics.currency||CURRENCY,
+    currency: metrics.currency || CURRENCY,
     recommended_limit: 0,
     risk_band: riskBand,
     verdict: 'review',
-    evidence: [...buildEvidence(metrics, health, confidence),{key:'source_provenance',label:'Unverified source evidence',value:'human_review_required',impact:'neutral',detail:'Imported credits may include transfers, loans and refunds. They are not verified sales revenue. No financing approval, decline or actionable credit limit is issued.'}],
+    evidence: [
+      ...buildEvidence(metrics, health, confidence),
+      {
+        key: 'source_provenance',
+        label: 'Unverified source evidence',
+        value: 'human_review_required',
+        impact: 'neutral',
+        detail:
+          'Imported credits may include transfers, loans and refunds. They are not verified sales revenue. No financing approval, decline or actionable credit limit is issued.',
+      },
+    ],
     confidence,
     adverse_indicators: adverse,
     methodology: {
-      score_source: "businessMetricsService (deterministic cash-flow, counterparty and health components)",
+      score_source:
+        'businessMetricsService (deterministic cash-flow, counterparty and health components)',
       limit_formula:
-        "disabled-v2: zero actionable credit limit; independently verified revenue, qualified policy review and human authorization are prerequisites",
-      risk_band_mapping: "health band strong→low, stable→moderate, watch→elevated, at_risk→high; three or more adverse indicators moves one band riskier",
+        'disabled-v2: zero actionable credit limit; independently verified revenue, qualified policy review and human authorization are prerequisites',
+      risk_band_mapping:
+        'health band strong→low, stable→moderate, watch→elevated, at_risk→high; three or more adverse indicators moves one band riskier',
     },
     business_name: business.legal_name,
     shortcodes,
@@ -321,12 +360,15 @@ export function buildBusinessDecisionCard(input: {
  */
 export async function issueBusinessDecisionCard(
   businessId: string,
-  options: MetricsOptions & { now?: Date } = {}
+  options: MetricsOptions & { now?: Date } = {},
 ): Promise<BusinessDecisionCard> {
   const { business, metrics, health } = await loadBusinessContext(businessId, options);
 
   const shortcodes = (await listShortcodes(businessId)).map((entry) => entry.shortcode);
-  const statementRow = await dbGet<{ c: number | string }>(`SELECT COUNT(*) AS c FROM statements WHERE business_id = ?`, [businessId]);
+  const statementRow = await dbGet<{ c: number | string }>(
+    `SELECT COUNT(*) AS c FROM statements WHERE business_id = ?`,
+    [businessId],
+  );
   const statementsCount = Number(statementRow?.c ?? 0);
 
   // Receivables are computed from recorded invoice payments; null means the
@@ -344,26 +386,29 @@ export async function issueBusinessDecisionCard(
   });
 
   const metricEvents: Array<{ key: string; value: number | string | null }> = [
-    { key: "monthly_inflow_avg", value: draft.monthly_inflow_avg },
-    { key: "inflow_volatility", value: draft.inflow_volatility },
-    { key: "revenue_trend", value: draft.revenue_trend.direction },
-    { key: "top_customer_concentration", value: draft.top_customer_concentration },
-    { key: "business_health_score", value: draft.business_health_score },
-    { key: "data_completeness", value: draft.confidence.data_completeness },
-    { key: "anchor_buyer_signal", value: draft.supply_chain_readiness.anchor_buyer.signal },
-    { key: "receivable_verifiability", value: draft.supply_chain_readiness.receivable_verifiability.signal },
+    { key: 'monthly_inflow_avg', value: draft.monthly_inflow_avg },
+    { key: 'inflow_volatility', value: draft.inflow_volatility },
+    { key: 'revenue_trend', value: draft.revenue_trend.direction },
+    { key: 'top_customer_concentration', value: draft.top_customer_concentration },
+    { key: 'business_health_score', value: draft.business_health_score },
+    { key: 'data_completeness', value: draft.confidence.data_completeness },
+    { key: 'anchor_buyer_signal', value: draft.supply_chain_readiness.anchor_buyer.signal },
+    {
+      key: 'receivable_verifiability',
+      value: draft.supply_chain_readiness.receivable_verifiability.signal,
+    },
   ];
 
   const auditTrailRef = await dbTransaction(async () => {
     for (const metric of metricEvents) {
-      await appendEvent("business", businessId, "decision.metric_recorded", {
+      await appendEvent('business', businessId, 'decision.metric_recorded', {
         metric: metric.key,
         value: metric.value,
         window_months: metrics.window.months,
       });
     }
 
-    const decisionEntry = await appendEvent("business", businessId, "decision.issued", {
+    const decisionEntry = await appendEvent('business', businessId, 'decision.issued', {
       recommended_limit: draft.recommended_limit,
       currency: draft.currency,
       risk_band: draft.risk_band,

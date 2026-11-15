@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-"use strict";
+'use strict';
 
 /**
  * OpenAPI contract drift checker.
@@ -24,24 +24,24 @@
  * can assert the same invariant in the test suite.
  */
 
-const fs = require("fs");
-const path = require("path");
+const fs = require('fs');
+const path = require('path');
 
-const HTTP_METHODS = ["get", "post", "put", "patch", "delete", "options", "head"];
-const REPO_ROOT = path.join(__dirname, "..");
+const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'options', 'head'];
+const REPO_ROOT = path.join(__dirname, '..');
 
 function readText(file) {
   try {
-    return fs.readFileSync(file, "utf8");
+    return fs.readFileSync(file, 'utf8');
   } catch (err) {
-    if (err && err.code === "ENOENT") return null;
+    if (err && err.code === 'ENOENT') return null;
     throw err;
   }
 }
 
 function resolveSourceFile(fromFile, importSpecifier) {
   const base = path.resolve(path.dirname(fromFile), importSpecifier);
-  for (const candidate of [base, `${base}.ts`, path.join(base, "index.ts")]) {
+  for (const candidate of [base, `${base}.ts`, path.join(base, 'index.ts')]) {
     if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) return candidate;
   }
   return null;
@@ -51,17 +51,17 @@ function resolveSourceFile(fromFile, importSpecifier) {
  *  OpenAPI path (`/accounts/{accountId}/sync`) to canonical OpenAPI form. */
 function normalizePath(rawPath) {
   let p = String(rawPath).trim();
-  p = p.replace(/\/:([A-Za-z0-9_]+)/g, "/{$1}");
-  if (!p.startsWith("/")) p = `/${p}`;
-  p = p.replace(/\/{2,}/g, "/");
-  if (p.length > 1) p = p.replace(/\/+$/, "");
-  return p || "/";
+  p = p.replace(/\/:([A-Za-z0-9_]+)/g, '/{$1}');
+  if (!p.startsWith('/')) p = `/${p}`;
+  p = p.replace(/\/{2,}/g, '/');
+  if (p.length > 1) p = p.replace(/\/+$/, '');
+  return p || '/';
 }
 
 function joinPaths(prefix, child) {
-  const left = prefix === "/" ? "" : prefix.replace(/\/+$/, "");
+  const left = prefix === '/' ? '' : prefix.replace(/\/+$/, '');
   const right = normalizePath(child);
-  if (right === "/") return normalizePath(left || "/");
+  if (right === '/') return normalizePath(left || '/');
   return normalizePath(left + right);
 }
 
@@ -70,7 +70,7 @@ function joinPaths(prefix, child) {
  *  reported as a path mismatch only if the operation really is missing. */
 function stripServerPrefix(routePath, serverPrefix) {
   if (!serverPrefix) return routePath;
-  if (routePath === serverPrefix) return "/";
+  if (routePath === serverPrefix) return '/';
   if (routePath.startsWith(`${serverPrefix}/`)) return routePath.slice(serverPrefix.length);
   return routePath;
 }
@@ -80,7 +80,7 @@ function stripServerPrefix(routePath, serverPrefix) {
  * Returns a sorted array of `"METHOD /normalised/path"` strings.
  */
 function collectCodeRoutes(repoRoot = REPO_ROOT) {
-  const appPath = path.join(repoRoot, "src", "app.ts");
+  const appPath = path.join(repoRoot, 'src', 'app.ts');
   const appSource = readText(appPath);
   if (appSource === null) throw new Error(`cannot read ${appPath}`);
 
@@ -90,7 +90,7 @@ function collectCodeRoutes(repoRoot = REPO_ROOT) {
   let match;
   while ((match = importRe.exec(appSource)) !== null) {
     const [, localName, specifier] = match;
-    if (!specifier.startsWith(".")) continue;
+    if (!specifier.startsWith('.')) continue;
     const resolved = resolveSourceFile(appPath, specifier);
     if (resolved) importedRouters.set(localName, resolved);
   }
@@ -130,7 +130,7 @@ function collectCodeRoutes(repoRoot = REPO_ROOT) {
     // Fail loudly rather than "validating" an empty route set if app.ts is
     // restructured (for example, routes registered some other way).
     throw new Error(
-      `no mounted routers found in ${appPath}; the OpenAPI drift checker only understands app.use(prefix, router) mounts — update scripts/validate-openapi.js`
+      `no mounted routers found in ${appPath}; the OpenAPI drift checker only understands app.use(prefix, router) mounts — update scripts/validate-openapi.js`,
     );
   }
 
@@ -141,7 +141,7 @@ function collectCodeRoutes(repoRoot = REPO_ROOT) {
 function collectSpecRoutes(spec, serverPrefix = parseServerPrefix(spec)) {
   const routes = new Set();
   for (const [rawPath, pathItem] of Object.entries(spec.paths || {})) {
-    if (!pathItem || typeof pathItem !== "object") continue;
+    if (!pathItem || typeof pathItem !== 'object') continue;
     const normalised = stripServerPrefix(normalizePath(rawPath), serverPrefix);
     for (const method of HTTP_METHODS) {
       if (!pathItem[method]) continue;
@@ -153,25 +153,25 @@ function collectSpecRoutes(spec, serverPrefix = parseServerPrefix(spec)) {
 
 function parseServerPrefix(spec) {
   const server = Array.isArray(spec.servers) && spec.servers.length > 0 ? spec.servers[0] : null;
-  if (!server || typeof server.url !== "string") return "";
+  if (!server || typeof server.url !== 'string') return '';
   try {
     const url = new URL(server.url);
-    const prefix = url.pathname.replace(/\/+$/, "");
-    return prefix === "/" || prefix === "" ? "" : prefix;
+    const prefix = url.pathname.replace(/\/+$/, '');
+    return prefix === '/' || prefix === '' ? '' : prefix;
   } catch {
     // Relative server URLs ({url: "/v1"}) are legal OpenAPI; fall back to a
     // strict pathname read.
-    const prefix = server.url.split("?")[0].replace(/\/+$/, "");
-    return prefix.startsWith("/") ? prefix : "";
+    const prefix = server.url.split('?')[0].replace(/\/+$/, '');
+    return prefix.startsWith('/') ? prefix : '';
   }
 }
 
 function resolvePointer(root, pointer) {
-  if (typeof pointer !== "string" || !pointer.startsWith("#/")) return undefined;
+  if (typeof pointer !== 'string' || !pointer.startsWith('#/')) return undefined;
   let node = root;
-  for (const rawToken of pointer.slice(2).split("/")) {
-    const token = rawToken.replace(/~1/g, "/").replace(/~0/g, "~");
-    if (node === null || typeof node !== "object" || !(token in node)) return undefined;
+  for (const rawToken of pointer.slice(2).split('/')) {
+    const token = rawToken.replace(/~1/g, '/').replace(/~0/g, '~');
+    if (node === null || typeof node !== 'object' || !(token in node)) return undefined;
     node = node[token];
   }
   return node;
@@ -180,9 +180,9 @@ function resolvePointer(root, pointer) {
 function collectRefs(node, refs = []) {
   if (Array.isArray(node)) {
     for (const item of node) collectRefs(item, refs);
-  } else if (node && typeof node === "object") {
+  } else if (node && typeof node === 'object') {
     for (const [key, value] of Object.entries(node)) {
-      if (key === "$ref" && typeof value === "string") refs.push(value);
+      if (key === '$ref' && typeof value === 'string') refs.push(value);
       else collectRefs(value, refs);
     }
   }
@@ -195,10 +195,11 @@ function declaredParameterNames(spec, pathItem, operation) {
     if (!Array.isArray(parameters)) return;
     for (const parameter of parameters) {
       const resolved =
-        parameter && typeof parameter.$ref === "string"
+        parameter && typeof parameter.$ref === 'string'
           ? resolvePointer(spec, parameter.$ref)
           : parameter;
-      if (resolved && typeof resolved.name === "string" && resolved.in === "path") names.add(resolved.name);
+      if (resolved && typeof resolved.name === 'string' && resolved.in === 'path')
+        names.add(resolved.name);
     }
   };
   add(pathItem && pathItem.parameters);
@@ -216,14 +217,14 @@ function templateParameterNames(openapiPath) {
  */
 function collectSpecIssues(spec) {
   const issues = [];
-  if (!String(spec.openapi || "").startsWith("3.")) {
+  if (!String(spec.openapi || '').startsWith('3.')) {
     issues.push('spec.openapi must declare an OpenAPI 3.x version (e.g. "3.0.3")');
   }
   if (!spec.info || !spec.info.title || !spec.info.version) {
-    issues.push("spec.info must include title and version");
+    issues.push('spec.info must include title and version');
   }
-  if (!spec.paths || typeof spec.paths !== "object" || Object.keys(spec.paths).length === 0) {
-    issues.push("spec.paths must document at least one path");
+  if (!spec.paths || typeof spec.paths !== 'object' || Object.keys(spec.paths).length === 0) {
+    issues.push('spec.paths must document at least one path');
     return issues;
   }
 
@@ -231,7 +232,7 @@ function collectSpecIssues(spec) {
   const operationIds = new Map();
 
   for (const [rawPath, pathItem] of Object.entries(spec.paths)) {
-    if (!pathItem || typeof pathItem !== "object") {
+    if (!pathItem || typeof pathItem !== 'object') {
       issues.push(`${rawPath}: path item is not an object`);
       continue;
     }
@@ -243,22 +244,30 @@ function collectSpecIssues(spec) {
       if (!operation) continue;
       const label = `${method.toUpperCase()} ${rawPath}`;
 
-      if (typeof operation.operationId !== "string" || operation.operationId.trim() === "") {
+      if (typeof operation.operationId !== 'string' || operation.operationId.trim() === '') {
         issues.push(`${label}: missing operationId`);
       } else if (operationIds.has(operation.operationId)) {
-        issues.push(`${label}: duplicate operationId "${operation.operationId}" (also ${operationIds.get(operation.operationId)})`);
+        issues.push(
+          `${label}: duplicate operationId "${operation.operationId}" (also ${operationIds.get(operation.operationId)})`,
+        );
       } else {
         operationIds.set(operation.operationId, label);
       }
 
-      if (!operation.responses || typeof operation.responses !== "object" || Object.keys(operation.responses).length === 0) {
+      if (
+        !operation.responses ||
+        typeof operation.responses !== 'object' ||
+        Object.keys(operation.responses).length === 0
+      ) {
         issues.push(`${label}: missing responses`);
       }
 
       for (const requirement of Array.isArray(operation.security) ? operation.security : []) {
         for (const schemeName of Object.keys(requirement || {})) {
           if (!securitySchemes[schemeName]) {
-            issues.push(`${label}: security scheme "${schemeName}" is not defined in components.securitySchemes`);
+            issues.push(
+              `${label}: security scheme "${schemeName}" is not defined in components.securitySchemes`,
+            );
           }
         }
       }
@@ -266,7 +275,9 @@ function collectSpecIssues(spec) {
       const declared = declaredParameterNames(spec, pathItem, operation);
       for (const param of templateParams) {
         if (!declared.has(param)) {
-          issues.push(`${label}: path parameter "{${param}}" is not declared in parameters (path item or operation)`);
+          issues.push(
+            `${label}: path parameter "{${param}}" is not declared in parameters (path item or operation)`,
+          );
         }
       }
     }
@@ -276,7 +287,7 @@ function collectSpecIssues(spec) {
   for (const ref of collectRefs(spec)) {
     if (seenRefs.has(ref)) continue;
     seenRefs.add(ref);
-    if (!ref.startsWith("#/")) continue; // external refs are out of scope here
+    if (!ref.startsWith('#/')) continue; // external refs are out of scope here
     if (resolvePointer(spec, ref) === undefined) issues.push(`unresolved $ref "${ref}"`);
   }
 
@@ -284,7 +295,7 @@ function collectSpecIssues(spec) {
 }
 
 function loadSpec(repoRoot = REPO_ROOT) {
-  const specPath = path.join(repoRoot, "openapi.json");
+  const specPath = path.join(repoRoot, 'openapi.json');
   const source = readText(specPath);
   if (source === null) throw new Error(`cannot read ${specPath}`);
   try {
@@ -306,11 +317,11 @@ function buildReport(repoRoot = REPO_ROOT) {
   const codeRoutes = [
     ...new Set(
       collectCodeRoutes(repoRoot).map((route) => {
-        const separator = route.indexOf(" ");
+        const separator = route.indexOf(' ');
         const method = route.slice(0, separator);
         const routePath = route.slice(separator + 1);
         return `${method} ${stripServerPrefix(routePath, serverPrefix)}`;
-      })
+      }),
     ),
   ].sort();
   const specRoutes = collectSpecRoutes(spec, serverPrefix);
@@ -334,29 +345,33 @@ function buildReport(repoRoot = REPO_ROOT) {
 }
 
 function printReport(report) {
-  const prefix = report.serverPrefix || "";
-  console.log(`OpenAPI drift check (${report.specVersion || "unknown version"}, server prefix "${prefix || "(none)"}")`);
+  const prefix = report.serverPrefix || '';
+  console.log(
+    `OpenAPI drift check (${report.specVersion || 'unknown version'}, server prefix "${prefix || '(none)'}")`,
+  );
   console.log(`  routes in src/app.ts + src/routes/*.ts: ${report.codeRoutes.length}`);
   console.log(`  operations in openapi.json:             ${report.specRoutes.length}`);
 
   if (report.missing.length > 0) {
-    console.error("\nMISSING from openapi.json (served by Express, not documented):");
+    console.error('\nMISSING from openapi.json (served by Express, not documented):');
     for (const route of report.missing) console.error(`  - ${route}`);
   }
   if (report.extra.length > 0) {
-    console.error("\nEXTRA in openapi.json (documented, not served by Express):");
+    console.error('\nEXTRA in openapi.json (documented, not served by Express):');
     for (const route of report.extra) console.error(`  + ${route}`);
   }
   if (report.issues.length > 0) {
-    console.error("\nSPEC ISSUES:");
+    console.error('\nSPEC ISSUES:');
     for (const issue of report.issues) console.error(`  ! ${issue}`);
   }
 
   if (report.ok) {
-    console.log(`\nOK: openapi.json documents exactly the ${report.codeRoutes.length} mounted operations; no spec issues.`);
+    console.log(
+      `\nOK: openapi.json documents exactly the ${report.codeRoutes.length} mounted operations; no spec issues.`,
+    );
   } else {
     console.error(
-      `\nFAIL: ${report.missing.length} missing, ${report.extra.length} extra, ${report.issues.length} spec issue(s).`
+      `\nFAIL: ${report.missing.length} missing, ${report.extra.length} extra, ${report.issues.length} spec issue(s).`,
     );
   }
 }

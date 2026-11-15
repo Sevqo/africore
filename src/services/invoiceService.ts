@@ -1,7 +1,7 @@
-import { randomUUID } from "node:crypto";
-import { dbGet, dbAll, dbRun } from "../db";
-import { getBusiness } from "./businessService";
-import { appendEvent } from "./ledgerService";
+import { randomUUID } from 'node:crypto';
+import { dbGet, dbAll, dbRun } from '../db';
+import { getBusiness } from './businessService';
+import { appendEvent } from './ledgerService';
 
 /**
  * Invoice domain: lifecycle state, and recorded receipts.
@@ -14,9 +14,14 @@ import { appendEvent } from "./ledgerService";
  * `paid_amount` column mirrors sum(payments) so reads stay cheap.
  */
 
-export type InvoiceStatus = "draft" | "sent" | "partially_paid" | "paid" | "overdue" | "unpaid";
+export type InvoiceStatus = 'draft' | 'sent' | 'partially_paid' | 'paid' | 'overdue' | 'unpaid';
 
-export const OPEN_INVOICE_STATUSES: readonly InvoiceStatus[] = ["unpaid", "sent", "partially_paid", "overdue"];
+export const OPEN_INVOICE_STATUSES: readonly InvoiceStatus[] = [
+  'unpaid',
+  'sent',
+  'partially_paid',
+  'overdue',
+];
 
 export interface InvoiceAttachment {
   file_name: string;
@@ -68,16 +73,16 @@ export async function createInvoice(input: {
   due_date?: string;
   expected_counterparty?: string;
   invoice_number?: string;
-  status?: "draft" | "sent";
+  status?: 'draft' | 'sent';
   attachment?: InvoiceAttachment;
 }): Promise<Invoice> {
   const business = await getBusiness(input.business_id);
-  if (!business) throw new Error("business_not_found");
+  if (!business) throw new Error('business_not_found');
 
   const now = new Date().toISOString();
   const issueDate = input.issue_date ?? now;
   if (input.due_date && new Date(input.due_date).getTime() < new Date(issueDate).getTime()) {
-    throw new Error("invalid_due_date");
+    throw new Error('invalid_due_date');
   }
 
   const invoice: Invoice = {
@@ -86,10 +91,10 @@ export async function createInvoice(input: {
     invoice_number: input.invoice_number ?? null,
     customer_reference: input.customer_reference,
     amount: input.amount,
-    currency: "KES",
+    currency: 'KES',
     issue_date: issueDate,
     due_date: input.due_date ?? null,
-    status: input.status ?? "sent",
+    status: input.status ?? 'sent',
     expected_counterparty: input.expected_counterparty ?? null,
     paid_amount: 0,
     attachment_file_name: input.attachment?.file_name ?? null,
@@ -101,10 +106,10 @@ export async function createInvoice(input: {
   await dbRun(
     `INSERT INTO invoices (id, business_id, invoice_number, customer_reference, amount, currency, issue_date, due_date, status, expected_counterparty, paid_amount, attachment_file_name, attachment_sha256, attachment_size_bytes, created_at)
      VALUES (@id, @business_id, @invoice_number, @customer_reference, @amount, @currency, @issue_date, @due_date, @status, @expected_counterparty, @paid_amount, @attachment_file_name, @attachment_sha256, @attachment_size_bytes, @created_at)`,
-    invoice
+    invoice,
   );
 
-  await appendEvent("business", input.business_id, "invoice.created", {
+  await appendEvent('business', input.business_id, 'invoice.created', {
     invoice_id: invoice.id,
     invoice_number: invoice.invoice_number,
     amount: invoice.amount,
@@ -123,38 +128,49 @@ export async function listInvoicesForBusiness(
   businessId: string,
   status?: string,
   limit = 100,
-  offset = 0
+  offset = 0,
 ): Promise<Invoice[]> {
   if (status) {
     return dbAll<Invoice>(
       `SELECT * FROM invoices WHERE business_id = ? AND status = ? ORDER BY issue_date DESC LIMIT ? OFFSET ?`,
-      [businessId, status, limit, offset]
+      [businessId, status, limit, offset],
     );
   }
-  return dbAll<Invoice>(`SELECT * FROM invoices WHERE business_id = ? ORDER BY issue_date DESC LIMIT ? OFFSET ?`, [
-    businessId,
-    limit,
-    offset,
-  ]);
+  return dbAll<Invoice>(
+    `SELECT * FROM invoices WHERE business_id = ? ORDER BY issue_date DESC LIMIT ? OFFSET ?`,
+    [businessId, limit, offset],
+  );
 }
 
-export async function countInvoicesForBusiness(businessId: string, status?: string): Promise<number> {
+export async function countInvoicesForBusiness(
+  businessId: string,
+  status?: string,
+): Promise<number> {
   const row = status
-    ? await dbGet<{ c: number | string }>(`SELECT COUNT(*) AS c FROM invoices WHERE business_id = ? AND status = ?`, [businessId, status])
-    : await dbGet<{ c: number | string }>(`SELECT COUNT(*) AS c FROM invoices WHERE business_id = ?`, [businessId]);
+    ? await dbGet<{ c: number | string }>(
+        `SELECT COUNT(*) AS c FROM invoices WHERE business_id = ? AND status = ?`,
+        [businessId, status],
+      )
+    : await dbGet<{ c: number | string }>(
+        `SELECT COUNT(*) AS c FROM invoices WHERE business_id = ?`,
+        [businessId],
+      );
   return Number(row?.c ?? 0);
 }
 
 export async function listOpenInvoicesForBusiness(businessId: string): Promise<Invoice[]> {
-  const placeholders = OPEN_INVOICE_STATUSES.map(() => "?").join(", ");
+  const placeholders = OPEN_INVOICE_STATUSES.map(() => '?').join(', ');
   return dbAll<Invoice>(
     `SELECT * FROM invoices WHERE business_id = ? AND status IN (${placeholders}) ORDER BY issue_date ASC`,
-    [businessId, ...OPEN_INVOICE_STATUSES]
+    [businessId, ...OPEN_INVOICE_STATUSES],
   );
 }
 
 export async function listInvoicePayments(invoiceId: string): Promise<InvoicePayment[]> {
-  return dbAll<InvoicePayment>(`SELECT * FROM invoice_payments WHERE invoice_id = ? ORDER BY paid_at ASC`, [invoiceId]);
+  return dbAll<InvoicePayment>(
+    `SELECT * FROM invoice_payments WHERE invoice_id = ? ORDER BY paid_at ASC`,
+    [invoiceId],
+  );
 }
 
 export interface RecordPaymentRowInput {
@@ -168,14 +184,16 @@ export interface RecordPaymentRowInput {
 }
 
 /** Inserts one receipt row. A transaction can only be linked once. */
-export async function createInvoicePaymentRow(input: RecordPaymentRowInput): Promise<InvoicePayment> {
+export async function createInvoicePaymentRow(
+  input: RecordPaymentRowInput,
+): Promise<InvoicePayment> {
   const existing = input.transaction_id
-    ? await dbGet<InvoicePayment>(`SELECT * FROM invoice_payments WHERE invoice_id = ? AND transaction_id = ?`, [
-        input.invoice_id,
-        input.transaction_id,
-      ])
+    ? await dbGet<InvoicePayment>(
+        `SELECT * FROM invoice_payments WHERE invoice_id = ? AND transaction_id = ?`,
+        [input.invoice_id, input.transaction_id],
+      )
     : undefined;
-  if (existing) throw new Error("payment_already_recorded");
+  if (existing) throw new Error('payment_already_recorded');
 
   const payment: InvoicePayment = {
     id: randomUUID(),
@@ -192,7 +210,7 @@ export async function createInvoicePaymentRow(input: RecordPaymentRowInput): Pro
   await dbRun(
     `INSERT INTO invoice_payments (id, business_id, invoice_id, transaction_id, amount, method, reference, paid_at, created_at)
      VALUES (@id, @business_id, @invoice_id, @transaction_id, @amount, @method, @reference, @paid_at, @created_at)`,
-    payment
+    payment,
   );
 
   return payment;
@@ -205,29 +223,36 @@ export async function createInvoicePaymentRow(input: RecordPaymentRowInput): Pro
 export async function refreshInvoiceStatus(invoiceId: string): Promise<Invoice | undefined> {
   const invoice = await getInvoice(invoiceId);
   if (!invoice) return undefined;
-  if (invoice.status === "draft") return invoice;
+  if (invoice.status === 'draft') return invoice;
 
   const payments = await listInvoicePayments(invoiceId);
   const paidFromRows = payments.reduce((sum, payment) => sum + payment.amount, 0);
   // Rows are authoritative once they exist; otherwise keep any legacy value.
-  const paidAmount = payments.length > 0 ? Math.round(paidFromRows * 100) / 100 : (invoice.paid_amount ?? 0);
+  const paidAmount =
+    payments.length > 0 ? Math.round(paidFromRows * 100) / 100 : (invoice.paid_amount ?? 0);
   const epsilon = 0.005;
 
   let status: InvoiceStatus;
-  if (paidAmount >= invoice.amount - epsilon) status = "paid";
-  else if (paidAmount > epsilon) status = "partially_paid";
-  else if (invoice.due_date && new Date(invoice.due_date).getTime() < Date.now()) status = "overdue";
-  else status = "sent";
+  if (paidAmount >= invoice.amount - epsilon) status = 'paid';
+  else if (paidAmount > epsilon) status = 'partially_paid';
+  else if (invoice.due_date && new Date(invoice.due_date).getTime() < Date.now())
+    status = 'overdue';
+  else status = 'sent';
 
-  const latestReceipt = payments.map(payment => payment.paid_at)
-    .filter(value => Number.isFinite(Date.parse(value)))
+  const latestReceipt = payments
+    .map((payment) => payment.paid_at)
+    .filter((value) => Number.isFinite(Date.parse(value)))
     .sort((a, b) => Date.parse(b) - Date.parse(a))[0];
-  const paidAt = status === "paid" ? latestReceipt ?? invoice.paid_at ?? new Date().toISOString() : null;
-  const matchedTransactionId = invoice.matched_transaction_id ?? payments.find((payment) => payment.transaction_id)?.transaction_id ?? null;
+  const paidAt =
+    status === 'paid' ? (latestReceipt ?? invoice.paid_at ?? new Date().toISOString()) : null;
+  const matchedTransactionId =
+    invoice.matched_transaction_id ??
+    payments.find((payment) => payment.transaction_id)?.transaction_id ??
+    null;
 
   await dbRun(
     `UPDATE invoices SET status = ?, paid_amount = ?, paid_at = ?, matched_transaction_id = ? WHERE id = ?`,
-    [status, paidAmount, paidAt, matchedTransactionId, invoiceId]
+    [status, paidAmount, paidAt, matchedTransactionId, invoiceId],
   );
 
   return (await getInvoice(invoiceId))!;
@@ -236,11 +261,14 @@ export async function refreshInvoiceStatus(invoiceId: string): Promise<Invoice |
 /** Marks an invoice as sent (drafts become reconcilable/collectable). */
 export async function sendInvoice(invoiceId: string): Promise<Invoice> {
   const invoice = await getInvoice(invoiceId);
-  if (!invoice) throw new Error("invoice_not_found");
-  if (invoice.status !== "draft") throw new Error("invoice_not_draft");
+  if (!invoice) throw new Error('invoice_not_found');
+  if (invoice.status !== 'draft') throw new Error('invoice_not_draft');
 
   await dbRun(`UPDATE invoices SET status = 'sent' WHERE id = ?`, [invoiceId]);
-  await appendEvent("business", invoice.business_id, "invoice.sent", { invoice_id: invoiceId, invoice_number: invoice.invoice_number });
+  await appendEvent('business', invoice.business_id, 'invoice.sent', {
+    invoice_id: invoiceId,
+    invoice_number: invoice.invoice_number,
+  });
   return (await getInvoice(invoiceId))!;
 }
 
@@ -251,7 +279,7 @@ export async function markOverdueInvoices(businessId: string): Promise<number> {
     `UPDATE invoices SET status = 'overdue'
      WHERE business_id = ? AND status IN ('unpaid', 'sent', 'partially_paid')
        AND due_date IS NOT NULL AND due_date < ?`,
-    [businessId, now]
+    [businessId, now],
   );
   return result.changes;
 }
@@ -265,13 +293,13 @@ export async function markInvoicePaid(
   invoiceId: string,
   transactionId: string,
   paidAmount: number,
-  paidAt?: string
+  paidAt?: string,
 ): Promise<{ invoice: Invoice; changed: boolean }> {
   const now = new Date().toISOString();
   const res = await dbRun(
     `UPDATE invoices SET status = 'paid', matched_transaction_id = ?, paid_amount = ?, paid_at = ?
      WHERE id = ? AND status != 'paid'`,
-    [transactionId, paidAmount, paidAt ?? now, invoiceId]
+    [transactionId, paidAmount, paidAt ?? now, invoiceId],
   );
 
   const invoice = (await getInvoice(invoiceId))!;

@@ -1,7 +1,8 @@
 /** New cash facts are merchant observations, never fabricated ac_events rows.
  * Migration 019 owns installation; historical migration 008 is unchanged. */
 export const cashMovementTable = 'ac_cash_movements';
-export const cashMovementStatement = 'CREATE TABLE IF NOT EXISTS ac_cash_movements (id TEXT PRIMARY KEY,org_id TEXT NOT NULL REFERENCES ac_organizations(id),environment TEXT NOT NULL,document_id TEXT NOT NULL REFERENCES ac_records(id),amount_minor BIGINT NOT NULL,currency TEXT NOT NULL,kind TEXT NOT NULL,related_receipt_id TEXT REFERENCES ac_cash_movements(id),source_type TEXT NOT NULL,source_id TEXT NOT NULL,session_id TEXT REFERENCES ac_erp_objects(id),occurred_at TEXT NOT NULL,actor TEXT NOT NULL,data TEXT NOT NULL,created_at TEXT NOT NULL,UNIQUE(org_id,environment,source_type,source_id,kind),CHECK ((kind=\'receipt\' AND amount_minor>0 AND related_receipt_id IS NULL) OR (kind=\'return\' AND amount_minor<0 AND related_receipt_id IS NOT NULL)))';
+export const cashMovementStatement =
+  "CREATE TABLE IF NOT EXISTS ac_cash_movements (id TEXT PRIMARY KEY,org_id TEXT NOT NULL REFERENCES ac_organizations(id),environment TEXT NOT NULL,document_id TEXT NOT NULL REFERENCES ac_records(id),amount_minor BIGINT NOT NULL,currency TEXT NOT NULL,kind TEXT NOT NULL,related_receipt_id TEXT REFERENCES ac_cash_movements(id),source_type TEXT NOT NULL,source_id TEXT NOT NULL,session_id TEXT REFERENCES ac_erp_objects(id),occurred_at TEXT NOT NULL,actor TEXT NOT NULL,data TEXT NOT NULL,created_at TEXT NOT NULL,UNIQUE(org_id,environment,source_type,source_id,kind),CHECK ((kind='receipt' AND amount_minor>0 AND related_receipt_id IS NULL) OR (kind='return' AND amount_minor<0 AND related_receipt_id IS NOT NULL)))";
 
 /** Existing columns retain their order and semantics. The extra classification
  * prevents consumers from representing recorded cash as provider confirmation. */

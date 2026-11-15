@@ -1,23 +1,26 @@
-import {basisPoints,sumMinor,exactNumber} from '../finance/money';
-import {quantityMilli} from '../inventory/quantity';
+import { basisPoints, sumMinor, exactNumber } from '../finance/money';
+import { quantityMilli } from '../inventory/quantity';
 import { z } from 'zod';
-export const currencySchema = z.enum([
-  'KES',
-  'USD',
-  'EUR',
-  'GBP',
-  'UGX',
-  'TZS',
-  'RWF',
-]);
-export const quantitySchema=z.number().min(0.001).max(100000).refine(n=>{try{quantityMilli(n);return true;}catch{return false;}},'Use at most three decimal places');
+export const currencySchema = z.enum(['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF']);
+export const quantitySchema = z
+  .number()
+  .min(0.001)
+  .max(100000)
+  .refine((n) => {
+    try {
+      quantityMilli(n);
+      return true;
+    } catch {
+      return false;
+    }
+  }, 'Use at most three decimal places');
 export const itemSchema = z.object({
   description: z.string().trim().min(1).max(500),
   quantity: quantitySchema,
   unit_price_minor: z.number().int().min(0).max(10000000000),
-  product_id:z.string().uuid().optional(),
-  warehouse_id:z.string().uuid().optional(),
-  location_id:z.string().uuid().optional(),
+  product_id: z.string().uuid().optional(),
+  warehouse_id: z.string().uuid().optional(),
+  location_id: z.string().uuid().optional(),
 });
 export const documentSchema = z.object({
   customer_id: z.string().uuid(),
@@ -34,21 +37,18 @@ export const documentSchema = z.object({
   payment_instructions: z.string().max(3000).default(''),
 });
 export function totals(doc: z.infer<typeof documentSchema>) {
-  const subtotal_minor = sumMinor(doc.items.map(i=>exactNumber((BigInt(quantityMilli(i.quantity))*BigInt(i.unit_price_minor)+500n)/1000n)));
-  if (
-    !Number.isSafeInteger(subtotal_minor) ||
-    doc.discount_minor > subtotal_minor
-  )
+  const subtotal_minor = sumMinor(
+    doc.items.map((i) =>
+      exactNumber((BigInt(quantityMilli(i.quantity)) * BigInt(i.unit_price_minor) + 500n) / 1000n),
+    ),
+  );
+  if (!Number.isSafeInteger(subtotal_minor) || doc.discount_minor > subtotal_minor)
     throw Object.assign(new Error('Invalid total or discount'), {
       status: 400,
     });
-  const tax_minor = basisPoints(subtotal_minor-doc.discount_minor,doc.tax_bps);
+  const tax_minor = basisPoints(subtotal_minor - doc.discount_minor, doc.tax_bps);
   const total_minor = subtotal_minor - doc.discount_minor + tax_minor;
-  if (
-    !Number.isSafeInteger(total_minor) ||
-    total_minor <= 0 ||
-    total_minor > 100000000000
-  )
+  if (!Number.isSafeInteger(total_minor) || total_minor <= 0 || total_minor > 100000000000)
     throw Object.assign(new Error('Invalid total'), { status: 400 });
   if (doc.due_date < doc.issue_date)
     throw Object.assign(new Error('Due date precedes issue date'), {
@@ -56,18 +56,11 @@ export function totals(doc: z.infer<typeof documentSchema>) {
     });
   return { subtotal_minor, tax_minor, total_minor };
 }
-export const roles = [
-  'owner',
-  'admin',
-  'finance',
-  'operations',
-  'viewer',
-] as const;
+export const roles = ['owner', 'admin', 'finance', 'operations', 'viewer'] as const;
 export function permitted(role: string, capability: string) {
   if (role === 'owner' || role === 'admin') return true;
   if (capability === 'read') return roles.includes(role as any);
   if (capability === 'finance') return role === 'finance';
-  if (capability === 'operations')
-    return role === 'operations' || role === 'finance';
+  if (capability === 'operations') return role === 'operations' || role === 'finance';
   return false;
 }

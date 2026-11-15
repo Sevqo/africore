@@ -1277,9 +1277,7 @@
         "category": "payments"
       }
     ],
-    "available_actions": [
-      "in_app_notification"
-    ],
+    "available_actions": ["in_app_notification"],
     "external_delivery": "not_configured"
   },
   "/automation-runs": {
@@ -1390,55 +1388,40 @@
       {
         "provider": "sandbox_accounting",
         "category": "accounting",
-        "capabilities": [
-          "expense_normalization"
-        ],
+        "capabilities": ["expense_normalization"],
         "authentication": "sandbox_only",
         "sync_frequency": "manual",
         "provider_rate_limit": "12 syncs/hour/workspace",
         "retry": "3 attempts, exponential backoff",
-        "events": [
-          "integration.synced",
-          "integration.sync_failed"
-        ],
+        "events": ["integration.synced", "integration.sync_failed"],
         "production_available": false
       },
       {
         "provider": "sandbox_courier",
         "category": "delivery",
-        "capabilities": [
-          "tracking_events"
-        ],
+        "capabilities": ["tracking_events"],
         "authentication": "sandbox_only",
         "sync_frequency": "manual",
         "provider_rate_limit": "12 syncs/hour/workspace",
         "retry": "3 attempts, exponential backoff",
-        "events": [
-          "shipment.delivered"
-        ],
+        "events": ["shipment.delivered"],
         "production_available": false
       },
       {
         "provider": "sandbox_store",
         "category": "commerce",
-        "capabilities": [
-          "order_feed"
-        ],
+        "capabilities": ["order_feed"],
         "authentication": "sandbox_only",
         "sync_frequency": "manual",
         "provider_rate_limit": "12 syncs/hour/workspace",
         "retry": "3 attempts, exponential backoff",
-        "events": [
-          "integration.synced"
-        ],
+        "events": ["integration.synced"],
         "production_available": false
       },
       {
         "provider": "csv",
         "category": "data",
-        "capabilities": [
-          "transaction_import"
-        ],
+        "capabilities": ["transaction_import"],
         "authentication": "member_authorization",
         "sync_frequency": "manual",
         "provider_rate_limit": "1000 rows/import",

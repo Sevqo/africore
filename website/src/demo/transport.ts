@@ -5,8 +5,7 @@ const KEY = 'africore.demo.v1',
 export const isDemo = () =>
   typeof localStorage !== 'undefined' && localStorage.getItem(ACTIVE) === 'yes';
 export function startDemo(reset = false) {
-  if (reset || !localStorage.getItem(KEY))
-    localStorage.setItem(KEY, JSON.stringify(initial));
+  if (reset || !localStorage.getItem(KEY)) localStorage.setItem(KEY, JSON.stringify(initial));
   localStorage.setItem(ACTIVE, 'yes');
 }
 export function exitDemo() {
@@ -14,22 +13,15 @@ export function exitDemo() {
 }
 const now = () => new Date().toISOString(),
   id = () => crypto.randomUUID(),
-  date = () =>
-    new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Nairobi' });
+  date = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Nairobi' });
 function read() {
   try {
-    return (
-      JSON.parse(localStorage.getItem(KEY) || 'null') ||
-      structuredClone(initial)
-    );
+    return JSON.parse(localStorage.getItem(KEY) || 'null') || structuredClone(initial);
   } catch {
     return structuredClone(initial);
   }
 }
-export async function transport(
-  path: string,
-  options: RequestInit = {},
-): Promise<Response> {
+export async function transport(path: string, options: RequestInit = {}): Promise<Response> {
   let input: any = {};
   try {
     input = typeof options.body === 'string' ? JSON.parse(options.body) : {};
@@ -46,10 +38,7 @@ export async function transport(
   const reject = (message: string, status = 400) => finish({ message }, status);
   const headers = new Headers(options.headers);
   if (headers.get('X-Environment') === 'production')
-    return reject(
-      'The demo contains sandbox data only. Switch back to Sandbox.',
-      403,
-    );
+    return reject('The demo contains sandbox data only. Switch back to Sandbox.', 403);
   if (url.pathname === '/api/auth/me') return finish(state['/me']);
   if (url.pathname === '/api/auth/signout') {
     exitDemo();
@@ -58,23 +47,17 @@ export async function transport(
   if (url.pathname === '/api/v1/organizations')
     return method === 'GET'
       ? finish({ data: [{ ...state['/organization'], role: 'owner' }] })
-      : reject(
-          'Use the seeded demo workspace. Connect a backend to create real organizations.',
-        );
+      : reject('Use the seeded demo workspace. Connect a backend to create real organizations.');
   const orgPrefix = '/api/v1/organizations/' + state['/organization'].id;
   let route = url.pathname.startsWith(orgPrefix)
     ? url.pathname.slice(orgPrefix.length)
     : url.pathname.replace('/api/v1', '');
   const trustResult = await demoTrust(state, route, method, input);
   if (trustResult !== null)
-    return trustResult.__error
-      ? reject(trustResult.__error, 409)
-      : finish(trustResult);
-  const selectedCurrency =
-    url.searchParams.get('currency') || input.currency || 'KES';
+    return trustResult.__error ? reject(trustResult.__error, 409) : finish(trustResult);
+  const selectedCurrency = url.searchParams.get('currency') || input.currency || 'KES';
   const rows = (key: string) => state[key]?.data || [],
-    find = (key: string, recordId: string) =>
-      rows(key).find((r: any) => r.id === recordId);
+    find = (key: string, recordId: string) => rows(key).find((r: any) => r.id === recordId);
   const add = (key: string, d: any) => {
     const row = {
       ...d,
@@ -93,9 +76,7 @@ export async function transport(
   const snapshot = () => {
     const s = structuredClone(state['/intelligence']),
       invoices = rows('/records/invoices').filter(
-        (i: any) =>
-          !['draft', 'voided'].includes(i.status) &&
-          i.currency === selectedCurrency,
+        (i: any) => !['draft', 'voided'].includes(i.status) && i.currency === selectedCurrency,
       ),
       expenses = rows('/expenses').filter(
         (e: any) =>
@@ -112,13 +93,8 @@ export async function transport(
       ),
     }));
     s.totals.confirmed_inflows_minor = rows('/payments')
-      .filter(
-        (p: any) => p.status === 'paid' && p.currency === selectedCurrency,
-      )
-      .reduce(
-        (n: number, p: any) => n + (p.paid_minor || p.amount_minor || 0),
-        0,
-      );
+      .filter((p: any) => p.status === 'paid' && p.currency === selectedCurrency)
+      .reduce((n: number, p: any) => n + (p.paid_minor || p.amount_minor || 0), 0);
     s.totals.recorded_outflows_minor = expenses.reduce(
       (n: number, e: any) => n + e.amount_minor,
       0,
@@ -132,10 +108,7 @@ export async function transport(
     s.totals.overdue_minor = s.invoices
       .filter((i: any) => i.overdue_days > 0)
       .reduce((n: number, i: any) => n + i.outstanding_minor, 0);
-    s.totals.invoiced_sales_minor = invoices.reduce(
-      (n: number, i: any) => n + i.total_minor,
-      0,
-    );
+    s.totals.invoiced_sales_minor = invoices.reduce((n: number, i: any) => n + i.total_minor, 0);
     s.period.to = date();
     s.as_of = date();
     s.customers = rows('/records/customers').map((c: any) => {
@@ -143,18 +116,10 @@ export async function transport(
       return {
         ...c,
         customer_id: c.id,
-        total_invoiced_minor: ds.reduce(
-          (n: number, i: any) => n + i.total_minor,
-          0,
-        ),
+        total_invoiced_minor: ds.reduce((n: number, i: any) => n + i.total_minor, 0),
         total_paid_minor: ds.reduce((n: number, i: any) => n + i.paid_minor, 0),
-        outstanding_minor: ds.reduce(
-          (n: number, i: any) => n + i.outstanding_minor,
-          0,
-        ),
-        settled_invoice_count: ds.filter(
-          (i: any) => i.paid_minor === i.total_minor,
-        ).length,
+        outstanding_minor: ds.reduce((n: number, i: any) => n + i.outstanding_minor, 0),
+        settled_invoice_count: ds.filter((i: any) => i.paid_minor === i.total_minor).length,
         limited_data: true,
         average_delay_days: null,
         on_time_percent: null,
@@ -180,8 +145,7 @@ export async function transport(
                 : 'days_over_90';
       s.aging[key] += invoice.outstanding_minor;
     }
-    if (!s.series.some((point: any) => point.date === date()))
-      s.series.push({ date: date() });
+    if (!s.series.some((point: any) => point.date === date())) s.series.push({ date: date() });
     s.series = s.series.map((point: any) => ({
       ...point,
       confirmed_inflows_minor: rows('/payments')
@@ -191,11 +155,7 @@ export async function transport(
             pay.currency === selectedCurrency &&
             pay.created_at?.slice(0, 10) === point.date,
         )
-        .reduce(
-          (n: number, pay: any) =>
-            n + (pay.paid_minor || pay.amount_minor || 0),
-          0,
-        ),
+        .reduce((n: number, pay: any) => n + (pay.paid_minor || pay.amount_minor || 0), 0),
       recorded_outflows_minor: expenses
         .filter((expense: any) => expense.occurred_on === point.date)
         .reduce((n: number, e: any) => n + e.amount_minor, 0),
@@ -212,14 +172,7 @@ export async function transport(
       const csv = [
         'reference,currency,total_minor,paid_minor,due_date,status',
         ...s.invoices.map((i: any) =>
-          [
-            i.reference,
-            i.currency,
-            i.total_minor,
-            i.paid_minor,
-            i.due_date,
-            i.status,
-          ]
+          [i.reference, i.currency, i.total_minor, i.paid_minor, i.due_date, i.status]
             .map((v) => '\"' + String(v ?? '').replaceAll('\"', '\"\"') + '\"')
             .join(','),
         ),
@@ -254,16 +207,11 @@ export async function transport(
     f.horizon = h;
     f.scenario = input.scenario || 'expected';
     f.assumptions.collection_bps = bps;
-    f.projected_inflows_minor = Math.round(
-      (s.totals.outstanding_minor * bps) / 10000,
-    );
+    f.projected_inflows_minor = Math.round((s.totals.outstanding_minor * bps) / 10000);
     f.projected_outflows_minor = rows('/obligations')
-      .filter(
-        (o: any) => o.status === 'active' && o.currency === selectedCurrency,
-      )
+      .filter((o: any) => o.status === 'active' && o.currency === selectedCurrency)
       .reduce((n: number, o: any) => n + o.amount_minor, 0);
-    const delay =
-      input.scenario === 'conservative' ? 14 : Number(input.delay_days || 0);
+    const delay = input.scenario === 'conservative' ? 14 : Number(input.delay_days || 0);
     if (delay >= h) f.projected_inflows_minor = 0;
     f.assumptions.additional_delay_days = delay;
     f.assumptions.outflow_bps = Number(input.outflow_bps || 10000);
@@ -273,23 +221,17 @@ export async function transport(
     f.receivables = s.invoices.map((invoice: any) => ({
       invoice_id: invoice.id,
       customer_id: invoice.customer_id,
-      expected_date: new Date(Date.now() + (5 + delay) * 86400000)
-        .toISOString()
-        .slice(0, 10),
+      expected_date: new Date(Date.now() + (5 + delay) * 86400000).toISOString().slice(0, 10),
       expected_receipt_minor:
         delay >= h ? 0 : Math.round((invoice.outstanding_minor * bps) / 10000),
       delay_observations: 0,
     }));
-    f.estimated_net_movement_minor =
-      f.projected_inflows_minor - f.projected_outflows_minor;
+    f.estimated_net_movement_minor = f.projected_inflows_minor - f.projected_outflows_minor;
     f.series = Array.from({ length: h }, (_, i) => ({
-      date: new Date(Date.now() + (i + 1) * 86400000)
-        .toISOString()
-        .slice(0, 10),
+      date: new Date(Date.now() + (i + 1) * 86400000).toISOString().slice(0, 10),
       inflow_minor: i === Math.min(4, h - 1) ? f.projected_inflows_minor : 0,
       outflow_minor: i === Math.min(4, h - 1) ? f.projected_outflows_minor : 0,
-      cumulative_net_movement_minor:
-        i >= Math.min(4, h - 1) ? f.estimated_net_movement_minor : 0,
+      cumulative_net_movement_minor: i >= Math.min(4, h - 1) ? f.estimated_net_movement_minor : 0,
     }));
     f.uncertainty =
       'Simplified browser demo scenario; use the connected backend for due-date and history-aware forecasting.';
@@ -308,9 +250,7 @@ export async function transport(
       explanation:
         'Browser demo: recorded collections and expenses are synthetic. Review receivables and obligations in the Intelligence and Forecasts tabs. No external AI request was sent.',
       actions_executed: false,
-      limitations: [
-        'Synthetic browser data; no external model or bank connection.',
-      ],
+      limitations: ['Synthetic browser data; no external model or bank connection.'],
     });
   }
   if (route.startsWith('/internal/'))
@@ -323,17 +263,13 @@ export async function transport(
     const key = '/records/' + recordMatch[1],
       row = recordMatch[2] ? find(key, recordMatch[2]) : null;
     if (method === 'GET') {
-      const limit = Math.min(
-          100,
-          Math.max(1, Number(url.searchParams.get('limit') || 50)),
-        ),
+      const limit = Math.min(100, Math.max(1, Number(url.searchParams.get('limit') || 50))),
         offset = Math.max(0, Number(url.searchParams.get('offset') || 0)),
         q = (url.searchParams.get('q') || '').toLowerCase(),
         status = url.searchParams.get('status');
       const filtered = rows(key).filter(
         (r: any) =>
-          (!q || JSON.stringify(r).toLowerCase().includes(q)) &&
-          (!status || r.status === status),
+          (!q || JSON.stringify(r).toLowerCase().includes(q)) && (!status || r.status === status),
       );
       return finish(
         recordMatch[2]
@@ -356,17 +292,12 @@ export async function transport(
           0,
         );
         d.tax_minor = Math.round(
-          ((d.subtotal_minor - (input.discount_minor || 0)) *
-            (input.tax_bps || 0)) /
-            10000,
+          ((d.subtotal_minor - (input.discount_minor || 0)) * (input.tax_bps || 0)) / 10000,
         );
-        d.total_minor =
-          d.subtotal_minor - (input.discount_minor || 0) + d.tax_minor;
+        d.total_minor = d.subtotal_minor - (input.discount_minor || 0) + d.tax_minor;
         d.reference =
-          (recordMatch[1] === 'orders' ? 'ORD-' : 'INV-') +
-          id().slice(0, 6).toUpperCase();
-        if (d.total_minor <= 0)
-          return reject('Enter a positive document total.');
+          (recordMatch[1] === 'orders' ? 'ORD-' : 'INV-') + id().slice(0, 6).toUpperCase();
+        if (d.total_minor <= 0) return reject('Enter a positive document total.');
       }
       const result = add(key, d);
       audit('demo.record.created', result.id);
@@ -376,9 +307,7 @@ export async function transport(
       if (
         recordMatch[1] === 'orders' &&
         rows('/protected-sales').some(
-          (s: any) =>
-            s.order_id === row.id &&
-            !['cancelled', 'expired'].includes(s.state),
+          (s: any) => s.order_id === row.id && !['cancelled', 'expired'].includes(s.state),
         )
       )
         return reject('Use protected shipment actions for this order.', 409);
@@ -389,20 +318,16 @@ export async function transport(
   }
   if (route === '/payment-requests' && method === 'POST') {
     const doc =
-      find('/records/invoices', input.document_id) ||
-      find('/records/orders', input.document_id);
+      find('/records/invoices', input.document_id) || find('/records/orders', input.document_id);
     if (
       doc &&
       rows('/protected-sales').some(
-        (s: any) =>
-          s.order_id === doc.id && !['cancelled', 'expired'].includes(s.state),
+        (s: any) => s.order_id === doc.id && !['cancelled', 'expired'].includes(s.state),
       )
     )
       return reject('This order uses the protected purchase workflow.', 409);
-    if (!doc || doc.status === 'draft')
-      return reject('Issue the invoice or order first.');
-    if (doc.paid_minor >= doc.total_minor)
-      return reject('This document is already paid.');
+    if (!doc || doc.status === 'draft') return reject('Issue the invoice or order first.');
+    if (doc.paid_minor >= doc.total_minor) return reject('This document is already paid.');
     const payment = add('/payments', {
       document_id: doc.id,
       amount_minor: doc.total_minor - doc.paid_minor,
@@ -415,22 +340,15 @@ export async function transport(
     return finish(payment, 201);
   }
   if (route.startsWith('/checkout/')) {
-    const pay = rows('/payments').find(
-      (p: any) => p.checkout_url === route.replace(/\/pay$/, ''),
-    );
+    const pay = rows('/payments').find((p: any) => p.checkout_url === route.replace(/\/pay$/, ''));
     if (!pay) return reject('Demo payment link not found.', 404);
     if (method === 'POST') {
       pay.status =
-        input.scenario === 'failure'
-          ? 'failed'
-          : input.scenario === 'pending'
-            ? 'pending'
-            : 'paid';
+        input.scenario === 'failure' ? 'failed' : input.scenario === 'pending' ? 'pending' : 'paid';
       if (pay.status === 'paid') {
         pay.paid_minor = pay.amount_minor;
         const doc =
-          find('/records/invoices', pay.document_id) ||
-          find('/records/orders', pay.document_id);
+          find('/records/invoices', pay.document_id) || find('/records/orders', pay.document_id);
         if (doc) {
           doc.paid_minor = doc.total_minor;
           doc.payment_status = 'paid';
@@ -443,13 +361,10 @@ export async function transport(
       merchant: state['/organization'].name,
       environment: 'sandbox',
       items:
-        (
-          find('/records/invoices', pay.document_id) ||
-          find('/records/orders', pay.document_id)
-        )?.items || [],
+        (find('/records/invoices', pay.document_id) || find('/records/orders', pay.document_id))
+          ?.items || [],
       document:
-        find('/records/invoices', pay.document_id) ||
-        find('/records/orders', pay.document_id),
+        find('/records/invoices', pay.document_id) || find('/records/orders', pay.document_id),
     });
   }
   if (route === '/automations/process') {
@@ -457,8 +372,7 @@ export async function transport(
     for (const w of rows('/automations').filter((w: any) => w.enabled)) {
       if (
         rows('/automation-runs').some(
-          (r: any) =>
-            r.workflow_id === w.id && r.created_at.slice(0, 10) === date(),
+          (r: any) => r.workflow_id === w.id && r.created_at.slice(0, 10) === date(),
         )
       )
         continue;
@@ -512,9 +426,7 @@ export async function transport(
         const order = find('/records/orders', d.order_id);
         if (!order) return reject('Choose an order.');
         const active = rows('/protected-sales').find(
-          (x: any) =>
-            x.order_id === order.id &&
-            !['cancelled', 'expired'].includes(x.state),
+          (x: any) => x.order_id === order.id && !['cancelled', 'expired'].includes(x.state),
         );
         if (active) {
           if (!['awaiting_shipment', 'shipped'].includes(active.state))
@@ -522,9 +434,7 @@ export async function transport(
           d.protected_sale_id = active.id;
         }
         const siblings = rows('/shipments').filter(
-          (x: any) =>
-            x.order_id === order.id &&
-            !['cancelled', 'returned'].includes(x.status),
+          (x: any) => x.order_id === order.id && !['cancelled', 'returned'].includes(x.status),
         );
         if (
           !d.items?.length ||
@@ -543,18 +453,13 @@ export async function transport(
                 order.items[i.item_index].quantity,
           )
         )
-          return reject(
-            'Shipment quantity exceeds remaining order quantities.',
-          );
+          return reject('Shipment quantity exceeds remaining order quantities.');
         d.status = 'pending';
         d.delivery_assurance = 'seller_reported';
-        d.history = [
-          { state: 'pending', source: 'seller_reported', at: now() },
-        ];
+        d.history = [{ state: 'pending', source: 'seller_reported', at: now() }];
       }
       if (key === '/approvals') {
-        if (d.approver === state['/me'].id)
-          return reject('Choose a different approver.');
+        if (d.approver === state['/me'].id) return reject('Choose a different approver.');
         d.status = 'pending';
         d.requester = state['/me'].id;
         d.expires_at = new Date(Date.now() + 86400000).toISOString();
@@ -641,8 +546,7 @@ export async function transport(
         'Use Transactions > Import for custom demo rows; connected connector import requires the backend.',
       );
     if (op === 'action' && key === '/connectors') {
-      row.status =
-        input.action === 'disconnect' ? 'disconnected' : 'configured';
+      row.status = input.action === 'disconnect' ? 'disconnected' : 'configured';
       return finish(row);
     }
     if (op === 'decide')
@@ -670,8 +574,7 @@ export async function transport(
     const sale = rows('/protected-sales').find(
       (s: any) => s.buyer_url === route.replace(/\/(action|disputes).*$/, ''),
     );
-    if (!sale)
-      return reject('Demo buyer link is unavailable in this browser.', 404);
+    if (!sale) return reject('Demo buyer link is unavailable in this browser.', 404);
     if (method === 'POST') {
       if (route.endsWith('/disputes')) {
         const dispute = add('/disputes', {
@@ -711,10 +614,7 @@ export async function transport(
               ) >= i.quantity,
           )
         )
-          return reject(
-            'All purchased quantities must ship before confirming receipt.',
-            409,
-          );
+          return reject('All purchased quantities must ship before confirming receipt.', 409);
       }
       const allowed: any = {
         pay: ['awaiting_buyer_payment'],
@@ -723,10 +623,7 @@ export async function transport(
         cancel: ['awaiting_buyer_payment'],
       };
       if (!allowed[action]?.includes(sale.state))
-        return reject(
-          'This action is not available in the current demo state.',
-          409,
-        );
+        return reject('This action is not available in the current demo state.', 409);
       sale.state =
         action === 'pay'
           ? 'awaiting_shipment'
@@ -753,27 +650,18 @@ export async function transport(
       custody: 'Browser demo only. No funds are held.',
       provider: 'Browser demo simulator',
       fees_minor: 0,
-      shipments: rows('/shipments').filter(
-        (s: any) => s.protected_sale_id === sale.id,
-      ),
-      disputes: rows('/disputes').filter(
-        (d: any) => d.protected_sale_id === sale.id,
-      ),
+      shipments: rows('/shipments').filter((s: any) => s.protected_sale_id === sale.id),
+      disputes: rows('/disputes').filter((d: any) => d.protected_sale_id === sale.id),
     });
   }
-  if (route.startsWith('/evidence/'))
-    return finish(state[route] || { data: [] });
+  if (route.startsWith('/evidence/')) return finish(state[route] || { data: [] });
   if (route === '/credentials' && method === 'POST')
     return reject(
       'Real API credentials require a backend. This demo never creates usable server credentials.',
     );
   if (route === '/import' && method === 'POST') {
     for (const r of input.rows || [])
-      if (
-        !rows('/records/transactions').some(
-          (x: any) => x.external_id === r.external_id,
-        )
-      )
+      if (!rows('/records/transactions').some((x: any) => x.external_id === r.external_id))
         add('/records/transactions', {
           ...r,
           provider_verified: false,

@@ -1,91 +1,742 @@
-import {approvalQueue} from '../erp/approval-privacy';
-import {salesTemplates,saveSalesTemplate,priceLists,savePriceList,pricingPreview} from './sales-pricing';
-import {crmReport,crmActivityReport} from './crm-report';
-import {crmConfiguration,saveCrmConfiguration} from './crm-configuration';
-import {replenishmentSuggestions,reviewReplenishment} from '../inventory/replenishment';
-import {financialOperation} from '../finance/service';
-import {Router} from 'express';
-import {z} from 'zod';
-import {access,route,fail,audit} from '../platform/auth';
-import {dbAll,dbGet,dbRun,dbTransaction} from '../db/adapter';
-import {now} from '../platform/crypto';
-import {stockCountSnapshot,postStockCount,products,product,createProduct,editProduct,warehouses,createWarehouse,editWarehouse,createLocation,postMovement,inventoryOverview,planIncoming,resolveIncoming} from '../inventory/service';
-import {importCrmEntries,crmEntryHistory,convertCrmLead,crmOverview,crmEntries,createCrmEntry,editCrmEntry,customerProfile,setCustomerProfile,crmCustomerActivity} from './crm';
-import {quotationHistory,createQuote,quote,editQuote,quoteAction,orderDraft,editOrderDraft} from './sales';
-import {businessPolicyFor,setBusinessPolicy} from './business-policy';
-import {requestApproval,previewAutomation,notificationPreferences} from './automation';
-import {movementInput} from '../inventory/contracts';
-import {creditInput} from '../finance/contracts';
-import {businessAnalytics,analyticsRecords,savedReports,saveReport,removeReport} from './business-analytics';
-import {safeCSV,all} from './store';
-export const business=Router();
-business.get('/organizations/:org/inventory/replenishment-suggestions',route(async(req,res)=>res.json(await replenishmentSuggestions(await access(req),req.query))));
-business.post('/organizations/:org/inventory/replenishment-suggestions/:id/review',route(async(req,res)=>res.json(await reviewReplenishment(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
+import { approvalQueue } from '../erp/approval-privacy';
+import {
+  salesTemplates,
+  saveSalesTemplate,
+  priceLists,
+  savePriceList,
+  pricingPreview,
+} from './sales-pricing';
+import { crmReport, crmActivityReport } from './crm-report';
+import { crmConfiguration, saveCrmConfiguration } from './crm-configuration';
+import { replenishmentSuggestions, reviewReplenishment } from '../inventory/replenishment';
+import { financialOperation } from '../finance/service';
+import { Router } from 'express';
+import { z } from 'zod';
+import { access, route, fail, audit } from '../platform/auth';
+import { dbAll, dbGet, dbRun, dbTransaction } from '../db/adapter';
+import { now } from '../platform/crypto';
+import {
+  stockCountSnapshot,
+  postStockCount,
+  products,
+  product,
+  createProduct,
+  editProduct,
+  warehouses,
+  createWarehouse,
+  editWarehouse,
+  createLocation,
+  postMovement,
+  inventoryOverview,
+  planIncoming,
+  resolveIncoming,
+} from '../inventory/service';
+import {
+  importCrmEntries,
+  crmEntryHistory,
+  convertCrmLead,
+  crmOverview,
+  crmEntries,
+  createCrmEntry,
+  editCrmEntry,
+  customerProfile,
+  setCustomerProfile,
+  crmCustomerActivity,
+} from './crm';
+import {
+  quotationHistory,
+  createQuote,
+  quote,
+  editQuote,
+  quoteAction,
+  orderDraft,
+  editOrderDraft,
+} from './sales';
+import { businessPolicyFor, setBusinessPolicy } from './business-policy';
+import { requestApproval, previewAutomation, notificationPreferences } from './automation';
+import { movementInput } from '../inventory/contracts';
+import { creditInput } from '../finance/contracts';
+import {
+  businessAnalytics,
+  analyticsRecords,
+  savedReports,
+  saveReport,
+  removeReport,
+} from './business-analytics';
+import { safeCSV, all } from './store';
+export const business = Router();
+business.get(
+  '/organizations/:org/inventory/replenishment-suggestions',
+  route(async (req, res) => res.json(await replenishmentSuggestions(await access(req), req.query))),
+);
+business.post(
+  '/organizations/:org/inventory/replenishment-suggestions/:id/review',
+  route(async (req, res) =>
+    res.json(
+      await reviewReplenishment(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
 
-business.get('/organizations/:org/notifications/preferences',route(async(req,res)=>{const a=await access(req);if(a.api)fail(403,'Human member required');res.json((await all(a,'notification_preferences')).find(p=>p.user_id===a.actor)||{paused:false,muted_categories:[]});}));
-business.put('/organizations/:org/notifications/preferences',route(async(req,res)=>res.json(await notificationPreferences(await access(req),req.body))));
-business.get('/organizations/:org/business/orders/:id/draft',route(async(req,res)=>res.json(await orderDraft(await access(req),String(req.params.id)))));
-business.post('/organizations/:org/business/orders/:id/draft',route(async(req,res)=>res.json(await editOrderDraft(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
-business.post('/organizations/:org/business/workflows/:id/test',route(async(req,res)=>{z.object({confirm:z.literal(true)}).strict().parse(req.body);res.json(await previewAutomation(await access(req,'finance'),String(req.params.id)));}));
-business.get('/organizations/:org/business/analytics/records',route(async(req,res)=>res.json(await analyticsRecords(await access(req),req.query))));
-business.get('/organizations/:org/business/analytics',route(async(req,res)=>res.json(await businessAnalytics(await access(req),req.query))));
-business.get('/organizations/:org/business/analytics/export',route(async(req,res)=>{const a=await access(req),report=await businessAnalytics(a,req.query),rows:any[][]=[['Metric','Value','Currency','From','To']];for(const [metric,value]of Object.entries(report.financial?.totals||{}))if(typeof value==='number')rows.push([metric,value,report.currency,report.period.from,report.period.to]);for(const row of report.series)rows.push([row.kind+'_created:'+row.date,row.count,'count',report.period.from,report.period.to]);rows.push(['classification',report.classification,'',report.period.from,report.period.to]);res.type('text/csv').attachment('africore-authorized-analytics.csv').send(safeCSV(rows));}));
-business.get('/organizations/:org/business/saved-reports',route(async(req,res)=>res.json({data:await savedReports(await access(req))})));
-business.post('/organizations/:org/business/saved-reports',route(async(req,res)=>res.status(201).json(await saveReport(await access(req),req.body))));
-business.delete('/organizations/:org/business/saved-reports/:id',route(async(req,res)=>res.json(await removeReport(await access(req),String(req.params.id)))));
-const key=(req:any)=>z.string().min(8).max(200).parse(req.headers['idempotency-key']);
-const offset=(req:any)=>z.coerce.number().int().min(0).max(1e6).default(0).parse(req.query.offset);
-business.get('/organizations/:org/products',route(async(req,res)=>{const a=await access(req),q=z.string().max(100).default('').parse(req.query.q);res.json({data:await products(a,q),limit:200,coverage:'First 200 matching shared products; archived records retain their history.'});}));
-business.get('/organizations/:org/products/:id',route(async(req,res)=>res.json(await product(await access(req),String(req.params.id)))));
-business.post('/organizations/:org/products',route(async(req,res)=>res.status(201).json(await createProduct(await access(req,'operations'),req.body,key(req)))));
-business.patch('/organizations/:org/products/:id',route(async(req,res)=>res.json(await editProduct(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
-business.get('/organizations/:org/inventory/stock-counts/preview',route(async(req,res)=>res.json(await stockCountSnapshot(await access(req),req.query))));
-business.post('/organizations/:org/inventory/stock-counts',route(async(req,res)=>res.json(await postStockCount(await access(req,'operations'),req.body,key(req)))));
-business.get('/organizations/:org/inventory',route(async(req,res)=>res.json(await inventoryOverview(await access(req)))));
-business.get('/organizations/:org/inventory/warehouses',route(async(req,res)=>res.json(await warehouses(await access(req)))));
-business.patch('/organizations/:org/inventory/warehouses/:id',route(async(req,res)=>res.json(await editWarehouse(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
-business.post('/organizations/:org/inventory/warehouses',route(async(req,res)=>res.status(201).json(await createWarehouse(await access(req,'operations'),req.body,key(req)))));
-business.post('/organizations/:org/inventory/warehouses/:id/locations',route(async(req,res)=>res.status(201).json(await createLocation(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
-business.get('/organizations/:org/inventory/movements',route(async(req,res)=>{const a=await access(req),q=z.object({product:z.string().uuid().optional(),warehouse:z.string().uuid().optional()}).parse(req.query),page=offset(req);res.json({data:await dbAll('SELECT * FROM ac_stock_movements WHERE org_id=? AND environment=?'+(q.product?' AND product_id=?':'')+(q.warehouse?' AND warehouse_id=?':'')+' ORDER BY created_at DESC,id DESC LIMIT 100 OFFSET ?',[a.org,a.environment,...(q.product?[q.product]:[]),...(q.warehouse?[q.warehouse]:[]),page]),offset:page,limit:100});}));
-business.post('/organizations/:org/inventory/movements',route(async(req,res)=>res.status(201).json(await postMovement(await access(req,'operations'),req.body,key(req)))));
-business.get('/organizations/:org/inventory/reservations',route(async(req,res)=>{const a=await access(req);res.json({data:await dbAll('SELECT * FROM ac_stock_reservations WHERE org_id=? AND environment=? ORDER BY created_at DESC,id DESC LIMIT 100 OFFSET ?',[a.org,a.environment,offset(req)]),limit:100});}));
-business.get('/organizations/:org/inventory/incoming',route(async(req,res)=>{const a=await access(req);res.json({data:await dbAll('SELECT s.*, (SELECT p.order_id FROM ac_purchase_incoming p WHERE p.incoming_id=s.id AND p.org_id=s.org_id AND p.environment=s.environment) AS purchase_order_id FROM ac_stock_incoming s WHERE s.org_id=? AND s.environment=? ORDER BY s.due_on,s.id LIMIT 100 OFFSET ?',[a.org,a.environment,offset(req)]),limit:100});}));
-business.post('/organizations/:org/inventory/incoming',route(async(req,res)=>res.status(201).json(await planIncoming(await access(req,'operations'),req.body,key(req)))));
-business.post('/organizations/:org/inventory/incoming/:id/action',route(async(req,res)=>res.json(await resolveIncoming(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
-business.post('/organizations/:org/inventory/adjustment-approvals',route(async(req,res)=>{const a=await access(req,'operations'),d=z.object({approver:z.string().uuid(),movement:movementInput.omit({approval_id:true})}).strict().parse(req.body);res.status(201).json(await financialOperation(a,'stock.approval.request',key(req),d,()=>requestApproval(a,{approver:d.approver,action:'stock_adjustment',resource_id:d.movement.product_id,parameters:{movement:d.movement}})));}));
-business.get('/organizations/:org/crm/activity-report',route(async(req,res)=>res.json(await crmActivityReport(await access(req),req.query))));
-business.get('/organizations/:org/crm/report',route(async(req,res)=>res.json(await crmReport(await access(req),req.query))));
-business.get('/organizations/:org/crm/export',route(async(req,res)=>{const report=await crmReport(await access(req),req.query);res.type('text/csv').attachment('africore-opportunities.csv').send(safeCSV([['id','customer_id','title','stage','amount_minor','currency','probability_bps','expected_close_on','assigned_to','team_id'],...report.records.map(r=>[r.id,r.customer_id,r.title,r.stage,r.amount_minor,r.currency,r.probability_bps,r.expected_close_on,r.assigned_to,r.team_id])]));}));
-business.post('/organizations/:org/crm/import',route(async(req,res)=>res.json(await importCrmEntries(await access(req,'operations'),req.body,key(req)))));
-business.get('/organizations/:org/crm/configuration',route(async(req,res)=>res.json(await crmConfiguration(await access(req)))));
-business.put('/organizations/:org/crm/configuration',route(async(req,res)=>res.json(await saveCrmConfiguration(await access(req,'admin'),req.body,key(req)))));
-business.get('/organizations/:org/crm/entries/:id/history',route(async(req,res)=>res.json(await crmEntryHistory(await access(req),String(req.params.id)))));
-business.get('/organizations/:org/crm',route(async(req,res)=>res.json(await crmOverview(await access(req)))));
-business.get('/organizations/:org/crm/entries',route(async(req,res)=>{const a=await access(req),kind=z.enum(['lead','opportunity','follow_up','interaction']).optional().parse(req.query.kind),cursor=z.object({created_at:z.string().datetime({offset:true}),id:z.string().uuid()}).optional().parse(req.query.before_created_at||req.query.before_id?{created_at:req.query.before_created_at,id:req.query.before_id}:undefined);res.json({data:await crmEntries(a,kind,undefined,cursor),limit:200});}));
-business.post('/organizations/:org/crm/entries',route(async(req,res)=>res.status(201).json(await createCrmEntry(await access(req,'operations'),req.body,key(req)))));
-business.patch('/organizations/:org/crm/entries/:id',route(async(req,res)=>res.json(await editCrmEntry(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
-business.post('/organizations/:org/crm/entries/:id/convert',route(async(req,res)=>res.json(await convertCrmLead(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
-business.get('/organizations/:org/crm/customers/:id',route(async(req,res)=>res.json(await customerProfile(await access(req),String(req.params.id)))));
-business.put('/organizations/:org/crm/customers/:id',route(async(req,res)=>res.json(await setCustomerProfile(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
-business.get('/organizations/:org/crm/customers/:id/activity',route(async(req,res)=>res.json(await crmCustomerActivity(await access(req),String(req.params.id)))));
-business.get('/organizations/:org/sales/templates',route(async(req,res)=>res.json(await salesTemplates(await access(req)))));
-business.post('/organizations/:org/sales/templates',route(async(req,res)=>res.status(201).json(await saveSalesTemplate(await access(req,'operations'),null,req.body,key(req)))));
-business.put('/organizations/:org/sales/templates/:id',route(async(req,res)=>res.json(await saveSalesTemplate(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
-business.get('/organizations/:org/sales/price-lists',route(async(req,res)=>res.json(await priceLists(await access(req)))));
-business.post('/organizations/:org/sales/price-lists',route(async(req,res)=>res.status(201).json(await savePriceList(await access(req,'admin'),null,req.body,key(req)))));
-business.put('/organizations/:org/sales/price-lists/:id',route(async(req,res)=>res.json(await savePriceList(await access(req,'admin'),String(req.params.id),req.body,key(req)))));
-business.post('/organizations/:org/sales/pricing-preview',route(async(req,res)=>res.json(await pricingPreview(await access(req),req.body))));
-business.get('/organizations/:org/sales/quotations/:id/history',route(async(req,res)=>res.json(await quotationHistory(await access(req),String(req.params.id)))));
-business.get('/organizations/:org/sales/quotations',route(async(req,res)=>{const a=await access(req),page=offset(req),status=z.enum(['draft','shared','accepted','converted','cancelled']).optional().parse(req.query.status);const rows=await dbAll('SELECT id FROM ac_sales_quotes WHERE org_id=? AND environment=?'+(status?' AND status=?':'')+' ORDER BY created_at DESC,id DESC LIMIT 100 OFFSET ?',[a.org,a.environment,...(status?[status]:[]),page]);res.json({data:await Promise.all(rows.map(row=>quote(a,row.id))),offset:page,limit:100});}));
-business.get('/organizations/:org/sales/quotations/:id',route(async(req,res)=>res.json(await quote(await access(req),String(req.params.id)))));
-business.post('/organizations/:org/sales/quotations',route(async(req,res)=>res.status(201).json(await createQuote(await access(req,'operations'),req.body,key(req)))));
-business.patch('/organizations/:org/sales/quotations/:id',route(async(req,res)=>res.json(await editQuote(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
-business.post('/organizations/:org/sales/quotations/:id/action',route(async(req,res)=>res.json(await quoteAction(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
-business.post('/organizations/:org/sales/quotations/:id/discount-approvals',route(async(req,res)=>{const a=await access(req,'operations'),d=z.object({approver:z.string().uuid()}).strict().parse(req.body),q=await quote(a,String(req.params.id));res.status(201).json(await financialOperation(a,'sales.discount.review:'+q.id,key(req),{...d,quote_version:q.version,discount_minor:q.discount_minor},()=>requestApproval(a,{approver:d.approver,action:'sales_discount',resource_id:q.id,parameters:{sales_discount:{quote_version:q.version,discount_minor:q.discount_minor}}})));}));
-business.get('/organizations/:org/business/policy',route(async(req,res)=>res.json(await businessPolicyFor(await access(req,'admin')))));
-business.put('/organizations/:org/business/policy',route(async(req,res)=>res.json(await setBusinessPolicy(await access(req,'admin'),req.body))));
-business.get('/organizations/:org/business/approvals',route(async(req,res)=>res.json(await approvalQueue(await access(req)))));
-business.post('/organizations/:org/business/invoices/:id/correction-review',route(async(req,res)=>{const a=await access(req,'finance'),d=z.object({approver:z.string().uuid(),credit_note:creditInput.omit({approval_id:true})}).strict().parse(req.body);res.status(201).json(await financialOperation(a,'invoice.credit.review:'+String(req.params.id),key(req),d,()=>requestApproval(a,{approver:d.approver,action:'invoice_adjustment',resource_id:String(req.params.id),parameters:{credit_note:d.credit_note}})));}));
-business.get('/organizations/:org/notifications/summary',route(async(req,res)=>{const a=await access(req);if(a.api)fail(403,'Human member required');const page=offset(req),total=await dbGet('SELECT COUNT(*) AS n FROM ac2_notifications WHERE org_id=? AND environment=? AND user_id=? AND dismissed_at IS NULL',[a.org,a.environment,a.actor]);const unread=await dbGet('SELECT COUNT(*) AS n FROM ac2_notifications WHERE org_id=? AND environment=? AND user_id=? AND read_at IS NULL AND dismissed_at IS NULL',[a.org,a.environment,a.actor]);res.json({total:Number(total.n),offset:page,limit:30,unread:Number(unread.n),data:await dbAll("SELECT n.*,CASE WHEN a.status='pending' AND a.expires_at>? THEN 1 ELSE 0 END AS approval_pending,CASE WHEN a.status='pending' AND a.expires_at<=? THEN 'expired' ELSE a.status END AS approval_state FROM ac2_notifications n LEFT JOIN ac2_approvals a ON a.id=n.resource_id AND a.org_id=n.org_id AND a.environment=n.environment WHERE n.org_id=? AND n.environment=? AND n.user_id=? AND n.dismissed_at IS NULL ORDER BY n.created_at DESC,n.id DESC LIMIT 30 OFFSET ?",[now(),now(),a.org,a.environment,a.actor,page]),as_of:now()});}));
-business.post('/organizations/:org/notifications/read-all',route(async(req,res)=>{const a=await access(req);if(a.api)fail(403,'Human member required');z.object({confirm:z.literal(true)}).strict().parse(req.body);const changed=await dbRun('UPDATE ac2_notifications SET read_at=? WHERE org_id=? AND environment=? AND user_id=? AND read_at IS NULL',[now(),a.org,a.environment,a.actor]);await audit(a.org,a.actor,'notifications.read_all');res.json({updated:changed.changes});}));
-business.post('/organizations/:org/notifications/:id/dismiss',route(async(req,res)=>{const a=await access(req);if(a.api)fail(403,'Human member required');z.object({confirm:z.literal(true)}).strict().parse(req.body);await dbTransaction(async()=>{const row=await dbGet('SELECT * FROM ac2_notifications WHERE id=? AND org_id=? AND environment=? AND user_id=?',[String(req.params.id),a.org,a.environment,a.actor]);if(!row)fail(404,'Notification not found');if(row.severity==='approval_required'){const approval=await dbGet("SELECT id FROM ac2_approvals WHERE id=? AND org_id=? AND environment=? AND status='pending' AND expires_at>?",[row.resource_id,a.org,a.environment,now()]);if(approval)fail(409,'Resolve the pending approval instead of dismissing it');}await dbRun('UPDATE ac2_notifications SET dismissed_at=? WHERE id=?',[now(),row.id]);await audit(a.org,a.actor,'notification.dismissed',row.id);});res.json({dismissed:true});}));
+business.get(
+  '/organizations/:org/notifications/preferences',
+  route(async (req, res) => {
+    const a = await access(req);
+    if (a.api) fail(403, 'Human member required');
+    res.json(
+      (await all(a, 'notification_preferences')).find((p) => p.user_id === a.actor) || {
+        paused: false,
+        muted_categories: [],
+      },
+    );
+  }),
+);
+business.put(
+  '/organizations/:org/notifications/preferences',
+  route(async (req, res) => res.json(await notificationPreferences(await access(req), req.body))),
+);
+business.get(
+  '/organizations/:org/business/orders/:id/draft',
+  route(async (req, res) => res.json(await orderDraft(await access(req), String(req.params.id)))),
+);
+business.post(
+  '/organizations/:org/business/orders/:id/draft',
+  route(async (req, res) =>
+    res.json(
+      await editOrderDraft(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+business.post(
+  '/organizations/:org/business/workflows/:id/test',
+  route(async (req, res) => {
+    z.object({ confirm: z.literal(true) })
+      .strict()
+      .parse(req.body);
+    res.json(await previewAutomation(await access(req, 'finance'), String(req.params.id)));
+  }),
+);
+business.get(
+  '/organizations/:org/business/analytics/records',
+  route(async (req, res) => res.json(await analyticsRecords(await access(req), req.query))),
+);
+business.get(
+  '/organizations/:org/business/analytics',
+  route(async (req, res) => res.json(await businessAnalytics(await access(req), req.query))),
+);
+business.get(
+  '/organizations/:org/business/analytics/export',
+  route(async (req, res) => {
+    const a = await access(req),
+      report = await businessAnalytics(a, req.query),
+      rows: any[][] = [['Metric', 'Value', 'Currency', 'From', 'To']];
+    for (const [metric, value] of Object.entries(report.financial?.totals || {}))
+      if (typeof value === 'number')
+        rows.push([metric, value, report.currency, report.period.from, report.period.to]);
+    for (const row of report.series)
+      rows.push([
+        row.kind + '_created:' + row.date,
+        row.count,
+        'count',
+        report.period.from,
+        report.period.to,
+      ]);
+    rows.push(['classification', report.classification, '', report.period.from, report.period.to]);
+    res.type('text/csv').attachment('africore-authorized-analytics.csv').send(safeCSV(rows));
+  }),
+);
+business.get(
+  '/organizations/:org/business/saved-reports',
+  route(async (req, res) => res.json({ data: await savedReports(await access(req)) })),
+);
+business.post(
+  '/organizations/:org/business/saved-reports',
+  route(async (req, res) => res.status(201).json(await saveReport(await access(req), req.body))),
+);
+business.delete(
+  '/organizations/:org/business/saved-reports/:id',
+  route(async (req, res) => res.json(await removeReport(await access(req), String(req.params.id)))),
+);
+const key = (req: any) => z.string().min(8).max(200).parse(req.headers['idempotency-key']);
+const offset = (req: any) =>
+  z.coerce.number().int().min(0).max(1e6).default(0).parse(req.query.offset);
+business.get(
+  '/organizations/:org/products',
+  route(async (req, res) => {
+    const a = await access(req),
+      q = z.string().max(100).default('').parse(req.query.q);
+    res.json({
+      data: await products(a, q),
+      limit: 200,
+      coverage: 'First 200 matching shared products; archived records retain their history.',
+    });
+  }),
+);
+business.get(
+  '/organizations/:org/products/:id',
+  route(async (req, res) => res.json(await product(await access(req), String(req.params.id)))),
+);
+business.post(
+  '/organizations/:org/products',
+  route(async (req, res) =>
+    res.status(201).json(await createProduct(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+business.patch(
+  '/organizations/:org/products/:id',
+  route(async (req, res) =>
+    res.json(
+      await editProduct(await access(req, 'operations'), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+business.get(
+  '/organizations/:org/inventory/stock-counts/preview',
+  route(async (req, res) => res.json(await stockCountSnapshot(await access(req), req.query))),
+);
+business.post(
+  '/organizations/:org/inventory/stock-counts',
+  route(async (req, res) =>
+    res.json(await postStockCount(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+business.get(
+  '/organizations/:org/inventory',
+  route(async (req, res) => res.json(await inventoryOverview(await access(req)))),
+);
+business.get(
+  '/organizations/:org/inventory/warehouses',
+  route(async (req, res) => res.json(await warehouses(await access(req)))),
+);
+business.patch(
+  '/organizations/:org/inventory/warehouses/:id',
+  route(async (req, res) =>
+    res.json(
+      await editWarehouse(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+business.post(
+  '/organizations/:org/inventory/warehouses',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createWarehouse(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+business.post(
+  '/organizations/:org/inventory/warehouses/:id/locations',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(
+        await createLocation(
+          await access(req, 'operations'),
+          String(req.params.id),
+          req.body,
+          key(req),
+        ),
+      ),
+  ),
+);
+business.get(
+  '/organizations/:org/inventory/movements',
+  route(async (req, res) => {
+    const a = await access(req),
+      q = z
+        .object({ product: z.string().uuid().optional(), warehouse: z.string().uuid().optional() })
+        .parse(req.query),
+      page = offset(req);
+    res.json({
+      data: await dbAll(
+        'SELECT * FROM ac_stock_movements WHERE org_id=? AND environment=?' +
+          (q.product ? ' AND product_id=?' : '') +
+          (q.warehouse ? ' AND warehouse_id=?' : '') +
+          ' ORDER BY created_at DESC,id DESC LIMIT 100 OFFSET ?',
+        [
+          a.org,
+          a.environment,
+          ...(q.product ? [q.product] : []),
+          ...(q.warehouse ? [q.warehouse] : []),
+          page,
+        ],
+      ),
+      offset: page,
+      limit: 100,
+    });
+  }),
+);
+business.post(
+  '/organizations/:org/inventory/movements',
+  route(async (req, res) =>
+    res.status(201).json(await postMovement(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+business.get(
+  '/organizations/:org/inventory/reservations',
+  route(async (req, res) => {
+    const a = await access(req);
+    res.json({
+      data: await dbAll(
+        'SELECT * FROM ac_stock_reservations WHERE org_id=? AND environment=? ORDER BY created_at DESC,id DESC LIMIT 100 OFFSET ?',
+        [a.org, a.environment, offset(req)],
+      ),
+      limit: 100,
+    });
+  }),
+);
+business.get(
+  '/organizations/:org/inventory/incoming',
+  route(async (req, res) => {
+    const a = await access(req);
+    res.json({
+      data: await dbAll(
+        'SELECT s.*, (SELECT p.order_id FROM ac_purchase_incoming p WHERE p.incoming_id=s.id AND p.org_id=s.org_id AND p.environment=s.environment) AS purchase_order_id FROM ac_stock_incoming s WHERE s.org_id=? AND s.environment=? ORDER BY s.due_on,s.id LIMIT 100 OFFSET ?',
+        [a.org, a.environment, offset(req)],
+      ),
+      limit: 100,
+    });
+  }),
+);
+business.post(
+  '/organizations/:org/inventory/incoming',
+  route(async (req, res) =>
+    res.status(201).json(await planIncoming(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+business.post(
+  '/organizations/:org/inventory/incoming/:id/action',
+  route(async (req, res) =>
+    res.json(
+      await resolveIncoming(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+business.post(
+  '/organizations/:org/inventory/adjustment-approvals',
+  route(async (req, res) => {
+    const a = await access(req, 'operations'),
+      d = z
+        .object({
+          approver: z.string().uuid(),
+          movement: movementInput.omit({ approval_id: true }),
+        })
+        .strict()
+        .parse(req.body);
+    res.status(201).json(
+      await financialOperation(a, 'stock.approval.request', key(req), d, () =>
+        requestApproval(a, {
+          approver: d.approver,
+          action: 'stock_adjustment',
+          resource_id: d.movement.product_id,
+          parameters: { movement: d.movement },
+        }),
+      ),
+    );
+  }),
+);
+business.get(
+  '/organizations/:org/crm/activity-report',
+  route(async (req, res) => res.json(await crmActivityReport(await access(req), req.query))),
+);
+business.get(
+  '/organizations/:org/crm/report',
+  route(async (req, res) => res.json(await crmReport(await access(req), req.query))),
+);
+business.get(
+  '/organizations/:org/crm/export',
+  route(async (req, res) => {
+    const report = await crmReport(await access(req), req.query);
+    res
+      .type('text/csv')
+      .attachment('africore-opportunities.csv')
+      .send(
+        safeCSV([
+          [
+            'id',
+            'customer_id',
+            'title',
+            'stage',
+            'amount_minor',
+            'currency',
+            'probability_bps',
+            'expected_close_on',
+            'assigned_to',
+            'team_id',
+          ],
+          ...report.records.map((r) => [
+            r.id,
+            r.customer_id,
+            r.title,
+            r.stage,
+            r.amount_minor,
+            r.currency,
+            r.probability_bps,
+            r.expected_close_on,
+            r.assigned_to,
+            r.team_id,
+          ]),
+        ]),
+      );
+  }),
+);
+business.post(
+  '/organizations/:org/crm/import',
+  route(async (req, res) =>
+    res.json(await importCrmEntries(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+business.get(
+  '/organizations/:org/crm/configuration',
+  route(async (req, res) => res.json(await crmConfiguration(await access(req)))),
+);
+business.put(
+  '/organizations/:org/crm/configuration',
+  route(async (req, res) =>
+    res.json(await saveCrmConfiguration(await access(req, 'admin'), req.body, key(req))),
+  ),
+);
+business.get(
+  '/organizations/:org/crm/entries/:id/history',
+  route(async (req, res) =>
+    res.json(await crmEntryHistory(await access(req), String(req.params.id))),
+  ),
+);
+business.get(
+  '/organizations/:org/crm',
+  route(async (req, res) => res.json(await crmOverview(await access(req)))),
+);
+business.get(
+  '/organizations/:org/crm/entries',
+  route(async (req, res) => {
+    const a = await access(req),
+      kind = z
+        .enum(['lead', 'opportunity', 'follow_up', 'interaction'])
+        .optional()
+        .parse(req.query.kind),
+      cursor = z
+        .object({ created_at: z.string().datetime({ offset: true }), id: z.string().uuid() })
+        .optional()
+        .parse(
+          req.query.before_created_at || req.query.before_id
+            ? { created_at: req.query.before_created_at, id: req.query.before_id }
+            : undefined,
+        );
+    res.json({ data: await crmEntries(a, kind, undefined, cursor), limit: 200 });
+  }),
+);
+business.post(
+  '/organizations/:org/crm/entries',
+  route(async (req, res) =>
+    res.status(201).json(await createCrmEntry(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+business.patch(
+  '/organizations/:org/crm/entries/:id',
+  route(async (req, res) =>
+    res.json(
+      await editCrmEntry(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+business.post(
+  '/organizations/:org/crm/entries/:id/convert',
+  route(async (req, res) =>
+    res.json(
+      await convertCrmLead(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+business.get(
+  '/organizations/:org/crm/customers/:id',
+  route(async (req, res) =>
+    res.json(await customerProfile(await access(req), String(req.params.id))),
+  ),
+);
+business.put(
+  '/organizations/:org/crm/customers/:id',
+  route(async (req, res) =>
+    res.json(
+      await setCustomerProfile(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+business.get(
+  '/organizations/:org/crm/customers/:id/activity',
+  route(async (req, res) =>
+    res.json(await crmCustomerActivity(await access(req), String(req.params.id))),
+  ),
+);
+business.get(
+  '/organizations/:org/sales/templates',
+  route(async (req, res) => res.json(await salesTemplates(await access(req)))),
+);
+business.post(
+  '/organizations/:org/sales/templates',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await saveSalesTemplate(await access(req, 'operations'), null, req.body, key(req))),
+  ),
+);
+business.put(
+  '/organizations/:org/sales/templates/:id',
+  route(async (req, res) =>
+    res.json(
+      await saveSalesTemplate(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+business.get(
+  '/organizations/:org/sales/price-lists',
+  route(async (req, res) => res.json(await priceLists(await access(req)))),
+);
+business.post(
+  '/organizations/:org/sales/price-lists',
+  route(async (req, res) =>
+    res.status(201).json(await savePriceList(await access(req, 'admin'), null, req.body, key(req))),
+  ),
+);
+business.put(
+  '/organizations/:org/sales/price-lists/:id',
+  route(async (req, res) =>
+    res.json(
+      await savePriceList(await access(req, 'admin'), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+business.post(
+  '/organizations/:org/sales/pricing-preview',
+  route(async (req, res) => res.json(await pricingPreview(await access(req), req.body))),
+);
+business.get(
+  '/organizations/:org/sales/quotations/:id/history',
+  route(async (req, res) =>
+    res.json(await quotationHistory(await access(req), String(req.params.id))),
+  ),
+);
+business.get(
+  '/organizations/:org/sales/quotations',
+  route(async (req, res) => {
+    const a = await access(req),
+      page = offset(req),
+      status = z
+        .enum(['draft', 'shared', 'accepted', 'converted', 'cancelled'])
+        .optional()
+        .parse(req.query.status);
+    const rows = await dbAll(
+      'SELECT id FROM ac_sales_quotes WHERE org_id=? AND environment=?' +
+        (status ? ' AND status=?' : '') +
+        ' ORDER BY created_at DESC,id DESC LIMIT 100 OFFSET ?',
+      [a.org, a.environment, ...(status ? [status] : []), page],
+    );
+    res.json({
+      data: await Promise.all(rows.map((row) => quote(a, row.id))),
+      offset: page,
+      limit: 100,
+    });
+  }),
+);
+business.get(
+  '/organizations/:org/sales/quotations/:id',
+  route(async (req, res) => res.json(await quote(await access(req), String(req.params.id)))),
+);
+business.post(
+  '/organizations/:org/sales/quotations',
+  route(async (req, res) =>
+    res.status(201).json(await createQuote(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+business.patch(
+  '/organizations/:org/sales/quotations/:id',
+  route(async (req, res) =>
+    res.json(
+      await editQuote(await access(req, 'operations'), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+business.post(
+  '/organizations/:org/sales/quotations/:id/action',
+  route(async (req, res) =>
+    res.json(
+      await quoteAction(await access(req, 'operations'), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+business.post(
+  '/organizations/:org/sales/quotations/:id/discount-approvals',
+  route(async (req, res) => {
+    const a = await access(req, 'operations'),
+      d = z.object({ approver: z.string().uuid() }).strict().parse(req.body),
+      q = await quote(a, String(req.params.id));
+    res.status(201).json(
+      await financialOperation(
+        a,
+        'sales.discount.review:' + q.id,
+        key(req),
+        { ...d, quote_version: q.version, discount_minor: q.discount_minor },
+        () =>
+          requestApproval(a, {
+            approver: d.approver,
+            action: 'sales_discount',
+            resource_id: q.id,
+            parameters: {
+              sales_discount: { quote_version: q.version, discount_minor: q.discount_minor },
+            },
+          }),
+      ),
+    );
+  }),
+);
+business.get(
+  '/organizations/:org/business/policy',
+  route(async (req, res) => res.json(await businessPolicyFor(await access(req, 'admin')))),
+);
+business.put(
+  '/organizations/:org/business/policy',
+  route(async (req, res) =>
+    res.json(await setBusinessPolicy(await access(req, 'admin'), req.body)),
+  ),
+);
+business.get(
+  '/organizations/:org/business/approvals',
+  route(async (req, res) => res.json(await approvalQueue(await access(req)))),
+);
+business.post(
+  '/organizations/:org/business/invoices/:id/correction-review',
+  route(async (req, res) => {
+    const a = await access(req, 'finance'),
+      d = z
+        .object({
+          approver: z.string().uuid(),
+          credit_note: creditInput.omit({ approval_id: true }),
+        })
+        .strict()
+        .parse(req.body);
+    res.status(201).json(
+      await financialOperation(
+        a,
+        'invoice.credit.review:' + String(req.params.id),
+        key(req),
+        d,
+        () =>
+          requestApproval(a, {
+            approver: d.approver,
+            action: 'invoice_adjustment',
+            resource_id: String(req.params.id),
+            parameters: { credit_note: d.credit_note },
+          }),
+      ),
+    );
+  }),
+);
+business.get(
+  '/organizations/:org/notifications/summary',
+  route(async (req, res) => {
+    const a = await access(req);
+    if (a.api) fail(403, 'Human member required');
+    const page = offset(req),
+      total = await dbGet(
+        'SELECT COUNT(*) AS n FROM ac2_notifications WHERE org_id=? AND environment=? AND user_id=? AND dismissed_at IS NULL',
+        [a.org, a.environment, a.actor],
+      );
+    const unread = await dbGet(
+      'SELECT COUNT(*) AS n FROM ac2_notifications WHERE org_id=? AND environment=? AND user_id=? AND read_at IS NULL AND dismissed_at IS NULL',
+      [a.org, a.environment, a.actor],
+    );
+    res.json({
+      total: Number(total.n),
+      offset: page,
+      limit: 30,
+      unread: Number(unread.n),
+      data: await dbAll(
+        "SELECT n.*,CASE WHEN a.status='pending' AND a.expires_at>? THEN 1 ELSE 0 END AS approval_pending,CASE WHEN a.status='pending' AND a.expires_at<=? THEN 'expired' ELSE a.status END AS approval_state FROM ac2_notifications n LEFT JOIN ac2_approvals a ON a.id=n.resource_id AND a.org_id=n.org_id AND a.environment=n.environment WHERE n.org_id=? AND n.environment=? AND n.user_id=? AND n.dismissed_at IS NULL ORDER BY n.created_at DESC,n.id DESC LIMIT 30 OFFSET ?",
+        [now(), now(), a.org, a.environment, a.actor, page],
+      ),
+      as_of: now(),
+    });
+  }),
+);
+business.post(
+  '/organizations/:org/notifications/read-all',
+  route(async (req, res) => {
+    const a = await access(req);
+    if (a.api) fail(403, 'Human member required');
+    z.object({ confirm: z.literal(true) })
+      .strict()
+      .parse(req.body);
+    const changed = await dbRun(
+      'UPDATE ac2_notifications SET read_at=? WHERE org_id=? AND environment=? AND user_id=? AND read_at IS NULL',
+      [now(), a.org, a.environment, a.actor],
+    );
+    await audit(a.org, a.actor, 'notifications.read_all');
+    res.json({ updated: changed.changes });
+  }),
+);
+business.post(
+  '/organizations/:org/notifications/:id/dismiss',
+  route(async (req, res) => {
+    const a = await access(req);
+    if (a.api) fail(403, 'Human member required');
+    z.object({ confirm: z.literal(true) })
+      .strict()
+      .parse(req.body);
+    await dbTransaction(async () => {
+      const row = await dbGet(
+        'SELECT * FROM ac2_notifications WHERE id=? AND org_id=? AND environment=? AND user_id=?',
+        [String(req.params.id), a.org, a.environment, a.actor],
+      );
+      if (!row) fail(404, 'Notification not found');
+      if (row.severity === 'approval_required') {
+        const approval = await dbGet(
+          "SELECT id FROM ac2_approvals WHERE id=? AND org_id=? AND environment=? AND status='pending' AND expires_at>?",
+          [row.resource_id, a.org, a.environment, now()],
+        );
+        if (approval) fail(409, 'Resolve the pending approval instead of dismissing it');
+      }
+      await dbRun('UPDATE ac2_notifications SET dismissed_at=? WHERE id=?', [now(), row.id]);
+      await audit(a.org, a.actor, 'notification.dismissed', row.id);
+    });
+    res.json({ dismissed: true });
+  }),
+);

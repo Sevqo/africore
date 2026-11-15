@@ -48,7 +48,12 @@ type Props = {
   admin?: boolean;
 };
 
-type EditorState = { quote: SalesRecord | null; isNew: boolean; customerId?: string; opportunityId?: string } | null;
+type EditorState = {
+  quote: SalesRecord | null;
+  isNew: boolean;
+  customerId?: string;
+  opportunityId?: string;
+} | null;
 type Line = {
   key: string;
   description: string;
@@ -119,13 +124,31 @@ export function SalesAppWorkspace({
     if (!id) return;
     let live = true;
     const quoteId = new URLSearchParams(location.search).get('sales-quotation');
-    Promise.all([api('/crm/entries/' + encodeURIComponent(id) + '/history'), quoteId ? api('/sales/quotations/' + encodeURIComponent(quoteId)) : Promise.resolve(null)]).then(([result, quoteResult]) => {
-      if (!live || result.entry?.kind !== 'opportunity') return;
-      const quote = quoteResult?.quotation || quoteResult;
-      if (quote && (quote.customer_id !== result.entry.customer_id || result.entry.quotation_id !== quote.id)) throw new Error('The quotation is not linked to this opportunity.');
-      setEditor({quote:quote || null,isNew:!quote,customerId:result.entry.customer_id,opportunityId:id});
-    }).catch(reason => {if (live) setError('Could not open the CRM opportunity or quotation: ' + reason.message);});
-    return () => {live = false;};
+    Promise.all([
+      api('/crm/entries/' + encodeURIComponent(id) + '/history'),
+      quoteId ? api('/sales/quotations/' + encodeURIComponent(quoteId)) : Promise.resolve(null),
+    ])
+      .then(([result, quoteResult]) => {
+        if (!live || result.entry?.kind !== 'opportunity') return;
+        const quote = quoteResult?.quotation || quoteResult;
+        if (
+          quote &&
+          (quote.customer_id !== result.entry.customer_id || result.entry.quotation_id !== quote.id)
+        )
+          throw new Error('The quotation is not linked to this opportunity.');
+        setEditor({
+          quote: quote || null,
+          isNew: !quote,
+          customerId: result.entry.customer_id,
+          opportunityId: id,
+        });
+      })
+      .catch((reason) => {
+        if (live) setError('Could not open the CRM opportunity or quotation: ' + reason.message);
+      });
+    return () => {
+      live = false;
+    };
   }, [api, scope]);
 
   useEffect(() => {
@@ -147,7 +170,8 @@ export function SalesAppWorkspace({
       inventoryActive ? api('/inventory/warehouses') : Promise.resolve({ data: [], locations: [] }),
     ]).then((results) => {
       if (!live) return;
-      const value = (index: number) => (results[index].status === 'fulfilled' ? results[index].value : null);
+      const value = (index: number) =>
+        results[index].status === 'fulfilled' ? results[index].value : null;
       setQuotations(rowsOf(value(0)));
       setOrders(rowsOf(value(1)));
       setInvoices(rowsOf(value(2)));
@@ -180,7 +204,13 @@ export function SalesAppWorkspace({
   const comparison = salesComparison(orders, days, today());
   const currentSummary = salesSummary(comparison.current);
   const previousSummary = salesSummary(comparison.previous);
-  const filteredQuotations = searchQuotations(quotations, query, customers, filter as QuotationFilter, invoices);
+  const filteredQuotations = searchQuotations(
+    quotations,
+    query,
+    customers,
+    filter as QuotationFilter,
+    invoices,
+  );
   const filteredOrders = searchOrders(orders, query, customers, invoices, filter as OrderFilter);
   const sortedQuotations = sortRows(
     filteredQuotations,
@@ -246,7 +276,20 @@ export function SalesAppWorkspace({
           locations={locations}
           inventoryActive={inventoryActive}
           writable={writable}
-          onBack={() => {if (editor.opportunityId) {const url = new URL(location.href); url.searchParams.delete('crm-opportunity'); url.searchParams.delete('sales-quotation'); url.searchParams.set('app','crm'); url.searchParams.set('section','pipeline'); url.searchParams.set('crm-record',editor.opportunityId); url.hash='Apps'; window.history.pushState(null, '', url.pathname + url.search + url.hash); dispatchEvent(new Event('africore:app-navigation'));} setEditor(null);}}
+          onBack={() => {
+            if (editor.opportunityId) {
+              const url = new URL(location.href);
+              url.searchParams.delete('crm-opportunity');
+              url.searchParams.delete('sales-quotation');
+              url.searchParams.set('app', 'crm');
+              url.searchParams.set('section', 'pipeline');
+              url.searchParams.set('crm-record', editor.opportunityId);
+              url.hash = 'Apps';
+              window.history.pushState(null, '', url.pathname + url.search + url.hash);
+              dispatchEvent(new Event('africore:app-navigation'));
+            }
+            setEditor(null);
+          }}
           onRefresh={refresh}
           onNotify={setNotice}
           onOpenOrder={(id) => {
@@ -328,7 +371,11 @@ export function SalesAppWorkspace({
             />
           )}
           {mode === 'kanban' && (
-            <QuotationKanban rows={pageOf(sortedQuotations, page, 15).rows} customers={customers} onOpen={openQuotation} />
+            <QuotationKanban
+              rows={pageOf(sortedQuotations, page, 15).rows}
+              customers={customers}
+              onOpen={openQuotation}
+            />
           )}
           {mode === 'calendar' && (
             <SalesCalendar
@@ -339,7 +386,9 @@ export function SalesAppWorkspace({
               onOpen={openQuotation}
             />
           )}
-          {mode === 'graph' && <SalesGraph rows={filteredQuotations} label={(row) => row.reference || 'Quotation'} />}
+          {mode === 'graph' && (
+            <SalesGraph rows={filteredQuotations} label={(row) => row.reference || 'Quotation'} />
+          )}
           {mode === 'pivot' && <QuotationPivot rows={filteredQuotations} customers={customers} />}
           <Pager page={page} setPage={setPage} total={sortedQuotations.length} size={15} />
         </SalesList>
@@ -390,7 +439,12 @@ export function SalesAppWorkspace({
             />
           )}
           {mode === 'kanban' && (
-            <OrderKanban rows={pageOf(sortedOrders, page, 15).rows} customers={customers} invoices={invoices} onOpen={openOrder} />
+            <OrderKanban
+              rows={pageOf(sortedOrders, page, 15).rows}
+              customers={customers}
+              invoices={invoices}
+              onOpen={openOrder}
+            />
           )}
           {mode === 'calendar' && (
             <SalesCalendar
@@ -401,14 +455,22 @@ export function SalesAppWorkspace({
               onOpen={openOrder}
             />
           )}
-          {mode === 'graph' && <SalesGraph rows={filteredOrders} label={(row) => row.number || 'Order'} />}
+          {mode === 'graph' && (
+            <SalesGraph rows={filteredOrders} label={(row) => row.number || 'Order'} />
+          )}
           {mode === 'pivot' && <OrderPivot rows={filteredOrders} customers={customers} />}
           <Pager page={page} setPage={setPage} total={sortedOrders.length} size={15} />
         </SalesList>
       ) : view === 'catalog' ? (
         <ProductSection products={products} loading={loading} navigate={navigate} />
       ) : view === 'reporting' ? (
-        <ReportingSection orders={orders} invoices={invoices} customers={customers} days={days} setDays={setDays} />
+        <ReportingSection
+          orders={orders}
+          invoices={invoices}
+          customers={customers}
+          days={days}
+          setDays={setDays}
+        />
       ) : (
         <ConfigurationSection
           api={api}
@@ -419,7 +481,9 @@ export function SalesAppWorkspace({
           onNotify={setNotice}
         />
       )}
-      {preview && <QuotationPreview quotation={preview} api={api} onClose={() => setPreview(null)} />}
+      {preview && (
+        <QuotationPreview quotation={preview} api={api} onClose={() => setPreview(null)} />
+      )}
     </div>
   );
 }
@@ -427,7 +491,9 @@ export function SalesAppWorkspace({
 function sortRows(rows: SalesRecord[], mode: ViewMode, customerName: (row: SalesRecord) => string) {
   if (mode === 'list') {
     return [...rows].sort((a, b) =>
-      String(b.created_at || b.issue_date || '').localeCompare(String(a.created_at || a.issue_date || '')),
+      String(b.created_at || b.issue_date || '').localeCompare(
+        String(a.created_at || a.issue_date || ''),
+      ),
     );
   }
   return [...rows].sort((a, b) => customerName(a).localeCompare(customerName(b)));
@@ -540,7 +606,10 @@ function SalesList({
 }) {
   const currentAmount = Object.values(current.totals)[0] || 0;
   const previousAmount = Object.values(previous.totals)[0] || 0;
-  const delta = previousAmount > 0 ? Math.round(((currentAmount - previousAmount) / previousAmount) * 100) : null;
+  const delta =
+    previousAmount > 0
+      ? Math.round(((currentAmount - previousAmount) / previousAmount) * 100)
+      : null;
   return (
     <section className="sales-list">
       <div className="sales-title-row">
@@ -583,12 +652,27 @@ function SalesList({
             </select>
           </div>
           <span className="sales-count">
-            {total ? `${(page - 1) * 15 + 1}–${Math.min(page * 15, total)} / ${total}` : '0 records'}
+            {total
+              ? `${(page - 1) * 15 + 1}–${Math.min(page * 15, total)} / ${total}`
+              : '0 records'}
           </span>
           <div className="sales-view-switch" role="group" aria-label="View">
             {views.map((item) => (
-              <button key={item} className={mode === item ? 'active' : ''} onClick={() => setMode(item)} title={`${item} view`}>
-                {item === 'list' ? 'List' : item === 'kanban' ? 'Kanban' : item === 'calendar' ? 'Calendar' : item === 'graph' ? 'Graph' : 'Pivot'}
+              <button
+                key={item}
+                className={mode === item ? 'active' : ''}
+                onClick={() => setMode(item)}
+                title={`${item} view`}
+              >
+                {item === 'list'
+                  ? 'List'
+                  : item === 'kanban'
+                    ? 'Kanban'
+                    : item === 'calendar'
+                      ? 'Calendar'
+                      : item === 'graph'
+                        ? 'Graph'
+                        : 'Pivot'}
               </button>
             ))}
           </div>
@@ -634,7 +718,9 @@ function SalesList({
         </div>
       </div>
       <div className="sales-active-filter">
-        <span className="badge">{filters.find((item) => item.id === filter)?.label || 'All records'}</span>
+        <span className="badge">
+          {filters.find((item) => item.id === filter)?.label || 'All records'}
+        </span>
         {query && <span className="badge">Search: {query}</span>}
         {selection.length > 0 && (
           <span className="sales-selection">
@@ -643,7 +729,8 @@ function SalesList({
           </span>
         )}
         <span className="sales-coverage">
-          {countLabel}. Records are limited to the latest 100 per API page; totals describe loaded records only.
+          {countLabel}. Records are limited to the latest 100 per API page; totals describe loaded
+          records only.
         </span>
       </div>
       {loading ? (
@@ -654,7 +741,9 @@ function SalesList({
         <div className="sales-empty">
           <Icon name="document" />
           <h3>No records match this view</h3>
-          <p>Change the search, filter or period. No placeholder opportunities or amounts are shown.</p>
+          <p>
+            Change the search, filter or period. No placeholder opportunities or amounts are shown.
+          </p>
         </div>
       ) : (
         <div className="sales-table-wrap">{children}</div>
@@ -663,7 +752,17 @@ function SalesList({
   );
 }
 
-function Pager({ page, setPage, total, size }: { page: number; setPage: (value: number) => void; total: number; size: number }) {
+function Pager({
+  page,
+  setPage,
+  total,
+  size,
+}: {
+  page: number;
+  setPage: (value: number) => void;
+  total: number;
+  size: number;
+}) {
   const pages = Math.max(1, Math.ceil(total / size));
   if (pages <= 1) return null;
   return (
@@ -699,7 +798,9 @@ function QuotationsTable({
   onPreview: (row: SalesRecord) => void;
 }) {
   const toggle = (id: string) =>
-    setSelection(selection.includes(id) ? selection.filter((value) => value !== id) : [...selection, id]);
+    setSelection(
+      selection.includes(id) ? selection.filter((value) => value !== id) : [...selection, id],
+    );
   return (
     <table className="sales-table">
       <thead>
@@ -709,7 +810,9 @@ function QuotationsTable({
               type="checkbox"
               aria-label="Select all loaded quotations"
               checked={rows.length > 0 && rows.every((row) => selection.includes(row.id))}
-              onChange={(event) => setSelection(event.target.checked ? rows.map((row) => row.id) : [])}
+              onChange={(event) =>
+                setSelection(event.target.checked ? rows.map((row) => row.id) : [])
+              }
             />
           </th>
           <th>Number</th>
@@ -743,7 +846,9 @@ function QuotationsTable({
               <td>{customer?.name || 'Shared customer'}</td>
               <td className="num">{money(quotation.total_minor, quotation.currency || 'KES')}</td>
               <td>
-                <span className={`sales-pill status-${quotation.status}`}>{statusLabel(quotation.status)}</span>
+                <span className={`sales-pill status-${quotation.status}`}>
+                  {statusLabel(quotation.status)}
+                </span>
               </td>
               <td>{quotationInvoiceState(quotation, invoices)}</td>
               <td>
@@ -781,7 +886,9 @@ function OrdersTable({
   onOpen: (row: SalesRecord) => void;
 }) {
   const toggle = (id: string) =>
-    setSelection(selection.includes(id) ? selection.filter((value) => value !== id) : [...selection, id]);
+    setSelection(
+      selection.includes(id) ? selection.filter((value) => value !== id) : [...selection, id],
+    );
   return (
     <table className="sales-table">
       <thead>
@@ -791,7 +898,9 @@ function OrdersTable({
               type="checkbox"
               aria-label="Select all loaded orders"
               checked={rows.length > 0 && rows.every((row) => selection.includes(row.id))}
-              onChange={(event) => setSelection(event.target.checked ? rows.map((row) => row.id) : [])}
+              onChange={(event) =>
+                setSelection(event.target.checked ? rows.map((row) => row.id) : [])
+              }
             />
           </th>
           <th>Number</th>
@@ -828,9 +937,17 @@ function OrdersTable({
               <td>{customer?.name || 'Shared customer'}</td>
               <td className="num">{money(order.total_minor, order.currency || 'KES')}</td>
               <td>
-                <span className={`sales-pill status-${order.status}`}>{statusLabel(order.status)}</span>
+                <span className={`sales-pill status-${order.status}`}>
+                  {statusLabel(order.status)}
+                </span>
               </td>
-              <td>{invoice ? statusLabel(invoice.status) : orderNeedsInvoice(order, invoices) ? 'To invoice' : 'Nothing to invoice'}</td>
+              <td>
+                {invoice
+                  ? statusLabel(invoice.status)
+                  : orderNeedsInvoice(order, invoices)
+                    ? 'To invoice'
+                    : 'Nothing to invoice'}
+              </td>
               <td>{statusLabel(order.fulfillment_status)}</td>
             </tr>
           );
@@ -840,17 +957,33 @@ function OrdersTable({
   );
 }
 
-function QuotationKanban({ rows, customers, onOpen }: { rows: SalesRecord[]; customers: SalesRecord[]; onOpen: (row: SalesRecord) => void }) {
+function QuotationKanban({
+  rows,
+  customers,
+  onOpen,
+}: {
+  rows: SalesRecord[];
+  customers: SalesRecord[];
+  onOpen: (row: SalesRecord) => void;
+}) {
   return (
     <div className="sales-kanban">
       {rows.map((quotation) => {
         const customer = customers.find((row) => row.id === quotation.customer_id);
         return (
-          <button key={quotation.id} className="sales-kanban-card" onClick={() => onOpen(quotation)}>
-            <span className={`sales-pill status-${quotation.status}`}>{statusLabel(quotation.status)}</span>
+          <button
+            key={quotation.id}
+            className="sales-kanban-card"
+            onClick={() => onOpen(quotation)}
+          >
+            <span className={`sales-pill status-${quotation.status}`}>
+              {statusLabel(quotation.status)}
+            </span>
             <strong>{quotation.reference}</strong>
             <span>{customer?.name || 'Shared customer'}</span>
-            <span className="sales-kanban-amount">{money(quotation.total_minor, quotation.currency || 'KES')}</span>
+            <span className="sales-kanban-amount">
+              {money(quotation.total_minor, quotation.currency || 'KES')}
+            </span>
             <small>{dateLabel(quotation.issue_date)}</small>
           </button>
         );
@@ -879,8 +1012,12 @@ function OrderKanban({
             <span className={`sales-pill status-${order.status}`}>{statusLabel(order.status)}</span>
             <strong>{order.number || order.reference}</strong>
             <span>{customer?.name || 'Shared customer'}</span>
-            <span className="sales-kanban-amount">{money(order.total_minor, order.currency || 'KES')}</span>
-            <small>{invoiceForOrder(invoices, order.id)?.status || order.payment_status || 'No invoice'}</small>
+            <span className="sales-kanban-amount">
+              {money(order.total_minor, order.currency || 'KES')}
+            </span>
+            <small>
+              {invoiceForOrder(invoices, order.id)?.status || order.payment_status || 'No invoice'}
+            </small>
           </button>
         );
       })}
@@ -913,7 +1050,12 @@ function SalesCalendar({
         <button onClick={() => shifted(-1)} aria-label="Previous month">
           <Icon name="left" />
         </button>
-        <strong>{new Date(month + '-01T00:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}</strong>
+        <strong>
+          {new Date(month + '-01T00:00:00Z').toLocaleDateString('en-GB', {
+            month: 'long',
+            year: 'numeric',
+          })}
+        </strong>
         <button onClick={() => shifted(1)} aria-label="Next month">
           <Icon name="right" />
         </button>
@@ -928,7 +1070,11 @@ function SalesCalendar({
           <div key={day.date} className={`sales-calendar-day ${day.inMonth ? '' : 'outside'}`}>
             <span>{Number(day.date.slice(8))}</span>
             {day.records.slice(0, 3).map((record) => (
-              <button key={record.id} onClick={() => onOpen(record)} title={customers.find((c) => c.id === record.customer_id)?.name}>
+              <button
+                key={record.id}
+                onClick={() => onOpen(record)}
+                title={customers.find((c) => c.id === record.customer_id)?.name}
+              >
                 {label(record)}
               </button>
             ))}
@@ -951,19 +1097,25 @@ function SalesGraph({ rows, label }: { rows: SalesRecord[]; label: (row: SalesRe
           <div key={item.month} className="sales-chart-column" title={`${item.orders} orders`}>
             <span>{money(item.value, 'KES')}</span>
             <div style={{ height: `${Math.max(4, Math.round((item.value / max) * 100))}%` }} />
-            <small>{new Date(item.month + '-01T00:00:00Z').toLocaleDateString('en-GB', { month: 'short' })}</small>
+            <small>
+              {new Date(item.month + '-01T00:00:00Z').toLocaleDateString('en-GB', {
+                month: 'short',
+              })}
+            </small>
           </div>
         ))}
       </div>
       <p className="sales-note">
-        Order value by issue month for loaded records. This is document value, not recognized revenue or collected cash.
+        Order value by issue month for loaded records. This is document value, not recognized
+        revenue or collected cash.
       </p>
       <details>
         <summary>Records in graph</summary>
         <ul>
           {rows.map((row) => (
             <li key={row.id}>
-              {label(row)} · {dateLabel(row.issue_date)} · {money(row.total_minor, row.currency || 'KES')}
+              {label(row)} · {dateLabel(row.issue_date)} ·{' '}
+              {money(row.total_minor, row.currency || 'KES')}
             </li>
           ))}
         </ul>
@@ -1078,9 +1230,15 @@ function QuotationDocument({
   const [dueDate, setDueDate] = useState(quote?.due_date || today());
   const [validUntil, setValidUntil] = useState(quote?.valid_until || today());
   const [discount, setDiscount] = useState(
-    quote ? String(Number(quote.discount_minor || 0) / (['UGX', 'RWF'].includes(quote.currency) ? 1 : 100)) : '0',
+    quote
+      ? String(
+          Number(quote.discount_minor || 0) / (['UGX', 'RWF'].includes(quote.currency) ? 1 : 100),
+        )
+      : '0',
   );
-  const [taxPercent, setTaxPercent] = useState(quote ? String(Number(quote.tax_bps || 0) / 100) : '0');
+  const [taxPercent, setTaxPercent] = useState(
+    quote ? String(Number(quote.tax_bps || 0) / 100) : '0',
+  );
   const [terms, setTerms] = useState(quote?.terms || '');
   const [notes, setNotes] = useState(quote?.notes || '');
   const [paymentInstructions, setPaymentInstructions] = useState(quote?.payment_instructions || '');
@@ -1139,7 +1297,9 @@ function QuotationDocument({
     setDueDate(record.due_date || today());
     setValidUntil(record.valid_until || record.due_date || today());
     setDiscount(
-      String(Number(record.discount_minor || 0) / (['UGX', 'RWF'].includes(record.currency) ? 1 : 100)),
+      String(
+        Number(record.discount_minor || 0) / (['UGX', 'RWF'].includes(record.currency) ? 1 : 100),
+      ),
     );
     setTaxPercent(String(Number(record.tax_bps || 0) / 100));
     setTerms(record.terms || '');
@@ -1151,7 +1311,10 @@ function QuotationDocument({
             key: `saved-${index}-${item.product_id || item.description}`,
             description: item.description || '',
             quantity: String(item.quantity ?? '1'),
-            price: String(Number(item.unit_price_minor || 0) / (['UGX', 'RWF'].includes(record.currency) ? 1 : 100)),
+            price: String(
+              Number(item.unit_price_minor || 0) /
+                (['UGX', 'RWF'].includes(record.currency) ? 1 : 100),
+            ),
             product_id: item.product_id,
             warehouse_id: item.warehouse_id,
             location_id: item.location_id,
@@ -1168,9 +1331,19 @@ function QuotationDocument({
   }));
   const validLines =
     computedLines.length > 0 &&
-    computedLines.every((line) => Number.isFinite(line.quantity) && line.quantity > 0 && Number.isFinite(line.priceMinor) && line.priceMinor >= 0);
+    computedLines.every(
+      (line) =>
+        Number.isFinite(line.quantity) &&
+        line.quantity > 0 &&
+        Number.isFinite(line.priceMinor) &&
+        line.priceMinor >= 0,
+    );
   const totals = validLines
-    ? documentTotals(computedLines, toMinor(discount, currency), Math.round(Number(taxPercent || 0) * 100))
+    ? documentTotals(
+        computedLines,
+        toMinor(discount, currency),
+        Math.round(Number(taxPercent || 0) * 100),
+      )
     : { subtotal: 0, discount: 0, tax: 0, total: 0 };
   const totalsValid = validLines && lines.every((line) => line.description.trim().length > 0);
 
@@ -1203,13 +1376,16 @@ function QuotationDocument({
   }
 
   function validate() {
-    if (!customerId) return 'Select an existing customer. Quotations link to canonical customer records.';
-    if (!validLines) return 'Every line needs a description, a positive quantity and a non-negative unit price.';
+    if (!customerId)
+      return 'Select an existing customer. Quotations link to canonical customer records.';
+    if (!validLines)
+      return 'Every line needs a description, a positive quantity and a non-negative unit price.';
     if (!Number.isFinite(toMinor(discount, currency)) || toMinor(discount, currency) < 0)
       return 'Discount must be a non-negative amount.';
     if (!Number.isFinite(Number(taxPercent)) || Number(taxPercent) < 0 || Number(taxPercent) > 100)
       return 'Tax must be a percentage between 0 and 100.';
-    if (toMinor(discount, currency) > totals.subtotal) return 'Discount cannot exceed the untaxed subtotal.';
+    if (toMinor(discount, currency) > totals.subtotal)
+      return 'Discount cannot exceed the untaxed subtotal.';
     return '';
   }
 
@@ -1234,14 +1410,32 @@ function QuotationDocument({
           hydrate(record?.quotation || record);
           setOrderLink((record?.quotation || record)?.order_id || '');
           if (opportunityId) {
-            const url = new URL(location.href); url.searchParams.delete('crm-opportunity'); window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+            const url = new URL(location.href);
+            url.searchParams.delete('crm-opportunity');
+            window.history.replaceState(null, '', url.pathname + url.search + url.hash);
             try {
-              const parent = (await api('/crm/entries/' + encodeURIComponent(opportunityId) + '/history')).entry;
-              if (parent.customer_id !== customerId) throw new Error('The quotation customer differs from the opportunity customer.');
-              const {id: _id, version, created_at: _created, updated_at: _updated, ...entry} = parent;
-              await api('/crm/entries/' + encodeURIComponent(opportunityId), 'PATCH', {expected_version:version,entry:{...entry,quotation_id:id}});
+              const parent = (
+                await api('/crm/entries/' + encodeURIComponent(opportunityId) + '/history')
+              ).entry;
+              if (parent.customer_id !== customerId)
+                throw new Error('The quotation customer differs from the opportunity customer.');
+              const {
+                id: _id,
+                version,
+                created_at: _created,
+                updated_at: _updated,
+                ...entry
+              } = parent;
+              await api('/crm/entries/' + encodeURIComponent(opportunityId), 'PATCH', {
+                expected_version: version,
+                entry: { ...entry, quotation_id: id },
+              });
             } catch (reason) {
-              setError('Quotation saved, but it could not be linked to CRM: ' + (reason as Error).message + ' Link this existing quotation from the opportunity.');
+              setError(
+                'Quotation saved, but it could not be linked to CRM: ' +
+                  (reason as Error).message +
+                  ' Link this existing quotation from the opportunity.',
+              );
             }
           }
         }
@@ -1263,7 +1457,14 @@ function QuotationDocument({
       }
       onRefresh();
     } catch (reason) {
-      setError(savedId ? 'Quotation was saved, but the follow-up read failed. Reopen quotation ' + savedId + ' before retrying: ' + (reason as Error).message : (reason as Error).message);
+      setError(
+        savedId
+          ? 'Quotation was saved, but the follow-up read failed. Reopen quotation ' +
+              savedId +
+              ' before retrying: ' +
+              (reason as Error).message
+          : (reason as Error).message,
+      );
     } finally {
       setBusy(false);
     }
@@ -1310,7 +1511,8 @@ function QuotationDocument({
     setBusy(true);
     try {
       const approvalId =
-        (document.querySelector('select[name="approval"]') as HTMLSelectElement | null)?.value || undefined;
+        (document.querySelector('select[name="approval"]') as HTMLSelectElement | null)?.value ||
+        undefined;
       let version = current?.version;
       let nextStatus = status;
       if (nextStatus === 'draft' || nextStatus === 'shared') {
@@ -1348,7 +1550,8 @@ function QuotationDocument({
   }
 
   async function cancelQuotation() {
-    if (!window.confirm('Cancel this quotation? The retained revision history remains available.')) return;
+    if (!window.confirm('Cancel this quotation? The retained revision history remains available.'))
+      return;
     const result = await action('cancel');
     if (result) onNotify('Quotation cancelled.');
   }
@@ -1365,7 +1568,6 @@ function QuotationDocument({
       onNotify('Quotation revised to draft.');
     }
   }
-
 
   return (
     <div className="sales-document">
@@ -1425,15 +1627,11 @@ function QuotationDocument({
       )}
       {approvalHint && (
         <div className="alert info">
-          <strong>Discount approval required.</strong> This document exceeds the workspace discount threshold. Ask an
-          eligible reviewer to approve the exact quotation version, then confirm again.
+          <strong>Discount approval required.</strong> This document exceeds the workspace discount
+          threshold. Ask an eligible reviewer to approve the exact quotation version, then confirm
+          again.
           {current && (
-            <ReviewFields
-              api={api}
-              scope={scope}
-              action="sales_discount"
-              resourceId={current.id}
-            />
+            <ReviewFields api={api} scope={scope} action="sales_discount" resourceId={current.id} />
           )}
         </div>
       )}
@@ -1462,7 +1660,9 @@ function QuotationDocument({
                 ))}
               </div>
             </div>
-            <span className={`sales-pill status-${status || 'draft'}`}>{statusLabel(status || 'draft')}</span>
+            <span className={`sales-pill status-${status || 'draft'}`}>
+              {statusLabel(status || 'draft')}
+            </span>
           </header>
           <section className="sales-doc-section">
             <div className="sales-doc-two">
@@ -1470,7 +1670,10 @@ function QuotationDocument({
                 <h3>Customer</h3>
                 {editable ? (
                   <div className="sales-customer-select">
-                    <select value={customerId} onChange={(event) => setCustomerId(event.target.value)}>
+                    <select
+                      value={customerId}
+                      onChange={(event) => setCustomerId(event.target.value)}
+                    >
                       <option value="">Select a customer…</option>
                       {customers.map((customer) => (
                         <option key={customer.id} value={customer.id}>
@@ -1478,7 +1681,11 @@ function QuotationDocument({
                         </option>
                       ))}
                     </select>
-                    <button type="button" className="sales-ghost" onClick={() => setCustomerOpen(true)}>
+                    <button
+                      type="button"
+                      className="sales-ghost"
+                      onClick={() => setCustomerOpen(true)}
+                    >
                       New customer
                     </button>
                   </div>
@@ -1498,7 +1705,11 @@ function QuotationDocument({
                   <dt>Quotation date</dt>
                   <dd>
                     {editable ? (
-                      <input type="date" value={issueDate} onChange={(event) => setIssueDate(event.target.value)} />
+                      <input
+                        type="date"
+                        value={issueDate}
+                        onChange={(event) => setIssueDate(event.target.value)}
+                      />
                     ) : (
                       dateLabel(issueDate)
                     )}
@@ -1508,7 +1719,11 @@ function QuotationDocument({
                   <dt>Expiration</dt>
                   <dd>
                     {editable ? (
-                      <input type="date" value={validUntil} onChange={(event) => setValidUntil(event.target.value)} />
+                      <input
+                        type="date"
+                        value={validUntil}
+                        onChange={(event) => setValidUntil(event.target.value)}
+                      />
                     ) : (
                       dateLabel(validUntil)
                     )}
@@ -1518,7 +1733,11 @@ function QuotationDocument({
                   <dt>Delivery date</dt>
                   <dd>
                     {editable ? (
-                      <input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
+                      <input
+                        type="date"
+                        value={dueDate}
+                        onChange={(event) => setDueDate(event.target.value)}
+                      />
                     ) : (
                       dateLabel(dueDate)
                     )}
@@ -1528,7 +1747,10 @@ function QuotationDocument({
                   <dt>Currency</dt>
                   <dd>
                     {editable ? (
-                      <select value={currency} onChange={(event) => setCurrency(event.target.value)}>
+                      <select
+                        value={currency}
+                        onChange={(event) => setCurrency(event.target.value)}
+                      >
                         {currencies.map((item) => (
                           <option key={item} value={item}>
                             {item}
@@ -1571,7 +1793,10 @@ function QuotationDocument({
                 <tbody>
                   {lines.map((line, index) => {
                     const product = products.find((item) => item.id === line.product_id);
-                    const amount = lineAmountMinor(quantityValue(line.quantity), toMinor(line.price, currency));
+                    const amount = lineAmountMinor(
+                      quantityValue(line.quantity),
+                      toMinor(line.price, currency),
+                    );
                     const showWarehouse = inventoryActive && product?.track_inventory;
                     return (
                       <tr key={line.key}>
@@ -1580,14 +1805,18 @@ function QuotationDocument({
                             <>
                               <input
                                 value={line.description}
-                                onChange={(event) => updateLine(line.key, { description: event.target.value })}
+                                onChange={(event) =>
+                                  updateLine(line.key, { description: event.target.value })
+                                }
                                 placeholder={`Line ${index + 1} description`}
                                 aria-label={`Line ${index + 1} description`}
                               />
                               {showWarehouse && (
                                 <select
                                   value={line.warehouse_id || ''}
-                                  onChange={(event) => updateLine(line.key, { warehouse_id: event.target.value })}
+                                  onChange={(event) =>
+                                    updateLine(line.key, { warehouse_id: event.target.value })
+                                  }
                                   aria-label={`Line ${index + 1} warehouse`}
                                 >
                                   <option value="">Default warehouse</option>
@@ -1610,7 +1839,9 @@ function QuotationDocument({
                               min="0.001"
                               step="0.001"
                               value={line.quantity}
-                              onChange={(event) => updateLine(line.key, { quantity: event.target.value })}
+                              onChange={(event) =>
+                                updateLine(line.key, { quantity: event.target.value })
+                              }
                               aria-label={`Line ${index + 1} quantity`}
                             />
                           ) : (
@@ -1625,7 +1856,9 @@ function QuotationDocument({
                               min="0"
                               step="0.01"
                               value={line.price}
-                              onChange={(event) => updateLine(line.key, { price: event.target.value })}
+                              onChange={(event) =>
+                                updateLine(line.key, { price: event.target.value })
+                              }
                               aria-label={`Line ${index + 1} unit price`}
                             />
                           ) : (
@@ -1633,10 +1866,16 @@ function QuotationDocument({
                           )}
                         </td>
                         <td className="num">{taxPercent}%</td>
-                        <td className="num">{Number.isFinite(amount) ? money(amount, currency) : '—'}</td>
+                        <td className="num">
+                          {Number.isFinite(amount) ? money(amount, currency) : '—'}
+                        </td>
                         <td>
                           {editable && (
-                            <button className="sales-ghost" onClick={() => removeLine(line.key)} aria-label="Remove line">
+                            <button
+                              className="sales-ghost"
+                              onClick={() => removeLine(line.key)}
+                              aria-label="Remove line"
+                            >
                               Remove
                             </button>
                           )}
@@ -1648,7 +1887,9 @@ function QuotationDocument({
               </table>
               {editable && (
                 <div className="sales-line-actions">
-                  <button onClick={() => setLines((rows) => [...rows, blankLine()])}>Add line</button>
+                  <button onClick={() => setLines((rows) => [...rows, blankLine()])}>
+                    Add line
+                  </button>
                   <button onClick={() => setPickerOpen(true)}>Add product</button>
                   <button className="sales-ghost" onClick={() => setPickerOpen(true)}>
                     Catalog
@@ -1656,8 +1897,9 @@ function QuotationDocument({
                 </div>
               )}
               <p className="sales-note">
-                Taxes and discounts apply at document level in the authoritative document schema. Line-level discounts
-                and taxes are not exposed as separate fields, so they are not simulated here.
+                Taxes and discounts apply at document level in the authoritative document schema.
+                Line-level discounts and taxes are not exposed as separate fields, so they are not
+                simulated here.
               </p>
               <div className="sales-totals">
                 <div>
@@ -1679,15 +1921,25 @@ function QuotationDocument({
                 {editable && (
                   <div className="sales-total-inputs">
                     <Field label="Discount amount">
-                      <input value={discount} onChange={(event) => setDiscount(event.target.value)} inputMode="decimal" />
+                      <input
+                        value={discount}
+                        onChange={(event) => setDiscount(event.target.value)}
+                        inputMode="decimal"
+                      />
                     </Field>
                     <Field label="Tax %">
-                      <input value={taxPercent} onChange={(event) => setTaxPercent(event.target.value)} inputMode="decimal" />
+                      <input
+                        value={taxPercent}
+                        onChange={(event) => setTaxPercent(event.target.value)}
+                        inputMode="decimal"
+                      />
                     </Field>
                   </div>
                 )}
               </div>
-              {!totalsValid && <p className="sales-note">Complete every line to calculate authoritative totals.</p>}
+              {!totalsValid && (
+                <p className="sales-note">Complete every line to calculate authoritative totals.</p>
+              )}
             </section>
           )}
           {tab === 'other' && (
@@ -1709,7 +1961,12 @@ function QuotationDocument({
                 <div>
                   <h3>Terms and conditions</h3>
                   {editable ? (
-                    <textarea rows={4} maxLength={3000} value={terms} onChange={(event) => setTerms(event.target.value)} />
+                    <textarea
+                      rows={4}
+                      maxLength={3000}
+                      value={terms}
+                      onChange={(event) => setTerms(event.target.value)}
+                    />
                   ) : (
                     <p>{terms || 'No terms recorded.'}</p>
                   )}
@@ -1735,13 +1992,18 @@ function QuotationDocument({
             <section className="sales-doc-section">
               <h3>Notes</h3>
               {editable ? (
-                <textarea rows={7} maxLength={3000} value={notes} onChange={(event) => setNotes(event.target.value)} />
+                <textarea
+                  rows={7}
+                  maxLength={3000}
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                />
               ) : (
                 <p>{notes || 'No notes recorded.'}</p>
               )}
               <p className="sales-note">
-                Optional products and quote builder are not shown because the current quotation model does not expose
-                those capabilities. No empty tabs are rendered.
+                Optional products and quote builder are not shown because the current quotation
+                model does not expose those capabilities. No empty tabs are rendered.
               </p>
             </section>
           )}
@@ -1753,7 +2015,8 @@ function QuotationDocument({
           </div>
           {history.length === 0 ? (
             <p className="sales-note">
-              No saved revisions are exposed yet. Activity is populated from genuine quotation revision events.
+              No saved revisions are exposed yet. Activity is populated from genuine quotation
+              revision events.
             </p>
           ) : (
             <ol className="sales-timeline">
@@ -1763,7 +2026,8 @@ function QuotationDocument({
                   <div>
                     <strong>{statusLabel(entry.action)}</strong>
                     <small>
-                      Revision {entry.quotation_version} · {dateLabel(String(entry.recorded_at).slice(0, 10))}
+                      Revision {entry.quotation_version} ·{' '}
+                      {dateLabel(String(entry.recorded_at).slice(0, 10))}
                     </small>
                     {entry.actor && <small>Actor: {entry.actor}</small>}
                     {entry.reason && <p>{entry.reason}</p>}
@@ -1775,22 +2039,31 @@ function QuotationDocument({
           <div className="sales-activity-note">
             <strong>Delivery status</strong>
             <p>
-              AfriCore has no configured outbound quotation email provider. "Sent" records the quotation state; it does
-              not claim a delivered message.
+              AfriCore has no configured outbound quotation email provider. "Sent" records the
+              quotation state; it does not claim a delivered message.
             </p>
           </div>
         </aside>
       </div>
       {sendOpen && (
         <Overlay onClose={() => setSendOpen(false)} portal>
-          <div className="modal panel sales-dialog" role="dialog" aria-modal="true" aria-label="Send quotation">
+          <div
+            className="modal panel sales-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Send quotation"
+          >
             <h3>Mark quotation as sent</h3>
             <p>
-              No outbound email or messaging channel is configured for quotations. Marking this quotation shared
-              records the authoritative sales state without claiming that a message was delivered.
+              No outbound email or messaging channel is configured for quotations. Marking this
+              quotation shared records the authoritative sales state without claiming that a message
+              was delivered.
             </p>
             <p>
-              Recipient: <strong>{selectedCustomer?.email || selectedCustomer?.name || 'No customer selected'}</strong>
+              Recipient:{' '}
+              <strong>
+                {selectedCustomer?.email || selectedCustomer?.name || 'No customer selected'}
+              </strong>
             </p>
             <div className="sales-dialog-actions">
               <button onClick={() => setSendOpen(false)}>Keep draft</button>
@@ -1803,7 +2076,12 @@ function QuotationDocument({
       )}
       {reviseOpen && (
         <Overlay onClose={() => setReviseOpen(false)} portal>
-          <div className="modal panel sales-dialog" role="dialog" aria-modal="true" aria-label="Revise quotation">
+          <div
+            className="modal panel sales-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Revise quotation"
+          >
             <h3>Revise quotation</h3>
             <p>The revision reason is retained in immutable quotation history.</p>
             <textarea
@@ -1844,7 +2122,10 @@ function QuotationDocument({
                 key: `pick-${Date.now()}`,
                 description: product.name,
                 quantity: '1',
-                price: String(Number(product.sale_price_minor || 0) / (['UGX', 'RWF'].includes(product.currency) ? 1 : 100)),
+                price: String(
+                  Number(product.sale_price_minor || 0) /
+                    (['UGX', 'RWF'].includes(product.currency) ? 1 : 100),
+                ),
                 product_id: product.id,
               },
             ]);
@@ -1856,7 +2137,15 @@ function QuotationDocument({
   );
 }
 
-function NewCustomerDialog({ api, onClose, onCreated }: { api: API; onClose: () => void; onCreated: (customer: SalesRecord) => void }) {
+function NewCustomerDialog({
+  api,
+  onClose,
+  onCreated,
+}: {
+  api: API;
+  onClose: () => void;
+  onCreated: (customer: SalesRecord) => void;
+}) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -1910,7 +2199,15 @@ function NewCustomerDialog({ api, onClose, onCreated }: { api: API; onClose: () 
   );
 }
 
-function ProductPicker({ products, onClose, onPick }: { products: SalesRecord[]; onClose: () => void; onPick: (product: SalesRecord) => void }) {
+function ProductPicker({
+  products,
+  onClose,
+  onPick,
+}: {
+  products: SalesRecord[];
+  onClose: () => void;
+  onPick: (product: SalesRecord) => void;
+}) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('');
   const categories = [...new Set(products.map((product) => product.category).filter(Boolean))];
@@ -1923,7 +2220,12 @@ function ProductPicker({ products, onClose, onPick }: { products: SalesRecord[];
   );
   return (
     <Overlay onClose={onClose} portal>
-      <div className="modal panel sales-catalog-picker" role="dialog" aria-modal="true" aria-label="Product catalog">
+      <div
+        className="modal panel sales-catalog-picker"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Product catalog"
+      >
         <div className="sales-dialog-head">
           <div>
             <span className="sales-eyebrow">Canonical catalog</span>
@@ -1936,9 +2238,17 @@ function ProductPicker({ products, onClose, onPick }: { products: SalesRecord[];
         <div className="sales-toolbar">
           <div className="sales-search">
             <Icon name="search" />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search products…" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search products…"
+            />
           </div>
-          <select value={category} onChange={(event) => setCategory(event.target.value)} aria-label="Category">
+          <select
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
+            aria-label="Category"
+          >
             <option value="">All categories</option>
             {categories.map((item) => (
               <option key={item} value={item}>
@@ -1957,7 +2267,9 @@ function ProductPicker({ products, onClose, onPick }: { products: SalesRecord[];
               <small>{product.track_inventory ? 'Stock tracked' : 'Not stock tracked'}</small>
             </button>
           ))}
-          {filtered.length === 0 && <p className="sales-empty">No authorized products match this search.</p>}
+          {filtered.length === 0 && (
+            <p className="sales-empty">No authorized products match this search.</p>
+          )}
         </div>
       </div>
     </Overlay>
@@ -2038,7 +2350,11 @@ function OrderDocument({
 
   async function issueInvoice() {
     if (!invoice) return;
-    await update(`/records/invoices/${invoice.id}`, { status: 'issued' }, 'Invoice issued. Payment status remains unchanged until evidence is recorded.');
+    await update(
+      `/records/invoices/${invoice.id}`,
+      { status: 'issued' },
+      'Invoice issued. Payment status remains unchanged until evidence is recorded.',
+    );
   }
 
   return (
@@ -2057,7 +2373,13 @@ function OrderDocument({
             <button
               className="sales-primary"
               disabled={busy}
-              onClick={() => update(`/records/orders/${order.id}`, { status: 'awaiting_payment' }, 'Order confirmed.')}
+              onClick={() =>
+                update(
+                  `/records/orders/${order.id}`,
+                  { status: 'awaiting_payment' },
+                  'Order confirmed.',
+                )
+              }
             >
               Confirm order
             </button>
@@ -2078,7 +2400,11 @@ function OrderDocument({
               disabled={busy}
               onClick={() => {
                 if (window.confirm('Cancel this order? Existing records are retained.'))
-                  void update(`/records/orders/${order.id}`, { status: 'cancelled' }, 'Order cancelled.');
+                  void update(
+                    `/records/orders/${order.id}`,
+                    { status: 'cancelled' },
+                    'Order cancelled.',
+                  );
               }}
             >
               Cancel order
@@ -2159,7 +2485,10 @@ function OrderDocument({
                     <td className="num">{item.quantity}</td>
                     <td className="num">{money(item.unit_price_minor, order.currency || 'KES')}</td>
                     <td className="num">
-                      {money(lineAmountMinor(Number(item.quantity), Number(item.unit_price_minor)), order.currency || 'KES')}
+                      {money(
+                        lineAmountMinor(Number(item.quantity), Number(item.unit_price_minor)),
+                        order.currency || 'KES',
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -2172,18 +2501,27 @@ function OrderDocument({
               <div className="sales-linked-row">
                 <div>
                   <strong>{invoice.number || invoice.reference || invoice.id}</strong>
-                  <span className={`sales-pill status-${invoice.status}`}>{statusLabel(invoice.status)}</span>
+                  <span className={`sales-pill status-${invoice.status}`}>
+                    {statusLabel(invoice.status)}
+                  </span>
                 </div>
                 <div>
-                  <span>Total {money(invoice.total_minor, invoice.currency || order.currency)}</span>
-                  <span>Paid {money(invoice.paid_minor || 0, invoice.currency || order.currency)}</span>
-                  <span>Outstanding {money(invoice.outstanding_minor || 0, invoice.currency || order.currency)}</span>
+                  <span>
+                    Total {money(invoice.total_minor, invoice.currency || order.currency)}
+                  </span>
+                  <span>
+                    Paid {money(invoice.paid_minor || 0, invoice.currency || order.currency)}
+                  </span>
+                  <span>
+                    Outstanding{' '}
+                    {money(invoice.outstanding_minor || 0, invoice.currency || order.currency)}
+                  </span>
                 </div>
                 <button onClick={() => navigate('Invoices')}>Open invoices workspace</button>
               </div>
               <p className="sales-note">
-                Invoice state is linked to the shared ledger. Creating an invoice never records payment; collection is
-                represented only by authorized payment evidence.
+                Invoice state is linked to the shared ledger. Creating an invoice never records
+                payment; collection is represented only by authorized payment evidence.
               </p>
             </section>
           )}
@@ -2212,12 +2550,16 @@ function OrderDocument({
             </div>
             <div>
               <dt>Invoice</dt>
-              <dd>{invoice ? `${invoice.number || invoice.id} · ${statusLabel(invoice.status)}` : 'Not invoiced'}</dd>
+              <dd>
+                {invoice
+                  ? `${invoice.number || invoice.id} · ${statusLabel(invoice.status)}`
+                  : 'Not invoiced'}
+              </dd>
             </div>
           </dl>
           <p className="sales-note">
-            The order API exposes current linked state, not a complete event stream. No fabricated activity entries are
-            displayed.
+            The order API exposes current linked state, not a complete event stream. No fabricated
+            activity entries are displayed.
           </p>
           {orderIsOpenForDelivery(order) && (
             <button onClick={() => navigate('Fulfillment')}>Open fulfillment workspace</button>
@@ -2260,9 +2602,17 @@ function ProductSection({
         <div className="sales-toolbar">
           <div className="sales-search">
             <Icon name="search" />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search products…" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search products…"
+            />
           </div>
-          <select value={category} onChange={(event) => setCategory(event.target.value)} aria-label="Product category">
+          <select
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
+            aria-label="Product category"
+          >
             <option value="">All categories</option>
             {categories.map((item) => (
               <option key={item} value={item}>
@@ -2274,8 +2624,8 @@ function ProductSection({
         </div>
       </div>
       <p className="sales-note">
-        Sales reuses the canonical Products service. Product creation and advanced editing remain in the Products
-        service instead of a duplicate editor.
+        Sales reuses the canonical Products service. Product creation and advanced editing remain in
+        the Products service instead of a duplicate editor.
       </p>
       {loading ? (
         <p className="sales-empty">Loading products…</p>
@@ -2300,13 +2650,17 @@ function ProductSection({
                     <td>{product.sku || '—'}</td>
                     <td>{product.category || '—'}</td>
                     <td>{product.unit || 'Units'}</td>
-                    <td className="num">{money(product.sale_price_minor, product.currency || 'KES')}</td>
+                    <td className="num">
+                      {money(product.sale_price_minor, product.currency || 'KES')}
+                    </td>
                     <td>{product.track_inventory ? 'Tracked' : 'Not tracked'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {filtered.length === 0 && <p className="sales-empty">No authorized products match this view.</p>}
+            {filtered.length === 0 && (
+              <p className="sales-empty">No authorized products match this view.</p>
+            )}
           </div>
           <aside className="panel sales-product-detail">
             {selected ? (
@@ -2335,12 +2689,17 @@ function ProductSection({
                 <button onClick={() => navigate('Products')}>Edit in Products service</button>
               </>
             ) : (
-              <p className="sales-note">Select a product to inspect its authorized record. Stock quantities are owned by Inventory and are not fabricated here.</p>
+              <p className="sales-note">
+                Select a product to inspect its authorized record. Stock quantities are owned by
+                Inventory and are not fabricated here.
+              </p>
             )}
           </aside>
         </div>
       )}
-      <p className="sales-note">Sales is a read-only view of the canonical catalog. Editing stays in Products.</p>
+      <p className="sales-note">
+        Sales is a read-only view of the canonical catalog. Editing stays in Products.
+      </p>
     </section>
   );
 }
@@ -2390,7 +2749,11 @@ function ReportingSection({
               ['product', 'By Product'],
               ['status', 'By Status'],
             ].map(([id, label]) => (
-              <button key={id} className={report === id ? 'active' : ''} onClick={() => setReport(id as typeof report)}>
+              <button
+                key={id}
+                className={report === id ? 'active' : ''}
+                onClick={() => setReport(id as typeof report)}
+              >
                 {label}
               </button>
             ))}
@@ -2410,7 +2773,9 @@ function ReportingSection({
         </article>
         <article>
           <span>Average order value</span>
-          <strong>{summary.orders ? money(summary.average, selection[0]?.currency || 'KES') : '—'}</strong>
+          <strong>
+            {summary.orders ? money(summary.average, selection[0]?.currency || 'KES') : '—'}
+          </strong>
           <small>Confirmed order value divided by confirmed order count.</small>
         </article>
         <article>
@@ -2424,8 +2789,9 @@ function ReportingSection({
           <h3>Confirmed order value by issue month</h3>
           <SalesGraph rows={selection} label={(row) => row.number || row.reference || 'Order'} />
           <p className="sales-note">
-            This reports order document value. It is not recognized revenue, invoiced value, collected cash or margin.
-            Salesperson performance is unsupported because ownership is not exposed by the Sales API.
+            This reports order document value. It is not recognized revenue, invoiced value,
+            collected cash or margin. Salesperson performance is unsupported because ownership is
+            not exposed by the Sales API.
           </p>
         </div>
       )}
@@ -2439,7 +2805,9 @@ function ReportingSection({
               value: money(row.value, row.currency),
             }))}
           />
-          {byCustomer.length === 0 && <p className="sales-empty">No confirmed orders in this period.</p>}
+          {byCustomer.length === 0 && (
+            <p className="sales-empty">No confirmed orders in this period.</p>
+          )}
         </div>
       )}
       {report === 'product' && (
@@ -2453,7 +2821,9 @@ function ReportingSection({
               value: money(row.value, row.currency),
             }))}
           />
-          {byProduct.length === 0 && <p className="sales-empty">No confirmed order lines in this period.</p>}
+          {byProduct.length === 0 && (
+            <p className="sales-empty">No confirmed order lines in this period.</p>
+          )}
         </div>
       )}
       {report === 'status' && (
@@ -2534,15 +2904,16 @@ function ConfigurationSection({
   const [error, setError] = useState('');
   useEffect(() => {
     let live = true;
-    Promise.allSettled([api('/sales/templates'), admin ? api('/business/policy') : Promise.resolve(null)]).then(
-      (results) => {
-        if (!live) return;
-        if (results[0].status === 'fulfilled') setTemplates(rowsOf(results[0].value));
-        if (results[1].status === 'fulfilled') setPolicy(results[1].value);
-        const failure = results.find((result) => result.status === 'rejected');
-        if (failure && failure.status === 'rejected') setError(failure.reason?.message || '');
-      },
-    );
+    Promise.allSettled([
+      api('/sales/templates'),
+      admin ? api('/business/policy') : Promise.resolve(null),
+    ]).then((results) => {
+      if (!live) return;
+      if (results[0].status === 'fulfilled') setTemplates(rowsOf(results[0].value));
+      if (results[1].status === 'fulfilled') setPolicy(results[1].value);
+      const failure = results.find((result) => result.status === 'rejected');
+      if (failure && failure.status === 'rejected') setError(failure.reason?.message || '');
+    });
     return () => {
       live = false;
     };
@@ -2564,7 +2935,10 @@ function ConfigurationSection({
       <div className="sales-config-grid">
         <article className="panel">
           <h3>Quotation templates</h3>
-          <p>Reusable defaults are exposed by the Sales service. Create a quotation and save it as a template from the service editor.</p>
+          <p>
+            Reusable defaults are exposed by the Sales service. Create a quotation and save it as a
+            template from the service editor.
+          </p>
           {templates.length === 0 ? (
             <p className="sales-empty">No templates are configured.</p>
           ) : (
@@ -2581,7 +2955,9 @@ function ConfigurationSection({
         <article className="panel">
           <h3>Business sales policy</h3>
           {!admin ? (
-            <p className="sales-note">Only workspace owners and administrators can inspect or change sales policy.</p>
+            <p className="sales-note">
+              Only workspace owners and administrators can inspect or change sales policy.
+            </p>
           ) : policy ? (
             <dl className="sales-meta">
               <div>
@@ -2594,7 +2970,11 @@ function ConfigurationSection({
               </div>
               <div>
                 <dt>Invoice correction approval</dt>
-                <dd>{policy.configuration?.require_invoice_correction_approval ? 'Required' : 'Not required'}</dd>
+                <dd>
+                  {policy.configuration?.require_invoice_correction_approval
+                    ? 'Required'
+                    : 'Not required'}
+                </dd>
               </div>
             </dl>
           ) : (
@@ -2616,5 +2996,3 @@ function ConfigurationSection({
     </section>
   );
 }
-
-

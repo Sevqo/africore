@@ -1,25 +1,293 @@
-import {useState} from 'react';
-import {Field,Form,money} from '../operations/UI';
-import {parseMoney} from '../../../src/finance/money';
-import {posRegisterState} from './pos-app-model';
+import { useState } from 'react';
+import { Field, Form, money } from '../operations/UI';
+import { parseMoney } from '../../../src/finance/money';
+import { posRegisterState } from './pos-app-model';
 
-export function POSAppDashboard({directory,overviews,loading,readiness,selectedRegister,onSelect,onContinue,onConfigure,onRefresh,openSession,manager,online,busy}:{directory:any;overviews:Record<string,any>;loading:boolean;readiness:{id:string;label:string;detail:string;state:'ready'|'attention'|'blocked'}[];selectedRegister:any;onSelect:(id:string)=>void;onContinue:(register:any,overview:any,session:any)=>void;onConfigure:()=>void;onRefresh:()=>void;openSession:(register:any,input:{opening_cash_minor:number;note:string;acknowledge_count:boolean})=>Promise<any>;manager:boolean;online:boolean;busy:boolean}){
- const [search,setSearch]=useState(''),[opening,setOpening]=useState<any>(null);
- const registers=(directory?.data||[]).filter((row:any)=>!search||String(row.data.name).toLowerCase().includes(search.toLowerCase()));
- function open(register:any){setOpening(register);}
- async function submit(register:any,form:any){const value=await openSession(register,{opening_cash_minor:parseMoney(form.opening_minor,register.data.currency),note:form.note||'',acknowledge_count:form.count==='on'});setOpening(null);const session=value.session||value;onContinue(register,overviews[register.id],session);}
- return <div className="pos-app-dashboard">
-  <header className="pos-app-page-head"><div><span className="eyebrow">Point of Sale</span><h2>Register dashboard</h2><p>Open a counted shift, continue an assigned register, or configure your retail counter.</p></div><div className="pos-app-head-actions"><button type="button" className="secondary-button" onClick={onRefresh} disabled={busy}>Refresh</button>{manager&&directory?.permissions?.configure&&<button type="button" className="button" onClick={onConfigure}>Manage registers</button>}</div></header>
-  <p className="environment-note">Sandbox evaluation · network required · no live terminal, automatic drawer or offline queue is connected.</p>
-  <section className="pos-app-readiness" aria-label="POS readiness">{readiness.map(item=><article key={item.id} className={'pos-readiness-'+item.state}><span className="pos-readiness-dot"/><div><strong>{item.label}</strong><small>{item.detail}</small></div></article>)}</section>
-  <div className="pos-app-toolbar"><div className="pos-app-search"><span aria-hidden="true">⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search registers…" aria-label="Search registers"/></div><span className="pos-app-count">{registers.length} registers</span></div>
-  {loading&&!directory&&<p role="status">Loading assigned registers…</p>}
-  {!loading&&directory&&!registers.length&&<section className="panel pos-app-empty"><span className="pos-app-empty-icon">▥</span><h3>{search?'No matching registers':'Create your first register'}</h3><p>{search?'Try another register name.':directory.permissions?.configure?'Choose a currency, walk-in customer, warehouse and cashier before opening a shift.':'Ask a workspace owner or administrator to configure a register and assign your membership.'}</p>{!search&&directory.permissions?.configure&&<button type="button" className="button" onClick={onConfigure}>Configure register</button>}</section>}
-  <div className="pos-register-grid">{registers.map((register:any)=>{const overview=overviews[register.id],state=posRegisterState(register,overview),sessions=overview?.sessions||[],session=sessions.find((row:any)=>row.status==='open'),last=sessions[0],expected=overview?.drawer?.expected_minor??session?.expected_minor;return <article className={'pos-register-card '+(selectedRegister===register.id?'selected':'')} key={register.id} onClick={()=>onSelect(register.id)}>
-   <header><div><h3>{register.data.name}</h3><small>{register.data.currency} · {register.data.timezone}</small></div><span className={'pos-state '+state.tone}>{state.label}</span></header>
-   {session?<div className="pos-register-session"><div><span>Cashier</span><strong>{session.data.cashier_label||'Assigned cashier'}</strong></div><div><span>Opened</span><strong>{new Date(session.data.opened_at||session.created_at).toLocaleString()}</strong></div><div><span>Expected cash</span><strong>{expected==null?'—':money(expected,register.data.currency)}</strong></div></div>:<div className="pos-register-session empty"><div><span>Last closing</span><strong>{last?new Date(last.created_at).toLocaleString():'No shift yet'}</strong></div><div><span>Cash policy</span><strong>{register.data.allow_cash?'Recorded cash':'Cash disabled'}</strong></div><div><span>Electronic</span><strong>{register.data.electronic_method==='sandbox_simulator'?'Sandbox simulator':'Disabled'}</strong></div></div>}
-   <footer>{session?<button type="button" className="button" disabled={!online||busy} onClick={e=>{e.stopPropagation();onContinue(register,overview,session);}}>Continue selling</button>:overview?.occupied?<button type="button" className="button" disabled title="This register is open for another cashier.">Open elsewhere</button>:<button type="button" className="button" disabled={!online||busy||!overview?.permissions?.write} onClick={e=>{e.stopPropagation();open(register);}}>Open register</button>}<button type="button" className="secondary-button" onClick={e=>{e.stopPropagation();onConfigure();}}>{manager?'Configure':'View policy'}</button></footer>
-  </article>;})}</div>
-  {opening&&<div className="pos-modal-backdrop" role="presentation"><section className="pos-modal" role="dialog" aria-modal="true" aria-labelledby="pos-opening-title"><header><div><span className="eyebrow">{opening.data.name}</span><h3 id="pos-opening-title">Opening control</h3></div><button type="button" className="quiet-button" onClick={()=>setOpening(null)}>Close</button></header><p>Record the physical opening float. It is a drawer observation, not sales income.</p><Form disabled={!online||busy} submit={form=>submit(opening,form)}><Field label={'Opening cash counted ('+opening.data.currency+')'}><input name="opening_minor" required inputMode="decimal" placeholder="0.00" autoFocus/></Field><Field label="Opening note"><input name="note" maxLength={1000} placeholder="Optional shift note"/></Field><label className="checkbox-field"><input name="count" type="checkbox" required/>I recorded this opening cash count and understand the float is not income.</label><div className="pos-modal-actions"><button type="submit" className="button">Open register</button><button type="button" className="secondary-button" onClick={()=>setOpening(null)}>Discard</button></div></Form></section></div>}
- </div>;
+export function POSAppDashboard({
+  directory,
+  overviews,
+  loading,
+  readiness,
+  selectedRegister,
+  onSelect,
+  onContinue,
+  onConfigure,
+  onRefresh,
+  openSession,
+  manager,
+  online,
+  busy,
+}: {
+  directory: any;
+  overviews: Record<string, any>;
+  loading: boolean;
+  readiness: {
+    id: string;
+    label: string;
+    detail: string;
+    state: 'ready' | 'attention' | 'blocked';
+  }[];
+  selectedRegister: any;
+  onSelect: (id: string) => void;
+  onContinue: (register: any, overview: any, session: any) => void;
+  onConfigure: () => void;
+  onRefresh: () => void;
+  openSession: (
+    register: any,
+    input: { opening_cash_minor: number; note: string; acknowledge_count: boolean },
+  ) => Promise<any>;
+  manager: boolean;
+  online: boolean;
+  busy: boolean;
+}) {
+  const [search, setSearch] = useState(''),
+    [opening, setOpening] = useState<any>(null);
+  const registers = (directory?.data || []).filter(
+    (row: any) => !search || String(row.data.name).toLowerCase().includes(search.toLowerCase()),
+  );
+  function open(register: any) {
+    setOpening(register);
+  }
+  async function submit(register: any, form: any) {
+    const value = await openSession(register, {
+      opening_cash_minor: parseMoney(form.opening_minor, register.data.currency),
+      note: form.note || '',
+      acknowledge_count: form.count === 'on',
+    });
+    setOpening(null);
+    const session = value.session || value;
+    onContinue(register, overviews[register.id], session);
+  }
+  return (
+    <div className="pos-app-dashboard">
+      <header className="pos-app-page-head">
+        <div>
+          <span className="eyebrow">Point of Sale</span>
+          <h2>Register dashboard</h2>
+          <p>
+            Open a counted shift, continue an assigned register, or configure your retail counter.
+          </p>
+        </div>
+        <div className="pos-app-head-actions">
+          <button type="button" className="secondary-button" onClick={onRefresh} disabled={busy}>
+            Refresh
+          </button>
+          {manager && directory?.permissions?.configure && (
+            <button type="button" className="button" onClick={onConfigure}>
+              Manage registers
+            </button>
+          )}
+        </div>
+      </header>
+      <p className="environment-note">
+        Sandbox evaluation · network required · no live terminal, automatic drawer or offline queue
+        is connected.
+      </p>
+      <section className="pos-app-readiness" aria-label="POS readiness">
+        {readiness.map((item) => (
+          <article key={item.id} className={'pos-readiness-' + item.state}>
+            <span className="pos-readiness-dot" />
+            <div>
+              <strong>{item.label}</strong>
+              <small>{item.detail}</small>
+            </div>
+          </article>
+        ))}
+      </section>
+      <div className="pos-app-toolbar">
+        <div className="pos-app-search">
+          <span aria-hidden="true">⌕</span>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search registers…"
+            aria-label="Search registers"
+          />
+        </div>
+        <span className="pos-app-count">{registers.length} registers</span>
+      </div>
+      {loading && !directory && <p role="status">Loading assigned registers…</p>}
+      {!loading && directory && !registers.length && (
+        <section className="panel pos-app-empty">
+          <span className="pos-app-empty-icon">▥</span>
+          <h3>{search ? 'No matching registers' : 'Create your first register'}</h3>
+          <p>
+            {search
+              ? 'Try another register name.'
+              : directory.permissions?.configure
+                ? 'Choose a currency, walk-in customer, warehouse and cashier before opening a shift.'
+                : 'Ask a workspace owner or administrator to configure a register and assign your membership.'}
+          </p>
+          {!search && directory.permissions?.configure && (
+            <button type="button" className="button" onClick={onConfigure}>
+              Configure register
+            </button>
+          )}
+        </section>
+      )}
+      <div className="pos-register-grid">
+        {registers.map((register: any) => {
+          const overview = overviews[register.id],
+            state = posRegisterState(register, overview),
+            sessions = overview?.sessions || [],
+            session = sessions.find((row: any) => row.status === 'open'),
+            last = sessions[0],
+            expected = overview?.drawer?.expected_minor ?? session?.expected_minor;
+          return (
+            <article
+              className={
+                'pos-register-card ' + (selectedRegister === register.id ? 'selected' : '')
+              }
+              key={register.id}
+              onClick={() => onSelect(register.id)}
+            >
+              <header>
+                <div>
+                  <h3>{register.data.name}</h3>
+                  <small>
+                    {register.data.currency} · {register.data.timezone}
+                  </small>
+                </div>
+                <span className={'pos-state ' + state.tone}>{state.label}</span>
+              </header>
+              {session ? (
+                <div className="pos-register-session">
+                  <div>
+                    <span>Cashier</span>
+                    <strong>{session.data.cashier_label || 'Assigned cashier'}</strong>
+                  </div>
+                  <div>
+                    <span>Opened</span>
+                    <strong>
+                      {new Date(session.data.opened_at || session.created_at).toLocaleString()}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Expected cash</span>
+                    <strong>
+                      {expected == null ? '—' : money(expected, register.data.currency)}
+                    </strong>
+                  </div>
+                </div>
+              ) : (
+                <div className="pos-register-session empty">
+                  <div>
+                    <span>Last closing</span>
+                    <strong>
+                      {last ? new Date(last.created_at).toLocaleString() : 'No shift yet'}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Cash policy</span>
+                    <strong>{register.data.allow_cash ? 'Recorded cash' : 'Cash disabled'}</strong>
+                  </div>
+                  <div>
+                    <span>Electronic</span>
+                    <strong>
+                      {register.data.electronic_method === 'sandbox_simulator'
+                        ? 'Sandbox simulator'
+                        : 'Disabled'}
+                    </strong>
+                  </div>
+                </div>
+              )}
+              <footer>
+                {session ? (
+                  <button
+                    type="button"
+                    className="button"
+                    disabled={!online || busy}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onContinue(register, overview, session);
+                    }}
+                  >
+                    Continue selling
+                  </button>
+                ) : overview?.occupied ? (
+                  <button
+                    type="button"
+                    className="button"
+                    disabled
+                    title="This register is open for another cashier."
+                  >
+                    Open elsewhere
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="button"
+                    disabled={!online || busy || !overview?.permissions?.write}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      open(register);
+                    }}
+                  >
+                    Open register
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onConfigure();
+                  }}
+                >
+                  {manager ? 'Configure' : 'View policy'}
+                </button>
+              </footer>
+            </article>
+          );
+        })}
+      </div>
+      {opening && (
+        <div className="pos-modal-backdrop" role="presentation">
+          <section
+            className="pos-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pos-opening-title"
+          >
+            <header>
+              <div>
+                <span className="eyebrow">{opening.data.name}</span>
+                <h3 id="pos-opening-title">Opening control</h3>
+              </div>
+              <button type="button" className="quiet-button" onClick={() => setOpening(null)}>
+                Close
+              </button>
+            </header>
+            <p>Record the physical opening float. It is a drawer observation, not sales income.</p>
+            <Form disabled={!online || busy} submit={(form) => submit(opening, form)}>
+              <Field label={'Opening cash counted (' + opening.data.currency + ')'}>
+                <input
+                  name="opening_minor"
+                  required
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  autoFocus
+                />
+              </Field>
+              <Field label="Opening note">
+                <input name="note" maxLength={1000} placeholder="Optional shift note" />
+              </Field>
+              <label className="checkbox-field">
+                <input name="count" type="checkbox" required />I recorded this opening cash count
+                and understand the float is not income.
+              </label>
+              <div className="pos-modal-actions">
+                <button type="submit" className="button">
+                  Open register
+                </button>
+                <button type="button" className="secondary-button" onClick={() => setOpening(null)}>
+                  Discard
+                </button>
+              </div>
+            </Form>
+          </section>
+        </div>
+      )}
+    </div>
+  );
 }

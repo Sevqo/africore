@@ -1,7 +1,12 @@
 {
   "date": "2026-11-12",
   "scope": "Register-scoped POS daily overview, local only",
-  "full_regression": { "postgres_passed": 434, "sqlite_passed": 433, "sqlite_pg_only_skipped": 1, "failed": 0 },
+  "full_regression": {
+    "postgres_passed": 434,
+    "sqlite_passed": 433,
+    "sqlite_pg_only_skipped": 1,
+    "failed": 0
+  },
   "final_focused": { "sqlite_pos_and_calendar_passed": 20, "postgres_pos_passed": 13 },
   "website_passed": 62,
   "workspace_api_contracts": 427,

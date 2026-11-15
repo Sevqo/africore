@@ -4,7 +4,11 @@
   "run_id": 43161693976,
   "url": "https://github.com/Sevqo/afriscore/actions/runs/43161693976",
   "jobs": [
-    { "id": 130994180825, "name": "Local EVM and independent verification", "conclusion": "success" },
+    {
+      "id": 130994180825,
+      "name": "Local EVM and independent verification",
+      "conclusion": "success"
+    },
     { "id": 130994181047, "name": "Website build", "conclusion": "success" },
     { "id": 130994181151, "name": "Tests (SQLite)", "conclusion": "success" },
     { "id": 130994181171, "name": "Tests (PostgreSQL)", "conclusion": "success" },

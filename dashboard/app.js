@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 /**
  * AfriScore business-track local dashboard.
@@ -11,27 +11,30 @@
 const $ = (id) => document.getElementById(id);
 
 const STORAGE = {
-  businessId: "afriscore.businessId",
-  apiKey: "afriscore.apiKey",
-  adminToken: "afriscore.adminToken",
+  businessId: 'afriscore.businessId',
+  apiKey: 'afriscore.apiKey',
+  adminToken: 'afriscore.adminToken',
 };
 
 const state = {
-  businessId: localStorage.getItem(STORAGE.businessId) || "",
-  apiKey: localStorage.getItem(STORAGE.apiKey) || "",
-  adminToken: localStorage.getItem(STORAGE.adminToken) || "",
+  businessId: localStorage.getItem(STORAGE.businessId) || '',
+  apiKey: localStorage.getItem(STORAGE.apiKey) || '',
+  adminToken: localStorage.getItem(STORAGE.adminToken) || '',
 };
 
-const money = new Intl.NumberFormat("en-KE", { maximumFractionDigits: 2, minimumFractionDigits: 0 });
-const percent = new Intl.NumberFormat("en-KE", { maximumFractionDigits: 1 });
+const money = new Intl.NumberFormat('en-KE', {
+  maximumFractionDigits: 2,
+  minimumFractionDigits: 0,
+});
+const percent = new Intl.NumberFormat('en-KE', { maximumFractionDigits: 1 });
 
 function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 }
 
 function fmtMoney(value) {
@@ -43,15 +46,15 @@ function fmtPct(value) {
 }
 
 function syncInputs() {
-  $("business-id").value = state.businessId;
-  $("api-key").value = state.apiKey;
-  $("admin-token").value = state.adminToken;
+  $('business-id').value = state.businessId;
+  $('api-key').value = state.apiKey;
+  $('admin-token').value = state.adminToken;
 }
 
 function persist() {
-  state.businessId = $("business-id").value.trim();
-  state.apiKey = $("api-key").value.trim();
-  state.adminToken = $("admin-token").value.trim();
+  state.businessId = $('business-id').value.trim();
+  state.apiKey = $('api-key').value.trim();
+  state.adminToken = $('admin-token').value.trim();
   localStorage.setItem(STORAGE.businessId, state.businessId);
   localStorage.setItem(STORAGE.apiKey, state.apiKey);
   localStorage.setItem(STORAGE.adminToken, state.adminToken);
@@ -59,11 +62,11 @@ function persist() {
 
 let errorTimer = null;
 function clearError() {
-  $("error").hidden = true;
-  $("error").textContent = "";
+  $('error').hidden = true;
+  $('error').textContent = '';
 }
 function showError(message) {
-  const box = $("error");
+  const box = $('error');
   box.hidden = false;
   box.textContent = message;
   clearTimeout(errorTimer);
@@ -72,13 +75,13 @@ function showError(message) {
 
 async function callApi(method, path, { body, auth } = {}) {
   persist();
-  const headers = { "Content-Type": "application/json" };
-  if (auth === "admin") {
-    if (!state.adminToken) throw new Error("Admin token is required for onboarding calls.");
-    headers["x-admin-token"] = state.adminToken;
-  } else if (auth === "apikey") {
-    if (!state.apiKey) throw new Error("API key is required for lender/owner reads.");
-    headers["x-api-key"] = state.apiKey;
+  const headers = { 'Content-Type': 'application/json' };
+  if (auth === 'admin') {
+    if (!state.adminToken) throw new Error('Admin token is required for onboarding calls.');
+    headers['x-admin-token'] = state.adminToken;
+  } else if (auth === 'apikey') {
+    if (!state.apiKey) throw new Error('API key is required for lender/owner reads.');
+    headers['x-api-key'] = state.apiKey;
   }
 
   const response = await fetch(`/v1${path}`, {
@@ -96,9 +99,9 @@ async function callApi(method, path, { body, auth } = {}) {
 
   if (!response.ok) {
     const code = payload?.error || `http_${response.status}`;
-    const detail = payload?.message || "";
-    const requestId = payload?.request_id ? ` (request ${payload.request_id})` : "";
-    throw new Error(`${code}${detail ? `: ${detail}` : ""}${requestId}`);
+    const detail = payload?.message || '';
+    const requestId = payload?.request_id ? ` (request ${payload.request_id})` : '';
+    throw new Error(`${code}${detail ? `: ${detail}` : ''}${requestId}`);
   }
   return payload;
 }
@@ -106,45 +109,51 @@ async function callApi(method, path, { body, auth } = {}) {
 /* ---------------- Tab navigation ---------------- */
 
 function selectView(view) {
-  for (const tab of document.querySelectorAll(".tab")) {
-    tab.classList.toggle("active", tab.dataset.view === view);
+  for (const tab of document.querySelectorAll('.tab')) {
+    tab.classList.toggle('active', tab.dataset.view === view);
   }
-  for (const section of document.querySelectorAll(".view")) {
-    section.classList.toggle("active", section.id === `view-${view}`);
+  for (const section of document.querySelectorAll('.view')) {
+    section.classList.toggle('active', section.id === `view-${view}`);
   }
 }
 
-for (const tab of document.querySelectorAll(".tab")) {
-  tab.addEventListener("click", () => selectView(tab.dataset.view));
+for (const tab of document.querySelectorAll('.tab')) {
+  tab.addEventListener('click', () => selectView(tab.dataset.view));
 }
 
 /* ---------------- Onboarding ---------------- */
 
-$("create-business").addEventListener("click", async () => {
+$('create-business').addEventListener('click', async () => {
   clearError();
   try {
-    const business = await callApi("POST", "/businesses", {
-      auth: "admin",
-      body: { legal_name: $("legal-name").value.trim(), sector: $("sector").value.trim() },
+    const business = await callApi('POST', '/businesses', {
+      auth: 'admin',
+      body: { legal_name: $('legal-name').value.trim(), sector: $('sector').value.trim() },
     });
     state.businessId = business.id;
-    $("business-id").value = business.id;
+    $('business-id').value = business.id;
     persist();
-    $("create-result").innerHTML = `Created <code>${escapeHtml(business.id)}</code> (${escapeHtml(business.status)}).`;
+    $('create-result').innerHTML =
+      `Created <code>${escapeHtml(business.id)}</code> (${escapeHtml(business.status)}).`;
   } catch (error) {
     showError(error.message);
   }
 });
 
-$("record-consent").addEventListener("click", async () => {
+$('record-consent').addEventListener('click', async () => {
   clearError();
   try {
-    if (!state.businessId) throw new Error("Create or paste a business id first.");
-    const result = await callApi("POST", `/businesses/${encodeURIComponent(state.businessId)}/onboarding/consent`, {
-      auth: "admin",
-      body: {},
-    });
-    $("consent-result").innerHTML = `Consent <code>${escapeHtml(result.consent.id)}</code> active (scopes: statements, business_profile).`;
+    if (!state.businessId) throw new Error('Create or paste a business id first.');
+    const result = await callApi(
+      'POST',
+      `/businesses/${encodeURIComponent(state.businessId)}/onboarding/consent`,
+      {
+        auth: 'admin',
+        body: {},
+      },
+    );
+    $('consent-result').innerHTML =
+      `Consent <code>${escapeHtml(result.consent.id)}</code> active (scopes: statements, business_profile).`;
   } catch (error) {
     showError(error.message);
   }
@@ -152,18 +161,26 @@ $("record-consent").addEventListener("click", async () => {
 
 /* ---------------- Orbit workflow progress ---------------- */
 
-const ORBIT_PIPELINE = ["PENDING", "CONSENT_VERIFIED", "PARSING", "NORMALIZING", "RECONCILING", "SCORING", "READY"];
+const ORBIT_PIPELINE = [
+  'PENDING',
+  'CONSENT_VERIFIED',
+  'PARSING',
+  'NORMALIZING',
+  'RECONCILING',
+  'SCORING',
+  'READY',
+];
 const FAILED_PHASE = {
-  FAILED_PARSING: "PARSING",
-  FAILED_NORMALIZATION: "NORMALIZING",
-  FAILED_LEDGER: "RECONCILING",
-  FAILED_RECONCILING: "RECONCILING",
-  FAILED_SCORING: "SCORING",
+  FAILED_PARSING: 'PARSING',
+  FAILED_NORMALIZATION: 'NORMALIZING',
+  FAILED_LEDGER: 'RECONCILING',
+  FAILED_RECONCILING: 'RECONCILING',
+  FAILED_SCORING: 'SCORING',
 };
 
 async function getWorkflow(workflowId) {
   const res = await fetch(`/v1/orbit/workflows/${encodeURIComponent(workflowId)}`, {
-    headers: { "x-admin-token": state.adminToken },
+    headers: { 'x-admin-token': state.adminToken },
   });
   let body = null;
   try {
@@ -172,36 +189,41 @@ async function getWorkflow(workflowId) {
     /* empty */
   }
   if (!res.ok) {
-    throw new Error(`${body?.error || `http_${res.status}`}${body?.message ? `: ${body.message}` : ""}`);
+    throw new Error(
+      `${body?.error || `http_${res.status}`}${body?.message ? `: ${body.message}` : ''}`,
+    );
   }
   return body;
 }
 
 function renderWorkflow(workflowId, view) {
-  const box = $("workflow-progress");
+  const box = $('workflow-progress');
   box.hidden = false;
-  $("workflow-id").textContent = workflowId;
+  $('workflow-id').textContent = workflowId;
 
   const current = view.workflow.state;
   const reached = new Set(view.history.map((entry) => entry.to_state));
-  const failedPhase = FAILED_PHASE[current] || (current === "FAILED" ? "PARSING" : null);
+  const failedPhase = FAILED_PHASE[current] || (current === 'FAILED' ? 'PARSING' : null);
 
-  $("workflow-track").innerHTML = ORBIT_PIPELINE.map((state) => {
-    let cls = "";
-    if (state === current) cls = "active";
-    else if (reached.has(state)) cls = "done";
-    if (failedPhase && state === failedPhase) cls = "failed";
+  $('workflow-track').innerHTML = ORBIT_PIPELINE.map((state) => {
+    let cls = '';
+    if (state === current) cls = 'active';
+    else if (reached.has(state)) cls = 'done';
+    if (failedPhase && state === failedPhase) cls = 'failed';
     return `<li class="${cls}">${escapeHtml(state)}</li>`;
-  }).join("");
+  }).join('');
 
-  if (current.startsWith("FAILED")) {
+  if (current.startsWith('FAILED')) {
     const dead = view.dead_letter?.[0];
-    $("workflow-note").innerHTML =
+    $('workflow-note').innerHTML =
       `<span class="danger">${escapeHtml(current)}</span>` +
-      (view.workflow.error_message ? ` — ${escapeHtml(view.workflow.error_message)}` : "") +
-      (dead ? ` <span class="muted">(DLQ: ${escapeHtml(dead.queue)}, ${escapeHtml(dead.attempts_made)} attempts)</span>` : "");
+      (view.workflow.error_message ? ` — ${escapeHtml(view.workflow.error_message)}` : '') +
+      (dead
+        ? ` <span class="muted">(DLQ: ${escapeHtml(dead.queue)}, ${escapeHtml(dead.attempts_made)} attempts)</span>`
+        : '');
   } else {
-    $("workflow-note").innerHTML = `<span class="muted">${escapeHtml(current)}</span> · ${view.history.length} transition(s) recorded`;
+    $('workflow-note').innerHTML =
+      `<span class="muted">${escapeHtml(current)}</span> · ${view.history.length} transition(s) recorded`;
   }
 }
 
@@ -211,47 +233,59 @@ async function pollWorkflow(workflowId, { intervalMs = 700, timeoutMs = 20000 } 
     const view = await getWorkflow(workflowId);
     renderWorkflow(workflowId, view);
     const state = view.workflow.state;
-    if (state === "READY" || state.startsWith("FAILED")) return view;
-    if (Date.now() > deadline) throw new Error("Timed out waiting for the Orbit workflow to finish.");
+    if (state === 'READY' || state.startsWith('FAILED')) return view;
+    if (Date.now() > deadline)
+      throw new Error('Timed out waiting for the Orbit workflow to finish.');
     await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
 }
 
-$("upload-statement").addEventListener("click", async () => {
+$('upload-statement').addEventListener('click', async () => {
   clearError();
-  const button = $("upload-statement");
+  const button = $('upload-statement');
   try {
-    if (!state.businessId) throw new Error("Create or paste a business id first.");
-    const file = $("statement-file").files?.[0];
-    const content = file ? await file.text() : $("statement-content").value;
-    if (!content || content.trim().length < 10) throw new Error("Choose a CSV file or paste statement content.");
-    const sourceType = $("source-type").value;
+    if (!state.businessId) throw new Error('Create or paste a business id first.');
+    const file = $('statement-file').files?.[0];
+    const content = file ? await file.text() : $('statement-content').value;
+    if (!content || content.trim().length < 10)
+      throw new Error('Choose a CSV file or paste statement content.');
+    const sourceType = $('source-type').value;
 
     button.disabled = true;
-    $("upload-result").innerHTML = `<span class="muted">Accepted — running the Orbit pipeline…</span>`;
+    $('upload-result').innerHTML =
+      `<span class="muted">Accepted — running the Orbit pipeline…</span>`;
 
-    const accepted = await callApi("POST", `/businesses/${encodeURIComponent(state.businessId)}/statements`, {
-      auth: "admin",
-      body: {
-        source_type: sourceType,
-        shortcode: sourceType.startsWith("business_") ? $("shortcode").value.trim() : undefined,
-        file_name: file ? file.name : undefined,
-        content,
+    const accepted = await callApi(
+      'POST',
+      `/businesses/${encodeURIComponent(state.businessId)}/statements`,
+      {
+        auth: 'admin',
+        body: {
+          source_type: sourceType,
+          shortcode: sourceType.startsWith('business_') ? $('shortcode').value.trim() : undefined,
+          file_name: file ? file.name : undefined,
+          content,
+        },
       },
-    });
+    );
 
     const view = await pollWorkflow(accepted.workflow_id);
-    const failed = view.workflow.state.startsWith("FAILED");
+    const failed = view.workflow.state.startsWith('FAILED');
 
     if (failed) {
-      $("upload-result").innerHTML = `<span class="danger">Ingestion failed (${escapeHtml(view.workflow.state)}).</span> It was moved to the dead-letter queue for review.`;
+      $('upload-result').innerHTML =
+        `<span class="danger">Ingestion failed (${escapeHtml(view.workflow.state)}).</span> It was moved to the dead-letter queue for review.`;
       return;
     }
 
     // Summarise the stored statement once the workflow is READY.
-    let summary = "Ingestion complete.";
+    let summary = 'Ingestion complete.';
     try {
-      const statements = await callApi("GET", `/businesses/${encodeURIComponent(state.businessId)}/statements`, { auth: "admin" });
+      const statements = await callApi(
+        'GET',
+        `/businesses/${encodeURIComponent(state.businessId)}/statements`,
+        { auth: 'admin' },
+      );
       const latest = Array.isArray(statements) ? statements[0] : null;
       if (latest) {
         summary =
@@ -261,8 +295,10 @@ $("upload-statement").addEventListener("click", async () => {
     } catch {
       /* summary is best-effort */
     }
-    $("upload-result").innerHTML = summary + (accepted.duplicate ? ` <span class="warn">(duplicate upload — no new work)</span>` : "");
-    selectView("owner");
+    $('upload-result').innerHTML =
+      summary +
+      (accepted.duplicate ? ` <span class="warn">(duplicate upload — no new work)</span>` : '');
+    selectView('owner');
     await loadDashboard();
   } catch (error) {
     showError(error.message);
@@ -290,11 +326,11 @@ function renderComponents(components) {
           </div>
           <div class="bar"><span style="width:${Math.max(2, score)}%"></span></div>
           <div class="muted small">${escapeHtml(component.detail)}${
-            component.reason ? ` <span class="warn">(${escapeHtml(component.reason)})</span>` : ""
+            component.reason ? ` <span class="warn">(${escapeHtml(component.reason)})</span>` : ''
           }</div>
         </div>`;
     })
-    .join("");
+    .join('');
 }
 
 function renderMonthly(monthly) {
@@ -305,15 +341,23 @@ function renderMonthly(monthly) {
           <td>${escapeHtml(bucket.month)}</td>
           <td class="num">${fmtMoney(bucket.inflow)}</td>
           <td class="num">${fmtMoney(bucket.outflow)}</td>
-          <td class="num ${bucket.net < 0 ? "danger" : ""}">${fmtMoney(bucket.net)}</td>
-        </tr>`
+          <td class="num ${bucket.net < 0 ? 'danger' : ''}">${fmtMoney(bucket.net)}</td>
+        </tr>`,
     )
-    .join("");
+    .join('');
   return `<table><thead><tr><th>Month</th><th class="num">Inflow</th><th class="num">Outflow</th><th class="num">Net</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function renderDashboard(dashboard) {
-  const { business, cash_flow: cash, counterparties, totals, health_score: health, tips, window } = dashboard;
+  const {
+    business,
+    cash_flow: cash,
+    counterparties,
+    totals,
+    health_score: health,
+    tips,
+    window,
+  } = dashboard;
   const receivables = dashboard.receivables;
   const readiness = dashboard.supply_chain_readiness;
 
@@ -324,9 +368,9 @@ function renderDashboard(dashboard) {
         <td class="num">${fmtMoney(entry.inflow)}</td>
         <td class="num">${escapeHtml(entry.transaction_count)}</td>
         <td class="num">${fmtPct(entry.share_of_inflow_pct)}</td>
-      </tr>`
+      </tr>`,
     )
-    .join("");
+    .join('');
 
   const suppliers = counterparties.supplier.top_suppliers
     .map(
@@ -334,20 +378,20 @@ function renderDashboard(dashboard) {
         <td>${escapeHtml(entry.counterparty)}</td>
         <td class="num">${fmtMoney(entry.outflow)}</td>
         <td class="num">${escapeHtml(entry.payment_count)}</td>
-      </tr>`
+      </tr>`,
     )
-    .join("");
+    .join('');
 
   const activeMonths = Math.max(1, totals.months_of_history);
   const monthlyInflowAvg = totals.inflow / activeMonths;
   const trend = cash.revenue_trend;
 
-  $("dashboard-output").innerHTML = `
+  $('dashboard-output').innerHTML = `
     <div class="panel">
       <div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:center">
         <div>
           <h2 style="margin:0">${escapeHtml(business.legal_name)}</h2>
-          <p class="muted small">${escapeHtml(business.sector || "sector not set")} · status ${escapeHtml(business.status)} · trust score ${escapeHtml(business.trust_score)} · ${escapeHtml(window.months)}-month window</p>
+          <p class="muted small">${escapeHtml(business.sector || 'sector not set')} · status ${escapeHtml(business.status)} · trust score ${escapeHtml(business.trust_score)} · ${escapeHtml(window.months)}-month window</p>
         </div>
         <div style="display:flex;gap:0.5rem;align-items:center">
           <strong style="font-size:1.6rem">${health.score}</strong>${healthBadge(health.band, health.band_label)}
@@ -358,7 +402,7 @@ function renderDashboard(dashboard) {
     <div class="stat-grid">
       <div class="stat"><div class="label">Inflow</div><div class="value">${fmtMoney(totals.inflow)}</div></div>
       <div class="stat"><div class="label">Outflow</div><div class="value">${fmtMoney(totals.outflow)}</div></div>
-      <div class="stat"><div class="label">Net cash</div><div class="value ${totals.net < 0 ? "danger" : ""}">${fmtMoney(totals.net)}</div></div>
+      <div class="stat"><div class="label">Net cash</div><div class="value ${totals.net < 0 ? 'danger' : ''}">${fmtMoney(totals.net)}</div></div>
       <div class="stat"><div class="label">Avg monthly inflow</div><div class="value">${fmtMoney(monthlyInflowAvg)}</div></div>
       <div class="stat"><div class="label">Active months</div><div class="value">${escapeHtml(totals.months_of_history)}</div></div>
       <div class="stat"><div class="label">Avg ticket</div><div class="value">${fmtMoney(cash.peak_activity.average_ticket)}</div></div>
@@ -369,24 +413,24 @@ function renderDashboard(dashboard) {
         <h3>Cash flow by month</h3>
         ${renderMonthly(cash.monthly)}
         <p class="muted small">
-          Inflow volatility: ${cash.inflow_volatility === null ? "not enough months" : fmtPct(cash.inflow_volatility * 100)}
-          · Trend: <strong>${escapeHtml(trend.direction)}</strong>${trend.change_pct === null ? "" : ` (${fmtPct(trend.change_pct)})`}
-          · Busiest: ${escapeHtml(cash.peak_activity.busiest_weekday || "n/a")} ${cash.peak_activity.busiest_hour === null ? "" : `around ${String(cash.peak_activity.busiest_hour).padStart(2, "0")}:00`}
+          Inflow volatility: ${cash.inflow_volatility === null ? 'not enough months' : fmtPct(cash.inflow_volatility * 100)}
+          · Trend: <strong>${escapeHtml(trend.direction)}</strong>${trend.change_pct === null ? '' : ` (${fmtPct(trend.change_pct)})`}
+          · Busiest: ${escapeHtml(cash.peak_activity.busiest_weekday || 'n/a')} ${cash.peak_activity.busiest_hour === null ? '' : `around ${String(cash.peak_activity.busiest_hour).padStart(2, '0')}:00`}
         </p>
       </div>
 
       <div class="panel">
         <h3>Health score components</h3>
         ${renderComponents(health.components)}
-        ${health.excluded_components.length ? `<p class="muted small">Excluded (no data captured): ${escapeHtml(health.excluded_components.join(", "))}</p>` : ""}
+        ${health.excluded_components.length ? `<p class="muted small">Excluded (no data captured): ${escapeHtml(health.excluded_components.join(', '))}</p>` : ''}
       </div>
     </div>
 
     <div class="split">
       <div class="panel">
-        <h3>Top customers${counterparties.anchor_buyer_risk ? ` <span class="badge elevated">anchor-buyer risk</span>` : ""}</h3>
+        <h3>Top customers${counterparties.anchor_buyer_risk ? ` <span class="badge elevated">anchor-buyer risk</span>` : ''}</h3>
         <table><thead><tr><th>Counterparty</th><th class="num">Inflow</th><th class="num">Payments</th><th class="num">Share</th></tr></thead><tbody>${customers || `<tr><td colspan="4" class="muted">No inflow yet.</td></tr>`}</tbody></table>
-        <p class="muted small">Repeat customers: ${fmtPct(counterparties.repeat_customer_ratio * 100)} of inflow · ${counterparties.anchor_buyer_risk ? "one buyer is above 40% of inflow" : "concentration under the 40% threshold"}</p>
+        <p class="muted small">Repeat customers: ${fmtPct(counterparties.repeat_customer_ratio * 100)} of inflow · ${counterparties.anchor_buyer_risk ? 'one buyer is above 40% of inflow' : 'concentration under the 40% threshold'}</p>
       </div>
 
       <div class="panel">
@@ -405,9 +449,9 @@ function renderDashboard(dashboard) {
               <div class="stat"><div class="label">Open invoices</div><div class="value">${escapeHtml(receivables.open_invoice_count)}</div></div>
               <div class="stat"><div class="label">Open value</div><div class="value">${fmtMoney(receivables.open_invoice_value)}</div></div>
               <div class="stat"><div class="label">Overdue</div><div class="value">${escapeHtml(receivables.overdue_invoice_count)}</div></div>
-              <div class="stat"><div class="label">DSO</div><div class="value">${receivables.dso_days === null ? "n/a" : `${escapeHtml(receivables.dso_days)} days`}</div></div>
-              <div class="stat"><div class="label">Avg days to pay</div><div class="value">${receivables.average_days_to_pay === null ? "n/a" : `${escapeHtml(receivables.average_days_to_pay)} days`}</div></div>
-              <div class="stat"><div class="label">Matched receipts</div><div class="value">${receivables.matched_payment_ratio === null ? "n/a" : fmtPct(receivables.matched_payment_ratio * 100)}</div></div>
+              <div class="stat"><div class="label">DSO</div><div class="value">${receivables.dso_days === null ? 'n/a' : `${escapeHtml(receivables.dso_days)} days`}</div></div>
+              <div class="stat"><div class="label">Avg days to pay</div><div class="value">${receivables.average_days_to_pay === null ? 'n/a' : `${escapeHtml(receivables.average_days_to_pay)} days`}</div></div>
+              <div class="stat"><div class="label">Matched receipts</div><div class="value">${receivables.matched_payment_ratio === null ? 'n/a' : fmtPct(receivables.matched_payment_ratio * 100)}</div></div>
             </div>
             <p class="muted small">${escapeHtml(receivables.method)}</p>`
       }
@@ -418,12 +462,12 @@ function renderDashboard(dashboard) {
       ${
         readiness
           ? `<div class="stat-grid">
-              <div class="stat"><div class="label">Anchor buyer signal</div><div class="value">${escapeHtml(readiness.anchor_buyer.signal.replaceAll("_", " "))}</div></div>
-              <div class="stat"><div class="label">Anchor share</div><div class="value">${readiness.anchor_buyer.share_of_inflow_pct === null ? "n/a" : fmtPct(readiness.anchor_buyer.share_of_inflow_pct)}</div></div>
+              <div class="stat"><div class="label">Anchor buyer signal</div><div class="value">${escapeHtml(readiness.anchor_buyer.signal.replaceAll('_', ' '))}</div></div>
+              <div class="stat"><div class="label">Anchor share</div><div class="value">${readiness.anchor_buyer.share_of_inflow_pct === null ? 'n/a' : fmtPct(readiness.anchor_buyer.share_of_inflow_pct)}</div></div>
               <div class="stat"><div class="label">Supplier relationship</div><div class="value">${escapeHtml(readiness.supplier_regularity.signal)}</div></div>
-              <div class="stat"><div class="label">Receivable verifiability</div><div class="value">${escapeHtml(readiness.receivable_verifiability.signal.replaceAll("_", " "))}</div></div>
+              <div class="stat"><div class="label">Receivable verifiability</div><div class="value">${escapeHtml(readiness.receivable_verifiability.signal.replaceAll('_', ' '))}</div></div>
             </div>
-            ${readiness.concentration_warning ? `<p class="warn small">Concentration warning: one buyer dominates inflow without anchor-buyer evidence.</p>` : ""}
+            ${readiness.concentration_warning ? `<p class="warn small">Concentration warning: one buyer dominates inflow without anchor-buyer evidence.</p>` : ''}
             <p class="muted small">${escapeHtml(readiness.anchor_buyer.detail)}</p>
             <p class="muted small">${escapeHtml(readiness.supplier_regularity.detail)} ${escapeHtml(readiness.receivable_verifiability.detail)}</p>`
           : `<p class="muted">Not enough data for readiness signals.</p>`
@@ -432,7 +476,7 @@ function renderDashboard(dashboard) {
 
     <div class="panel">
       <h3>Three things worth acting on</h3>
-      <ul class="clean">${tips.map((tip) => `<li>${escapeHtml(tip)}</li>`).join("")}</ul>
+      <ul class="clean">${tips.map((tip) => `<li>${escapeHtml(tip)}</li>`).join('')}</ul>
     </div>
   `;
 }
@@ -440,17 +484,21 @@ function renderDashboard(dashboard) {
 async function loadDashboard() {
   clearError();
   try {
-    if (!state.businessId) throw new Error("Set a business id first.");
-    const dashboard = await callApi("GET", `/businesses/${encodeURIComponent(state.businessId)}/business-profile`, {
-      auth: "apikey",
-    });
+    if (!state.businessId) throw new Error('Set a business id first.');
+    const dashboard = await callApi(
+      'GET',
+      `/businesses/${encodeURIComponent(state.businessId)}/business-profile`,
+      {
+        auth: 'apikey',
+      },
+    );
     renderDashboard(dashboard);
   } catch (error) {
     showError(error.message);
   }
 }
 
-$("load-dashboard").addEventListener("click", loadDashboard);
+$('load-dashboard').addEventListener('click', loadDashboard);
 
 /* ---------------- Lender card ---------------- */
 
@@ -460,17 +508,17 @@ function renderLenderCard(card) {
     ? `<div class="stat-grid">
          <div class="stat"><div class="label">Open invoices</div><div class="value">${escapeHtml(card.receivables.open_invoice_count)}</div></div>
          <div class="stat"><div class="label">Open value</div><div class="value">${fmtMoney(card.receivables.open_invoice_value)}</div></div>
-         <div class="stat"><div class="label">DSO</div><div class="value">${card.receivables.dso_days === null ? "n/a" : `${escapeHtml(card.receivables.dso_days)} days`}</div></div>
-         <div class="stat"><div class="label">Matched to receipts</div><div class="value">${card.receivables.matched_payment_ratio === null ? "n/a" : fmtPct(card.receivables.matched_payment_ratio * 100)}</div></div>
+         <div class="stat"><div class="label">DSO</div><div class="value">${card.receivables.dso_days === null ? 'n/a' : `${escapeHtml(card.receivables.dso_days)} days`}</div></div>
+         <div class="stat"><div class="label">Matched to receipts</div><div class="value">${card.receivables.matched_payment_ratio === null ? 'n/a' : fmtPct(card.receivables.matched_payment_ratio * 100)}</div></div>
        </div>`
     : `<p class="muted">No invoice data — receivables and DSO are intentionally not estimated.</p>`;
 
-  $("lender-output").innerHTML = `
+  $('lender-output').innerHTML = `
     <div class="panel">
       <div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:flex-start">
         <div>
           <h2 style="margin:0">${escapeHtml(card.business_name)}</h2>
-          <p class="muted small">${escapeHtml(card.shortcodes.join(" · ") || "no shortcodes")} · ${escapeHtml(card.months_of_history)} month(s) of history · generated ${escapeHtml(card.generated_at)}</p>
+          <p class="muted small">${escapeHtml(card.shortcodes.join(' · ') || 'no shortcodes')} · ${escapeHtml(card.months_of_history)} month(s) of history · generated ${escapeHtml(card.generated_at)}</p>
         </div>
         <div style="text-align:right">
           <div class="badge ${escapeHtml(card.verdict)}">${escapeHtml(card.verdict)}</div>
@@ -484,7 +532,7 @@ function renderLenderCard(card) {
       <div class="stat"><div class="label">Health score</div><div class="value">${escapeHtml(card.business_health_score)} ${healthBadge(card.health_band, card.health_band)}</div></div>
       <div class="stat"><div class="label">Confidence</div><div class="value">${fmtPct(card.confidence.overall * 100)}</div></div>
       <div class="stat"><div class="label">Data completeness</div><div class="value">${fmtPct(card.confidence.data_completeness * 100)}</div></div>
-      <div class="stat"><div class="label">Reconciliation</div><div class="value">${card.confidence.reconciliation_score === null ? "n/a" : fmtPct(card.confidence.reconciliation_score * 100)}</div></div>
+      <div class="stat"><div class="label">Reconciliation</div><div class="value">${card.confidence.reconciliation_score === null ? 'n/a' : fmtPct(card.confidence.reconciliation_score * 100)}</div></div>
       <div class="stat"><div class="label">Avg monthly inflow</div><div class="value">${fmtMoney(card.monthly_inflow_avg)}</div></div>
       <div class="stat"><div class="label">Top customer share</div><div class="value">${fmtPct(card.top_customer_concentration)}</div></div>
     </div>
@@ -495,18 +543,25 @@ function renderLenderCard(card) {
         <ul class="clean">
           ${topEvidence
             .map(
-              (evidence) => `<li><strong>${escapeHtml(evidence.label)}:</strong> ${escapeHtml(evidence.value)}${
-                evidence.key === "revenue_trend" || evidence.key === "top_customer_concentration" || evidence.key === "inflow_volatility" || evidence.key === "repeat_customers" || evidence.key === "data_completeness" ? "%" : ""
-              } <span class="badge ${evidence.impact === "positive" ? "low" : evidence.impact === "negative" ? "high" : "stable"}">${escapeHtml(evidence.impact)}</span><br /><span class="muted small">${escapeHtml(evidence.detail)}</span></li>`
+              (evidence) =>
+                `<li><strong>${escapeHtml(evidence.label)}:</strong> ${escapeHtml(evidence.value)}${
+                  evidence.key === 'revenue_trend' ||
+                  evidence.key === 'top_customer_concentration' ||
+                  evidence.key === 'inflow_volatility' ||
+                  evidence.key === 'repeat_customers' ||
+                  evidence.key === 'data_completeness'
+                    ? '%'
+                    : ''
+                } <span class="badge ${evidence.impact === 'positive' ? 'low' : evidence.impact === 'negative' ? 'high' : 'stable'}">${escapeHtml(evidence.impact)}</span><br /><span class="muted small">${escapeHtml(evidence.detail)}</span></li>`,
             )
-            .join("")}
+            .join('')}
         </ul>
       </div>
 
       <div class="panel">
         <h3>Receivables</h3>
         ${receivables}
-        <p class="muted small">Trend: ${escapeHtml(card.revenue_trend.direction)}${card.revenue_trend.change_pct === null ? "" : ` (${fmtPct(card.revenue_trend.change_pct)})`} · volatility ${card.inflow_volatility === null ? "n/a" : fmtPct(card.inflow_volatility * 100)}</p>
+        <p class="muted small">Trend: ${escapeHtml(card.revenue_trend.direction)}${card.revenue_trend.change_pct === null ? '' : ` (${fmtPct(card.revenue_trend.change_pct)})`} · volatility ${card.inflow_volatility === null ? 'n/a' : fmtPct(card.inflow_volatility * 100)}</p>
       </div>
     </div>
 
@@ -514,8 +569,8 @@ function renderLenderCard(card) {
       <h3>Supply-chain readiness</h3>
       ${
         card.supply_chain_readiness
-          ? `<p><strong>${escapeHtml(card.supply_chain_readiness.anchor_buyer.signal.replaceAll("_", " "))}</strong> · suppliers ${escapeHtml(card.supply_chain_readiness.supplier_regularity.signal)} · receivables ${escapeHtml(card.supply_chain_readiness.receivable_verifiability.signal.replaceAll("_", " "))}</p>
-             ${card.supply_chain_readiness.concentration_warning ? `<p class="warn small">Concentration warning: one unverified buyer dominates inflow.</p>` : ""}
+          ? `<p><strong>${escapeHtml(card.supply_chain_readiness.anchor_buyer.signal.replaceAll('_', ' '))}</strong> · suppliers ${escapeHtml(card.supply_chain_readiness.supplier_regularity.signal)} · receivables ${escapeHtml(card.supply_chain_readiness.receivable_verifiability.signal.replaceAll('_', ' '))}</p>
+             ${card.supply_chain_readiness.concentration_warning ? `<p class="warn small">Concentration warning: one unverified buyer dominates inflow.</p>` : ''}
              <p class="muted small">${escapeHtml(card.supply_chain_readiness.summary)}</p>`
           : `<p class="muted">No readiness signal available.</p>`
       }
@@ -525,7 +580,7 @@ function renderLenderCard(card) {
       <h3>Adverse indicators</h3>
       ${
         card.adverse_indicators.length
-          ? `<ul class="clean">${card.adverse_indicators.map((indicator) => `<li class="warn">${escapeHtml(indicator)}</li>`).join("")}</ul>`
+          ? `<ul class="clean">${card.adverse_indicators.map((indicator) => `<li class="warn">${escapeHtml(indicator)}</li>`).join('')}</ul>`
           : `<p class="muted">None observed in the window.</p>`
       }
       <p class="muted small">Ledger audit reference (decision entry): <span class="audit">${escapeHtml(card.audit_trail_ref)}</span></p>
@@ -539,11 +594,15 @@ function renderLenderCard(card) {
   `;
 }
 
-$("issue-card").addEventListener("click", async () => {
+$('issue-card').addEventListener('click', async () => {
   clearError();
   try {
-    if (!state.businessId) throw new Error("Set a business id first.");
-    const card = await callApi("POST", `/businesses/${encodeURIComponent(state.businessId)}/decision-card`, { auth: "apikey" });
+    if (!state.businessId) throw new Error('Set a business id first.');
+    const card = await callApi(
+      'POST',
+      `/businesses/${encodeURIComponent(state.businessId)}/decision-card`,
+      { auth: 'apikey' },
+    );
     renderLenderCard(card);
   } catch (error) {
     showError(error.message);
@@ -553,10 +612,11 @@ $("issue-card").addEventListener("click", async () => {
 /* ---------------- Motion ---------------- */
 
 function attachMotion() {
-  const elements = Array.from(document.querySelectorAll(".reveal"));
-  const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (!("IntersectionObserver" in window) || reduced) {
-    elements.forEach((element) => element.classList.add("visible"));
+  const elements = Array.from(document.querySelectorAll('.reveal'));
+  const reduced =
+    window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!('IntersectionObserver' in window) || reduced) {
+    elements.forEach((element) => element.classList.add('visible'));
     return;
   }
 
@@ -564,11 +624,11 @@ function attachMotion() {
     (entries) => {
       for (const entry of entries) {
         if (!entry.isIntersecting) continue;
-        entry.target.classList.add("visible");
+        entry.target.classList.add('visible');
         observer.unobserve(entry.target);
       }
     },
-    { threshold: 0.12, rootMargin: "0px 0px -40px 0px" }
+    { threshold: 0.12, rootMargin: '0px 0px -40px 0px' },
   );
   elements.forEach((element) => observer.observe(element));
 }
@@ -576,7 +636,7 @@ function attachMotion() {
 /* ---------------- One-click live demo ---------------- */
 
 const DEMO_CSV = [
-  "Receipt No.,Completion Time,Details,Transaction Status,Paid In,Withdrawn,Balance",
+  'Receipt No.,Completion Time,Details,Transaction Status,Paid In,Withdrawn,Balance',
   'QDEMO001,2026-01-05 09:12:00,Customer payment from 254712345678 ACME WHOLESALERS LTD,Completed,"6,500.00",,106500.00',
   'QDEMO002,2026-01-07 11:40:00,Customer payment from 254798765432 JANE WANJIKU,Completed,"3,200.00",,109700.00',
   'QDEMO003,2026-01-09 08:05:00,Supplier payment to NAIROBI SUPPLIES,Completed,,"2,100.00",107600.00',
@@ -594,7 +654,7 @@ const DEMO_CSV = [
   'QDEMO015,2026-03-11 14:05:00,Customer payment from 254722233344 MAMA MBOGA GROCERS,Completed,"1,950.00",,141300.00',
   'QDEMO016,2026-03-16 10:30:00,Supplier payment to NAIROBI SUPPLIES,Completed,,"2,200.00",139100.00',
   'QDEMO017,2026-03-20 09:15:00,Customer payment from 254711122233 BRIGHT FUTURE SCHOOLS,Completed,"4,600.00",,143700.00',
-].join("\n");
+].join('\n');
 
 const DEMO_DAYS = 24 * 60 * 60 * 1000;
 const daysAgo = (days) => new Date(Date.now() - days * DEMO_DAYS).toISOString();
@@ -603,12 +663,15 @@ const daysAhead = (days) => new Date(Date.now() + days * DEMO_DAYS).toISOString(
 let demoRunning = false;
 
 function setDemoStatus(text, busy) {
-  const target = $("demo-status");
-  if (target) target.innerHTML = text ? `${busy ? '<span class="dot-live mono">RUNNING</span> ' : ""}${escapeHtml(text)}` : "";
+  const target = $('demo-status');
+  if (target)
+    target.innerHTML = text
+      ? `${busy ? '<span class="dot-live mono">RUNNING</span> ' : ''}${escapeHtml(text)}`
+      : '';
 }
 
 function setDemoButtonsDisabled(disabled) {
-  for (const id of ["run-demo", "run-demo-2"]) {
+  for (const id of ['run-demo', 'run-demo-2']) {
     const button = $(id);
     if (button) button.disabled = disabled;
   }
@@ -622,77 +685,107 @@ async function runDemo() {
 
   try {
     if (!state.adminToken) {
-      throw new Error("Enter the admin token above (or open the pre-filled demo link) to run the demo.");
+      throw new Error(
+        'Enter the admin token above (or open the pre-filled demo link) to run the demo.',
+      );
     }
 
-    setDemoStatus("Creating a demo API client and business…", true);
+    setDemoStatus('Creating a demo API client and business…', true);
     const clientName = `console-demo-${Math.random().toString(36).slice(2, 7)}`;
-    const client = await callApi("POST", "/clients", { auth: "admin", body: { name: clientName } });
+    const client = await callApi('POST', '/clients', { auth: 'admin', body: { name: clientName } });
     state.apiKey = client.api_key;
-    $("api-key").value = state.apiKey;
+    $('api-key').value = state.apiKey;
 
-    const business = await callApi("POST", "/businesses", {
-      auth: "admin",
-      body: { legal_name: "Jua Kali Traders Ltd", sector: "retail", registration_number: `DEMO-${Date.now().toString().slice(-6)}` },
+    const business = await callApi('POST', '/businesses', {
+      auth: 'admin',
+      body: {
+        legal_name: 'Jua Kali Traders Ltd',
+        sector: 'retail',
+        registration_number: `DEMO-${Date.now().toString().slice(-6)}`,
+      },
     });
     state.businessId = business.id;
-    $("business-id").value = business.id;
+    $('business-id').value = business.id;
     persist();
-    $("create-result").innerHTML = `Created <code>${escapeHtml(business.id)}</code>`;
-    selectView("onboarding");
+    $('create-result').innerHTML = `Created <code>${escapeHtml(business.id)}</code>`;
+    selectView('onboarding');
 
     setDemoStatus("Recording the business owner's consent…", true);
-    const consent = await callApi("POST", `/businesses/${business.id}/onboarding/consent`, { auth: "admin", body: {} });
-    $("consent-result").innerHTML = `Consent <code>${escapeHtml(consent.consent.id)}</code> active.`;
-
-    setDemoStatus("Queueing the statement — watch the Orbit pipeline below…", true);
-    $("statement-content").value = DEMO_CSV;
-    $("upload-result").innerHTML = "";
-    const accepted = await callApi("POST", `/businesses/${business.id}/statements`, {
-      auth: "admin",
-      body: { source_type: "business_till", shortcode: "123456", content: DEMO_CSV, file_name: "demo-till.csv" },
+    const consent = await callApi('POST', `/businesses/${business.id}/onboarding/consent`, {
+      auth: 'admin',
+      body: {},
     });
+    $('consent-result').innerHTML =
+      `Consent <code>${escapeHtml(consent.consent.id)}</code> active.`;
 
-    const view = await pollWorkflow(accepted.workflow_id);
-    if (view.workflow.state.startsWith("FAILED")) {
-      throw new Error(`Orbit pipeline failed in ${view.workflow.state}: ${view.workflow.error_message || "unknown error"}`);
-    }
-    $("upload-result").innerHTML = `<span class="ok">Statement ingested and scored — workflow reached READY.</span>`;
-
-    setDemoStatus("Granting the lender read consent and creating a receivable…", true);
-    await callApi("POST", "/consents", {
-      auth: "admin",
+    setDemoStatus('Queueing the statement — watch the Orbit pipeline below…', true);
+    $('statement-content').value = DEMO_CSV;
+    $('upload-result').innerHTML = '';
+    const accepted = await callApi('POST', `/businesses/${business.id}/statements`, {
+      auth: 'admin',
       body: {
-        subject_type: "business",
-        subject_id: business.id,
-        grantee: clientName,
-        purpose: "underwriting",
-        scope: ["business_profile"],
+        source_type: 'business_till',
+        shortcode: '123456',
+        content: DEMO_CSV,
+        file_name: 'demo-till.csv',
       },
     });
 
-    const invoice = await callApi("POST", `/businesses/${business.id}/invoices`, {
-      auth: "admin",
-      body: { customer_reference: "ACME WHOLESALERS LTD", amount: 8000, issue_date: daysAgo(20), due_date: daysAhead(10) },
-    });
-    await callApi("POST", `/businesses/${business.id}/invoices/${invoice.id}/payments`, {
-      auth: "admin",
-      body: { amount: 3000, method: "mpesa", reference: "DEMO-PAY-001" },
+    const view = await pollWorkflow(accepted.workflow_id);
+    if (view.workflow.state.startsWith('FAILED')) {
+      throw new Error(
+        `Orbit pipeline failed in ${view.workflow.state}: ${view.workflow.error_message || 'unknown error'}`,
+      );
+    }
+    $('upload-result').innerHTML =
+      `<span class="ok">Statement ingested and scored — workflow reached READY.</span>`;
+
+    setDemoStatus('Granting the lender read consent and creating a receivable…', true);
+    await callApi('POST', '/consents', {
+      auth: 'admin',
+      body: {
+        subject_type: 'business',
+        subject_id: business.id,
+        grantee: clientName,
+        purpose: 'underwriting',
+        scope: ['business_profile'],
+      },
     });
 
-    setDemoStatus("Rendering the business dashboard…", true);
-    selectView("owner");
+    const invoice = await callApi('POST', `/businesses/${business.id}/invoices`, {
+      auth: 'admin',
+      body: {
+        customer_reference: 'ACME WHOLESALERS LTD',
+        amount: 8000,
+        issue_date: daysAgo(20),
+        due_date: daysAhead(10),
+      },
+    });
+    await callApi('POST', `/businesses/${business.id}/invoices/${invoice.id}/payments`, {
+      auth: 'admin',
+      body: { amount: 3000, method: 'mpesa', reference: 'DEMO-PAY-001' },
+    });
+
+    setDemoStatus('Rendering the business dashboard…', true);
+    selectView('owner');
     await loadDashboard();
-    document.getElementById("dashboard-output")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document
+      .getElementById('dashboard-output')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-    setDemoStatus("Issuing the lender decision card…", true);
-    const card = await callApi("POST", `/businesses/${business.id}/decision-card`, { auth: "apikey" });
+    setDemoStatus('Issuing the lender decision card…', true);
+    const card = await callApi('POST', `/businesses/${business.id}/decision-card`, {
+      auth: 'apikey',
+    });
     renderLenderCard(card);
 
-    setDemoStatus(`Demo ready — business ${business.id}. Dashboard and lender card are populated.`, false);
-    document.getElementById("console")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setDemoStatus(
+      `Demo ready — business ${business.id}. Dashboard and lender card are populated.`,
+      false,
+    );
+    document.getElementById('console')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (error) {
-    setDemoStatus("Demo failed — see the error below.", false);
+    setDemoStatus('Demo failed — see the error below.', false);
     showError(error.message);
   } finally {
     demoRunning = false;
@@ -701,9 +794,9 @@ async function runDemo() {
 }
 
 function attachDemo() {
-  for (const id of ["run-demo", "run-demo-2"]) {
+  for (const id of ['run-demo', 'run-demo-2']) {
     const button = $(id);
-    if (button) button.addEventListener("click", runDemo);
+    if (button) button.addEventListener('click', runDemo);
   }
 }
 
@@ -711,7 +804,7 @@ function attachDemo() {
 
 function prefillFromUrl() {
   const params = new URLSearchParams(window.location.search);
-  const map = { business: "businessId", key: "apiKey", admin: "adminToken" };
+  const map = { business: 'businessId', key: 'apiKey', admin: 'adminToken' };
   let changed = false;
   for (const [parameter, field] of Object.entries(map)) {
     const value = params.get(parameter);
@@ -727,7 +820,6 @@ function prefillFromUrl() {
 
 prefillFromUrl();
 syncInputs();
-selectView("onboarding");
+selectView('onboarding');
 attachMotion();
 attachDemo();
-

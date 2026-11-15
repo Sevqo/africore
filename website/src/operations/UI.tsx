@@ -5,24 +5,14 @@ export type API = (
   suffix: string,
   method?: string,
   body?: unknown,
-  headers?:Record<string,string>,
+  headers?: Record<string, string>,
 ) => Promise<any>;
 export type Action = (fn: () => Promise<any>, message?: string) => Promise<any>;
-export const factor = (currency: string) =>
-  ['UGX', 'RWF'].includes(currency) ? 1 : 100;
+export const factor = (currency: string) => (['UGX', 'RWF'].includes(currency) ? 1 : 100);
 export const money = (n: number, currency: string) =>
-  new Intl.NumberFormat('en-KE', { style: 'currency', currency }).format(
-    n / factor(currency),
-  );
-export const today = () =>
-  new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Nairobi' });
-export function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
+  new Intl.NumberFormat('en-KE', { style: 'currency', currency }).format(n / factor(currency));
+export const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Nairobi' });
+export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="field">
       <span>{label}</span>
@@ -56,7 +46,6 @@ export function MetricDefinition({
 export function Empty({ text }: { text: string }) {
   return (
     <div className="empty-state">
-
       <p>{text}</p>
     </div>
   );
@@ -65,12 +54,12 @@ export function Form({
   children,
   submit,
   className = 'panel',
-  disabled=false,
+  disabled = false,
 }: {
   children: ReactNode;
   submit: (data: any) => Promise<any>;
   className?: string;
-  disabled?:boolean;
+  disabled?: boolean;
 }) {
   const [error, setError] = useState(''),
     [busy, setBusy] = useState(false);
@@ -88,7 +77,7 @@ export function Form({
   }
   return (
     <form className={className} onSubmit={onSubmit}>
-      <fieldset disabled={busy||disabled} className="form-fieldset">
+      <fieldset disabled={busy || disabled} className="form-fieldset">
         {children}
         {error && (
           <p className="alert error" role="alert">
@@ -114,8 +103,7 @@ export function Trend({
     outflows: Number(p.recorded_outflows_minor ?? p.outflow_minor ?? 0),
     net: forecast
       ? Number(p.cumulative_net_movement_minor)
-      : Number(p.confirmed_inflows_minor || 0) -
-        Number(p.recorded_outflows_minor || 0),
+      : Number(p.confirmed_inflows_minor || 0) - Number(p.recorded_outflows_minor || 0),
   }));
   return (
     <InteractiveChart
@@ -161,8 +149,13 @@ export async function request(
   method = 'GET',
   body?: unknown,
   environment = 'sandbox',
-  headers?:Record<string,string>,
+  headers?: Record<string, string>,
 ) {
-  return api('/api/v1'+path,method,body,environment,method==='POST'?{'Idempotency-Key':crypto.randomUUID(),...headers}:headers);
-
+  return api(
+    '/api/v1' + path,
+    method,
+    body,
+    environment,
+    method === 'POST' ? { 'Idempotency-Key': crypto.randomUUID(), ...headers } : headers,
+  );
 }

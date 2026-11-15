@@ -1,5 +1,5 @@
-import { getOrbitQueues, OrbitQueues, resetOrbitQueues } from "../orbit/queue";
-import { registerWorkers } from "../orbit/workers";
+import { getOrbitQueues, OrbitQueues, resetOrbitQueues } from '../orbit/queue';
+import { registerWorkers } from '../orbit/workers';
 
 /**
  * Test helpers for Orbit.
@@ -14,7 +14,7 @@ let registered = false;
 
 export function ensureOrbitWorkers(): OrbitQueues {
   if (process.env.REDIS_URL) {
-    throw new Error("Orbit tests must run with REDIS_URL unset (in-memory backend).");
+    throw new Error('Orbit tests must run with REDIS_URL unset (in-memory backend).');
   }
   const queues = getOrbitQueues();
   if (!registered) {

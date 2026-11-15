@@ -3,25 +3,15 @@
 import fs from 'node:fs';
 import { verify, createPublicKey } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
-import {
-  AbiCoder,
-  keccak256,
-  sha256,
-  toUtf8Bytes,
-  id,
-  Contract,
-  JsonRpcProvider,
-} from 'ethers';
+import { AbiCoder, keccak256, sha256, toUtf8Bytes, id, Contract, JsonRpcProvider } from 'ethers';
 import { StandardMerkleTree } from '@openzeppelin/merkle-tree';
 export function verifyJws(token, metadata) {
-  if (typeof token !== 'string' || token.length > 100000)
-    throw Error('Unsupported token');
+  if (typeof token !== 'string' || token.length > 100000) throw Error('Unsupported token');
   const parts = token.split('.');
   if (parts.length !== 3) throw Error('Invalid JWS');
   const header = JSON.parse(Buffer.from(parts[0], 'base64url')),
     payload = JSON.parse(Buffer.from(parts[1], 'base64url'));
-  if (header.alg !== 'ES256' || header.jku || header.x5u)
-    throw Error('Unsupported header');
+  if (header.alg !== 'ES256' || header.jku || header.x5u) throw Error('Unsupported header');
   const key = metadata.jwks.keys.find((k) => k.kid === header.kid);
   if (!key || !['active', 'retired'].includes(key.state) || key.d)
     throw Error('Unknown, compromised or private key');
@@ -36,17 +26,12 @@ export function verifyJws(token, metadata) {
   return { header, payload };
 }
 export async function verifyBundle(bundle, options = {}) {
-  const { header, payload: vc } = verifyJws(
-    bundle.credential,
-    bundle.issuer_metadata,
-  );
+  const { header, payload: vc } = verifyJws(bundle.credential, bundle.issuer_metadata);
   if (
     !Array.isArray(vc.credentialStatus) ||
     vc.credentialStatus.length !== 2 ||
     new Set(vc.credentialStatus.map((s) => s.statusPurpose)).size !== 2 ||
-    vc.credentialStatus.some(
-      (s) => !['revocation', 'suspension'].includes(s.statusPurpose),
-    ) ||
+    vc.credentialStatus.some((s) => !['revocation', 'suspension'].includes(s.statusPurpose)) ||
     !vc.validFrom ||
     !vc.validUntil ||
     !Number.isFinite(Date.parse(vc.validFrom)) ||
@@ -59,8 +44,7 @@ export async function verifyBundle(bundle, options = {}) {
     !vc.credentialSubject?.id
   )
     throw Error('Unsupported VC profile');
-  if (options.issuer && vc.issuer !== options.issuer)
-    throw Error('Pinned issuer mismatch');
+  if (options.issuer && vc.issuer !== options.issuer) throw Error('Pinned issuer mismatch');
   const current = new Date().toISOString(),
     report = {
       signature: 'valid',
@@ -119,12 +103,7 @@ export async function verifyBundle(bundle, options = {}) {
       );
     if (
       commitment !== p.commitment ||
-      !StandardMerkleTree.verify(
-        p.root,
-        ['bytes32', 'bytes32'],
-        [domain, commitment],
-        p.proof,
-      )
+      !StandardMerkleTree.verify(p.root, ['bytes32', 'bytes32'], [domain, commitment], p.proof)
     )
       throw Error('Merkle inclusion invalid');
     report.inclusion = 'valid';
@@ -139,18 +118,14 @@ export async function verifyBundle(bundle, options = {}) {
           throw Error('Pinned chain/contract mismatch');
         const contract = new Contract(
             options.contract,
-            [
-              'function batches(bytes32) view returns(bytes32 root,uint256 blockNumber)',
-            ],
+            ['function batches(bytes32) view returns(bytes32 root,uint256 blockNumber)'],
             provider,
           ),
           batch = await contract.batches(p.batch_ref),
-          confirmations =
-            (await provider.getBlockNumber()) - Number(batch.blockNumber) + 1;
+          confirmations = (await provider.getBlockNumber()) - Number(batch.blockNumber) + 1;
         report.onchain =
           batch.root === p.root &&
-          confirmations >=
-            Number(options.confirmations || p.required_confirmations || 1)
+          confirmations >= Number(options.confirmations || p.required_confirmations || 1)
             ? 'confirmed'
             : 'unconfirmed';
         report.confirmations = confirmations;

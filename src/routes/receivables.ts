@@ -1,15 +1,15 @@
-import { Router, Request } from "express";
-import { z } from "zod";
-import { requireAdmin } from "../middleware/adminAuth";
-import { sendError } from "../middleware/errorHandler";
-import { getInvoice, listInvoicePayments, sendInvoice } from "../services/invoiceService";
+import { Router, Request } from 'express';
+import { z } from 'zod';
+import { requireAdmin } from '../middleware/adminAuth';
+import { sendError } from '../middleware/errorHandler';
+import { getInvoice, listInvoicePayments, sendInvoice } from '../services/invoiceService';
 import {
   ReceivablesError,
   autoMatchPayments,
   getReceivablesSummary,
   getReviewQueue,
   recordPayment,
-} from "../services/receivablesService";
+} from '../services/receivablesService';
 
 /**
  * Receivables control-plane endpoints (admin token): invoice lifecycle,
@@ -24,7 +24,7 @@ type BusinessRequest = Request<BusinessParams>;
 
 const paymentSchema = z.object({
   amount: z.number().positive(),
-  method: z.enum(["mpesa", "bank", "manual", "cash"]),
+  method: z.enum(['mpesa', 'bank', 'manual', 'cash']),
   reference: z.string().max(120).optional(),
   transaction_id: z.string().uuid().optional(),
   paid_at: z.string().datetime({ offset: true }).optional(),
@@ -48,12 +48,17 @@ function handleReceivablesError(res: Parameters<typeof sendError>[0], err: unkno
   return false;
 }
 
-router.post("/invoices/:invoiceId/payments", requireAdmin, async (req: BusinessRequest, res) => {
+router.post('/invoices/:invoiceId/payments', requireAdmin, async (req: BusinessRequest, res) => {
   const parsed = paymentSchema.safeParse(req.body);
-  if (!parsed.success) return sendError(res, 400, "invalid_input", { details: parsed.error.flatten() });
+  if (!parsed.success)
+    return sendError(res, 400, 'invalid_input', { details: parsed.error.flatten() });
 
   try {
-    const result = await recordPayment(String(req.params.id), String(req.params.invoiceId), parsed.data);
+    const result = await recordPayment(
+      String(req.params.id),
+      String(req.params.invoiceId),
+      parsed.data,
+    );
     res.status(201).json({
       invoice: result.invoice,
       payment: result.payment,
@@ -65,51 +70,57 @@ router.post("/invoices/:invoiceId/payments", requireAdmin, async (req: BusinessR
   }
 });
 
-router.post("/invoices/:invoiceId/send", requireAdmin, async (req: BusinessRequest, res) => {
+router.post('/invoices/:invoiceId/send', requireAdmin, async (req: BusinessRequest, res) => {
   try {
     const invoice = await sendInvoice(String(req.params.invoiceId));
-    if (invoice.business_id !== String(req.params.id)) return sendError(res, 404, "not_found");
+    if (invoice.business_id !== String(req.params.id)) return sendError(res, 404, 'not_found');
     res.json(invoice);
   } catch (err) {
-    if (err instanceof Error && err.message === "invoice_not_found") return sendError(res, 404, "not_found");
-    if (err instanceof Error && err.message === "invoice_not_draft") {
-      return sendError(res, 409, "invoice_not_draft", { message: "Only draft invoices can be sent." });
+    if (err instanceof Error && err.message === 'invoice_not_found')
+      return sendError(res, 404, 'not_found');
+    if (err instanceof Error && err.message === 'invoice_not_draft') {
+      return sendError(res, 409, 'invoice_not_draft', {
+        message: 'Only draft invoices can be sent.',
+      });
     }
     throw err;
   }
 });
 
-router.get("/invoices/:invoiceId", requireAdmin, async (req: BusinessRequest, res) => {
+router.get('/invoices/:invoiceId', requireAdmin, async (req: BusinessRequest, res) => {
   const invoice = await getInvoice(String(req.params.invoiceId));
-  if (!invoice || invoice.business_id !== String(req.params.id)) return sendError(res, 404, "not_found");
+  if (!invoice || invoice.business_id !== String(req.params.id))
+    return sendError(res, 404, 'not_found');
   res.json({ invoice, payments: await listInvoicePayments(invoice.id) });
 });
 
-router.post("/receivables/match", requireAdmin, async (req: BusinessRequest, res) => {
+router.post('/receivables/match', requireAdmin, async (req: BusinessRequest, res) => {
   try {
     res.json(await autoMatchPayments(String(req.params.id)));
   } catch (err) {
-    if (err instanceof Error && err.message === "business_not_found") return sendError(res, 404, "not_found");
+    if (err instanceof Error && err.message === 'business_not_found')
+      return sendError(res, 404, 'not_found');
     throw err;
   }
 });
 
-router.get("/receivables/review-queue", requireAdmin, async (req: BusinessRequest, res) => {
+router.get('/receivables/review-queue', requireAdmin, async (req: BusinessRequest, res) => {
   res.json(await getReviewQueue(String(req.params.id)));
 });
 
-router.get("/receivables/summary", requireAdmin, async (req: BusinessRequest, res) => {
+router.get('/receivables/summary', requireAdmin, async (req: BusinessRequest, res) => {
   try {
     const receivables = await getReceivablesSummary(String(req.params.id));
     res.json({
       receivables,
       note:
         receivables === null
-          ? "No invoices exist for this business; DSO and receivables metrics are not fabricated."
-          : "DSO is computed from issued invoices and recorded payments.",
+          ? 'No invoices exist for this business; DSO and receivables metrics are not fabricated.'
+          : 'DSO is computed from issued invoices and recorded payments.',
     });
   } catch (err) {
-    if (err instanceof Error && err.message === "business_not_found") return sendError(res, 404, "not_found");
+    if (err instanceof Error && err.message === 'business_not_found')
+      return sendError(res, 404, 'not_found');
     throw err;
   }
 });

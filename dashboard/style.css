@@ -645,12 +645,7 @@ code {
   width: 118px;
   height: 118px;
   border-radius: 50%;
-  background: radial-gradient(
-    circle at 34% 28%,
-    #e9ffb8,
-    var(--mint-bright) 55%,
-    #b6e06b
-  );
+  background: radial-gradient(circle at 34% 28%, #e9ffb8, var(--mint-bright) 55%, #b6e06b);
   color: var(--ink);
   display: flex;
   flex-direction: column;
@@ -841,16 +836,7 @@ code {
   width: 84px;
   height: 84px;
   background: var(--blue);
-  clip-path: polygon(
-    50% 0%,
-    62% 38%,
-    100% 50%,
-    62% 62%,
-    50% 100%,
-    38% 62%,
-    0% 50%,
-    38% 38%
-  );
+  clip-path: polygon(50% 0%, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0% 50%, 38% 38%);
   animation: sparkFloat 5s ease-in-out infinite;
 }
 @keyframes sparkFloat {
@@ -866,15 +852,7 @@ code {
   width: 92px;
   height: 64px;
   background: var(--orange);
-  clip-path: polygon(
-    0 78%,
-    62% 18%,
-    62% 0,
-    100% 30%,
-    62% 62%,
-    62% 44%,
-    18% 100%
-  );
+  clip-path: polygon(0 78%, 62% 18%, 62% 0, 100% 30%, 62% 62%, 62% 44%, 18% 100%);
   transition: transform 0.4s var(--ease);
 }
 .principle:hover .principle-icon.arrow i {

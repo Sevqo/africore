@@ -162,9 +162,13 @@
 .home-example .hero-workflow > p {
   color: #bbb;
 }
-.home-example .hero-workflow p { color: #ccc; }
+.home-example .hero-workflow p {
+  color: #ccc;
+}
 .home-example .hero-workflow figcaption,
-.home-example .hero-workflow small { color: #bbb; }
+.home-example .hero-workflow small {
+  color: #bbb;
+}
 .home-example .hero-workflow article {
   padding: 12px;
 }
@@ -265,7 +269,7 @@
   padding: 7.5px 10.5px;
   border-radius: 3px;
 }
-.experience-tabs button[aria-pressed="true"] {
+.experience-tabs button[aria-pressed='true'] {
   background: var(--ink);
   color: white;
 }
@@ -347,7 +351,7 @@
   max-width: 480px;
   margin: 15px 0;
 }
-.distinct-experience input[type="range"] {
+.distinct-experience input[type='range'] {
   width: 100%;
 }
 .relationship-grid {
@@ -363,7 +367,7 @@
   border: 1px solid var(--line);
   border-radius: 6px;
 }
-.relationship-grid button[aria-pressed="true"] {
+.relationship-grid button[aria-pressed='true'] {
   outline: 2px solid var(--ink);
 }
 .relationship-grid strong,

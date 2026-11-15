@@ -1,22 +1,15 @@
-import {useIdempotentAPI} from '../apps/useIdempotentAPI';
-import {useState} from 'react';
-import {WorkflowBranchFields,workflowBranchValues} from './WorkflowBranchFields';
-import {ApprovalDetails} from './ApprovalDetails';
-import {WorkflowDetail,RunControl} from './WorkflowDetail';
-import {parseMoney} from '../../../src/finance/money';
+import { useIdempotentAPI } from '../apps/useIdempotentAPI';
+import { useState } from 'react';
+import { WorkflowBranchFields, workflowBranchValues } from './WorkflowBranchFields';
+import { ApprovalDetails } from './ApprovalDetails';
+import { WorkflowDetail, RunControl } from './WorkflowDetail';
+import { parseMoney } from '../../../src/finance/money';
 import { DataTable } from '../components/DataTable';
-import {
-  Field,
-  Form,
-  Provenance,
-  Empty,
-  type API,
-  type Action,
-} from './UI';
+import { Field, Form, Provenance, Empty, type API, type Action } from './UI';
 export function AutomationView({
   data,
   secondary,
-  api:providedApi,
+  api: providedApi,
   action,
   currency,
   scope,
@@ -26,10 +19,10 @@ export function AutomationView({
   api: API;
   action: Action;
   currency: string;
-  scope:string;
+  scope: string;
 }) {
- const api=useIdempotentAPI(providedApi,scope);
- const [template,setTemplate]=useState(secondary.templates?.[0]?.id||'customer_onboarding');
+  const api = useIdempotentAPI(providedApi, scope);
+  const [template, setTemplate] = useState(secondary.templates?.[0]?.id || 'customer_onboarding');
   return (
     <>
       <div className="dashboard-columns">
@@ -38,14 +31,15 @@ export function AutomationView({
             action(
               () =>
                 api('/automations', 'POST', {
-                  ...workflowBranchValues(d),name: d.name,
+                  ...workflowBranchValues(d),
+                  name: d.name,
                   template: d.template,
                   enabled: d.enabled === 'on',
-                  schedule: { frequency: d.frequency, hour: Number(d.hour),timezone:d.timezone },
-                  delay_minutes:Number(d.delay||0),
+                  schedule: { frequency: d.frequency, hour: Number(d.hour), timezone: d.timezone },
+                  delay_minutes: Number(d.delay || 0),
                   conditions: {
                     currency,
-                    minimum_minor: parseMoney(d.minimum||'0',currency),
+                    minimum_minor: parseMoney(d.minimum || '0', currency),
                     days_before_due: Number(d.days || 3),
                   },
                 }),
@@ -58,7 +52,7 @@ export function AutomationView({
             <input name="name" required maxLength={100} />
           </Field>
           <Field label="Trigger template">
-            <select name="template" value={template} onChange={e=>setTemplate(e.target.value)}>
+            <select name="template" value={template} onChange={(e) => setTemplate(e.target.value)}>
               {secondary.templates?.map((t: any) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
@@ -73,33 +67,29 @@ export function AutomationView({
                 <option value="weekly">Weekly</option>
               </select>
             </Field>
-            <Field label="Timezone"><input name="timezone" required defaultValue="Africa/Nairobi"/></Field><Field label="Delay minutes"><input name="delay" type="number" min={0} max={10080} defaultValue={0}/></Field>
+            <Field label="Timezone">
+              <input name="timezone" required defaultValue="Africa/Nairobi" />
+            </Field>
+            <Field label="Delay minutes">
+              <input name="delay" type="number" min={0} max={10080} defaultValue={0} />
+            </Field>
             <Field label="Hour">
-              <input
-                name="hour"
-                type="number"
-                min={0}
-                max={23}
-                defaultValue={9}
-              />
+              <input name="hour" type="number" min={0} max={23} defaultValue={9} />
             </Field>
             <Field label="Days before due">
-              <input
-                name="days"
-                type="number"
-                min={0}
-                max={30}
-                defaultValue={3}
-              />
+              <input name="days" type="number" min={0} max={30} defaultValue={3} />
             </Field>
             <Field label={'Minimum amount (' + currency + ')'}>
               <input name="minimum" type="number" min={0} defaultValue={0} />
             </Field>
           </div>
           <p>
-            Action follows the selected supported template: notify the owner, create an assigned CRM follow-up, or prepare a replenishment suggestion for review. No customer message, supplier order or financial action is sent.
+            Action follows the selected supported template: notify the owner, create an assigned CRM
+            follow-up, or prepare a replenishment suggestion for review. No customer message,
+            supplier order or financial action is sent.
           </p>
-          <WorkflowBranchFields key={template} template={template}/><label className="checkbox-field">
+          <WorkflowBranchFields key={template} template={template} />
+          <label className="checkbox-field">
             <input type="checkbox" name="enabled" />
             Enable workflow
           </label>
@@ -111,10 +101,10 @@ export function AutomationView({
             data.data.map((w: any) => (
               <div className="list-row" key={w.id}>
                 <div>
-                  <b>{w.name}</b><WorkflowDetail workflow={w} api={api} action={action} currency={currency}/>
+                  <b>{w.name}</b>
+                  <WorkflowDetail workflow={w} api={api} action={action} currency={currency} />
                   <p>
-                    {w.template} · {w.schedule.frequency} ·{' '}
-                    {w.enabled ? 'Enabled' : 'Paused'}
+                    {w.template} · {w.schedule.frequency} · {w.enabled ? 'Enabled' : 'Paused'}
                   </p>
                 </div>
                 <button
@@ -155,7 +145,8 @@ export function AutomationView({
                 <th>Run</th>
                 <th>Status</th>
                 <th>Attempts</th>
-                <th>Created</th><th>Controls</th>
+                <th>Created</th>
+                <th>Controls</th>
               </tr>
             </thead>
             <tbody>
@@ -168,7 +159,10 @@ export function AutomationView({
                     {new Date(r.created_at).toLocaleString('en-KE', {
                       timeZone: 'Africa/Nairobi',
                     })}
-                  </td><td><RunControl run={r} api={api} action={action}/></td>
+                  </td>
+                  <td>
+                    <RunControl run={r} api={api} action={action} />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -178,15 +172,7 @@ export function AutomationView({
     </>
   );
 }
-export function NotificationView({
-  data,
-  api,
-  action,
-}: {
-  data: any;
-  api: API;
-  action: Action;
-}) {
+export function NotificationView({ data, api, action }: { data: any; api: API; action: Action }) {
   return (
     <>
       <section className="panel">
@@ -225,10 +211,7 @@ export function NotificationView({
               <label key={category} className="checkbox-field">
                 <input
                   type="checkbox"
-                  checked={
-                    data?.preferences?.muted_categories?.includes(category) ||
-                    false
-                  }
+                  checked={data?.preferences?.muted_categories?.includes(category) || false}
                   onChange={(e) => {
                     const muted = data?.preferences?.muted_categories || [];
                     action(() =>
@@ -246,19 +229,13 @@ export function NotificationView({
             ))}
           </div>
         </details>
-        <p>
-          Preferences and read state are personal. External delivery is not
-          configured.
-        </p>
+        <p>Preferences and read state are personal. External delivery is not configured.</p>
       </section>
       <section className="panel">
         <h2>Your notification center</h2>
         {data?.data?.length ? (
           data.data.map((n: any) => (
-            <article
-              className={'notification-item ' + (!n.read_at ? 'unread' : '')}
-              key={n.id}
-            >
+            <article className={'notification-item ' + (!n.read_at ? 'unread' : '')} key={n.id}>
               <div>
                 <Provenance label={n.category} />
                 <h3>{n.title}</h3>
@@ -272,9 +249,7 @@ export function NotificationView({
               {!n.read_at && (
                 <button
                   className="secondary-button"
-                  onClick={() =>
-                    action(() => api('/notifications/' + n.id, 'PATCH', {}))
-                  }
+                  onClick={() => action(() => api('/notifications/' + n.id, 'PATCH', {}))}
                 >
                   Mark read
                 </button>
@@ -294,74 +269,95 @@ export function ApprovalView({
   api,
   action,
   admin,
-  finance=true,
+  finance = true,
 }: {
   data: any;
   secondary: any;
   api: API;
   action: Action;
   admin: boolean;
-  finance?:boolean;
+  finance?: boolean;
 }) {
   return (
     <>
-      {finance&&<Form
-        submit={(d) =>
-          action(
-            () => api('/approvals', 'POST', {action:d.action,approver:d.approver,resource_id:d.resource_id,parameters:d.action==='dispute_resolution'?{decision:d.dispute_decision}:{}}),
-            'Approval requested; the assigned person must decide separately.',
-          )
-        }
-      >
-        <h2>Request a second-person review</h2>
-        <Field label="Dispute outcome (for dispute resolution only)"><select name="dispute_decision"><option value="refund">Refund</option><option value="release">Release</option></select></Field>
-        <div className="form-grid">
-          <Field label="Action">
-            <select name="action">
-              {[
-                'protected_release',
-                'dispute_resolution',
-                'protected_refund',
-                'sensitive_integration_change',
-                'manual_reconciliation',
-              ].map((t) => (
-                <option key={t}>{t}</option>
-              ))}
+      {finance && (
+        <Form
+          submit={(d) =>
+            action(
+              () =>
+                api('/approvals', 'POST', {
+                  action: d.action,
+                  approver: d.approver,
+                  resource_id: d.resource_id,
+                  parameters:
+                    d.action === 'dispute_resolution' ? { decision: d.dispute_decision } : {},
+                }),
+              'Approval requested; the assigned person must decide separately.',
+            )
+          }
+        >
+          <h2>Request a second-person review</h2>
+          <Field label="Dispute outcome (for dispute resolution only)">
+            <select name="dispute_decision">
+              <option value="refund">Refund</option>
+              <option value="release">Release</option>
             </select>
           </Field>
-          <Field label="Resource ID">
-            <input name="resource_id" required />
-          </Field>
-          <Field label="Assigned approver">
-            <select name="approver" required>
-              <option value="">Choose a different owner or administrator</option>
-              {secondary.team
-                ?.filter((m: any) => ['owner', 'admin'].includes(m.role)&&m.id!==data?.current_actor)
-                .map((m: any) => (
-                  <option key={m.id} value={m.id}>
-                    {m.email} · {m.role}
-                  </option>
+          <div className="form-grid">
+            <Field label="Action">
+              <select name="action">
+                {[
+                  'protected_release',
+                  'dispute_resolution',
+                  'protected_refund',
+                  'sensitive_integration_change',
+                  'manual_reconciliation',
+                ].map((t) => (
+                  <option key={t}>{t}</option>
                 ))}
-            </select>
-          </Field>
-        </div>
-        <p>
-          Self-approval is rejected. Requests expire in 24 hours. An approval
-          does not execute a financial action.
-        </p>
-        <button className="button">Request approval</button>
-      </Form>}
-      <p>Request exact journal-posting, invoice-credit, stock-adjustment and quotation-discount reviews from the original service record.</p>
+              </select>
+            </Field>
+            <Field label="Resource ID">
+              <input name="resource_id" required />
+            </Field>
+            <Field label="Assigned approver">
+              <select name="approver" required>
+                <option value="">Choose a different owner or administrator</option>
+                {secondary.team
+                  ?.filter(
+                    (m: any) => ['owner', 'admin'].includes(m.role) && m.id !== data?.current_actor,
+                  )
+                  .map((m: any) => (
+                    <option key={m.id} value={m.id}>
+                      {m.email} · {m.role}
+                    </option>
+                  ))}
+              </select>
+            </Field>
+          </div>
+          <p>
+            Self-approval is rejected. Requests expire in 24 hours. An approval does not execute a
+            financial action.
+          </p>
+          <button className="button">Request approval</button>
+        </Form>
+      )}
+      <p>
+        Request exact journal-posting, invoice-credit, stock-adjustment and quotation-discount
+        reviews from the original service record.
+      </p>
       <section className="panel">
         <h2>My review queue</h2>
         {data?.data?.length ? (
           data.data.map((a: any) => (
             <article className="approval-item" key={a.id}>
               <div>
-                <b>{a.action.replaceAll('_',' ')}</b>
-                <ApprovalDetails approval={a}/>
-                {!a.resource_hash&&<p>This older request needs a new review before execution.</p>}
-                {a.consumed_at&&<small>Already used · a new action requires a new approval.</small>}
+                <b>{a.action.replaceAll('_', ' ')}</b>
+                <ApprovalDetails approval={a} />
+                {!a.resource_hash && <p>This older request needs a new review before execution.</p>}
+                {a.consumed_at && (
+                  <small>Already used · a new action requires a new approval.</small>
+                )}
                 <p>
                   {a.status} · Expires{' '}
                   {new Date(a.expires_at).toLocaleString('en-KE', {
@@ -369,34 +365,54 @@ export function ApprovalView({
                   })}
                 </p>
               </div>
-              {a.status==='pending'&&(admin||a.requester===data.current_actor)&&<details><summary>Cancel this request</summary><Form submit={d=>action(()=>api('/approvals/'+a.id+'/cancel','POST',{reason:d.reason}),'Approval request cancelled.')}><Field label="Cancellation reason"><input name="reason" required minLength={5} maxLength={500}/></Field><button className="quiet-button">Cancel request</button></Form></details>}
-              {a.status === 'pending' && (a.can_decide ?? admin) && a.approver===data.current_actor && a.requester!==data.current_actor && (
-                <Form
-                  className="approval-form"
-                  submit={(d) =>
-                    action(() =>
-                      api('/approvals/' + a.id + '/decide', 'POST', d),
-                    )
-                  }
-                >
-                  <Field label="Reason for the decision"><input
-                    required
-                    name="reason"
-                    minLength={5}
-                    placeholder="Reason for the decision"
-                  /></Field>
-                  <Field label="Decision"><select name="decision">
-                    <option value="approved">Approve</option>
-                    <option value="rejected">Reject</option>
-                  </select></Field>
-                  <button className="secondary-button">Record decision</button>
-                </Form>
+              {a.status === 'pending' && (admin || a.requester === data.current_actor) && (
+                <details>
+                  <summary>Cancel this request</summary>
+                  <Form
+                    submit={(d) =>
+                      action(
+                        () => api('/approvals/' + a.id + '/cancel', 'POST', { reason: d.reason }),
+                        'Approval request cancelled.',
+                      )
+                    }
+                  >
+                    <Field label="Cancellation reason">
+                      <input name="reason" required minLength={5} maxLength={500} />
+                    </Field>
+                    <button className="quiet-button">Cancel request</button>
+                  </Form>
+                </details>
               )}
+              {a.status === 'pending' &&
+                (a.can_decide ?? admin) &&
+                a.approver === data.current_actor &&
+                a.requester !== data.current_actor && (
+                  <Form
+                    className="approval-form"
+                    submit={(d) => action(() => api('/approvals/' + a.id + '/decide', 'POST', d))}
+                  >
+                    <Field label="Reason for the decision">
+                      <input
+                        required
+                        name="reason"
+                        minLength={5}
+                        placeholder="Reason for the decision"
+                      />
+                    </Field>
+                    <Field label="Decision">
+                      <select name="decision">
+                        <option value="approved">Approve</option>
+                        <option value="rejected">Reject</option>
+                      </select>
+                    </Field>
+                    <button className="secondary-button">Record decision</button>
+                  </Form>
+                )}
             </article>
           ))
-        ) : (
-          data?<Empty text="No requests assigned to or created by you." />:null
-        )}
+        ) : data ? (
+          <Empty text="No requests assigned to or created by you." />
+        ) : null}
       </section>
     </>
   );

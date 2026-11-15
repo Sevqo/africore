@@ -1,7 +1,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { configureTestEnv,productFixtureBody } from './helpers';
+import { configureTestEnv, productFixtureBody } from './helpers';
 configureTestEnv('stage3');
 import { createApp } from '../app';
 import { migrate, dbGet, dbAll, dbRun, closeDb } from '../db';
@@ -31,13 +31,7 @@ let server: any,
   presentation = '',
   shareNonce = '';
 const unique = randomUUID();
-async function api(
-  path: string,
-  method = 'GET',
-  body?: any,
-  cookie = owner,
-  headers: any = {},
-) {
+async function api(path: string, method = 'GET', body?: any, cookie = owner, headers: any = {}) {
   const r = await fetch(base + path, {
     method,
     headers: {
@@ -46,7 +40,7 @@ async function api(
       ...(cookie ? { Cookie: cookie } : {}),
       ...headers,
     },
-    body: body === undefined ? undefined : JSON.stringify(productFixtureBody(path,method,body)),
+    body: body === undefined ? undefined : JSON.stringify(productFixtureBody(path, method, body)),
   });
   let data: any;
   try {
@@ -60,8 +54,7 @@ async function api(
     cookie: r.headers.get('set-cookie')?.split(';')[0] || '',
   };
 }
-const path = (o: string, s: string) =>
-  '/api/v1/organizations/' + o + '/trust' + s;
+const path = (o: string, s: string) => '/api/v1/organizations/' + o + '/trust' + s;
 async function setup(label: string) {
   const email = label + '-' + unique + '@example.test',
     u = await api(
@@ -71,12 +64,7 @@ async function setup(label: string) {
       '',
     );
   const cookie = u.cookie;
-  await api(
-    '/api/auth/verify',
-    'POST',
-    { token: u.data.verification_token },
-    cookie,
-  );
+  await api('/api/auth/verify', 'POST', { token: u.data.verification_token }, cookie);
   const result = await api(
     '/api/v1/organizations',
     'POST',
@@ -136,20 +124,10 @@ test('passport is private, stable, tenant-scoped and migration safe', async () =
     ).status,
     409,
   );
-  assert.equal(
-    (await api('/api/v1/trust/public/' + passportId, 'GET', undefined, ''))
-      .status,
-    404,
-  );
-  assert.equal(
-    (await api(path(org, '/passport'), 'GET', undefined, stranger)).status,
-    403,
-  );
+  assert.equal((await api('/api/v1/trust/public/' + passportId, 'GET', undefined, '')).status, 404);
+  assert.equal((await api(path(org, '/passport'), 'GET', undefined, stranger)).status, 403);
   await migrate();
-  assert.equal(
-    (await api(path(org, '/passport'))).data.passport.id,
-    passportId,
-  );
+  assert.equal((await api(path(org, '/passport'))).data.passport.id, passportId);
   assert.equal(
     (
       await api(path(org, '/passport'), 'GET', undefined, owner, {
@@ -171,14 +149,10 @@ test('evidence derives assurance from actual records and never accepts invented 
   evidenceId = r.data.id;
   assert.equal(r.data.assurance_level, 0);
   assert.equal(
-    (await api(path(org, '/evidence'), 'POST', { ...body, assurance_level: 3 }))
-      .status,
+    (await api(path(org, '/evidence'), 'POST', { ...body, assurance_level: 3 })).status,
     400,
   );
-  assert.equal(
-    (await api(path(org, '/evidence'), 'POST', body)).data.duplicate,
-    true,
-  );
+  assert.equal((await api(path(org, '/evidence'), 'POST', body)).data.duplicate, true);
   assert.equal(
     (
       await api(path(org, '/evidence'), 'POST', {
@@ -190,13 +164,8 @@ test('evidence derives assurance from actual records and never accepts invented 
   );
   const p = (await api(path(org, '/passport'))).data;
   assert.equal(p.index.value, 20);
-  assert.equal(
-    p.index.components.filter((c: any) => c.source_verified_count > 0).length,
-    0,
-  );
-  const raw = await dbGet('SELECT data FROM ac3_objects WHERE id=?', [
-    evidenceId,
-  ]);
+  assert.equal(p.index.components.filter((c: any) => c.source_verified_count > 0).length, 0);
+  const raw = await dbGet('SELECT data FROM ac3_objects WHERE id=?', [evidenceId]);
   assert.ok(!raw.data.includes('minimal business'));
 });
 test('issuer approval is separately governed and sandbox authority is never institutional recognition', async () => {
@@ -237,10 +206,7 @@ test('issuer approval is separately governed and sandbox authority is never inst
   );
   assert.equal(reviewed.status, 200);
   assert.equal(reviewed.data.recognized, false);
-  assert.equal(
-    reviewed.data.authority,
-    'sandbox_only_no_institutional_authority',
-  );
+  assert.equal(reviewed.data.authority, 'sandbox_only_no_institutional_authority');
   assert.ok(!JSON.stringify(reviewed.data).includes('private_sealed'));
 });
 test('holder authorizes minimal evidence, approved issuer signs and raw custody is encrypted', async () => {
@@ -258,14 +224,8 @@ test('holder authorizes minimal evidence, approved issuer signs and raw custody 
     400,
   );
   assert.equal(
-    (
-      await api(
-        path(issuerOrg, '/credentials'),
-        'POST',
-        { request_id: evidenceId },
-        issuerCookie,
-      )
-    ).status,
+    (await api(path(issuerOrg, '/credentials'), 'POST', { request_id: evidenceId }, issuerCookie))
+      .status,
     404,
   );
   const request = await api(path(org, '/issuance-requests'), 'POST', {
@@ -294,10 +254,7 @@ test('holder authorizes minimal evidence, approved issuer signs and raw custody 
   assert.equal(issued.status, 201);
   credentialId = issued.data.id;
   token = issued.data.token;
-  assert.equal(
-    issued.data.credential.credentialSubject.evidence.assurance_level,
-    0,
-  );
+  assert.equal(issued.data.credential.credentialSubject.evidence.assurance_level, 0);
   assert.ok(!token.includes('Synthetic'));
   assert.equal(
     (
@@ -310,22 +267,13 @@ test('holder authorizes minimal evidence, approved issuer signs and raw custody 
     ).data.duplicate,
     true,
   );
-  const raw = await dbGet('SELECT * FROM ac3_credentials WHERE id=?', [
-    credentialId,
-  ]);
+  const raw = await dbGet('SELECT * FROM ac3_credentials WHERE id=?', [credentialId]);
   assert.notEqual(raw.token_sealed, token);
   assert.notEqual(raw.salt_sealed, issued.data.salt);
   const key = await dbGet('SELECT * FROM ac3_keys WHERE id=?', [raw.key_id]);
   assert.ok(!key.private_sealed.includes('"d"'));
   assert.equal(
-    (
-      await api(
-        path(org, '/credentials/' + credentialId),
-        'GET',
-        undefined,
-        stranger,
-      )
-    ).status,
+    (await api(path(org, '/credentials/' + credentialId), 'GET', undefined, stranger)).status,
     403,
   );
 });
@@ -342,26 +290,20 @@ test('JOSE verification detects tampering, expiry and issuer mismatch without tr
     parts[2],
   ].join('.');
   assert.equal((await verifyCredential(tampered)).signature, 'invalid');
-  const original = await dbGet(
-    'SELECT token_sealed FROM ac3_credentials WHERE id=?',
-    [credentialId],
-  );
+  const original = await dbGet('SELECT token_sealed FROM ac3_credentials WHERE id=?', [
+    credentialId,
+  ]);
   assert.ok(original);
   assert.equal(
-    (await api('/api/v1/trust/verify', 'POST', { credential: token }, '')).data
-      .status,
+    (await api('/api/v1/trust/verify', 'POST', { credential: token }, '')).data.status,
     'active',
   );
 });
 test('fresh signed bitstring lists and independent Node crypto implementation validate the credential', async () => {
-  const metadata = (
-    await api('/api/v1/trust/issuers/' + issuerId, 'GET', undefined, '')
-  ).data;
+  const metadata = (await api('/api/v1/trust/issuers/' + issuerId, 'GET', undefined, '')).data;
   const status_lists: any = {};
   for (const purpose of ['revocation', 'suspension']) {
-    const r = await fetch(
-      base + '/api/v1/trust/status/' + issuerId + '/' + purpose,
-    );
+    const r = await fetch(base + '/api/v1/trust/status/' + issuerId + '/' + purpose);
     assert.equal(r.status, 200);
     assert.match(r.headers.get('content-type') || '', /application\/vc\+jwt/);
     status_lists[purpose] = await r.text();
@@ -370,9 +312,7 @@ test('fresh signed bitstring lists and independent Node crypto implementation va
   const { verifyBundle } = await importer(
     new URL(
       '../../scripts/verify-credential.mjs',
-      'file:///' +
-        process.cwd().split('\\').join('/') +
-        '/dist/__tests__/stage3.test.js',
+      'file:///' + process.cwd().split('\\').join('/') + '/dist/__tests__/stage3.test.js',
     ).href,
   );
   const result = await verifyBundle({
@@ -393,11 +333,7 @@ test('fresh signed bitstring lists and independent Node crypto implementation va
   );
   fs.writeFileSync(
     '.tmp/stage3-demo-sample.json',
-    JSON.stringify(
-      { credential: token, issuer_metadata: metadata, status_lists },
-      null,
-      2,
-    ),
+    JSON.stringify({ credential: token, issuer_metadata: metadata, status_lists }, null, 2),
   );
 });
 test('relationship requires separate counterparty authority and resists self-confirmation', async () => {
@@ -428,10 +364,7 @@ test('relationship requires separate counterparty authority and resists self-con
   );
   assert.equal(confirmed.status, 200);
   assert.equal(confirmed.data.status, 'confirmed');
-  assert.equal(
-    (await api(path(org, '/relationships'), 'GET', undefined, stranger)).status,
-    403,
-  );
+  assert.equal((await api(path(org, '/relationships'), 'GET', undefined, stranger)).status, 403);
 });
 test('recipient-bound requests and one-time presentations enforce purpose, nonce, audience and replay', async () => {
   const r = await api(
@@ -471,14 +404,7 @@ test('recipient-bound requests and one-time presentations enforce purpose, nonce
   assert.notEqual(raw.token_hash, shareToken);
   assert.ok(!raw.data.includes(token));
   assert.equal(
-    (
-      await api(
-        '/api/v1/trust/presentations/' + shareToken,
-        'POST',
-        {},
-        stranger,
-      )
-    ).status,
+    (await api('/api/v1/trust/presentations/' + shareToken, 'POST', {}, stranger)).status,
     403,
   );
   const access = await api(
@@ -491,14 +417,7 @@ test('recipient-bound requests and one-time presentations enforce purpose, nonce
   presentation = access.data.presentation;
   shareNonce = access.data.nonce;
   assert.equal(
-    (
-      await api(
-        '/api/v1/trust/presentations/' + shareToken,
-        'POST',
-        {},
-        recipientCookie,
-      )
-    ).status,
+    (await api('/api/v1/trust/presentations/' + shareToken, 'POST', {}, recipientCookie)).status,
     410,
   );
   const verified = await api(
@@ -566,43 +485,22 @@ test('Merkle commitments are randomized, domain-separated and tamper-evident', a
   for (const [index, value] of tree.entries()) {
     assert.equal(inclusion(value[1], tree.root, tree.getProof(index)), true);
     assert.equal(
-      inclusion(
-        commitmentFor(token + 'x', salts[index]),
-        tree.root,
-        tree.getProof(index),
-      ),
+      inclusion(commitmentFor(token + 'x', salts[index]), tree.root, tree.getProof(index)),
       false,
     );
   }
 });
 test('real queued anchor can be independently reconciled on the configured local chain', async () => {
-  const r = await api(
-    '/api/v1/internal/trust/batches',
-    'POST',
-    {},
-    issuerCookie,
-  );
+  const r = await api('/api/v1/internal/trust/batches', 'POST', {}, issuerCookie);
   assert.equal(r.status, 201);
   if (process.env.AFRICORE_ANCHOR_RPC) {
-    await api(
-      '/api/v1/internal/trust/anchors/process',
-      'POST',
-      {},
-      issuerCookie,
-    );
+    await api('/api/v1/internal/trust/anchors/process', 'POST', {}, issuerCookie);
     await dbRun('UPDATE ac3_batches SET next_at=? WHERE id=?', [
       new Date(0).toISOString(),
       r.data.id,
     ]);
-    await api(
-      '/api/v1/internal/trust/anchors/process',
-      'POST',
-      {},
-      issuerCookie,
-    );
-    const proof = (
-      await api(path(org, '/credentials/' + credentialId + '/proof'))
-    ).data;
+    await api('/api/v1/internal/trust/anchors/process', 'POST', {}, issuerCookie);
+    const proof = (await api(path(org, '/credentials/' + credentialId + '/proof'))).data;
     assert.equal(proof.status, 'confirmed');
     const verify = await api(
       '/api/v1/trust/verify-proof',
@@ -612,18 +510,12 @@ test('real queued anchor can be independently reconciled on the configured local
     );
     assert.equal(verify.data.inclusion, true);
     assert.equal(verify.data.onchain, true);
-    const bundle = JSON.parse(
-      fs.readFileSync('.tmp/stage3-verification-bundle.json', 'utf8'),
-    );
+    const bundle = JSON.parse(fs.readFileSync('.tmp/stage3-verification-bundle.json', 'utf8'));
     bundle.proof = proof;
-    fs.writeFileSync(
-      '.tmp/stage3-verification-bundle.json',
-      JSON.stringify(bundle),
-    );
+    fs.writeFileSync('.tmp/stage3-verification-bundle.json', JSON.stringify(bundle));
   } else
     assert.equal(
-      (await api(path(org, '/credentials/' + credentialId + '/proof'))).data
-        .status,
+      (await api(path(org, '/credentials/' + credentialId + '/proof'))).data.status,
       'queued',
     );
 });
@@ -695,8 +587,7 @@ test('documents, manual review and corrections preserve assurance limits and pri
     legal_name: 'Synthetic Amani Supplies',
     jurisdiction: 'Kenya',
     registration_number: 'SYNTHETIC-ONLY',
-    representative_statement:
-      'I am authorized for this synthetic demonstration.',
+    representative_statement: 'I am authorized for this synthetic demonstration.',
     evidence_ids: [evidenceId],
     consent: true,
   });
@@ -723,9 +614,7 @@ test('documents, manual review and corrections preserve assurance limits and pri
     content_base64: Buffer.from(text).toString('base64'),
   });
   assert.equal(upload.status, 201);
-  const raw = await dbGet('SELECT data FROM ac3_objects WHERE id=?', [
-    upload.data.id,
-  ]);
+  const raw = await dbGet('SELECT data FROM ac3_objects WHERE id=?', [upload.data.id]);
   assert.ok(!raw.data.includes(text));
   const reviewed = await api(
     '/api/v1/internal/trust/identity/' + r.data.id + '/review',
@@ -742,8 +631,7 @@ test('documents, manual review and corrections preserve assurance limits and pri
     'document_reviewed',
   );
   assert.equal(
-    (await api('/api/v1/internal/trust/operations', 'GET', undefined, owner))
-      .status,
+    (await api('/api/v1/internal/trust/operations', 'GET', undefined, owner)).status,
     403,
   );
   const correction = await api(path(org, '/corrections'), 'POST', {
@@ -767,9 +655,7 @@ test('documents, manual review and corrections preserve assurance limits and pri
     200,
   );
   assert.equal(
-    (await api(path(org, '/passport'))).data.evidence.find(
-      (e: any) => e.id === evidenceId,
-    ).status,
+    (await api(path(org, '/passport'))).data.evidence.find((e: any) => e.id === evidenceId).status,
     'disputed',
   );
 });
@@ -791,19 +677,10 @@ test('production trust mutations and cross-tenant API access remain denied', asy
     ).status,
     402,
   );
+  assert.equal((await api(path(org, '/grants'), 'GET', undefined, stranger)).status, 403);
   assert.equal(
-    (await api(path(org, '/grants'), 'GET', undefined, stranger)).status,
-    403,
-  );
-  assert.equal(
-    (
-      await api(
-        path(org, '/documents/' + evidenceId + '/download'),
-        'GET',
-        undefined,
-        stranger,
-      )
-    ).status,
+    (await api(path(org, '/documents/' + evidenceId + '/download'), 'GET', undefined, stranger))
+      .status,
     403,
   );
 });
@@ -811,9 +688,7 @@ test('production trust mutations and cross-tenant API access remain denied', asy
 test('unrecognized valid issuer is never promoted to authoritative trust', async () => {
   const { generateKeyPair, exportJWK, CompactSign } = await import('jose');
   const pair = await generateKeyPair('ES256', { extractable: true }),
-    payload = JSON.parse(
-      Buffer.from(token.split('.')[1], 'base64url').toString(),
-    );
+    payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
   payload.issuer = 'did:web:unrecognized.example';
   const external = await new CompactSign(Buffer.from(JSON.stringify(payload)))
     .setProtectedHeader({
@@ -822,10 +697,7 @@ test('unrecognized valid issuer is never promoted to authoritative trust', async
       typ: 'vc+jwt',
     })
     .sign(pair.privateKey);
-  const report = await verifyCredential(
-    external,
-    await exportJWK(pair.publicKey),
-  );
+  const report = await verifyCredential(external, await exportJWK(pair.publicKey));
   assert.equal(report.signature, 'valid');
   assert.equal(report.issuer_authority, 'unknown');
   assert.equal(report.overall, 'requires_review');
@@ -834,9 +706,7 @@ test('unrecognized valid issuer is never promoted to authoritative trust', async
 
 test('valid signatures cannot bypass expiry, malformed profile or issuer-key binding', async () => {
   const { signed } = await import('../trust/credentials');
-  const payload = JSON.parse(
-    Buffer.from(token.split('.')[1], 'base64url').toString(),
-  );
+  const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
   const expired = await signed(issuerId, 'sandbox', {
     ...payload,
     validFrom: new Date(Date.now() - 86400000).toISOString(),
@@ -848,8 +718,7 @@ test('valid signatures cannot bypass expiry, malformed profile or issuer-key bin
   assert.equal(result.overall, 'failed');
   const { credentialStatus, ...withoutStatus } = payload;
   assert.equal(
-    (await verifyCredential(await signed(issuerId, 'sandbox', withoutStatus)))
-      .overall,
+    (await verifyCredential(await signed(issuerId, 'sandbox', withoutStatus))).overall,
     'failed',
   );
   const wrong = await signed(issuerId, 'sandbox', {
@@ -877,13 +746,8 @@ test('withdrawn or stale evidence authorization cannot issue a credential', asyn
   };
   const withdrawn = await api(path(org, '/issuance-requests'), 'POST', body);
   assert.equal(
-    (
-      await api(
-        path(org, '/issuance-requests/' + withdrawn.data.id + '/cancel'),
-        'POST',
-        {},
-      )
-    ).status,
+    (await api(path(org, '/issuance-requests/' + withdrawn.data.id + '/cancel'), 'POST', {}))
+      .status,
     200,
   );
   assert.equal(
@@ -898,14 +762,8 @@ test('withdrawn or stale evidence authorization cannot issue a credential', asyn
     403,
   );
   const request = await api(path(org, '/issuance-requests'), 'POST', body);
-  const row = await dbGet(
-    'SELECT profile,name FROM ac_organizations WHERE id=?',
-    [org],
-  );
-  await dbRun('UPDATE ac_organizations SET name=? WHERE id=?', [
-    row.name + ' corrected',
-    org,
-  ]);
+  const row = await dbGet('SELECT profile,name FROM ac_organizations WHERE id=?', [org]);
+  await dbRun('UPDATE ac_organizations SET name=? WHERE id=?', [row.name + ' corrected', org]);
   assert.equal(
     (
       await api(
@@ -991,15 +849,9 @@ test('connected demo cookie namespace cannot authenticate or replace normal work
     );
     assert.equal(login.status, 200);
     assert.match(login.cookie, /^ac_demo_session=/);
-    assert.equal(
-      (await api('/api/auth/me', 'GET', undefined, login.cookie)).status,
-      200,
-    );
+    assert.equal((await api('/api/auth/me', 'GET', undefined, login.cookie)).status, 200);
     process.env.AFRICORE_DEMO_SESSION = 'false';
-    assert.equal(
-      (await api('/api/auth/me', 'GET', undefined, login.cookie)).status,
-      401,
-    );
+    assert.equal((await api('/api/auth/me', 'GET', undefined, login.cookie)).status, 401);
     assert.equal((await api('/api/auth/me')).status, 200);
   } finally {
     if (old === undefined) delete process.env.AFRICORE_DEMO_SESSION;
@@ -1048,19 +900,10 @@ test('material Passport edits reset review and suspend old identity credentials 
     ).status,
     409,
   );
-  const publicProfile = await api(
-    '/api/v1/trust/public/' + passportId,
-    'GET',
-    undefined,
-    '',
-  );
+  const publicProfile = await api('/api/v1/trust/public/' + passportId, 'GET', undefined, '');
   assert.equal(publicProfile.status, 200);
   assert.equal(publicProfile.data.legal_name, undefined);
   assert.equal(publicProfile.data.credentials, undefined);
   await api(path(org, '/passport'), 'PATCH', { public_profile: false });
-  assert.equal(
-    (await api('/api/v1/trust/public/' + passportId, 'GET', undefined, ''))
-      .status,
-    404,
-  );
+  assert.equal((await api('/api/v1/trust/public/' + passportId, 'GET', undefined, '')).status, 404);
 });

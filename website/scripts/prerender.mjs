@@ -15,42 +15,31 @@ const server = await createServer({
   logLevel: 'error',
 });
 const esc = (value) =>
-  value
-    .replaceAll('&', '&amp;')
-    .replaceAll('"', '&quot;')
-    .replaceAll('<', '&lt;');
+  value.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;');
 globalThis.window = { location: { pathname: '/', search: '' } };
 globalThis.location = globalThis.window.location;
 try {
-  const { publicPaths, renderPublic } =
-    await server.ssrLoadModule('/src/prerender.tsx');
+  const { publicPaths, renderPublic } = await server.ssrLoadModule('/src/prerender.tsx');
   const template = await fs.readFile(path.join(dist, 'index.html'), 'utf8');
-  await fs.writeFile(path.resolve(root, '../deploy/cloudflare/public-paths.json'), JSON.stringify([...new Set(publicPaths)].sort(), null, 2) + '\n');
+  await fs.writeFile(
+    path.resolve(root, '../deploy/cloudflare/public-paths.json'),
+    JSON.stringify([...new Set(publicPaths)].sort(), null, 2) + '\n',
+  );
   const origin = process.env.AFRICORE_SITE_URL || '';
   for (const route of [...new Set(publicPaths)]) {
     const rendered = renderPublic(route),
       canonical = origin ? new URL(route, origin).href : route;
     let html = template
-      .replace(
-        /<title>[\s\S]*?<\/title>/,
-        '<title>' + esc(rendered.title) + '</title>',
-      )
+      .replace(/<title>[\s\S]*?<\/title>/, '<title>' + esc(rendered.title) + '</title>')
       .replace(
         /<meta\s+name="description"[^>]*>/,
         '<meta name="description" content="' + esc(rendered.description) + '">',
       )
       .replace(
         '<div id="root"></div>',
-        '<div id="root" data-route="' +
-          esc(route) +
-          '">' +
-          rendered.html +
-          '</div>',
+        '<div id="root" data-route="' + esc(route) + '">' + rendered.html + '</div>',
       )
-      .replace(
-        '</head>',
-        '<link rel="canonical" href="' + esc(canonical) + '"></head>',
-      );
+      .replace('</head>', '<link rel="canonical" href="' + esc(canonical) + '"></head>');
     html = html
       .replace(
         /<meta property="og:title"[^>]*>/,
@@ -58,16 +47,12 @@ try {
       )
       .replace(
         /<meta property="og:description"[^>]*>/,
-        '<meta property="og:description" content="' +
-          esc(rendered.description) +
-          '">',
+        '<meta property="og:description" content="' + esc(rendered.description) + '">',
       );
     if (!html.includes('name="description"'))
       html = html.replace(
         '</head>',
-        '<meta name="description" content="' +
-          esc(rendered.description) +
-          '"></head>',
+        '<meta name="description" content="' + esc(rendered.description) + '"></head>',
       );
     const structured = JSON.stringify({
       '@context': 'https://schema.org',
@@ -77,17 +62,21 @@ try {
       url: canonical,
       inLanguage: 'en',
     }).replaceAll('<', '\\u003c');
-    html = html.replace('</head>', '<meta property="og:url" content="' + esc(canonical) + '"><script type="application/ld+json">' + structured + '</script></head>');
+    html = html.replace(
+      '</head>',
+      '<meta property="og:url" content="' +
+        esc(canonical) +
+        '"><script type="application/ld+json">' +
+        structured +
+        '</script></head>',
+    );
     const target = route === '/' ? dist : path.join(dist, route.slice(1));
     await fs.mkdir(target, { recursive: true });
     await fs.writeFile(path.join(target, 'index.html'), html);
   }
   const sitemap = [...new Set(publicPaths)]
     .map(
-      (route) =>
-        '<url><loc>' +
-        esc(origin ? new URL(route, origin).href : route) +
-        '</loc></url>',
+      (route) => '<url><loc>' + esc(origin ? new URL(route, origin).href : route) + '</loc></url>',
     )
     .join('');
   if (origin)

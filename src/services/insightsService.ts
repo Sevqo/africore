@@ -1,7 +1,7 @@
-import {singleCurrency} from './currency-integrity';
-import { dbAll } from "../db";
-import { Invoice } from "./invoiceService";
-import { Transaction } from "./transactionService";
+import { singleCurrency } from './currency-integrity';
+import { dbAll } from '../db';
+import { Invoice } from './invoiceService';
+import { Transaction } from './transactionService';
 
 /**
  * Business Intelligence layer (spec section 19). Built on real
@@ -21,7 +21,7 @@ export async function getOverdueInvoices(businessId: string): Promise<OverdueInv
     `SELECT * FROM invoices
      WHERE business_id = ? AND status IN ('unpaid', 'sent', 'partially_paid', 'overdue')
        AND due_date IS NOT NULL`,
-    [businessId]
+    [businessId],
   );
 
   return invoices
@@ -34,12 +34,12 @@ export async function getOverdueInvoices(businessId: string): Promise<OverdueInv
 }
 
 export interface CashFlowForecast {
-  currency?:string;
+  currency?: string;
   method: string;
   daily_net_cash_flow_avg: number;
   forecast_next_30d: number;
   based_on_days: number;
-  confidence: "low" | "medium" | "high";
+  confidence: 'low' | 'medium' | 'high';
 }
 
 /** "Prepare a cash-flow forecast." Simple linear projection from recent
@@ -48,21 +48,22 @@ export interface CashFlowForecast {
 export async function getCashFlowForecast(businessId: string): Promise<CashFlowForecast> {
   const txns = await dbAll<Transaction>(
     `SELECT * FROM transactions WHERE business_id = ? AND status = 'completed' ORDER BY occurred_at ASC`,
-    [businessId]
+    [businessId],
   );
 
   const now = Date.now();
-  const currency=singleCurrency(txns);
+  const currency = singleCurrency(txns);
   // Future-dated transactions must not be projected as if they had happened.
   const settled = txns.filter((t) => new Date(t.occurred_at).getTime() <= now);
 
   if (settled.length === 0) {
     return {
-      method: "insufficient_data",currency,
+      method: 'insufficient_data',
+      currency,
       daily_net_cash_flow_avg: 0,
       forecast_next_30d: 0,
       based_on_days: 0,
-      confidence: "low",
+      confidence: 'low',
     };
   }
 
@@ -72,15 +73,16 @@ export async function getCashFlowForecast(businessId: string): Promise<CashFlowF
   const earliest = new Date(settled[0].occurred_at).getTime();
   const spanDays = Math.max(1, Math.ceil((now - earliest) / (1000 * 60 * 60 * 24)));
 
-  const net = settled.reduce((sum, t) => sum + (t.type === "credit" ? t.amount : -t.amount), 0);
+  const net = settled.reduce((sum, t) => sum + (t.type === 'credit' ? t.amount : -t.amount), 0);
   const dailyAvg = net / spanDays;
 
   return {
-    method: "linear_projection_from_history",currency,
+    method: 'linear_projection_from_history',
+    currency,
     daily_net_cash_flow_avg: Math.round(dailyAvg * 100) / 100,
     forecast_next_30d: Math.round(dailyAvg * 30 * 100) / 100,
     based_on_days: spanDays,
-    confidence: spanDays >= 60 ? "high" : spanDays >= 14 ? "medium" : "low",
+    confidence: spanDays >= 60 ? 'high' : spanDays >= 14 ? 'medium' : 'low',
   };
 }
 
@@ -95,8 +97,8 @@ export interface UnusualTransaction extends Transaction {
  */
 export function maskPiiCounterparty(value: string | null | undefined): string | null {
   if (!value) return null;
-  const compact = value.replace(/[\s-]/g, "");
-  const digits = compact.replace(/^\+/, "");
+  const compact = value.replace(/[\s-]/g, '');
+  const digits = compact.replace(/^\+/, '');
 
   if (/^2547\d{8}$/.test(digits)) return `254***${digits.slice(-3)}`;
   if (/^07\d{8}$/.test(digits)) return `0***${digits.slice(-3)}`;
@@ -109,14 +111,17 @@ export function maskPiiCounterparty(value: string | null | undefined): string | 
  *  computed per direction: mixing KES 40,000 sales with KES 200 airtime
  *  purchases used to flag every large sale as an anomaly. */
 export async function getUnusualTransactions(businessId: string): Promise<UnusualTransaction[]> {
-  const txns = await dbAll<Transaction>(`SELECT * FROM transactions WHERE business_id = ? AND status = 'completed'`, [businessId]);
+  const txns = await dbAll<Transaction>(
+    `SELECT * FROM transactions WHERE business_id = ? AND status = 'completed'`,
+    [businessId],
+  );
 
   singleCurrency(txns);
   if (txns.length < 5) return [];
 
   const flagged: UnusualTransaction[] = [];
 
-  for (const type of ["credit", "debit"] as const) {
+  for (const type of ['credit', 'debit'] as const) {
     const group = txns.filter((t) => t.type === type);
     if (group.length < 5) continue;
 
@@ -145,8 +150,13 @@ export interface CustomerConcentration {
 /** "How dependent are we on our largest customer?" Uses money actually
  *  received for paid invoices (`paid_amount`, falling back to the invoiced
  *  amount for pre-upgrade rows) because invoiced != collected. */
-export async function getCustomerConcentration(businessId: string): Promise<CustomerConcentration[]> {
-  const invoices = await dbAll<Invoice>(`SELECT * FROM invoices WHERE business_id = ? AND status = 'paid'`, [businessId]);
+export async function getCustomerConcentration(
+  businessId: string,
+): Promise<CustomerConcentration[]> {
+  const invoices = await dbAll<Invoice>(
+    `SELECT * FROM invoices WHERE business_id = ? AND status = 'paid'`,
+    [businessId],
+  );
 
   singleCurrency(invoices);
   if (invoices.length === 0) return [];

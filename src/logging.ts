@@ -1,7 +1,7 @@
-import type { NextFunction, Request, Response } from "express";
-import { config, LogLevelName } from "./config";
-import type { RequestWithContext } from "./middleware/requestContext";
-import {safeLogPath} from './safe-log-path';
+import type { NextFunction, Request, Response } from 'express';
+import { config, LogLevelName } from './config';
+import type { RequestWithContext } from './middleware/requestContext';
+import { safeLogPath } from './safe-log-path';
 
 /**
  * Structured JSON logger.
@@ -49,16 +49,16 @@ function serialise(level: LogLevelName, event: string, fields: LogFields): strin
 function emit(level: LogLevelName, event: string, fields: LogFields = {}): void {
   if (!isLevelEnabled(level)) return;
   const line = serialise(level, event, fields);
-  if (level === "error") console.error(line);
-  else if (level === "warn") console.warn(line);
+  if (level === 'error') console.error(line);
+  else if (level === 'warn') console.warn(line);
   else console.log(line);
 }
 
 export const logger = {
-  debug: (event: string, fields?: LogFields) => emit("debug", event, fields),
-  info: (event: string, fields?: LogFields) => emit("info", event, fields),
-  warn: (event: string, fields?: LogFields) => emit("warn", event, fields),
-  error: (event: string, fields?: LogFields) => emit("error", event, fields),
+  debug: (event: string, fields?: LogFields) => emit('debug', event, fields),
+  info: (event: string, fields?: LogFields) => emit('info', event, fields),
+  warn: (event: string, fields?: LogFields) => emit('warn', event, fields),
+  error: (event: string, fields?: LogFields) => emit('error', event, fields),
 };
 
 /**
@@ -70,10 +70,10 @@ export const logger = {
 export function requestLogger(req: Request, res: Response, next: NextFunction): void {
   const startedAt = process.hrtime.bigint();
 
-  res.on("finish", () => {
+  res.on('finish', () => {
     const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
     const context = req as RequestWithContext & { client?: { id: string } };
-    logger.info("http_request", {
+    logger.info('http_request', {
       request_id: context.requestId,
       method: req.method,
       // req.path excludes the query string; req.originalUrl would log it.

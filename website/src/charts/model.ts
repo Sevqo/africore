@@ -1,5 +1,5 @@
 export function isIsoDate(value: string) {
-  const d = new Date(value + "T00:00:00Z");
+  const d = new Date(value + 'T00:00:00Z');
   return (
     /^\d{4}-\d{2}-\d{2}$/.test(value) &&
     Number.isFinite(d.getTime()) &&
@@ -13,21 +13,32 @@ export type ChartSeries = {
   color: string;
   dashed?: boolean;
 };
-export type ChartRange = "7D" | "30D" | "90D" | "YTD" | "1Y" | "ALL";
+export type ChartRange = '7D' | '30D' | '90D' | 'YTD' | '1Y' | 'ALL';
 /** Adjacent equal-length calendar windows, limited to the records actually loaded. */
 export function previousPeriod(points: ChartPoint[], range: ChartRange, asOfDate?: string) {
   const sorted = selectRange(points, 'ALL');
   if (!sorted.length || range === 'ALL') return null;
-  const end = Date.parse((asOfDate && isIsoDate(asOfDate) ? asOfDate : sorted.at(-1)!.date) + 'T00:00:00Z');
+  const end = Date.parse(
+    (asOfDate && isIsoDate(asOfDate) ? asOfDate : sorted.at(-1)!.date) + 'T00:00:00Z',
+  );
   const day = 86400000;
-  const start = range === 'YTD' ? Date.UTC(new Date(end).getUTCFullYear(), 0, 1) : end - ((range === '1Y' ? 365 : Number.parseInt(range)) - 1) * day;
+  const start =
+    range === 'YTD'
+      ? Date.UTC(new Date(end).getUTCFullYear(), 0, 1)
+      : end - ((range === '1Y' ? 365 : Number.parseInt(range)) - 1) * day;
   const duration = end - start + day;
-  const from = new Date(start - duration).toISOString().slice(0, 10), to = new Date(start - day).toISOString().slice(0, 10);
+  const from = new Date(start - duration).toISOString().slice(0, 10),
+    to = new Date(start - day).toISOString().slice(0, 10);
   if (sorted[0].date > from) return null;
-  const records = sorted.filter(point => point.date >= from && point.date <= to);
+  const records = sorted.filter((point) => point.date >= from && point.date <= to);
   if (!records.length) return null;
-  const byAlignedDate = new Map(records.map(point => [new Date(Date.parse(point.date + 'T00:00:00Z') + duration).toISOString().slice(0, 10), point]));
-  return {from, to, records, byAlignedDate};
+  const byAlignedDate = new Map(
+    records.map((point) => [
+      new Date(Date.parse(point.date + 'T00:00:00Z') + duration).toISOString().slice(0, 10),
+      point,
+    ]),
+  );
+  return { from, to, records, byAlignedDate };
 }
 export function selectRange(
   points: ChartPoint[],
@@ -38,25 +49,21 @@ export function selectRange(
   const sorted = [...points]
     .filter((p) => isIsoDate(p.date))
     .sort((a, b) => a.date.localeCompare(b.date));
-  if (!sorted.length || range === "ALL") return sorted;
+  if (!sorted.length || range === 'ALL') return sorted;
   if (forecast) return sorted.slice(0, Number.parseInt(range) || sorted.length);
-  const end = new Date((asOfDate && isIsoDate(asOfDate) ? asOfDate : sorted.at(-1)!.date) + "T00:00:00Z");
-  const start =
-    range === "YTD"
-      ? new Date(Date.UTC(end.getUTCFullYear(), 0, 1))
-      : new Date(
-          end.getTime() -
-            ((range === "1Y" ? 365 : Number.parseInt(range)) - 1) * 86400000,
-        );
-  return sorted.filter((p) => p.date >= start.toISOString().slice(0, 10) && p.date <= end.toISOString().slice(0,10));
-}
-export function chartDomain(
-  points: ChartPoint[],
-  keys: string[],
-): [number, number] {
-  const values = points.flatMap((p) =>
-    keys.map((k) => Number(p[k])).filter(Number.isFinite),
+  const end = new Date(
+    (asOfDate && isIsoDate(asOfDate) ? asOfDate : sorted.at(-1)!.date) + 'T00:00:00Z',
   );
+  const start =
+    range === 'YTD'
+      ? new Date(Date.UTC(end.getUTCFullYear(), 0, 1))
+      : new Date(end.getTime() - ((range === '1Y' ? 365 : Number.parseInt(range)) - 1) * 86400000);
+  return sorted.filter(
+    (p) => p.date >= start.toISOString().slice(0, 10) && p.date <= end.toISOString().slice(0, 10),
+  );
+}
+export function chartDomain(points: ChartPoint[], keys: string[]): [number, number] {
+  const values = points.flatMap((p) => keys.map((k) => Number(p[k])).filter(Number.isFinite));
   let min = Math.min(0, ...values),
     max = Math.max(0, ...values);
   if (max === min) {
@@ -85,56 +92,42 @@ export function nearestPoint(
     const target = first + Math.max(0, Math.min(1, fraction)) * (last - first);
     return dates.reduce(
       (best, date, i) =>
-        Math.abs(Date.parse(date) - target) <
-        Math.abs(Date.parse(dates[best]) - target)
-          ? i
-          : best,
+        Math.abs(Date.parse(date) - target) < Math.abs(Date.parse(dates[best]) - target) ? i : best,
       0,
     );
   }
   return Math.max(0, Math.min(count - 1, Math.round(fraction * (count - 1))));
 }
-export function groupDatedAmounts(
-  records: any[],
-  dateKey: string,
-  valueKey: string,
-): ChartPoint[] {
+export function groupDatedAmounts(records: any[], dateKey: string, valueKey: string): ChartPoint[] {
   const days = new Map<string, number>();
   for (const row of records) {
-    const raw = String(row[dateKey] || "");
+    const raw = String(row[dateKey] || '');
     const stamp = raw.length > 10 ? new Date(raw) : null;
     const date =
         stamp && Number.isFinite(stamp.getTime())
-          ? new Intl.DateTimeFormat("en-CA", {
-              timeZone: "Africa/Nairobi",
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
+          ? new Intl.DateTimeFormat('en-CA', {
+              timeZone: 'Africa/Nairobi',
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
             }).format(stamp)
           : raw.slice(0, 10),
       value = Number(row[valueKey]);
-    if (isIsoDate(date) && Number.isFinite(value))
-      days.set(date, (days.get(date) || 0) + value);
+    if (isIsoDate(date) && Number.isFinite(value)) days.set(date, (days.get(date) || 0) + value);
   }
-  return [...days]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, value]) => ({ date, value }));
+  return [...days].sort(([a], [b]) => a.localeCompare(b)).map(([date, value]) => ({ date, value }));
 }
 
-export function rangeAvailable(
-  points: ChartPoint[],
-  range: ChartRange,
-  forecast = false,
-) {
+export function rangeAvailable(points: ChartPoint[], range: ChartRange, forecast = false) {
   if (!forecast) return true;
-  if (range === "ALL") return true;
-  const sorted = selectRange(points, "ALL");
+  if (range === 'ALL') return true;
+  const sorted = selectRange(points, 'ALL');
   if (!sorted.length) return false;
   const first = sorted[0].date,
     last = sorted.at(-1)!.date;
-  if (range === "YTD") return first <= last.slice(0, 4) + "-01-01";
+  if (range === 'YTD') return first <= last.slice(0, 4) + '-01-01';
   const days = forecast
     ? sorted.length
     : Math.round((Date.parse(last) - Date.parse(first)) / 86400000) + 1;
-  return days >= (range === "1Y" ? 365 : Number.parseInt(range));
+  return days >= (range === '1Y' ? 365 : Number.parseInt(range));
 }

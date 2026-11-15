@@ -1,9 +1,9 @@
-import { Router, Request } from "express";
-import { z } from "zod";
-import { requireAdmin } from "../middleware/adminAuth";
-import { sendError } from "../middleware/errorHandler";
-import { startPaymentMatchingWorkflow } from "../orbit/orbitService";
-import { OnboardingError } from "../services/businessOnboardingService";
+import { Router, Request } from 'express';
+import { z } from 'zod';
+import { requireAdmin } from '../middleware/adminAuth';
+import { sendError } from '../middleware/errorHandler';
+import { startPaymentMatchingWorkflow } from '../orbit/orbitService';
+import { OnboardingError } from '../services/businessOnboardingService';
 
 /**
  * Simulated M-Pesa payment webhook (admin-only in this build).
@@ -24,9 +24,10 @@ const paymentSchema = z.object({
   transaction_id: z.string().uuid().optional(),
 });
 
-router.post("/payments/simulate", requireAdmin, async (req: BusinessRequest, res) => {
+router.post('/payments/simulate', requireAdmin, async (req: BusinessRequest, res) => {
   const parsed = paymentSchema.safeParse(req.body);
-  if (!parsed.success) return sendError(res, 400, "invalid_input", { details: parsed.error.flatten() });
+  if (!parsed.success)
+    return sendError(res, 400, 'invalid_input', { details: parsed.error.flatten() });
 
   try {
     const result = await startPaymentMatchingWorkflow(String(req.params.id), {
@@ -43,7 +44,8 @@ router.post("/payments/simulate", requireAdmin, async (req: BusinessRequest, res
       workflow_url: `/v1/orbit/workflows/${result.workflowId}`,
     });
   } catch (err) {
-    if (err instanceof OnboardingError && err.code === "business_not_found") return sendError(res, 404, "not_found");
+    if (err instanceof OnboardingError && err.code === 'business_not_found')
+      return sendError(res, 404, 'not_found');
     throw err;
   }
 });

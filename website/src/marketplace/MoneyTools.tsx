@@ -1,23 +1,419 @@
-import {useEffect,useRef,useState,type FormEvent} from 'react';
-import {DateRange} from '../components/DateRange';
-import {Field,today,money,type API} from '../operations/UI';
-import {parseMoney} from '../../../src/finance/money';
-import {Overlay} from '../components/Overlay';
-const categories=['stock','rent','utilities','payroll','delivery','other'];
-export function MoneyTools({api,scope,cashFlow=false,writable}:{api:API;scope:string;cashFlow?:boolean;writable:boolean}){
- const [expenses,setExpenses]=useState<any[]>([]),[obligations,setObligations]=useState<any[]>([]),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[version,setVersion]=useState(0),[range,setRange]=useState({from:'',to:''}),[editing,setEditing]=useState<any>(null);
- const formKeys=useRef(new WeakMap<HTMLFormElement,string>());
- useEffect(()=>{let live=true;setExpenses([]);setObligations([]);setError('');setBusy(true);Promise.all([api('/expenses?limit=100'),cashFlow?api('/obligations?limit=100'):Promise.resolve({data:[]})]).then(([e,o])=>{if(live){setExpenses(e.data);setObligations(o.data);}}).catch(e=>{if(live)setError(e.message);}).finally(()=>{if(live)setBusy(false);});return()=>{live=false;};},[scope,cashFlow,version]);
- async function save(path:string,method:string,body:any,key:string=crypto.randomUUID()){setBusy(true);setError('');try{const result=await api(path,method,body,{'Idempotency-Key':key});setVersion(n=>n+1);return result;}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
- async function submit(e:FormEvent<HTMLFormElement>,kind:'expense'|'obligation'){
-  e.preventDefault();const form=e.currentTarget,d=Object.fromEntries(new FormData(form)),currency=String(d.currency);setError('');setNotice('');
-  try{if(!formKeys.current.has(form))formKeys.current.set(form,crypto.randomUUID());const result=await save(kind==='expense'?'/expenses':'/obligations','POST',{description:d.description,currency,amount_minor:parseMoney(String(d.amount),currency),supplier:d.supplier||'',...(kind==='expense'?{occurred_on:d.date,category:d.category,notes:d.notes||''}:{next_due_date:d.date,recurrence:d.recurrence,category:d.category,timezone:d.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone,reminder_days:Number(d.reminder_days||3)})},formKeys.current.get(form));if(result){formKeys.current.delete(form);form.reset();setNotice(kind==='expense'?'Expense recorded as self-reported information.':'Obligation saved; no payment was sent.');}}catch(e){setError((e as Error).message);}
- }
- const replaced=new Set(expenses.map(e=>e.supersedes_id).filter(Boolean));const current=expenses.filter(e=>!replaced.has(e.id)&&e.status!=='archived');const visible=current.filter(e=>(!range.from||e.occurred_on>=range.from)&&(!range.to||e.occurred_on<=range.to));
- function expenseCorrection(row:any,changes:any){const {description,amount_minor,currency,occurred_on,category,transaction_id,obligation_id,supplier,notes}=row;return {description,amount_minor,currency,occurred_on,category,transaction_id,obligation_id,supplier:supplier||'',notes:notes||'',supersedes_id:row.id,...changes};}
- return <section className="service-marketplace">{error&&<p role="alert" className="alert error">{error}</p>}{notice&&<p role="status">{notice}</p>}{busy&&<p role="status">Updating records…</p>}{writable&&<div className="service-grid">{(['expense',...(cashFlow?['obligation']:[])] as ('expense'|'obligation')[]).map(kind=><form key={kind} className="panel account-stack-form" onSubmit={e=>submit(e,kind)}><h2>{kind==='expense'?'Record an expense':'Plan an obligation'}</h2><Field label="Description"><input name="description" required maxLength={300}/></Field><Field label="Currency"><select name="currency">{['KES','USD','EUR','GBP','UGX','TZS','RWF'].map(c=><option key={c}>{c}</option>)}</select></Field><Field label="Amount"><input name="amount" type="text" inputMode="decimal" required/></Field><Field label={kind==='expense'?'Date paid':'Next due date'}><input name="date" type="date" required defaultValue={kind==='expense'?today():undefined} max={kind==='expense'?today():undefined}/></Field><Field label="Category"><select name="category">{categories.map(c=><option key={c}>{c}</option>)}</select></Field><Field label="Supplier (optional)"><input name="supplier" maxLength={200}/></Field>{kind==='obligation'?<><Field label="Reminder timezone"><input name="timezone" required defaultValue={Intl.DateTimeFormat().resolvedOptions().timeZone}/></Field><Field label="Remind this many days before due"><input name="reminder_days" type="number" min="0" max="30" defaultValue="3" required/></Field><Field label="Recurrence"><select name="recurrence">{['once','weekly','monthly','quarterly','yearly'].map(c=><option key={c}>{c}</option>)}</select></Field></>:<Field label="Notes"><textarea name="notes" maxLength={3000}/></Field>}<button className="button" disabled={busy}>{kind==='expense'?'Record expense':'Save obligation'}</button><p>{kind==='expense'?'Manually recorded; this does not send money or independently confirm a transaction.':'A planned obligation is not a paid expense or automatic payment.'}</p></form>)}</div>}
- <section className="panel"><h2>Recorded expenses</h2><DateRange from={range.from} to={range.to} onApply={(from,to)=>setRange({from,to})}/><p>Latest 100 entries. Reports uses all matching records and excludes superseded corrections.</p>{visible.map(e=><article className="list-row" key={e.id}><span>{e.description} · {e.occurred_on} · {e.category}</span><strong>{money(e.amount_minor,e.currency)}</strong>{writable&&<button className="secondary-button" disabled={busy} onClick={()=>setEditing(e)}>Correct / archive</button>}</article>)}{!visible.length&&!busy&&<p>No recorded expenses in this loaded range.</p>}<details><summary>Retained expense history</summary>{expenses.filter(e=>replaced.has(e.id)||e.status==='archived').map(e=><p key={e.id}>{e.description} · {money(e.amount_minor,e.currency)} · {e.status==='archived'?'Archived':'Superseded'}</p>)}</details></section>
- {cashFlow&&<section className="panel"><h2>Upcoming obligations</h2>{obligations.map(o=><article className="list-row" key={o.id}><span>{o.description} · {o.next_due_date} · {o.status} · {o.recurrence}</span><strong>{money(o.amount_minor,o.currency)}</strong>{writable&&['active','paused'].includes(o.status)&&<div className="finance-actions"><button className="secondary-button" disabled={busy} onClick={()=>save('/obligations/'+o.id,'PATCH',{status:o.status==='active'?'paused':'active'})}>{o.status==='active'?'Pause':'Resume'}</button>{o.status==='active'&&o.next_due_date<=today()&&<><button className="secondary-button" disabled={busy} onClick={()=>save('/obligations/'+o.id+'/fulfill','POST',{action:'fulfill',record_expense:true})}>Record paid occurrence</button><button className="quiet-button" disabled={busy} onClick={()=>save('/obligations/'+o.id+'/fulfill','POST',{action:'skip',record_expense:false})}>Skip occurrence</button></>}<button className="quiet-button" disabled={busy} onClick={()=>save('/obligations/'+o.id,'PATCH',{status:'cancelled'})}>Cancel future plan</button></div>}</article>)}{!obligations.length&&!busy&&<p>No upcoming obligations.</p>}<p>Paid occurrences explicitly create a self-reported expense. Recurring plans advance from their original calendar anchor, retaining every handled occurrence.</p></section>}
- {editing&&<Overlay onClose={()=>setEditing(null)}><section className="service-detail" role="dialog" aria-modal="true" aria-labelledby="expense-correction"><h2 id="expense-correction">Correct {editing.description}</h2>{error&&<p role="alert" className="alert error">{error}</p>}<p>Corrections append a new version. Original records are retained.</p><form className="account-stack-form" onSubmit={async e=>{e.preventDefault();const d=new FormData(e.currentTarget);try{const r=await save('/expenses','POST',expenseCorrection(editing,{description:d.get('description'),amount_minor:parseMoney(String(d.get('amount')),editing.currency),category:d.get('category')}));if(r)setEditing(null);}catch(e){setError((e as Error).message);}}}><Field label="Description"><input name="description" required defaultValue={editing.description}/></Field><Field label={'Amount · '+editing.currency}><input name="amount" required inputMode="decimal" defaultValue={String(editing.amount_minor/(['UGX','RWF'].includes(editing.currency)?1:100))}/></Field><Field label="Category"><select name="category" defaultValue={editing.category}>{categories.map(c=><option key={c}>{c}</option>)}</select></Field><button className="button" disabled={busy}>Save correction</button></form><div className="finance-actions"><button className="secondary-button" disabled={busy} onClick={async()=>{const r=await save('/expenses','POST',expenseCorrection(editing,{status:'archived'}));if(r)setEditing(null);}}>Confirm archive</button><button className="quiet-button" onClick={()=>setEditing(null)}>Keep record</button></div></section></Overlay>}
- </section>;
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { DateRange } from '../components/DateRange';
+import { Field, today, money, type API } from '../operations/UI';
+import { parseMoney } from '../../../src/finance/money';
+import { Overlay } from '../components/Overlay';
+const categories = ['stock', 'rent', 'utilities', 'payroll', 'delivery', 'other'];
+export function MoneyTools({
+  api,
+  scope,
+  cashFlow = false,
+  writable,
+}: {
+  api: API;
+  scope: string;
+  cashFlow?: boolean;
+  writable: boolean;
+}) {
+  const [expenses, setExpenses] = useState<any[]>([]),
+    [obligations, setObligations] = useState<any[]>([]),
+    [error, setError] = useState(''),
+    [notice, setNotice] = useState(''),
+    [busy, setBusy] = useState(false),
+    [version, setVersion] = useState(0),
+    [range, setRange] = useState({ from: '', to: '' }),
+    [editing, setEditing] = useState<any>(null);
+  const formKeys = useRef(new WeakMap<HTMLFormElement, string>());
+  useEffect(() => {
+    let live = true;
+    setExpenses([]);
+    setObligations([]);
+    setError('');
+    setBusy(true);
+    Promise.all([
+      api('/expenses?limit=100'),
+      cashFlow ? api('/obligations?limit=100') : Promise.resolve({ data: [] }),
+    ])
+      .then(([e, o]) => {
+        if (live) {
+          setExpenses(e.data);
+          setObligations(o.data);
+        }
+      })
+      .catch((e) => {
+        if (live) setError(e.message);
+      })
+      .finally(() => {
+        if (live) setBusy(false);
+      });
+    return () => {
+      live = false;
+    };
+  }, [scope, cashFlow, version]);
+  async function save(path: string, method: string, body: any, key: string = crypto.randomUUID()) {
+    setBusy(true);
+    setError('');
+    try {
+      const result = await api(path, method, body, { 'Idempotency-Key': key });
+      setVersion((n) => n + 1);
+      return result;
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function submit(e: FormEvent<HTMLFormElement>, kind: 'expense' | 'obligation') {
+    e.preventDefault();
+    const form = e.currentTarget,
+      d = Object.fromEntries(new FormData(form)),
+      currency = String(d.currency);
+    setError('');
+    setNotice('');
+    try {
+      if (!formKeys.current.has(form)) formKeys.current.set(form, crypto.randomUUID());
+      const result = await save(
+        kind === 'expense' ? '/expenses' : '/obligations',
+        'POST',
+        {
+          description: d.description,
+          currency,
+          amount_minor: parseMoney(String(d.amount), currency),
+          supplier: d.supplier || '',
+          ...(kind === 'expense'
+            ? { occurred_on: d.date, category: d.category, notes: d.notes || '' }
+            : {
+                next_due_date: d.date,
+                recurrence: d.recurrence,
+                category: d.category,
+                timezone: d.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+                reminder_days: Number(d.reminder_days || 3),
+              }),
+        },
+        formKeys.current.get(form),
+      );
+      if (result) {
+        formKeys.current.delete(form);
+        form.reset();
+        setNotice(
+          kind === 'expense'
+            ? 'Expense recorded as self-reported information.'
+            : 'Obligation saved; no payment was sent.',
+        );
+      }
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  const replaced = new Set(expenses.map((e) => e.supersedes_id).filter(Boolean));
+  const current = expenses.filter((e) => !replaced.has(e.id) && e.status !== 'archived');
+  const visible = current.filter(
+    (e) => (!range.from || e.occurred_on >= range.from) && (!range.to || e.occurred_on <= range.to),
+  );
+  function expenseCorrection(row: any, changes: any) {
+    const {
+      description,
+      amount_minor,
+      currency,
+      occurred_on,
+      category,
+      transaction_id,
+      obligation_id,
+      supplier,
+      notes,
+    } = row;
+    return {
+      description,
+      amount_minor,
+      currency,
+      occurred_on,
+      category,
+      transaction_id,
+      obligation_id,
+      supplier: supplier || '',
+      notes: notes || '',
+      supersedes_id: row.id,
+      ...changes,
+    };
+  }
+  return (
+    <section className="service-marketplace">
+      {error && (
+        <p role="alert" className="alert error">
+          {error}
+        </p>
+      )}
+      {notice && <p role="status">{notice}</p>}
+      {busy && <p role="status">Updating records…</p>}
+      {writable && (
+        <div className="service-grid">
+          {(['expense', ...(cashFlow ? ['obligation'] : [])] as ('expense' | 'obligation')[]).map(
+            (kind) => (
+              <form
+                key={kind}
+                className="panel account-stack-form"
+                onSubmit={(e) => submit(e, kind)}
+              >
+                <h2>{kind === 'expense' ? 'Record an expense' : 'Plan an obligation'}</h2>
+                <Field label="Description">
+                  <input name="description" required maxLength={300} />
+                </Field>
+                <Field label="Currency">
+                  <select name="currency">
+                    {['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF'].map((c) => (
+                      <option key={c}>{c}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Amount">
+                  <input name="amount" type="text" inputMode="decimal" required />
+                </Field>
+                <Field label={kind === 'expense' ? 'Date paid' : 'Next due date'}>
+                  <input
+                    name="date"
+                    type="date"
+                    required
+                    defaultValue={kind === 'expense' ? today() : undefined}
+                    max={kind === 'expense' ? today() : undefined}
+                  />
+                </Field>
+                <Field label="Category">
+                  <select name="category">
+                    {categories.map((c) => (
+                      <option key={c}>{c}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Supplier (optional)">
+                  <input name="supplier" maxLength={200} />
+                </Field>
+                {kind === 'obligation' ? (
+                  <>
+                    <Field label="Reminder timezone">
+                      <input
+                        name="timezone"
+                        required
+                        defaultValue={Intl.DateTimeFormat().resolvedOptions().timeZone}
+                      />
+                    </Field>
+                    <Field label="Remind this many days before due">
+                      <input
+                        name="reminder_days"
+                        type="number"
+                        min="0"
+                        max="30"
+                        defaultValue="3"
+                        required
+                      />
+                    </Field>
+                    <Field label="Recurrence">
+                      <select name="recurrence">
+                        {['once', 'weekly', 'monthly', 'quarterly', 'yearly'].map((c) => (
+                          <option key={c}>{c}</option>
+                        ))}
+                      </select>
+                    </Field>
+                  </>
+                ) : (
+                  <Field label="Notes">
+                    <textarea name="notes" maxLength={3000} />
+                  </Field>
+                )}
+                <button className="button" disabled={busy}>
+                  {kind === 'expense' ? 'Record expense' : 'Save obligation'}
+                </button>
+                <p>
+                  {kind === 'expense'
+                    ? 'Manually recorded; this does not send money or independently confirm a transaction.'
+                    : 'A planned obligation is not a paid expense or automatic payment.'}
+                </p>
+              </form>
+            ),
+          )}
+        </div>
+      )}
+      <section className="panel">
+        <h2>Recorded expenses</h2>
+        <DateRange from={range.from} to={range.to} onApply={(from, to) => setRange({ from, to })} />
+        <p>
+          Latest 100 entries. Reports uses all matching records and excludes superseded corrections.
+        </p>
+        {visible.map((e) => (
+          <article className="list-row" key={e.id}>
+            <span>
+              {e.description} · {e.occurred_on} · {e.category}
+            </span>
+            <strong>{money(e.amount_minor, e.currency)}</strong>
+            {writable && (
+              <button className="secondary-button" disabled={busy} onClick={() => setEditing(e)}>
+                Correct / archive
+              </button>
+            )}
+          </article>
+        ))}
+        {!visible.length && !busy && <p>No recorded expenses in this loaded range.</p>}
+        <details>
+          <summary>Retained expense history</summary>
+          {expenses
+            .filter((e) => replaced.has(e.id) || e.status === 'archived')
+            .map((e) => (
+              <p key={e.id}>
+                {e.description} · {money(e.amount_minor, e.currency)} ·{' '}
+                {e.status === 'archived' ? 'Archived' : 'Superseded'}
+              </p>
+            ))}
+        </details>
+      </section>
+      {cashFlow && (
+        <section className="panel">
+          <h2>Upcoming obligations</h2>
+          {obligations.map((o) => (
+            <article className="list-row" key={o.id}>
+              <span>
+                {o.description} · {o.next_due_date} · {o.status} · {o.recurrence}
+              </span>
+              <strong>{money(o.amount_minor, o.currency)}</strong>
+              {writable && ['active', 'paused'].includes(o.status) && (
+                <div className="finance-actions">
+                  <button
+                    className="secondary-button"
+                    disabled={busy}
+                    onClick={() =>
+                      save('/obligations/' + o.id, 'PATCH', {
+                        status: o.status === 'active' ? 'paused' : 'active',
+                      })
+                    }
+                  >
+                    {o.status === 'active' ? 'Pause' : 'Resume'}
+                  </button>
+                  {o.status === 'active' && o.next_due_date <= today() && (
+                    <>
+                      <button
+                        className="secondary-button"
+                        disabled={busy}
+                        onClick={() =>
+                          save('/obligations/' + o.id + '/fulfill', 'POST', {
+                            action: 'fulfill',
+                            record_expense: true,
+                          })
+                        }
+                      >
+                        Record paid occurrence
+                      </button>
+                      <button
+                        className="quiet-button"
+                        disabled={busy}
+                        onClick={() =>
+                          save('/obligations/' + o.id + '/fulfill', 'POST', {
+                            action: 'skip',
+                            record_expense: false,
+                          })
+                        }
+                      >
+                        Skip occurrence
+                      </button>
+                    </>
+                  )}
+                  <button
+                    className="quiet-button"
+                    disabled={busy}
+                    onClick={() => save('/obligations/' + o.id, 'PATCH', { status: 'cancelled' })}
+                  >
+                    Cancel future plan
+                  </button>
+                </div>
+              )}
+            </article>
+          ))}
+          {!obligations.length && !busy && <p>No upcoming obligations.</p>}
+          <p>
+            Paid occurrences explicitly create a self-reported expense. Recurring plans advance from
+            their original calendar anchor, retaining every handled occurrence.
+          </p>
+        </section>
+      )}
+      {editing && (
+        <Overlay onClose={() => setEditing(null)}>
+          <section
+            className="service-detail"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="expense-correction"
+          >
+            <h2 id="expense-correction">Correct {editing.description}</h2>
+            {error && (
+              <p role="alert" className="alert error">
+                {error}
+              </p>
+            )}
+            <p>Corrections append a new version. Original records are retained.</p>
+            <form
+              className="account-stack-form"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const d = new FormData(e.currentTarget);
+                try {
+                  const r = await save(
+                    '/expenses',
+                    'POST',
+                    expenseCorrection(editing, {
+                      description: d.get('description'),
+                      amount_minor: parseMoney(String(d.get('amount')), editing.currency),
+                      category: d.get('category'),
+                    }),
+                  );
+                  if (r) setEditing(null);
+                } catch (e) {
+                  setError((e as Error).message);
+                }
+              }}
+            >
+              <Field label="Description">
+                <input name="description" required defaultValue={editing.description} />
+              </Field>
+              <Field label={'Amount · ' + editing.currency}>
+                <input
+                  name="amount"
+                  required
+                  inputMode="decimal"
+                  defaultValue={String(
+                    editing.amount_minor / (['UGX', 'RWF'].includes(editing.currency) ? 1 : 100),
+                  )}
+                />
+              </Field>
+              <Field label="Category">
+                <select name="category" defaultValue={editing.category}>
+                  {categories.map((c) => (
+                    <option key={c}>{c}</option>
+                  ))}
+                </select>
+              </Field>
+              <button className="button" disabled={busy}>
+                Save correction
+              </button>
+            </form>
+            <div className="finance-actions">
+              <button
+                className="secondary-button"
+                disabled={busy}
+                onClick={async () => {
+                  const r = await save(
+                    '/expenses',
+                    'POST',
+                    expenseCorrection(editing, { status: 'archived' }),
+                  );
+                  if (r) setEditing(null);
+                }}
+              >
+                Confirm archive
+              </button>
+              <button className="quiet-button" onClick={() => setEditing(null)}>
+                Keep record
+              </button>
+            </div>
+          </section>
+        </Overlay>
+      )}
+    </section>
+  );
 }
