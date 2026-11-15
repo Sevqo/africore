@@ -14,6 +14,7 @@ function workspace<P extends object>(load:()=>Promise<{default:ComponentType<P>}
 export const CommerceWorkspace=workspace<Parameters<typeof import('../commerce/CommerceWorkspace')['CommerceWorkspace']>[0]>(()=>import('../commerce/CommerceWorkspace').then(m=>({default:m.CommerceWorkspace})));
 export const CommerceMerchantWorkspace=workspace<Parameters<typeof import('../commerce/CommerceMerchantWorkspace')['CommerceMerchantWorkspace']>[0]>(()=>import('../commerce/CommerceMerchantWorkspace').then(m=>({default:m.CommerceMerchantWorkspace})));
 export const POSWorkspace=workspace<Parameters<typeof import('../pos/POSWorkspace')['POSWorkspace']>[0]>(()=>import('../pos/POSWorkspace').then(m=>({default:m.POSWorkspace})));
+export const POSAppWorkspace=workspace<Parameters<typeof import('../pos/POSAppWorkspace')['POSAppWorkspace']>[0]>(()=>import('../pos/POSAppWorkspace').then(m=>({default:m.POSAppWorkspace})));
 export const ProcurementWorkspace=workspace<Parameters<typeof import('./ProcurementWorkspace')['ProcurementWorkspace']>[0]>(()=>import('./ProcurementWorkspace').then(m=>({default:m.ProcurementWorkspace})));
 export const ProcurementAppWorkspace=workspace<Parameters<typeof import('./ProcurementAppWorkspace')['ProcurementAppWorkspace']>[0]>(()=>import('./ProcurementAppWorkspace').then(m=>({default:m.ProcurementAppWorkspace})));
 export const DocumentsWorkspace=workspace<Parameters<typeof import('./DocumentsWorkspace')['DocumentsWorkspace']>[0]>(()=>import('./DocumentsWorkspace').then(m=>({default:m.DocumentsWorkspace})));

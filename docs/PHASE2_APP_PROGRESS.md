@@ -1,6 +1,6 @@
 # Phase 2 — Applications Progress
 
-Current checkpoint: **2.7 Accounting app rebuild** — implemented and verified at build/test level.
+Current checkpoint: **2.8 POS app rebuild** — implemented and verified at build/test level.
 
 Source checkpoint: Phase 1 committed by the founder; this work is uncommitted by design.
 Hard limits observed: no commits, pushes, deployments, production data or provider changes.
@@ -13,10 +13,10 @@ Hard limits observed: no commits, pushes, deployments, production data or provid
 | 2.2 | Finance | Not started |
 | 2.3 | Sales | Implemented (Odoo-style document workspace); build/tests green; browser click-through not executed |
 | 2.4 | Inventory | Implemented (Odoo-style warehouse workspace); build/tests green; browser click-through not executed |
-| 2.5 | CRM | Not started |
+| 2.5 | CRM | Partial — pipeline increment recorded at the end of this file; browser acceptance not performed |
 | 2.6 | Procurement | Implemented (Odoo-style purchasing workspace); build/tests green; browser click-through not executed |
 | 2.7 | Accounting | Implemented (Odoo-style ledger workspace); build/tests green; browser click-through not executed |
-| 2.8 | POS | Not started |
+| 2.8 | POS | Implemented (Odoo-style register, cashier, payment, receipt, closing, orders, reporting and configuration); build/tests green; browser click-through not executed |
 | 2.9 | Work | Not started |
 | 2.10 | People | Not started |
 | 2.11 | Documents | Not started |
@@ -354,7 +354,145 @@ create a second invoice, bill, payment or ledger.
 ### Status
 
 Implemented and verified at engineering level. Manual browser, screenshot comparison, PostgreSQL and
-physical-device acceptance were **not executed**. Checkpoint 2.8 POS was not started.
+physical-device acceptance were **not executed**. Checkpoint 2.8 POS is recorded below.
+
+## Checkpoint 2.8 — POS app rebuild
+
+### What was wrong
+
+The installed POS app dispatched `app.id === 'pos'` to `<POSWorkspace embedded>`, the same register
+management component the independent POS service renders. The app had no operational overview, no
+register dashboard, no product grid, no cashier keypad, no dedicated payment screen and no Odoo-style
+orders/reporting/configuration composition. `appOwnedWorkspaces` also omitted POS, so sidebar sections
+such as Products could leave the installed app for a shared service tab.
+
+### Boundary preserved
+
+| Layer | Responsibility |
+| --- | --- |
+| POS service (`/pos/...`) | Registers, sessions, drawered cash, drafts, quotes, confirmation, receipts, handovers, cash/stock returns, daily report |
+| Canonical services | Products, Orders, Invoicing, Cash Flow, Customers, Inventory, Payments |
+| Installed POS app | Management workspace and cashier flow that coordinate the authoritative service APIs |
+
+No second transaction engine, stock authority, invoice ledger or payment processor was created.
+
+### Backend read-projection corrections
+
+- `src/pos/queries.ts` product listing now accepts `category` and returns the canonical category plus
+  the available category list. Product images and per-location balances remain unavailable.
+- Register sales now accept `q`, `from`, `to` and `state`, join the canonical customer and session, and
+  expose `customer_name`, `cashier_id`, `session_status`, `payment_status`, `paid_minor`,
+  `outstanding_minor` and `register_id`. Each invoice balance is read from the existing ledger.
+- No POS mutation contract, transaction state machine or authorization rule was changed.
+
+### Application composition
+
+`POSAppWorkspace` renders five management sections:
+
+1. **Dashboard** — readiness strip, register cards, real expected cash for open shifts, open/continue
+   selling, counted opening dialog, manage-registers path.
+2. **Orders** — register-scoped authoritative sales, state/date/search filters, true pagination, canonical
+   customer/cashier/payment/handover columns, resume draft or open receipt.
+3. **Products** — canonical product cards with category, price, unit and tracked flag; search and category
+   filter; explicit note that images and per-location stock are not supplied.
+4. **Reporting** — existing single-day register report enhanced with a top-product value chart.
+5. **Configuration** — dependency status, register list and editor, grouped cash/payment/discount/tax/
+   warehouse/location summary, and an explicit unsupported-capability list.
+
+The cashier is an internal full-screen flow: two-panel basket/catalogue, quantity and discount keypad,
+customer selector, authoritative quote review, separate payment screen, acknowledgement-gated
+confirmation, receipt, handover and return actions. Cashier/session/register are URL-backed so refresh
+and back/forward keep the current destination.
+
+### Service dependency audit
+
+| Dependency | Actual behavior |
+| --- | --- |
+| Products | Required; canonical product search, price, unit and tracking flag |
+| Orders | Required; confirmed sale creates the canonical channel order |
+| Invoicing | Required; confirmed sale creates one issued invoice linked to the order |
+| Cash Flow | Required; recorded cash is a merchant-observed drawer movement, not bank settlement |
+| Customers | Canonical walk-in/named customer is required by register/quote validation; the POS app reports this dependency and links to Customers, but the marketplace dependency list still omits it |
+| Inventory | Required for tracked products; warehouse/location must be configured and active; stock is checked on quote and dispatched through the canonical order flow |
+| Payments | Sandbox electronic intent only; a request is not confirmed collection |
+| Business policy | Sales discount ceiling is read authoritatively; the lower of register/policy ceiling applies |
+| Team/permissions | Managers configure and close; cashiers may only use assigned registers and their own sessions |
+
+### Form completeness
+
+| Action | Required fields and resolved dependencies |
+| --- | --- |
+| Create/revise register | Name, currency, timezone, tax, canonical customer, ≥1 payment intent, cashier/manager members, discount ceilings, acknowledgements; warehouse/location only when Inventory is active |
+| Open shift | Register version, opening cash, note, counted-cash acknowledgement |
+| Save draft | Open session, version, customer, ≥1 eligible product line, non-negative discount |
+| Review quote | Current session version; server validates products, tracked availability, discount ceiling, tax and totals |
+| Confirm sale | Exact quote hash, payment intent, tenders/acknowledgements, optional handover; backend rejects stale/duplicate requests |
+| Record cash / close | Manager authority, open session, exact version, counted cash, variance reason |
+| Cash return | Original cash receipt, manager, open original session, amount not exceeding remaining cash |
+| Stock return | Original dispatch, manager, Inventory/warehouse, remaining quantity |
+| Drawer adjustment | Manager, direction, amount, reason, physical-cash acknowledgement |
+
+Warehouse requests show their error and a Retry action; they are not converted into an empty list.
+Register submit validates at least one enabled intent and cashier ceiling ≤ manager ceiling before
+posting. Closing and receipt actions surface backend errors rather than generic success.
+
+### Files
+
+- New: `website/src/pos/pos-app-model.ts`, `POSAppWorkspace.tsx`, `POSAppDashboard.tsx`,
+  `POSAppOrders.tsx`, `POSAppProducts.tsx`, `POSAppReporting.tsx`, `POSAppConfiguration.tsx`,
+  `POSCashier.tsx`, `pos-app.css`, `website/tests/pos-app.test.mjs`.
+- Modified: `src/pos/queries.ts`, `src/apps/catalog.ts`, `website/src/apps/AppsWorkspace.tsx`,
+  `website/src/apps/lazy-workspaces.tsx`, `website/src/workspace-navigation.ts`,
+  `website/src/pos/POSCounter.tsx`, `POSDailyReport.tsx`, `POSRegisterEditor.tsx`, `pos.css`.
+- The independent service keeps `POSWorkspace`; its counter now delegates to the shared `POSCashier`.
+
+### Verification
+
+| Check | Result |
+| --- | --- |
+| `website: npm run typecheck` | Pass |
+| `node --test tests/pos-app.test.mjs` | 6/6 pass |
+| POS + Accounting + Procurement + Inventory + Sales + Commerce + navigation + application-quality + app-intent | 52/52 pass |
+| Root `npm run lint` | Pass (197 frontend modules, no static import cycles) |
+| `npm run clean:test && npm run build` | Pass |
+| Backend `pos-registers`, `pos-settlement` suites | 21/21 pass |
+| `website: npm run build` | See the checkpoint verification row below |
+
+### Limitations and unsupported capability
+
+- No live card terminal, M-Pesa or Daraja collection. `daraja_sandbox` remains rejected by the backend
+  until separately qualified; sandbox electronic requests are not confirmed money.
+- No offline queue, automatic drawer, customer display, scales, restaurant tables or live printer driver.
+- Browser printing uses the system print dialog. No hardware printer integration is claimed.
+- Reporting is a single register-local day; multi-day ranges, cashier comparison and provider settlement
+  totals are not supplied by the authoritative report.
+- Orders and products are register-scoped and paginated; no all-register aggregate is presented as a
+  business total.
+- Product images and per-location stock are not exposed by the POS read projection.
+- The POS service dependency list omits Customers even though register/quote validation requires a
+  canonical customer; the app reports and explains the dependency instead of auto-provisioning it.
+- Browser click-through and screenshot comparison against the nine Odoo references were not executed.
+
+### Founder manual checklist
+
+1. Install POS; open the dashboard and compare register cards with Image 1.
+2. Create a register using a real canonical customer, cashier/manager, cash and sandbox electronic;
+   configure Inventory/warehouse only when tracked products are used.
+3. Open a counted shift; compare the dialog with Image 2.
+4. Add products, adjust quantity with the keypad, apply a permitted discount and review totals.
+5. Compare the cashier layout with Image 3; confirm basket left, catalogue right and keypad behavior.
+6. Open Payment; compare with Image 4; test cash, split, pending and sandbox electronic states.
+7. Confirm a sale; compare receipt with Image 5; print and start a new order.
+8. Search the sale in Orders; reopen receipt, invoice/order links and returns.
+9. Close the shift; compare with Image 6; verify variance reason and that new sales are rejected.
+10. Compare Orders with Image 7, Reporting with Image 8 and Configuration with Image 9.
+11. Refresh the cashier URL and confirm the open session/destination persists.
+12. Test an unauthorized cashier, an inactive required service, missing warehouse and stale version.
+
+### Status
+
+Implemented and automatically verified. Manual browser, screenshot comparison, PostgreSQL and
+physical-device acceptance were **not executed**. The next application has not been started.
 
 ## Verification
 
@@ -382,6 +520,18 @@ physical-device acceptance were **not executed**. Checkpoint 2.8 POS was not sta
 | Procurement: Root `npm run lint` | Pass (187 frontend modules, no static import cycles) |
 | Procurement: Root `npm run build` | Pass |
 | Procurement: backend `procurement`, `app-installations` suites | 17/17 pass |
+| Accounting: `website: npm run typecheck` | Pass |
+| Accounting: `node --test tests/accounting-app.test.mjs` | 7/7 pass |
+| Accounting: `website: npm run build` (prerender 82 pages, content tests) | 107/107 pass |
+| Accounting: Root `npm run lint` | Pass (189 frontend modules, no static import cycles) |
+| Accounting: backend full regression | 446 tests, 445 pass, 0 fail, 1 skipped |
+| Accounting: `validate:openapi` / `validate:platform` | 59/59 operations / 430 workspace operations |
+| POS: `website: npm run typecheck` | Pass |
+| POS: `node --test tests/pos-app.test.mjs` | 6/6 pass |
+| POS + Accounting + Procurement + Inventory + Sales + Commerce + navigation + application-quality + app-intent | 52/52 pass |
+| POS: Root `npm run lint` | Pass (197 frontend modules, no static import cycles) |
+| POS: backend `pos-registers`, `pos-settlement` | 21/21 pass |
+| POS: `website: npm run build` (Vite 509 modules, prerender 82 pages, content tests) | 113/113 pass |
 
 Browser click-through: **not executed**. No authenticated local workspace/browser control is
 available to this session; demo mode has no `/apps` transport, so it cannot install the app.
@@ -398,7 +548,7 @@ Do not present screenshots or live-flow evidence as completed.
 | CRM | customers, crm | `CrmWorkspace` | Medium: pipeline exists; Customers duplicates service | Pipeline-first composition, shared customer detail |
 | Procurement | customers, products, procurement (+ inventory, accounting, documents) | Dedicated Odoo-style purchasing workspace (new) | Service register remains independent; vendor pricing/agreements unsupported by backend | Verify RFQ → approval → order → receipt → bill flow with an installed app |
 | Accounting | accounting | Dedicated Odoo-style ledger workspace (new) | Service journals screen remains independent; no second ledger | Verify forms and reports in an installed browser session |
-| POS | products, orders, invoicing, cash_flow, pos | `POSWorkspace` | High: the counter is the app | Keep counter; add shift/cash overview distinct from register |
+| POS | products, orders, invoicing, cash_flow, pos (+ customers, inventory, payments) | Dedicated Odoo-style POS workspace (new): dashboard, orders, products, reporting, configuration, cashier/payment/receipt | Service register remains independent; cashier flow is shared | Verify register setup, counted shift, sale, receipt, return, close and nine-screen fidelity in an installed browser session |
 | Work | work | `WorkWorkspace` | High | Portfolio/board composition distinct from project service |
 | People | people | `PeopleWorkspace` | High | HR overview; preserve private access rules |
 | Documents | documents | `DocumentsWorkspace` | High | File manager is legitimate app workspace; distinguish service access |
@@ -417,8 +567,9 @@ Do not present screenshots or live-flow evidence as completed.
 
 ## Next step
 
-Checkpoint 2.7 is complete pending founder acceptance. The remaining apps continue in separate
-checkpoints; the next suggested app is POS. Do not start it without authorization.
+Checkpoint 2.8 POS is complete pending founder acceptance. The remaining apps continue in separate
+checkpoints; no next application is authorized in this checkpoint. Do not start Work, People, Documents,
+Analytics, Automations or Business ID without founder approval.
 
 ## Checkpoint 2.5 — CRM implementation in progress (14 November 2026)
 
