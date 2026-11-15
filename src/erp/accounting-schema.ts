@@ -14,10 +14,15 @@ export const accountingStatements=[
  'CREATE INDEX IF NOT EXISTS ac_accounting_line_scope ON ac_accounting_lines(org_id,environment,account_id,entry_id)',
  'CREATE INDEX IF NOT EXISTS ac_accounting_period_scope ON ac_accounting_periods(org_id,environment,starts_on,ends_on)',
 ];
+async function ensureJournalVersion(database:{isPostgres:boolean;dbAll:(sql:string)=>Promise<Array<{name:string}>>;dbExec:(sql:string)=>Promise<void>}){
+ if(database.isPostgres){await database.dbExec('ALTER TABLE ac_accounting_journals ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1');return;}
+ const columns=await database.dbAll('PRAGMA table_info(ac_accounting_journals)');
+ if(!columns.some(column=>column.name==='version'))await database.dbExec('ALTER TABLE ac_accounting_journals ADD COLUMN version INTEGER NOT NULL DEFAULT 1');
+}
 export async function migrateAccounting(database={dbAll,dbGet,dbExec,dbRun,dbTransaction,isPostgres}){await database.dbTransaction(async()=>{
- try{await database.dbExec('ALTER TABLE ac_accounting_journals ADD COLUMN version INTEGER NOT NULL DEFAULT 1');}catch{}
- if(await database.dbGet('SELECT version FROM platform_migrations WHERE version=?',['013-accounting-ledger']))return;
+ if(await database.dbGet('SELECT version FROM platform_migrations WHERE version=?',['013-accounting-ledger'])){await ensureJournalVersion(database);return;}
  for(const sql of accountingStatements)await database.dbExec(sql);
+ await ensureJournalVersion(database);
  if(database.isPostgres){for(const table of accountingTables){await database.dbExec('ALTER TABLE '+table+' ENABLE ROW LEVEL SECURITY');await database.dbExec('REVOKE ALL ON '+table+' FROM PUBLIC');}
   await database.dbExec("CREATE OR REPLACE FUNCTION ac_accounting_protect_posted() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF TG_TABLE_NAME='ac_accounting_entries' THEN IF OLD.status='posted' THEN RAISE EXCEPTION 'Posted accounting entries are immutable'; END IF; IF TG_OP='UPDATE' AND NEW.status='posted' AND NOT EXISTS(SELECT 1 FROM ac_accounting_lines WHERE entry_id=NEW.id GROUP BY entry_id HAVING SUM(debit_minor)=SUM(credit_minor) AND SUM(debit_minor)>0) THEN RAISE EXCEPTION 'Posted entries must balance'; END IF; ELSE IF EXISTS(SELECT 1 FROM ac_accounting_entries WHERE id=OLD.entry_id AND status='posted') THEN RAISE EXCEPTION 'Posted accounting lines are immutable'; END IF; IF TG_OP='UPDATE' AND EXISTS(SELECT 1 FROM ac_accounting_entries WHERE id=NEW.entry_id AND status='posted') THEN RAISE EXCEPTION 'Cannot add lines to a posted entry'; END IF; END IF; IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW; END $$");
   await database.dbExec("CREATE OR REPLACE FUNCTION ac_accounting_guard_insert() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF TG_TABLE_NAME='ac_accounting_entries' THEN IF NEW.status='posted' THEN RAISE EXCEPTION 'Create a draft before posting'; END IF; ELSE IF EXISTS(SELECT 1 FROM ac_accounting_entries WHERE id=NEW.entry_id AND status='posted') THEN RAISE EXCEPTION 'Cannot add lines to a posted entry'; END IF; END IF; RETURN NEW; END $$");
