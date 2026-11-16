@@ -11,75 +11,135 @@ export function WorkDateViews({
   view: string;
   onOpen: (task: any) => void;
 }) {
-  const [month, setMonth] = useState(today().slice(0, 7));
+  const [month, setMonth] = useState(today().slice(0, 7)),
+    [scale, setScale] = useState('month'),
+    [anchor, setAnchor] = useState(today());
   const timestamp = (value: string) => Date.parse(value + 'T00:00:00Z');
   const dated = tasks.filter((t) => t.data.starts_on || t.due_on),
     undated = tasks.filter((t) => !t.data.starts_on && !t.due_on);
   if (view === 'timeline') {
-    const dates = dated.flatMap((t) => [t.data.starts_on, t.due_on].filter(Boolean)).map(timestamp),
-      first = dates.length ? Math.min(...dates) : 0,
-      last = dates.length ? Math.max(...dates) : 0,
-      span = Math.max(86400000, last - first);
+    const [year, number] = anchor.split('-').map(Number),
+      date = new Date(anchor + 'T00:00:00Z'),
+      count =
+        scale === 'month'
+          ? new Date(Date.UTC(year, number, 0)).getUTCDate()
+          : scale === 'week'
+            ? 7
+            : 1;
+    if (scale === 'month') date.setUTCDate(1);
+    else if (scale === 'week') date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7));
+    const first = date.getTime(),
+      last = first + (count - 1) * 86400000;
+    const change = (delta: number) => {
+      const next = new Date(anchor + 'T00:00:00Z');
+      if (scale === 'month') {
+        next.setUTCDate(1);
+        next.setUTCMonth(next.getUTCMonth() + delta);
+      } else next.setUTCDate(next.getUTCDate() + delta * (scale === 'week' ? 7 : 1));
+      setAnchor(next.toISOString().slice(0, 10));
+    };
     return (
-      <section className="panel">
-        <h3>Project timeline</h3>
+      <section className="panel work-gantt">
+        <div className="form-actions">
+          <button className="secondary-button" onClick={() => change(-1)}>
+            Previous
+          </button>
+          <Field label="Timeline scale">
+            <select value={scale} onChange={(e) => setScale(e.target.value)}>
+              <option value="day">Day</option>
+              <option value="week">Week</option>
+              <option value="month">Month</option>
+            </select>
+          </Field>
+          <Field label="Planning date">
+            <input
+              type="date"
+              value={anchor}
+              onChange={(e) => {
+                if (/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)) setAnchor(e.target.value);
+              }}
+            />
+          </Field>
+          <button className="secondary-button" onClick={() => setAnchor(today())}>
+            Today
+          </button>
+          <button className="secondary-button" onClick={() => change(1)}>
+            Next
+          </button>
+        </div>
         <p>
-          Recorded start and due dates. A single date is a milestone point; a span is a plan, not
-          recorded attendance or progress.
+          Recorded task dates. Bars show planned date spans; estimates are not actual time worked.
         </p>
-        {dates.length > 0 && (
-          <p>
-            {new Date(first).toISOString().slice(0, 10)} to{' '}
-            {new Date(last).toISOString().slice(0, 10)}
-          </p>
-        )}
-        <div className="work-timeline">
+        <div className="work-gantt-scroll">
+          <div
+            className="work-gantt-axis"
+            style={{ gridTemplateColumns: '220px repeat(' + count + ',42px)' }}
+          >
+            <strong>Planning</strong>
+            {Array.from({ length: count }, (_, i) => (
+              <span key={i}>
+                {new Date(first + i * 86400000).toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </span>
+            ))}
+          </div>
           {dated.map((t) => {
             const start = timestamp(t.data.starts_on || t.due_on),
               end = timestamp(t.due_on || t.data.starts_on);
+            if (end < first || start > last) return null;
+            const left = Math.max(0, Math.floor((start - first) / 86400000)),
+              width = Math.max(
+                1,
+                Math.floor((Math.min(last, end) - Math.max(first, start)) / 86400000) + 1,
+              );
             return (
-              <article key={t.id}>
+              <div
+                className="work-gantt-row"
+                key={t.id}
+                style={{ gridTemplateColumns: '220px repeat(' + count + ',42px)' }}
+              >
                 <button className="quiet-button" onClick={() => onOpen(t)}>
                   {t.data.title}
                 </button>
-                <div
-                  className="work-timeline-track"
-                  aria-label={
-                    t.data.title +
-                    ': ' +
-                    (t.data.starts_on || 'No start date') +
-                    ' to ' +
-                    (t.due_on || 'No due date')
-                  }
+                <button
+                  className="work-gantt-bar"
+                  style={{ gridColumn: left + 2 + ' / span ' + width }}
+                  title={(t.data.starts_on || t.due_on) + ' to ' + (t.due_on || t.data.starts_on)}
+                  onClick={() => onOpen(t)}
                 >
-                  <span
-                    style={{
-                      marginLeft: ((start - first) / span) * 100 + '%',
-                      width: Math.max(0, ((end - start) / span) * 100) + '%',
-                    }}
-                  />
-                </div>
-                <small>
-                  {t.data.starts_on ? 'Start ' + t.data.starts_on : 'Due only'} ·{' '}
-                  {t.due_on ? 'Due ' + t.due_on : 'Start only'} · {t.status}
-                </small>
-              </article>
+                  {t.data.title}
+                </button>
+              </div>
             );
           })}
-        </div>
-        {!dated.length && <p>No recorded task dates yet.</p>}
-        {undated.length > 0 && (
-          <>
-            <h4>Unscheduled tasks</h4>
-            {undated.map((t) => (
-              <p key={t.id}>
-                <button className="quiet-button" onClick={() => onOpen(t)}>
-                  {t.data.title}
-                </button>
-              </p>
+          {milestones
+            .filter((m) => m.due_on && timestamp(m.due_on) >= first && timestamp(m.due_on) <= last)
+            .map((m) => (
+              <div
+                key={m.id}
+                className="work-gantt-row work-gantt-milestone"
+                style={{ gridTemplateColumns: '220px repeat(' + count + ',42px)' }}
+              >
+                <strong>{m.name}</strong>
+                <span
+                  style={{ gridColumn: Math.floor((timestamp(m.due_on) - first) / 86400000) + 2 }}
+                  title={m.due_on + ' · ' + (m.completed ? 'Completed' : 'Planned')}
+                >
+                  ◆
+                </span>
+              </div>
             ))}
-          </>
-        )}
+        </div>
+        <h4>Unscheduled tasks</h4>
+        {undated.map((t) => (
+          <p key={t.id}>
+            <button className="quiet-button" onClick={() => onOpen(t)}>
+              {t.data.title}
+            </button>
+          </p>
+        ))}
       </section>
     );
   }

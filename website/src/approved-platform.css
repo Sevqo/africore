@@ -6343,3 +6343,456 @@ html:has([data-platform-density]) {
     border-radius: 0;
   }
 }
+/* Work operational layouts follow the supplied Project references. */
+.business-shell[data-platform-density] .work-app .project-directory {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.business-shell[data-platform-density] .work-app .project-directory-card {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  text-align: left;
+  min-height: 220px;
+  border: 1px solid var(--line);
+  border-left: 3px solid #8dbb79;
+  border-radius: 2px;
+  background: white;
+  padding: 18px;
+  gap: 10px;
+}
+.business-shell[data-platform-density] .work-app .project-directory-icon {
+  display: none;
+}
+.business-shell[data-platform-density]
+  .work-app
+  .project-directory-card
+  strong {
+  font-size: 19px;
+}
+.business-shell[data-platform-density] .work-app .project-directory-card small {
+  margin-top: auto;
+}
+.business-shell[data-platform-density] .work-task-sheet {
+  padding: 24px;
+  border-radius: 2px;
+}
+.business-shell[data-platform-density] .work-task-sheet h2 {
+  font-size: 28px;
+}
+.business-shell[data-platform-density] .work-stage-progress {
+  display: flex;
+  gap: 2px;
+  overflow: auto;
+  margin: 12px 0;
+}
+.business-shell[data-platform-density] .work-stage-progress span {
+  padding: 8px 16px;
+  background: #edf1ed;
+  white-space: nowrap;
+}
+.business-shell[data-platform-density]
+  .work-stage-progress
+  [aria-current="step"] {
+  background: #dcecdc;
+  color: #235d35;
+  font-weight: 700;
+}
+.business-shell[data-platform-density] .work-app .work-board {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(270px, 1fr);
+  grid-template-columns: none;
+  overflow-x: auto;
+  align-items: start;
+}
+.business-shell[data-platform-density] .work-app .work-task {
+  border-radius: 2px;
+  box-shadow: none;
+  border: 1px solid var(--line);
+}
+@media (max-width: 767px) {
+  .business-shell[data-platform-density] .work-app .project-directory {
+    grid-template-columns: 1fr;
+  }
+  .business-shell[data-platform-density] .work-app .work-board {
+    grid-auto-columns: minmax(260px, 80vw);
+  }
+}
+.business-shell[data-platform-density] .work-module-nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+}
+.business-shell[data-platform-density] .work-module-nav button {
+  border: 0;
+  background: transparent;
+  padding: 8px 12px;
+}
+.business-shell[data-platform-density] .work-task-sheet dl {
+  display: grid;
+  grid-template-columns: minmax(110px, 180px) 1fr;
+  gap: 12px;
+  margin: 24px 0;
+}
+.business-shell[data-platform-density] .work-task-sheet dd {
+  margin: 0;
+}
+.business-shell[data-platform-density] .work-stage {
+  background: #f7f8f7;
+  border: 0;
+  border-radius: 0;
+  padding: 8px;
+}
+.business-shell[data-platform-density] .work-stage > h3 {
+  border-bottom: 3px solid #d7ded7;
+  padding-bottom: 12px;
+}
+.business-shell[data-platform-density] .work-dependency-dialog {
+  width: min(1100px, 96vw);
+  max-height: 88vh;
+  overflow: auto;
+}
+.business-shell[data-platform-density] .work-gantt-scroll {
+  overflow: auto;
+  max-width: 100%;
+}
+.business-shell[data-platform-density] .work-gantt-axis,
+.business-shell[data-platform-density] .work-gantt-row {
+  display: grid;
+  min-width: max-content;
+  min-height: 44px;
+  border-bottom: 1px solid var(--line);
+  align-items: center;
+}
+.business-shell[data-platform-density] .work-gantt-axis > span {
+  border-left: 1px solid var(--line);
+  padding: 10px;
+  text-align: center;
+}
+.business-shell[data-platform-density] .work-gantt-row {
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 41px,
+    #e9ede9 42px
+  );
+}
+.business-shell[data-platform-density] .work-gantt-row > button:first-child {
+  grid-column: 1;
+  position: sticky;
+  left: 0;
+  background: white;
+  text-align: left;
+  z-index: 1;
+}
+.business-shell[data-platform-density] .work-gantt-bar {
+  grid-row: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background: #c7ddc9;
+  border: 1px solid #91b698;
+  border-radius: 3px;
+  padding: 6px;
+}
+.business-shell[data-platform-density] .work-detail-tabs {
+  display: flex;
+  gap: 0;
+  overflow: auto;
+  border-bottom: 1px solid var(--line);
+  margin: 24px 0 14px;
+}
+.business-shell[data-platform-density] .work-detail-tabs button {
+  border-radius: 0;
+  white-space: nowrap;
+}
+.business-shell[data-platform-density] .work-detail-tabs [aria-pressed="true"] {
+  border-top: 3px solid var(--accent-text);
+  background: white;
+}
+.business-shell[data-platform-density] .work-summary-strip {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--line);
+  padding: 8px 0;
+}
+.business-shell[data-platform-density] .work-summary-strip article {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+}
+.business-shell[data-platform-density] .work-app .work-stage > h3 {
+  background: transparent;
+  border-radius: 0;
+  margin: 0 0 12px;
+  padding: 8px 0;
+  border-bottom: 4px solid #d7ded7;
+}
+.business-shell[data-platform-density] .work-app .work-board .work-task {
+  border-radius: 2px;
+  box-shadow: none;
+  margin: 0 0 2px;
+  padding: 14px;
+}
+.business-shell[data-platform-density] .work-toolbar {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.business-shell[data-platform-density] .work-toolbar > .field {
+  flex: 1;
+  min-width: 150px;
+}
+.business-shell[data-platform-density] .work-management {
+  font-size: 12px;
+}
+.business-shell[data-platform-density] .work-task-sheet h2 {
+  font-size: 30px;
+  font-weight: 500;
+}
+.business-shell[data-platform-density] .work-toolbar > .button {
+  order: -1;
+  flex: none;
+}
+.business-shell[data-platform-density] .work-project-information {
+  font-size: 12px;
+  margin-top: 8px;
+}
+.business-shell[data-platform-density] .work-stage > h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.business-shell[data-platform-density] .work-stage > h3 > button {
+  margin-left: auto;
+}
+.business-shell[data-platform-density] .work-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.business-shell[data-platform-density] .work-tags .badge {
+  background: #e9e1f5;
+  font-size: 11px;
+}
+.business-shell[data-platform-density] .work-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+.business-shell[data-platform-density] .work-card-footer > span:first-child {
+  color: #b58b12;
+  font-size: 20px;
+}
+.business-shell[data-platform-density] .work-avatar {
+  background: #e4eee3;
+  color: #33623b;
+  border-radius: 4px;
+  padding: 4px;
+  font-size: 11px;
+}
+.business-shell[data-platform-density] .work-app .work-stage {
+  background: #f7f8f9;
+}
+.business-shell[data-platform-density] .work-edit-document .work-editor {
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  overflow: visible;
+  border-radius: 2px;
+}
+.business-shell[data-platform-density] .work-edit-document .work-editor > h2 {
+  font-size: 28px;
+  font-weight: 500;
+}
+.business-shell[data-platform-density] .work-task-sheet .work-task-facts {
+  grid-template-columns: 130px minmax(130px, 1fr) 130px minmax(130px, 1fr);
+  align-items: start;
+}
+.business-shell[data-platform-density] .work-task-document .work-task-sheet {
+  min-height: 500px;
+}
+.business-shell[data-platform-density] .work-stage-progress {
+  justify-content: flex-end;
+}
+@media (max-width: 767px) {
+  .business-shell[data-platform-density] .work-task-sheet .work-task-facts {
+    grid-template-columns: 110px 1fr;
+  }
+}
+.business-shell[data-platform-density] .work-report-bars {
+  display: grid;
+  gap: 18px;
+  padding: 24px 0;
+}
+.business-shell[data-platform-density] .work-report-bars > div {
+  display: grid;
+  grid-template-columns: minmax(90px, 180px) minmax(80px, 1fr) 60px;
+  gap: 12px;
+  align-items: center;
+}
+.business-shell[data-platform-density] .work-report-bars > div > div {
+  height: 32px;
+  background: #f0f3f0;
+}
+.business-shell[data-platform-density] .work-report-bars i {
+  display: block;
+  height: 100%;
+  background: #58a67a;
+}
+.business-shell[data-platform-density] .work-edit-document .work-editor form {
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+}
+.business-shell[data-platform-density]
+  .work-edit-document
+  .work-editor
+  .form-fieldset {
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.business-shell[data-platform-density]
+  .work-edit-document
+  .work-editor
+  .form-fieldset
+  > .form-grid,
+.business-shell[data-platform-density]
+  .work-edit-document
+  .work-editor
+  .form-fieldset
+  > fieldset,
+.business-shell[data-platform-density]
+  .work-edit-document
+  .work-editor
+  .form-fieldset
+  > details {
+  grid-column: 1/-1;
+}
+.business-shell[data-platform-density] .work-dependency-dialog {
+  min-height: min(70vh, 700px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 3px;
+}
+.business-shell[data-platform-density] .work-dependency-dialog > .form-actions {
+  margin-top: auto;
+  justify-content: flex-start;
+  padding-top: 20px;
+}
+@media (max-width: 767px) {
+  .business-shell[data-platform-density]
+    .work-edit-document
+    .work-editor
+    .form-fieldset {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.work-project-card-wrap {
+  min-width: 0;
+}
+.work-project-card-wrap > .project-directory-card {
+  width: 100%;
+  height: 100%;
+  text-align: left;
+}
+.work-card-members {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+.work-table-group th {
+  background: var(--surface-soft, #f4f6f5);
+  text-align: left;
+}
+
+.work-app {
+  font-size: 14px;
+}
+.work-app .data-table th,
+.work-app .data-table td {
+  font-size: 13px;
+}
+.work-report-chart {
+  overflow-x: auto;
+}
+.work-report-chart svg {
+  display: block;
+  width: 100%;
+  min-width: 650px;
+  min-height: 360px;
+}
+.work-task-sheet #work-task-detail-title {
+  font-size: 36px;
+}
+
+.work-gantt-milestone > span {
+  color: #168d86;
+  text-align: center;
+  border-left: 2px solid #168d86;
+}
+.work-gantt-milestone > strong {
+  padding: 12px;
+  font-size: 13px;
+}
+
+.work-dependency-dialog tr[aria-selected="true"] td {
+  background: #dceee7;
+}
+.work-dependency-dialog td {
+  font-size: 14px;
+  padding: 16px 12px;
+}
+
+.business-shell[data-platform-density]
+  .apps-workspace[data-app-id="work"]
+  > .app-identity {
+  padding: 0;
+  margin-bottom: 8px;
+  gap: 10px;
+}
+.business-shell[data-platform-density]
+  .apps-workspace[data-app-id="work"]
+  > .app-identity
+  .app-mark {
+  width: 40px;
+  height: 40px;
+}
+.business-shell[data-platform-density]
+  .apps-workspace[data-app-id="work"]
+  > .app-identity
+  p {
+  margin: 2px 0;
+}
+.business-shell[data-platform-density]
+  .apps-workspace[data-app-id="work"]
+  > .environment-note {
+  padding: 4px 8px;
+  margin: 4px 0;
+}
+.business-shell[data-platform-density]
+  .apps-workspace[data-app-id="work"]
+  > .app-service-details {
+  padding: 6px 12px;
+  margin: 4px 0;
+}
+.business-shell[data-platform-density]
+  .apps-workspace[data-app-id="work"]
+  > .app-service-details
+  > summary {
+  padding: 4px 0;
+}
+.work-app .form-actions {
+  justify-content: flex-start;
+}
+.work-app .work-task-sheet > .form-actions {
+  justify-content: flex-start;
+}

@@ -5,17 +5,31 @@ import { type Access, fail } from '../platform/auth';
 import { permitted } from '../platform/domain';
 import { now } from '../platform/crypto';
 import { insert, read, update, decode, operation } from './store';
-import { documentsContext } from './documents-access';
+import { documentAccess, documentsContext } from './documents-access';
 import { documentSourceAccess } from './document-links';
 import { documentSource, documentFile } from './documents-contracts';
 import { createDocument } from './documents';
+import { documentDetails } from './documents-access';
 import { requestDocumentReview } from './document-reviews';
+const documentRequestAssigneesInput = z
+  .object({
+    source_kind: documentSource.shape.source_kind.optional(),
+    source_id: z.string().uuid().optional(),
+    folder_id: z.string().uuid().optional(),
+    q: z.string().trim().max(100).default(''),
+    offset: z.coerce.number().int().min(0).max(1000000).default(0),
+  })
+  .strict()
+  .refine((value) => !!value.source_kind === !!value.source_id, {
+    message: 'Choose both a related record type and record.',
+  });
 export const documentRequestInput = z
   .object({
     title: z.string().trim().min(1).max(160),
     note: z.string().max(3000).default(''),
     assignee: z.string().uuid(),
     expires_at: z.string().datetime(),
+    folder_id: z.string().uuid().nullable().default(null),
     source: documentSource.optional(),
   })
   .strict();
@@ -59,6 +73,18 @@ async function recipient(a: Access, user: string, source?: z.infer<typeof docume
     );
   return { ...a, actor: user, role: member.role };
 }
+async function checkRequestFolder(
+  a: Access,
+  folderId: string | null,
+  source?: z.infer<typeof documentSource>,
+) {
+  if (!folderId) return;
+  const folder = await documentAccess(a, folderId, 'edit');
+  if (folder.row.doc_kind !== 'folder') fail(400, 'Choose a destination folder');
+  const expectedEmployee = source?.source_kind === 'employee' ? source.source_id : null;
+  if ((folder.row.employee_id || null) !== expectedEmployee)
+    fail(400, 'The destination folder must match the request’s personnel classification');
+}
 export async function createDocumentRequest(a: Access, input: unknown, key: string) {
   const d = documentRequestInput.parse(input);
   return operation(
@@ -69,7 +95,9 @@ export async function createDocumentRequest(a: Access, input: unknown, key: stri
     async () => {
       await documentsContext(a, true);
       if (d.source) await documentSourceAccess(a, d.source.source_kind, d.source.source_id);
-      await recipient(a, d.assignee, d.source);
+      await checkRequestFolder(a, d.folder_id, d.source);
+      const submitter = await recipient(a, d.assignee, d.source);
+      await checkRequestFolder(submitter, d.folder_id, d.source);
     },
     async () => {
       if (d.assignee === a.actor)
@@ -99,6 +127,49 @@ export async function createDocumentRequest(a: Access, input: unknown, key: stri
     { authorizeReplay: (record) => requestAccess(a, record.id) },
   );
 }
+/** Return only current, non-self submitters who can access the selected source and folder. */
+export async function documentRequestAssignees(a: Access, input: unknown = {}) {
+  const context = await documentsContext(a, true),
+    q = documentRequestAssigneesInput.parse(input),
+    source =
+      q.source_kind && q.source_id
+        ? { source_kind: q.source_kind, source_id: q.source_id }
+        : undefined,
+    rows = await dbAll(
+      "SELECT m.user_id AS id,m.role,u.email,p.display_name FROM ac_memberships m JOIN ac_users u ON u.id=m.user_id LEFT JOIN ac_profiles p ON p.user_id=u.id WHERE m.org_id=? AND m.user_id<>? AND m.role IN ('owner','admin','finance','operations') ORDER BY COALESCE(p.display_name,u.email),m.user_id LIMIT 5001",
+      [a.org, a.actor],
+    ),
+    needle = q.q.normalize('NFKC').toLocaleLowerCase(),
+    eligible: any[] = [];
+  for (const row of rows.slice(0, 5000)) {
+    const candidate = { ...a, actor: row.id, role: row.role };
+    try {
+      if (source) await documentSourceAccess(candidate, source.source_kind, source.source_id);
+      if (q.folder_id) await checkRequestFolder(candidate, q.folder_id, source);
+    } catch (error) {
+      if ([400, 402, 403, 404, 409].includes((error as any).status)) continue;
+      throw error;
+    }
+    const label = String(row.display_name || row.email || 'Workspace member');
+    if (!needle || (label + ' ' + row.email).normalize('NFKC').toLocaleLowerCase().includes(needle))
+      eligible.push({
+        id: row.id,
+        role: row.role,
+        display_name: row.display_name,
+        email: row.email,
+      });
+  }
+  return {
+    data: eligible.slice(q.offset, q.offset + 50),
+    offset: q.offset,
+    limit: 50,
+    has_more: eligible.length > q.offset + 50,
+    truncated: rows.length > 5000,
+    can_submit: context.write,
+    notice:
+      'Only other current operational members who pass the selected source and folder authorization checks are listed. The server validates them again when the request is saved.',
+  };
+}
 export async function documentRequests(a: Access, input: unknown = {}) {
   const context = await documentsContext(a);
   const q = z
@@ -115,8 +186,17 @@ export async function documentRequests(a: Access, input: unknown = {}) {
     try {
       if (value.data.source)
         await documentSourceAccess(a, value.data.source.source_kind, value.data.source.source_id);
+      let folder_name: string | null = null;
+      if (value.data.folder_id) {
+        try {
+          folder_name = (await documentDetails(a, value.data.folder_id)).data.name;
+        } catch {
+          folder_name = null;
+        }
+      }
       visible.push({
         ...value,
+        folder_name,
         effective_status:
           value.status === 'requested' && value.data.expires_at <= now() ? 'expired' : value.status,
       });
@@ -165,6 +245,12 @@ export async function submitRequestedDocument(a: Access, id: string, input: unkn
           request.data.source.source_kind,
           request.data.source.source_id,
         );
+      await checkRequestFolder(a, request.data.folder_id || null, request.data.source);
+      await checkRequestFolder(
+        { ...a, actor: request.owner_id, role: reviewer.role },
+        request.data.folder_id || null,
+        request.data.source,
+      );
       const document = await createDocument(
         a,
         {
@@ -175,6 +261,8 @@ export async function submitRequestedDocument(a: Access, id: string, input: unkn
               request.data.source?.source_kind === 'employee'
                 ? request.data.source.source_id
                 : null,
+            folder_id: request.data.folder_id || null,
+            inherit_folder: false,
             grants: [
               {
                 user_id: request.owner_id,

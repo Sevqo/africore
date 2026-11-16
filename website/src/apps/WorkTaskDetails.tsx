@@ -1,6 +1,5 @@
 import { DocumentAttachments } from './DocumentAttachments';
 import { useState } from 'react';
-import { Overlay } from '../components/Overlay';
 import type { API } from '../operations/UI';
 export function WorkTaskDetails({
   task: t,
@@ -11,6 +10,7 @@ export function WorkTaskDetails({
   writable,
   onOpen,
   onEdit,
+  onSubtask,
   onDiscuss,
   onClose,
 }: {
@@ -22,9 +22,11 @@ export function WorkTaskDetails({
   writable: boolean;
   onOpen: (task: any) => void;
   onEdit: () => void;
+  onSubtask: () => void;
   onDiscuss: () => void;
   onClose: () => void;
 }) {
+  const [tab, setTab] = useState('description');
   const [history, setHistory] = useState<any[]>([]),
     [offset, setOffset] = useState(0),
     [more, setMore] = useState(false),
@@ -45,19 +47,37 @@ export function WorkTaskDetails({
     }
   }
   return (
-    <Overlay onClose={onClose}>
-      <section
-        className="panel work-editor"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="work-task-detail-title"
-      >
+    <div className="work-task-document">
+      <section className="panel work-task-sheet" aria-labelledby="work-task-detail-title">
+        <button className="quiet-button" onClick={onClose}>
+          ← Back to tasks
+        </button>
+        <nav className="work-stage-progress" aria-label="Task stage">
+          {project.data.stages.map((s: any) => (
+            <span key={s.id} aria-current={t.stage === s.id ? 'step' : undefined}>
+              {s.name}
+            </span>
+          ))}
+        </nav>
         <h2 id="work-task-detail-title">{t.data.title}</h2>
         <p>
           Version {t.version} · {t.status} · {t.data.priority} priority
         </p>
-        <p className="work-message-body">{t.data.description || 'No description recorded.'}</p>
-        <dl>
+        <div className="form-actions">
+          {writable && (
+            <button className="button" onClick={onEdit}>
+              Edit task
+            </button>
+          )}
+          <button className="secondary-button" onClick={onDiscuss}>
+            Discussion
+          </button>
+        </div>
+        <dl className="work-task-facts">
+          <dt>Project</dt>
+          <dd>{project.data.name}</dd>
+          <dt>Stage</dt>
+          <dd>{project.data.stages.find((s: any) => s.id === t.stage)?.name || t.stage}</dd>
           <dt>Assignee</dt>
           <dd>{name(t.data.assignee_id)}</dd>
           <dt>Start</dt>
@@ -69,6 +89,33 @@ export function WorkTaskDetails({
           <dt>Labels</dt>
           <dd>{t.data.labels.join(', ') || 'None'}</dd>
         </dl>
+        <nav className="work-detail-tabs" aria-label="Task information">
+          {[
+            ['description', 'Description'],
+            ['dependencies', 'Blocked By'],
+            ['checklist', 'Checklist'],
+            ['subtasks', 'Subtasks'],
+            ['documents', 'Documents'],
+            ['discussion', 'Discussion'],
+            ['history', 'History'],
+          ].map(([id, label]) => (
+            <button
+              className="secondary-button"
+              key={id}
+              aria-pressed={tab === id}
+              onClick={() => {
+                setTab(id);
+                if (id === 'discussion') onDiscuss();
+                if (id === 'history') void load();
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+        {tab === 'description' && (
+          <p className="work-message-body">{t.data.description || 'No description recorded.'}</p>
+        )}
         {t.parent_id && (
           <p>
             Parent:{' '}
@@ -81,61 +128,81 @@ export function WorkTaskDetails({
             </button>
           </p>
         )}
-        <h3>Prerequisites</h3>
-        {t.data.dependencies.length ? (
-          t.data.dependencies.map((id: string) => {
-            const next = tasks.find((n) => n.id === id);
-            return (
-              <p key={id}>
-                <button className="quiet-button" disabled={!next} onClick={() => onOpen(next)}>
-                  {next?.data.title || 'Retained dependency'} · {next?.status}
-                </button>
-              </p>
-            );
-          })
-        ) : (
-          <p>No prerequisites recorded.</p>
+        {tab === 'dependencies' && (
+          <>
+            {' '}
+            <h3>Prerequisites</h3>
+            {t.data.dependencies.length ? (
+              t.data.dependencies.map((id: string) => {
+                const next = tasks.find((n) => n.id === id);
+                return (
+                  <p key={id}>
+                    <button className="quiet-button" disabled={!next} onClick={() => onOpen(next)}>
+                      {next?.data.title || 'Retained dependency'} · {next?.status}
+                    </button>
+                  </p>
+                );
+              })
+            ) : (
+              <p>No prerequisites recorded.</p>
+            )}
+          </>
         )}
-        <h3>Checklist</h3>
-        {t.data.checklist.length ? (
-          <ul>
-            {t.data.checklist.map((c: any) => (
-              <li key={c.id}>
-                {c.completed ? 'Completed' : 'Open'} · {c.title}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>No checklist items recorded.</p>
+        {tab === 'checklist' && (
+          <>
+            {' '}
+            <h3>Checklist</h3>
+            {t.data.checklist.length ? (
+              <ul>
+                {t.data.checklist.map((c: any) => (
+                  <li key={c.id}>
+                    {c.completed ? 'Completed' : 'Open'} · {c.title}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No checklist items recorded.</p>
+            )}
+          </>
         )}
-        <h3>Subtasks</h3>
-        {tasks
-          .filter((n) => n.parent_id === t.id)
-          .map((n) => (
-            <p key={n.id}>
-              <button className="quiet-button" onClick={() => onOpen(n)}>
-                {n.data.title} · {n.status}
+        {tab === 'subtasks' && (
+          <>
+            {' '}
+            <h3>Subtasks</h3>
+            {writable && (
+              <button className="secondary-button" onClick={onSubtask}>
+                Add subtask
               </button>
-            </p>
-          ))}
-        <DocumentAttachments
-          api={api}
-          sourceKind="work_task"
-          sourceId={t.id}
-          writable={writable}
-          allowUpload={false}
-        />
+            )}
+            {tasks
+              .filter((n) => n.parent_id === t.id)
+              .map((n) => (
+                <p key={n.id}>
+                  <button className="quiet-button" onClick={() => onOpen(n)}>
+                    {n.data.title} · {n.status}
+                  </button>
+                </p>
+              ))}
+          </>
+        )}
+        {tab === 'documents' && (
+          <DocumentAttachments
+            api={api}
+            sourceKind="work_task"
+            sourceId={t.id}
+            writable={writable}
+            allowUpload={true}
+          />
+        )}
         <p>Followers: {t.data.followers.map(name).join(', ') || 'None'}</p>
         <div className="form-actions">
-          {writable && (
-            <button className="button" onClick={onEdit}>
-              Edit this task
-            </button>
-          )}
-          <button className="secondary-button" onClick={onDiscuss}>
-            Open task discussion
-          </button>
-          <button className="secondary-button" onClick={() => void load()}>
+          <button
+            className="secondary-button"
+            onClick={() => {
+              setTab('history');
+              void load();
+            }}
+          >
             Load task revision history
           </button>
           <button className="quiet-button" onClick={onClose}>
@@ -143,7 +210,7 @@ export function WorkTaskDetails({
           </button>
         </div>
         {error && <p role="alert">{error}</p>}
-        {history.length > 0 && (
+        {tab === 'history' && history.length > 0 && (
           <>
             <h3>Retained revisions</h3>
             {history.map((v) => (
@@ -176,6 +243,6 @@ export function WorkTaskDetails({
           </>
         )}
       </section>
-    </Overlay>
+    </div>
   );
 }

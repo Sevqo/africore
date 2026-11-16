@@ -1,0 +1,48 @@
+# Odoo Community HR, Attendance and Time Off — focused reference
+
+Question: which model-level checks and workflows matter when comparing AfriCore People? This note records source observations at Odoo commit `9d233dca4156d58ca573e9cdc3b32327c97aa282` (branch `20.0`). The inspected manifests declare LGPL-3. No Odoo source or asset is copied.
+
+## Addons and observed behavior
+
+- `addons/hr/__manifest__.py` declares Employees as an application, with identity, resource-calendar, and hierarchy dependencies, HR security, employee, department and settings views. `addons/hr/models/hr_employee.py` defines employee, manager and department relationships and visibility-sensitive fields; `addons/hr/models/hr_department.py` supplies department hierarchy behavior. Employee and department records are HR-domain records, not payroll by themselves.
+- `addons/hr/views/hr_employee_views.xml` composes employee form, list, kanban, hierarchy, activity, graph and pivot views and the employee action. `addons/hr/views/hr_department_views.xml` defines department form/list/kanban/hierarchy and actions. `addons/hr/security/hr_security.xml` and `security/ir.access.csv` define the HR access boundary.
+- `addons/hr_attendance/__manifest__.py` declares a separate Attendances application layered on `hr` and work-entry/time-rule components. `addons/hr_attendance/models/hr_attendance.py` validates ordered check-in/check-out, break duration, one open attendance, and overlap (`_check_validity_check_in_check_out`, `_check_break_duration`, `_check_validity`). `addons/hr_attendance/views/hr_attendance_view.xml` provides attendance list, form, search and action patterns. `tests/test_hr_attendance_constraints.py` covers reversed intervals, open attendance and overlaps; access tests are in `tests/test_hr_attendance_access_rights.py`.
+- `addons/hr_holidays/__manifest__.py` declares Time Off and its approval/calendar dependencies. `addons/hr_holidays/models/hr_leave.py` defines request states and separate approval, refusal, cancellation and return-to-approval transitions (`action_approve`, `action_refuse`, `action_cancel`, `action_back_to_approval`). `_check_date` rejects inconsistent periods and conflicting leave; `_check_approval_update` gates transitions by current authority. `addons/hr_holidays/views/hr_leave_views.xml` and `views/hr_holidays_views.xml` define request, list, form, search and action views; `tests/test_leave_requests.py` covers overlapping requests, insufficient allocations and access checks.
+- No `addons/hr_contract` directory exists in this Community clone. Employee version and contract-template records visible in HR are not evidence of a complete contract/payroll application. No Enterprise-only capability is assumed.
+
+## AfriCore comparison
+
+AfriCore owns employee profiles, department records, employer policy, private HR visibility, approval snapshots, leave balances, attendance and retained corrections in its People service (`src/erp/people-*.ts`). Its React workspace is `website/src/apps/PeopleWorkspace.tsx`, with forms/actions in `PeopleEditors.tsx`, `PeopleManagement.tsx`, and `PeopleRecordActions.tsx`. Service routes are registered through `src/erp/routes.ts`. The existing service is deliberately narrower: leave accrual follows explicit employer policy and integer thousandths, compensation remains private record data, and no payroll, statutory deduction, biometric or location claim is made.
+
+Frontend integration gaps found in this checkpoint: the workspace originally loaded configuration, employees, Team, departments, leave types, leave, attendance and approvals in one `Promise.all`. A failure in any auxiliary service hid successful employee/configuration results. The employee detail view also fetched leave balances before compensation in one chain, and policy failure could leave the initial load spinning without recovery. These paths now apply responses independently, keep successful records visible, report the failing source and provide a People data retry. Backend authorization, exact-version approval and attendance correction rules remain authoritative.
+
+## Parity status
+
+| Capability | Odoo evidence | AfriCore equivalent | Status / remaining work | Priority |
+| --- | --- | --- | --- | --- |
+| Employee profiles and department hierarchy | `hr.employee`, `hr.department`; HR addon manifests/views | `people-profiles.ts`, `people-access.ts`, People directory/org chart | Partially implemented; AfriCore intentionally has no Odoo work-contract/payroll engine | High |
+| Private HR visibility | HR security and employee field group restrictions | current role, manager relation and scoped employee projection | Implemented in service; role browser acceptance remains founder responsibility | High |
+| Leave policy and balances | `hr.leave`, allocation and approval state model | `people-leave.ts`, versioned employer policy, integer-milli ledger and shared approvals | Partially implemented; no statutory entitlement inferred | High |
+| Leave state transitions | `action_approve`, `action_refuse`, `action_cancel`, `_check_approval_update` | exact request snapshot, separate eligible reviewer, current permission and version rechecks | Implemented by existing service | High |
+| Attendance and correction | `hr.attendance` ordered times, one open attendance and non-overlap constraints | `people-attendance.ts`, ordered intervals, overlap checks and retained reasoned correction | Implemented by existing service | High |
+| Payroll and work entries | Separate Odoo payroll/work-entry addons and dependencies | No corresponding payroll calculation or statutory service | Not applicable / unsupported; UI explicitly discloses this | Low |
+| Auxiliary service failure | Odoo runs inside its integrated registry/runtime | independent frontend loading for Team, approvals and People endpoints | Fixed in this increment; errors identify the source and retry refreshes the People read set | High |
+
+## AfriCore dependency and workflow audit
+
+| Workflow | Authoritative service and API | Required configuration / selectors | Permission and integrity checks |
+| --- | --- | --- | --- |
+| Employee directory/profile | `people-profiles.ts`; `/people/configuration`, `/people/employees`, `/people/departments`, employee detail/history | Review employer policy first; choose current workspace member and existing department from selectors | HR role and manager-scoped projections are rechecked by service; employee identity does not create workspace membership; versioned writes and retained history |
+| Leave request/review | `people-leave.ts`, approvals service; `/people/leave-types`, employee `/leave-preview`, `/leave`, `/leave-balances`, `/business/approvals`, `/approvals/:id/decide` | Active employer-defined leave type, dates, current separate reviewer, configured work week/holidays | Service validates policy/version, eligibility, balance, date overlap and current approver authority; decisions are separate, reasoned and idempotent |
+| Attendance/correction | `people-attendance.ts`; `/people/attendance`, employee `/check-in`, `/check-out`, attendance `/:id/correct` | Linked employee identity for self check-in/out; reason and authorized reviewer for correction | Current self-write or HR permission; one open attendance, ordered intervals, overlap checks; corrections retain superseded history |
+| Restricted compensation | `people-profiles.ts`; employee `/compensation` | Existing employee; no raw IDs surfaced as user-entered values | Separate compensation permission is checked on each request; compensation is stored as private terms, not payroll calculation |
+| Reports/onboarding | `people-reports.ts`, `people-onboarding.ts`; People report routes and employee `/onboarding-project` | Current source records; onboarding uses installed Work capability only | Aggregate service applies scoped visibility; onboarding creates operational Work tasks without copying private HR payloads |
+| Workspace and service state | shared identity/Team and service activation; `/team`, People configuration/activation endpoints | Current organization, environment and members | All endpoints re-resolve actor, membership and service state; UI visibility is not an authorization boundary |
+
+The directory is server-searchable and paginated; endpoints that intentionally cap leave, attendance or leave-type history return `has_more`/`truncated` and a limit or notice. The UI labels capped coverage. Selectors are populated from authorized `/team`, department and leave-type records rather than asking users for internal identifiers. On any read failure, the UI now distinguishes the failed source from a legitimate empty list and exposes a People data retry; policy failure is surfaced in the initial load state rather than leaving an endless spinner.
+
+## Approved visual-reference findings
+
+No People-specific approved screenshot was attached to this checkpoint. Source inspection confirms Odoo's employee actions offer multiple register/card/analysis views and department actions offer kanban/list/form/hierarchy. AfriCore's current People workspace uses its own operational sections (directory, departments/org chart, leave, attendance, approvals, policy and reports) under the global shell. This increment changed loading and error recovery only; no pixel-level browser comparison is claimed. Founder browser acceptance remains pending.
+
+This is a focused Community source investigation, not an exhaustive audit of all HR addons, access-rule XML, payroll localization, time-rule adapters, browser tours or every model method. The Odoo source is prior art; AfriCore's contracts and safeguards remain authoritative.

@@ -5825,6 +5825,8 @@
             "enum": [
               "customer",
               "invoice",
+              "sales_quotation",
+              "sales_order",
               "expense",
               "purchase_order",
               "supplier_bill",
@@ -6006,7 +6008,7 @@
           },
           "content_base64": {
             "type": "string",
-            "maxLength": 699052
+            "maxLength": 2796204
           }
         },
         "required": [
@@ -6146,7 +6148,7 @@
               },
               "content_base64": {
                 "type": "string",
-                "maxLength": 699052
+                "maxLength": 2796204
               }
             },
             "required": [
@@ -6172,6 +6174,8 @@
                 "enum": [
                   "customer",
                   "invoice",
+                  "sales_quotation",
+                  "sales_order",
                   "expense",
                   "purchase_order",
                   "supplier_bill",
@@ -6375,7 +6379,7 @@
               },
               "content_base64": {
                 "type": "string",
-                "maxLength": 699052
+                "maxLength": 2796204
               }
             },
             "required": [
@@ -6569,6 +6573,36 @@
             ]
           },
           "folder_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "root"
+                ]
+              }
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "file",
+              "folder"
+            ]
+          },
+          "editable_only": {
+            "default": false,
+            "type": "boolean"
+          },
+          "hide_personnel": {
+            "default": false,
+            "type": "boolean"
+          },
+          "employee_id": {
             "type": "string",
             "format": "uuid",
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -6599,6 +6633,8 @@
         },
         "required": [
           "view",
+          "editable_only",
+          "hide_personnel",
           "q",
           "sort",
           "offset"
@@ -6853,6 +6889,13 @@
             "format": "date-time",
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
           },
+          "folder_id": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
           "source": {
             "type": "object",
             "properties": {
@@ -6861,6 +6904,8 @@
                 "enum": [
                   "customer",
                   "invoice",
+                  "sales_quotation",
+                  "sales_order",
                   "expense",
                   "purchase_order",
                   "supplier_bill",
@@ -6886,7 +6931,8 @@
           "title",
           "note",
           "assignee",
-          "expires_at"
+          "expires_at",
+          "folder_id"
         ],
         "additionalProperties": false
       },
@@ -6917,7 +6963,7 @@
               },
               "content_base64": {
                 "type": "string",
-                "maxLength": 699052
+                "maxLength": 2796204
               }
             },
             "required": [
@@ -19350,6 +19396,83 @@
         ]
       }
     },
+    "/api/v1/organizations/{org}/document-source-options": {
+      "get": {
+        "summary": "GET /organizations/:org/document-source-options",
+        "operationId": "workspace_get__organizations__org_document_source_options",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ]
+      }
+    },
     "/api/v1/organizations/{org}/documents/{id}/review": {
       "post": {
         "summary": "POST /organizations/:org/documents/:id/review",
@@ -19450,6 +19573,165 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/organizations/{org}/documents/{id}/reviewers": {
+      "get": {
+        "summary": "GET /organizations/:org/documents/:id/reviewers",
+        "operationId": "workspace_get__organizations__org_documents__id_reviewers",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organizations/{org}/document-request-assignees": {
+      "get": {
+        "summary": "GET /organizations/:org/document-request-assignees",
+        "operationId": "workspace_get__organizations__org_document_request_assignees",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ]
       }
     },
     "/api/v1/organizations/{org}/document-requests": {

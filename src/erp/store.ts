@@ -106,7 +106,7 @@ export async function read(a: Access, id: string, kind: ERPKind) {
   if (!r) fail(404, 'Resource not found');
   return decode(a, r);
 }
-export async function visible(a: Access, kind: ERPKind, root?: string) {
+export async function visible(a: Access, kind: ERPKind, root?: string, messageOffset = 0) {
   const role = await currentMember(a);
   return (
     await dbAll(
@@ -116,7 +116,7 @@ export async function visible(a: Access, kind: ERPKind, root?: string) {
           ? ' AND EXISTS (SELECT 1 FROM ac_erp_grants g WHERE g.org_id=o.org_id AND g.environment=o.environment AND g.resource_id=o.root_id AND g.user_id=?)'
           : '') +
         (kind === 'work_message'
-          ? ' ORDER BY o.created_at DESC,o.id DESC LIMIT 101'
+          ? ' ORDER BY o.created_at DESC,o.id DESC LIMIT 101 OFFSET ?'
           : ' ORDER BY o.position,o.created_at,o.id LIMIT 1001'),
       [
         a.org,
@@ -124,6 +124,7 @@ export async function visible(a: Access, kind: ERPKind, root?: string) {
         kind,
         ...(root ? [root] : []),
         ...(!['owner', 'admin'].includes(role) ? [a.actor] : []),
+        ...(kind === 'work_message' ? [messageOffset] : []),
       ],
     )
   ).map((r) => decode(a, r));

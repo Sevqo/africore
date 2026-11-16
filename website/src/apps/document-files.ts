@@ -20,15 +20,22 @@ export function safeDocumentFilename(name: string) {
   if (/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i.test(stem)) stem = 'document-' + stem;
   return stem.slice(0, 119 - extension.length) + '.' + extension;
 }
-export async function readDocumentFile(file: File) {
-  if (file.size > 512 * 1024 || !file.size)
-    throw new Error('Choose a non-empty file of at most 512 KiB.');
+export async function readDocumentFile(
+  file: File,
+  onPreparationProgress?: (percent: number) => void,
+) {
+  if (file.size > 2 * 1024 * 1024 || !file.size)
+    throw new Error('Choose a non-empty file of at most 2 MiB.');
   const filename = safeDocumentFilename(file.name),
     content_type = types[filename.split('.').pop()!],
     content_base64 = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onerror = () => reject(new Error('The selected file could not be read.'));
       reader.onabort = () => reject(new Error('File reading was cancelled.'));
+      reader.onprogress = (event) => {
+        if (event.lengthComputable)
+          onPreparationProgress?.(Math.round((event.loaded / event.total) * 100));
+      };
       reader.onload = () => resolve(String(reader.result).split(',')[1]);
       reader.readAsDataURL(file);
     });

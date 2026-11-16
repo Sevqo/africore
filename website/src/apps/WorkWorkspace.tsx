@@ -1,3 +1,5 @@
+import { workBlocked, workQuickFilter, loadWorkDirectory } from './work-app-model';
+import { WorkTaskTable, WorkAnalysis } from './WorkTaskTable';
 import { WorkAutomation } from './WorkAutomation';
 import { WorkTemplates } from './WorkTemplates';
 import { WorkReviews } from './WorkReviews';
@@ -5,7 +7,7 @@ import { MyWork } from './MyWork';
 import { appNavigationEvent } from './AppNavigation';
 import { WorkDateViews } from './WorkDateViews';
 import { WorkTaskDetails } from './WorkTaskDetails';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Field, Form, today, type API } from '../operations/UI';
 import { useIdempotentAPI } from './useIdempotentAPI';
 import { ProjectEditor, TaskEditor } from './WorkEditors';
@@ -14,14 +16,17 @@ export function WorkWorkspace({
   api: provided,
   scope,
   section = 'dashboard',
+  openRecord,
 }: {
   api: API;
   scope: string;
   section?: string;
+  openRecord?: (tab: string, id: string) => void;
 }) {
   const api = useIdempotentAPI(provided, scope),
     [directory, setDirectory] = useState<any>(null),
     [members, setMembers] = useState<any[]>([]),
+    [teamError, setTeamError] = useState(''),
     [selected, setSelected] = useState(''),
     [board, setBoard] = useState<any>(null),
     [error, setError] = useState(''),
@@ -35,31 +40,64 @@ export function WorkWorkspace({
     [reply, setReply] = useState<any>(null),
     [messageTask, setMessageTask] = useState(''),
     [mentions, setMentions] = useState<string[]>([]),
-    [query, setQuery] = useState('');
+    [query, setQuery] = useState(''),
+    [quickFilter, setQuickFilter] = useState('all'),
+    [projectFilter, setProjectFilter] = useState('all'),
+    [projectMode, setProjectMode] = useState('cards'),
+    [projectGroup, setProjectGroup] = useState('none'),
+    [messageOffset, setMessageOffset] = useState(0),
+    [statusFilter, setStatusFilter] = useState('all'),
+    [assigneeFilter, setAssigneeFilter] = useState('all');
+  const targetRequest = useRef(0);
   const [viewing, setViewing] = useState<any>(null),
     [targetTask, setTargetTask] = useState('');
   useEffect(() => {
     let live = true;
     const resolve = () => {
+      const request = ++targetRequest.current;
       const target = new URL(location.href).searchParams.get('work_target');
-      if (target && /^[0-9a-f-]{36}$/i.test(target))
+      if (target && /^[0-9a-f-]{36}$/i.test(target)) {
         api('/work/target/' + target)
           .then((r) => {
-            if (live) {
+            if (live && request === targetRequest.current) {
               setSelected(r.project_id);
+              setViewing(null);
+              setQuery('');
               setTargetTask(r.task_id || '');
-              setView('board');
+              const requested = new URL(location.href).searchParams.get('work_view');
+              setView(
+                requested &&
+                  [
+                    'board',
+                    'list',
+                    'calendar',
+                    'timeline',
+                    'my-work',
+                    'workload',
+                    'report',
+                    'discussions',
+                  ].includes(requested)
+                  ? requested
+                  : 'board',
+              );
             }
           })
           .catch((e) => {
-            if (live) setError(e.message);
+            if (live && request === targetRequest.current) setError(e.message);
           });
+      } else {
+        setSelected('');
+        setViewing(null);
+        setBoard(null);
+      }
     };
     resolve();
     addEventListener(appNavigationEvent, resolve);
+    addEventListener('popstate', resolve);
     return () => {
       live = false;
       removeEventListener(appNavigationEvent, resolve);
+      removeEventListener('popstate', resolve);
     };
   }, [scope]);
   useEffect(() => {
@@ -79,16 +117,25 @@ export function WorkWorkspace({
   }, [scope]);
   useEffect(() => {
     let current = true;
-    Promise.all([api('/work/projects'), api('/team')])
-      .then(([d, t]) => {
+    setTeamError('');
+    void loadWorkDirectory(
+      api,
+      (d) => {
+        if (current) setDirectory(d);
+      },
+      (data) => {
+        if (current) setMembers(data);
+      },
+      (message) => {
+        if (current) setError(message);
+      },
+      (message) => {
         if (current) {
-          setDirectory(d);
-          setMembers(t.data);
+          setMembers([]);
+          setTeamError(message);
         }
-      })
-      .catch((e) => {
-        if (current) setError(e.message);
-      });
+      },
+    );
     return () => {
       current = false;
     };
@@ -98,7 +145,7 @@ export function WorkWorkspace({
     setBoard(null);
     setViewing(null);
     setActivity([]);
-    setError('');
+    setMessageOffset(0);
     if (selected)
       api('/work/projects/' + selected)
         .then((d) => {
@@ -118,7 +165,27 @@ export function WorkWorkspace({
       setView(section);
     else if (section === 'dashboard' || section === 'board') setView('board');
   }, [section]);
+  function recordUrl(id: string, nextView = view) {
+    const url = new URL(location.href);
+    url.searchParams.set('work_target', id);
+    url.searchParams.set('work_view', nextView);
+    history.pushState(null, '', url.pathname + url.search + url.hash);
+  }
+  function changeView(next: string) {
+    setViewing(null);
+    setView(next);
+    const url = new URL(location.href);
+    url.searchParams.set('work_view', next);
+    if (selected) url.searchParams.set('work_target', selected);
+    history.pushState(null, '', url.pathname + url.search + url.hash);
+  }
+  function openTask(task: any) {
+    recordUrl(task.id);
+    setViewing(task);
+  }
   function saved(label: string) {
+    setBoard(null);
+    setViewing(null);
     setEditingProject(null);
     setEditingTask(null);
     setRevision((v) => v + 1);
@@ -132,6 +199,12 @@ export function WorkWorkspace({
       'Unassigned',
     filtered = tasks.filter(
       (t: any) =>
+        workQuickFilter(t, tasks, quickFilter, today()) &&
+        (statusFilter === 'all' || t.status === statusFilter) &&
+        (assigneeFilter === 'all' ||
+          (assigneeFilter === 'unassigned'
+            ? !t.data.assignee_id
+            : t.data.assignee_id === assigneeFilter)) &&
         (!query ||
           [t.data.title, t.data.description, ...t.data.labels]
             .join(' ')
@@ -139,6 +212,23 @@ export function WorkWorkspace({
             .includes(query.toLowerCase())) &&
         (view !== 'my-work' || t.data.assignee_id === directory?.actor_id),
     );
+  const projects = (directory?.data || [])
+    .filter(
+      (item: any) =>
+        (projectFilter === 'all' ||
+          (projectFilter === 'mine'
+            ? item.owner_id === directory.actor_id
+            : item.status === projectFilter)) &&
+        [item.data.name, item.data.description, name(item.owner_id), item.status]
+          .join(' ')
+          .toLowerCase()
+          .includes(query.toLowerCase()),
+    )
+    .sort((a: any, b: any) => {
+      const key = (v: any) =>
+        projectGroup === 'owner' ? name(v.owner_id) : projectGroup === 'status' ? v.status : '';
+      return key(a).localeCompare(key(b)) || a.data.name.localeCompare(b.data.name);
+    });
   async function move(task: any, stage: string, before: string | null) {
     if (!board || busy || !board.permissions.write) return;
     const previous = board;
@@ -204,22 +294,55 @@ export function WorkWorkspace({
         }}
       >
         <h4>
-          <button className="quiet-button work-task-title" onClick={() => setViewing(t)}>
+          <button className="quiet-button work-task-title" onClick={() => openTask(t)}>
             {t.data.title}
           </button>
         </h4>
-        <p>
-          {name(t.data.assignee_id)} · {t.data.priority}
-        </p>
+        <p>{name(t.data.assignee_id)}</p>
         <p>
           {t.due_on ? 'Due ' + t.due_on : 'No due date'} · {t.status}
         </p>
-        {t.data.labels.length > 0 && <p>{t.data.labels.join(' · ')}</p>}
+        {t.data.labels.length > 0 && (
+          <div className="work-tags">
+            {t.data.labels.map((label: string) => (
+              <span className="badge" key={label}>
+                {label}
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="work-card-footer">
+          <span aria-label={t.data.priority + ' priority'}>
+            {'★'.repeat(
+              ({ low: 0, normal: 1, high: 2, urgent: 3 } as Record<string, number>)[
+                t.data.priority
+              ] || 0,
+            )}
+            {'☆'.repeat(
+              3 -
+                (({ low: 0, normal: 1, high: 2, urgent: 3 } as Record<string, number>)[
+                  t.data.priority
+                ] || 0),
+            )}
+          </span>
+          <span className="work-avatar" title={name(t.data.assignee_id)}>
+            {t.data.assignee_id ? name(t.data.assignee_id).slice(0, 2).toUpperCase() : '—'}
+          </span>
+        </div>
         {t.data.dependencies.length > 0 && <p>{t.data.dependencies.length} prerequisite task(s)</p>}
+        {workBlocked(t, tasks) && t.status === 'open' && (
+          <p className="work-blocked">
+            Completion blocked: review prerequisites, subtasks or checklist.
+          </p>
+        )}
+        <p>
+          {t.data.checklist.filter((c: any) => c.completed).length}/{t.data.checklist.length}{' '}
+          checklist · {tasks.filter((n: any) => n.parent_id === t.id).length} subtasks
+        </p>
         <details className="work-task-actions">
           <summary>Task actions</summary>
           <div className="work-task-controls">
-            <button className="quiet-button" onClick={() => setViewing(t)}>
+            <button className="quiet-button" onClick={() => openTask(t)}>
               View task
             </button>
             <button
@@ -285,7 +408,38 @@ export function WorkWorkspace({
       />
     );
   return (
-    <div className="apps-workspace">
+    <div className="apps-workspace work-app">
+      <nav className="work-module-nav" aria-label="Work modules">
+        <button
+          onClick={() => {
+            setSelected('');
+            setViewing(null);
+            setQuery('');
+            const url = new URL(location.href);
+            url.searchParams.delete('work_target');
+            history.pushState(null, '', url.pathname + url.search + url.hash);
+          }}
+        >
+          Projects
+        </button>
+        <button disabled={!selected} onClick={() => changeView('list')}>
+          Tasks
+        </button>
+        <button disabled={!selected} onClick={() => changeView('report')}>
+          Reporting
+        </button>
+        <button disabled={!board?.permissions.manage} onClick={() => setEditingProject(p)}>
+          Configuration
+        </button>
+      </nav>
+      {teamError && (
+        <p className="alert" role="status">
+          Member information unavailable: {teamError}{' '}
+          <button className="quiet-button" onClick={() => setRevision((v) => v + 1)}>
+            Retry member lookup
+          </button>
+        </p>
+      )}
       {error && (
         <p role="alert" className="alert error">
           {error}
@@ -293,7 +447,7 @@ export function WorkWorkspace({
       )}
       {notice && <p role="status">{notice}</p>}
       {!directory && !error && <p role="status">Loading authorized projects…</p>}
-      {directory && (
+      {directory && !viewing && !selected && !editingProject && !editingTask && (
         <>
           {section === 'my-work' && (
             <MyWork
@@ -308,10 +462,10 @@ export function WorkWorkspace({
           )}
           <section className="panel">
             <div className="section-heading">
-              <h2>Your projects</h2>
+              <h2>Projects</h2>
               <button
                 className="button"
-                disabled={!directory.can_create}
+                disabled={!directory.can_create || !members.length}
                 onClick={() => setEditingProject({ new: true })}
               >
                 Create project
@@ -325,27 +479,144 @@ export function WorkWorkspace({
               <p role="status">Showing the first {directory.limit} authorized projects.</p>
             )}
             {!selected && (
+              <div className="work-toolbar">
+                <Field label="Search projects">
+                  <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
+                </Field>
+                <Field label="Project filter">
+                  <select value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)}>
+                    {['all', 'mine', 'active', 'on_hold', 'completed', 'archived'].map((v) => (
+                      <option key={v} value={v}>
+                        {v === 'mine'
+                          ? 'My projects'
+                          : v === 'all'
+                            ? 'All authorized projects'
+                            : v.replaceAll('_', ' ')}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Group projects by">
+                  <select value={projectGroup} onChange={(e) => setProjectGroup(e.target.value)}>
+                    <option value="none">None</option>
+                    <option value="owner">Owner</option>
+                    <option value="status">Status</option>
+                  </select>
+                </Field>
+                <button
+                  className="secondary-button"
+                  aria-pressed={projectMode === 'cards'}
+                  onClick={() => setProjectMode('cards')}
+                >
+                  Cards
+                </button>
+                <button
+                  className="secondary-button"
+                  aria-pressed={projectMode === 'list'}
+                  onClick={() => setProjectMode('list')}
+                >
+                  List
+                </button>
+              </div>
+            )}
+            {!selected && projectMode === 'cards' && (
               <div className="project-directory">
-                {directory.data.map((project: any) => (
-                  <button
-                    className="project-directory-card"
-                    key={project.id}
-                    onClick={() => {
-                      setViewing(null);
-                      setView('board');
-                      setSelected(project.id);
-                    }}
-                  >
-                    <span className="project-directory-icon" aria-hidden="true">
-                      {project.data.name.slice(0, 1).toUpperCase()}
-                    </span>
-                    <strong>{project.data.name}</strong>
-                    <p>{project.data.description || 'Private project workspace'}</p>
-                    <small>{project.status} · Open project</small>
-                  </button>
+                {projects.map((project: any, index: number) => (
+                  <div className="work-project-card-wrap" key={project.id}>
+                    {projectGroup !== 'none' &&
+                      (index === 0 ||
+                        (projectGroup === 'owner'
+                          ? project.owner_id !== projects[index - 1].owner_id
+                          : project.status !== projects[index - 1].status)) && (
+                        <h3>
+                          {projectGroup === 'owner' ? name(project.owner_id) : project.status}
+                        </h3>
+                      )}
+                    <button
+                      className="project-directory-card"
+                      key={project.id}
+                      onClick={() => {
+                        setViewing(null);
+                        setView('board');
+                        recordUrl(project.id, 'board');
+                        setSelected(project.id);
+                        setQuery('');
+                      }}
+                    >
+                      <span className="project-directory-icon" aria-hidden="true">
+                        {project.data.name.slice(0, 1).toUpperCase()}
+                      </span>
+                      <strong>{project.data.name}</strong>
+                      <p>{project.data.description || 'Private project workspace'}</p>
+                      <p>
+                        {name(project.owner_id)}
+                        {project.due_on ? ' · Due ' + project.due_on : ''}
+                      </p>
+                      <small>
+                        <strong>{project.task_summary?.total ?? '—'} Tasks</strong> ·{' '}
+                        {project.task_summary?.completed ?? '—'} completed ·{' '}
+                        {project.task_summary?.overdue ?? '—'} overdue · {project.status} ·{' '}
+                        {project.data.milestones.filter((m: any) => m.completed).length}/
+                        {project.data.milestones.length} milestones
+                      </small>
+                      <span className="work-card-members" aria-label="Project participants">
+                        {project.data.members.slice(0, 5).map((m: any) => (
+                          <span
+                            className="work-assignee-avatar"
+                            key={m.user_id}
+                            title={name(m.user_id)}
+                          >
+                            {name(m.user_id)
+                              .split(' ')
+                              .map((v: string) => v[0])
+                              .slice(0, 2)
+                              .join('')}
+                          </span>
+                        ))}
+                      </span>
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
+            {!selected && projectMode === 'list' && (
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Project</th>
+                      <th>Owner</th>
+                      <th>Deadline</th>
+                      <th>Status</th>
+                      <th>Tasks</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {projects.map((item: any) => (
+                      <tr key={item.id}>
+                        <td>
+                          <button
+                            className="quiet-button"
+                            onClick={() => {
+                              recordUrl(item.id, 'board');
+                              setSelected(item.id);
+                              setQuery('');
+                            }}
+                          >
+                            {item.data.name}
+                          </button>
+                        </td>
+                        <td>{name(item.owner_id)}</td>
+                        <td>{item.due_on || 'Unscheduled'}</td>
+                        <td>{item.status}</td>
+                        <td>{item.task_summary?.total ?? '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {!projects.length && <p>No projects match the current search and filters.</p>}
             <Field label="Open project">
               <select
                 value={selected}
@@ -353,6 +624,8 @@ export function WorkWorkspace({
                   setBoard(null);
                   setViewing(null);
                   setSelected(e.target.value);
+                  setQuery('');
+                  if (e.target.value) recordUrl(e.target.value, 'board');
                 }}
               >
                 <option value="">Choose a project</option>
@@ -363,16 +636,41 @@ export function WorkWorkspace({
                 ))}
               </select>
             </Field>
-            {!directory.data.length && <p>No projects are visible to you yet.</p>}
+            {!directory.data.length && (
+              <p>
+                No projects are visible to you yet.{' '}
+                {!directory.can_create
+                  ? 'A workspace owner, administrator or operational member can create a project and invite you.'
+                  : !members.length
+                    ? 'Load current Team members before choosing a project owner.'
+                    : 'Create a project to start your task board.'}
+              </p>
+            )}
           </section>
         </>
       )}
       {selected && !board && !error && <p role="status">Loading project tasks…</p>}
-      {board && (
+      {board && !viewing && !editingProject && !editingTask && (
         <>
           <section className="panel">
             <div className="section-heading">
               <h2>{p.data.name}</h2>
+              {openRecord && p.data.customer_id && (
+                <button
+                  className="quiet-button"
+                  onClick={() => openRecord('Customers', p.data.customer_id)}
+                >
+                  Open customer
+                </button>
+              )}
+              {openRecord && p.data.order_id && (
+                <button
+                  className="quiet-button"
+                  onClick={() => openRecord('Orders', p.data.order_id)}
+                >
+                  Open linked order
+                </button>
+              )}
               <button
                 className="secondary-button"
                 disabled={!board.permissions.manage || busy}
@@ -381,87 +679,129 @@ export function WorkWorkspace({
                 Project settings
               </button>
             </div>
-            <p>{p.data.description}</p>
-            <WorkAutomation
-              key={'rules:' + p.id}
-              api={api}
-              scope={scope}
-              project={p}
-              expanded={view === 'workflows'}
-              onSaved={() =>
-                saved('Private workflow policy saved. A fresh separate review is required.')
-              }
-            />
-            <WorkReviews
-              key={p.id}
-              api={api}
-              project={p}
-              members={members}
-              actor={directory?.actor_id}
-              canRequest={board.permissions.manage}
-              onSaved={() =>
-                saved('Exact project review saved. Financial actions remain separate.')
-              }
-            />
-            <p>
-              {p.status.replaceAll('_', ' ')} · Owner {name(p.owner_id)} ·{' '}
-              {p.due_on ? 'Deadline ' + p.due_on : 'No deadline'} · Board version {p.version}
-            </p>
-            <div className="app-metric-grid">
-              {[
-                ['Open tasks', tasks.filter((t: any) => t.status === 'open').length],
-                [
-                  'Assigned to me',
-                  tasks.filter(
-                    (t: any) => t.data.assignee_id === directory?.actor_id && t.status === 'open',
-                  ).length,
-                ],
-                [
-                  'Overdue tasks',
-                  tasks.filter((t: any) => t.status === 'open' && t.due_on && t.due_on < today())
-                    .length,
-                ],
-                ['Completed', tasks.filter((t: any) => t.status === 'completed').length],
-              ].map(([label, value]) => (
-                <article key={String(label)}>
-                  <span>{label}</span>
-                  <strong>{value}</strong>
-                </article>
-              ))}
-            </div>
-            {p.data.milestones.length > 0 && (
-              <>
-                <h3>Milestones</h3>
-                {p.data.milestones.map((m: any) => (
-                  <p key={m.id}>
-                    {m.name} · {m.due_on} · {m.completed ? 'Completed' : 'Upcoming'}
-                  </p>
+            <details className="work-project-information">
+              <summary>
+                Project information · {tasks.length} loaded tasks · {p.status}
+              </summary>
+              <p>{p.data.description}</p>
+              <details className="work-management">
+                <summary>Project reviews and workflows</summary>
+                <WorkAutomation
+                  key={'rules:' + p.id}
+                  api={api}
+                  scope={scope}
+                  project={p}
+                  expanded={view === 'workflows'}
+                  onSaved={() =>
+                    saved('Private workflow policy saved. A fresh separate review is required.')
+                  }
+                />
+                <WorkReviews
+                  key={p.id}
+                  api={api}
+                  project={p}
+                  members={members}
+                  actor={directory?.actor_id}
+                  canRequest={board.permissions.manage}
+                  onSaved={() =>
+                    saved('Exact project review saved. Financial actions remain separate.')
+                  }
+                />
+              </details>
+              <p>
+                {p.status.replaceAll('_', ' ')} · Owner {name(p.owner_id)} ·{' '}
+                {p.due_on ? 'Deadline ' + p.due_on : 'No deadline'} · Board version {p.version}
+              </p>
+              <div className="work-summary-strip">
+                {[
+                  ['Open tasks', tasks.filter((t: any) => t.status === 'open').length],
+                  [
+                    'Assigned to me',
+                    tasks.filter(
+                      (t: any) => t.data.assignee_id === directory?.actor_id && t.status === 'open',
+                    ).length,
+                  ],
+                  [
+                    'Overdue tasks',
+                    tasks.filter((t: any) => t.status === 'open' && t.due_on && t.due_on < today())
+                      .length,
+                  ],
+                  ['Completed', tasks.filter((t: any) => t.status === 'completed').length],
+                ].map(([label, value]) => (
+                  <article key={String(label)}>
+                    <span>{label}</span>
+                    <strong>{value}</strong>
+                  </article>
                 ))}
-              </>
-            )}
-            <p>{board.coverage}</p>
-            {board.truncated && (
-              <p className="alert">This view is truncated; totals cover returned records.</p>
-            )}
+              </div>
+              {p.data.milestones.length > 0 && (
+                <>
+                  <h3>Milestones</h3>
+                  {p.data.milestones.map((m: any) => (
+                    <p key={m.id}>
+                      {m.name} · {m.due_on} · {m.completed ? 'Completed' : 'Upcoming'}
+                    </p>
+                  ))}
+                </>
+              )}
+              <p>{board.coverage}</p>
+              {(board.tasks_truncated ?? board.truncated) && (
+                <p className="alert">This view is truncated; totals cover returned records.</p>
+              )}
+            </details>
           </section>
           <nav className="app-service-chips" aria-label="Project views">
-            {['board', 'list', 'calendar', 'timeline', 'my-work', 'workload', 'discussions'].map(
-              (v) => (
-                <button
-                  key={v}
-                  className="secondary-button"
-                  aria-current={view === v ? 'page' : undefined}
-                  onClick={() => setView(v)}
-                >
-                  {v.replaceAll('-', ' ')}
-                </button>
-              ),
-            )}
+            {[
+              'board',
+              'list',
+              'calendar',
+              'timeline',
+              'my-work',
+              'workload',
+              'report',
+              'discussions',
+            ].map((v) => (
+              <button
+                key={v}
+                className="secondary-button"
+                aria-current={view === v ? 'page' : undefined}
+                onClick={() => changeView(v)}
+              >
+                {v.replaceAll('-', ' ')}
+              </button>
+            ))}
           </nav>
           {!['discussions', 'workload'].includes(view) && (
             <div className="work-toolbar">
               <Field label="Search loaded project tasks">
                 <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
+              </Field>
+              <Field label="Quick filter">
+                <select value={quickFilter} onChange={(e) => setQuickFilter(e.target.value)}>
+                  <option value="all">All tasks</option>
+                  <option value="overdue">Overdue</option>
+                  <option value="priority">High priority</option>
+                  <option value="blocked">Blocked completion</option>
+                  <option value="week">Due this week</option>
+                </select>
+              </Field>
+              <Field label="Status">
+                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                  {['all', 'open', 'completed', 'cancelled'].map((s) => (
+                    <option key={s}>{s}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Assignee">
+                <select value={assigneeFilter} onChange={(e) => setAssigneeFilter(e.target.value)}>
+                  <option value="all">All project assignees</option>
+                  <option value="unassigned">Unassigned</option>
+                  {p.data.members.map((m: any) => (
+                    <option key={m.user_id} value={m.user_id}>
+                      {name(m.user_id)}
+                    </option>
+                  ))}
+                </select>
               </Field>
               <button
                 className="button"
@@ -492,6 +832,14 @@ export function WorkWorkspace({
                 >
                   <h3>
                     {s.name} <small>{filtered.filter((t: any) => t.stage === s.id).length}</small>
+                    <button
+                      className="quiet-button"
+                      disabled={!board.permissions.write || p.status !== 'active'}
+                      aria-label={'Add task to ' + s.name}
+                      onClick={() => setEditingTask({ new: true, stage: s.id })}
+                    >
+                      +
+                    </button>
                   </h3>
                   {!filtered.some((t: any) => t.stage === s.id) && (
                     <p className="work-stage-empty">
@@ -508,14 +856,32 @@ export function WorkWorkspace({
           ) : ['list', 'my-work'].includes(view) ? (
             <section className="panel">
               <h3>{view === 'my-work' ? 'My assigned tasks' : 'Project task list'}</h3>
-              {filtered.length ? filtered.map(card) : <p>No matching tasks.</p>}
+              {filtered.length ? (
+                <WorkTaskTable
+                  projectName={p.data.name}
+                  tasks={filtered}
+                  stages={p.data.stages}
+                  name={name}
+                  open={openTask}
+                />
+              ) : (
+                <p>No matching tasks.</p>
+              )}
             </section>
           ) : ['calendar', 'timeline'].includes(view) ? (
             <WorkDateViews
               tasks={filtered}
               milestones={p.data.milestones}
               view={view}
-              onOpen={setViewing}
+              onOpen={openTask}
+            />
+          ) : view === 'report' ? (
+            <WorkAnalysis
+              milestones={p.data.milestones}
+              name={name}
+              tasks={filtered}
+              stages={p.data.stages}
+              truncated={board.tasks_truncated ?? board.truncated}
             />
           ) : view === 'workload' ? (
             <section className="panel">
@@ -560,6 +926,38 @@ export function WorkWorkspace({
                   ))}
                 </select>
               </Field>
+              <button
+                className="secondary-button"
+                disabled={!board.message_page?.has_more || busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    const offset = messageOffset + 100,
+                      result = await api('/work/projects/' + p.id + '?messages_offset=' + offset);
+                    setBoard((current: any) =>
+                      current?.project.id === p.id
+                        ? {
+                            ...current,
+                            messages: [
+                              ...result.messages,
+                              ...current.messages.filter(
+                                (m: any) => !result.messages.some((n: any) => n.id === m.id),
+                              ),
+                            ],
+                            message_page: result.message_page,
+                          }
+                        : current,
+                    );
+                    setMessageOffset(offset);
+                  } catch (e) {
+                    setError((e as Error).message);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Load earlier discussion
+              </button>
               <ol className="work-messages">
                 {board.messages
                   .filter((m: any) => (m.data.task_id || '') === messageTask)
@@ -667,7 +1065,15 @@ export function WorkWorkspace({
           members={members}
           api={api}
           writable={board.permissions.write}
-          onOpen={setViewing}
+          onOpen={openTask}
+          onSubtask={() => {
+            setEditingTask({
+              new: true,
+              parent_id: viewing.id,
+              stage: p.data.stages.find((s: any) => !s.complete)?.id,
+            });
+            setViewing(null);
+          }}
           onEdit={() => {
             setEditingTask(viewing);
             setViewing(null);
@@ -677,16 +1083,27 @@ export function WorkWorkspace({
             setView('discussions');
             setViewing(null);
           }}
-          onClose={() => setViewing(null)}
+          onClose={() => {
+            if (p) recordUrl(p.id);
+            setViewing(null);
+          }}
         />
       )}{' '}
       {editingProject && (
         <ProjectEditor
           key={editingProject.id || 'new-project'}
           project={editingProject.new ? undefined : editingProject}
+          usedStages={editingProject.id === p?.id ? tasks.map((t: any) => t.stage) : []}
           members={members}
           api={api}
-          onSaved={() => saved('Project saved.')}
+          onSaved={(record) => {
+            saved('Project saved.');
+            if (record?.id) {
+              setSelected(record.id);
+              setView('board');
+              recordUrl(record.id, 'board');
+            }
+          }}
           onClose={() => setEditingProject(null)}
         />
       )}{' '}
@@ -695,10 +1112,19 @@ export function WorkWorkspace({
           key={editingTask.id || 'new-task'}
           project={p}
           task={editingTask.new ? undefined : editingTask}
+          initialStage={editingTask.stage}
+          initialParent={editingTask.parent_id}
           tasks={tasks}
           members={members}
           api={api}
-          onSaved={() => saved('Task saved.')}
+          onSaved={(record) => {
+            saved('Task saved.');
+            const id = record?.task?.id || record?.id;
+            if (id) {
+              setTargetTask(id);
+              recordUrl(id);
+            }
+          }}
           onClose={() => setEditingTask(null)}
         />
       )}

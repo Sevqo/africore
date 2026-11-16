@@ -1,28 +1,28 @@
 # Phase 2 — Applications Progress
 
-Current checkpoint: **2.8 POS app rebuild** — implemented and verified at build/test level.
+Current checkpoint: **2.11 Documents app** — source implementation and focused engineering checks complete; the live recipient endpoint still needs API runtime verification, and founder manual acceptance is pending.
 
 Source checkpoint: Phase 1 committed by the founder; this work is uncommitted by design.
 Hard limits observed: no commits, pushes, deployments, production data or provider changes.
 
 ## Checkpoint status
 
-| Checkpoint | App | State |
-| --- | --- | --- |
-| 2.1 | Commerce | Implemented; build/tests green; browser click-through not executed |
-| 2.2 | Finance | Not started |
-| 2.3 | Sales | Implemented (Odoo-style document workspace); build/tests green; browser click-through not executed |
-| 2.4 | Inventory | Implemented (Odoo-style warehouse workspace); build/tests green; browser click-through not executed |
-| 2.5 | CRM | Partial — pipeline increment recorded at the end of this file; browser acceptance not performed |
-| 2.6 | Procurement | Implemented (Odoo-style purchasing workspace); build/tests green; browser click-through not executed |
-| 2.7 | Accounting | Implemented (Odoo-style ledger workspace); build/tests green; browser click-through not executed |
-| 2.8 | POS | Implemented (Odoo-style register, cashier, payment, receipt, closing, orders, reporting and configuration); build/tests green; browser click-through not executed |
-| 2.9 | Work | Not started |
-| 2.10 | People | Not started |
-| 2.11 | Documents | Not started |
-| 2.12 | Analytics | Not started |
-| 2.13 | Automations | Not started |
-| 2.14 | Business ID | Not started |
+| Checkpoint | App         | State                                                                                                                                                             |
+| ---------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2.1        | Commerce    | Implemented; build/tests green; browser click-through not executed                                                                                                |
+| 2.2        | Finance     | Not started                                                                                                                                                       |
+| 2.3        | Sales       | Implemented (Odoo-style document workspace); build/tests green; browser click-through not executed                                                                |
+| 2.4        | Inventory   | Implemented (Odoo-style warehouse workspace); build/tests green; browser click-through not executed                                                               |
+| 2.5        | CRM         | Partial — pipeline increment recorded at the end of this file; browser acceptance not performed                                                                   |
+| 2.6        | Procurement | Implemented (Odoo-style purchasing workspace); build/tests green; browser click-through not executed                                                              |
+| 2.7        | Accounting  | Implemented (Odoo-style ledger workspace); build/tests green; browser click-through not executed                                                                  |
+| 2.8        | POS         | Implemented (Odoo-style register, cashier, payment, receipt, closing, orders, reporting and configuration); build/tests green; browser click-through not executed |
+| 2.9        | Work        | Implemented; focused engineering/browser verification recorded below; founder acceptance pending                                                                  |
+| 2.10       | People      | Implemented — independent source loading/retry; backend People tests and production builds pass; founder browser acceptance pending                               |
+| 2.11       | Documents   | Source implementation and focused checks pass; live request-recipient route needs runtime verification; populated-file and founder acceptance pending             |
+| 2.12       | Analytics   | Not started                                                                                                                                                       |
+| 2.13       | Automations | Not started                                                                                                                                                       |
+| 2.14       | Business ID | Not started                                                                                                                                                       |
 
 ## Checkpoint 2.1 — what was wrong
 
@@ -116,6 +116,7 @@ warehouse screen. Inventory was added to `appOwnedWorkspaces` so its sidebar sec
 the installed app instead of jumping to the shared Products/Reports tabs.
 
 **Implemented warehouse interface.**
+
 - Overview with real operation cards for receipts (incoming plans), delivery orders (shipments),
   posted internal transfers, physical inventory attention, replenishment suggestions and returns.
   Counts come from loaded authorized records; unsupported Odoo counts are not invented.
@@ -177,6 +178,7 @@ Back/Forward and workspace changes restore the same purchasing screen. Procureme
 `appOwnedWorkspaces` so its Products/Reporting sidebar sections stay inside the installed app.
 
 **Implemented purchasing interface.**
+
 - Purchase dashboard: RFQ-first landing page with compact activity counters (new RFQs, accepted
   offers, awaiting approval, late receipts, confirmed orders), confirmed purchase value separated by
   currency, search, status filter, list/kanban, pagination and a dense RFQ table with vendor, buyer,
@@ -246,15 +248,15 @@ different owner/administrator. Customer invoices come from the canonical Invoici
 bills come from Procurement; payment evidence comes from Payments/Reconciliation. Accounting does not
 create a second invoice, bill, payment or ledger.
 
-| Area | Existing authority | Required configuration | App treatment |
-| --- | --- | --- | --- |
-| Chart of Accounts | Accounting accounts | Setup or an explicit account | List, search, create, edit, activate/deactivate |
-| Journals | Accounting journals | A journal code/name; type is derived | List, create, edit; type/default accounts are not stored |
-| Journal entries | Accounting entries/lines | Open period, active journal and accounts | Full-page document, balanced lines, review, post, reverse |
-| Customer invoices | Invoicing records | Invoicing service | Read-only canonical list and detail; opens Invoicing |
-| Vendor bills | Procurement supplier bills | Procurement service | Read-only canonical list and detail; opens Procurement |
-| Payments | Payments/Reconciliation | Payment service | Evidence list; links to canonical payment/reconciliation |
-| Reports | Posted ledger | Posted entries for the selected currency/period | P&L, balance sheet, trial balance, general ledger, aging |
+| Area              | Existing authority         | Required configuration                          | App treatment                                             |
+| ----------------- | -------------------------- | ----------------------------------------------- | --------------------------------------------------------- |
+| Chart of Accounts | Accounting accounts        | Setup or an explicit account                    | List, search, create, edit, activate/deactivate           |
+| Journals          | Accounting journals        | A journal code/name; type is derived            | List, create, edit; type/default accounts are not stored  |
+| Journal entries   | Accounting entries/lines   | Open period, active journal and accounts        | Full-page document, balanced lines, review, post, reverse |
+| Customer invoices | Invoicing records          | Invoicing service                               | Read-only canonical list and detail; opens Invoicing      |
+| Vendor bills      | Procurement supplier bills | Procurement service                             | Read-only canonical list and detail; opens Procurement    |
+| Payments          | Payments/Reconciliation    | Payment service                                 | Evidence list; links to canonical payment/reconciliation  |
+| Reports           | Posted ledger              | Posted entries for the selected currency/period | P&L, balance sheet, trial balance, general ledger, aging  |
 
 ### Service gaps fixed
 
@@ -291,31 +293,31 @@ create a second invoice, bill, payment or ledger.
 
 ### Form completeness audit
 
-| Form | Required inputs | Option source | Prerequisite handling | Ready |
-| --- | --- | --- | --- | --- |
-| Account create/edit | code, name, type | Local enums | Duplicate code and version errors surfaced | Yes |
-| Journal create/edit | code, name, active | Local form | Duplicate code, version conflicts surfaced; type/default account not stored | Partial |
-| Journal entry | journal, date, currency, description, ≥2 lines | Configured journals/accounts | Missing period/accounts/journals banner; balanced total shown | Yes, subject to open period |
-| Posting | exact entry version + approval | Business approvals | Reviewer selector; no self-approval path | Yes |
-| Reversal | date, reason | Local form | Posted history stays immutable | Yes |
-| Period | name, start, end; lock reason | Local form | Reason required for state change | Yes |
-| Invoice/bill detail | none (canonical records) | Invoicing/Procurement | Read-only disclosure and service link | Yes |
-| Payment/reconciliation | none in Accounting | Payments/Reconciliation | Links to the authoritative workspace | Partial by design |
+| Form                   | Required inputs                                | Option source                | Prerequisite handling                                                       | Ready                       |
+| ---------------------- | ---------------------------------------------- | ---------------------------- | --------------------------------------------------------------------------- | --------------------------- |
+| Account create/edit    | code, name, type                               | Local enums                  | Duplicate code and version errors surfaced                                  | Yes                         |
+| Journal create/edit    | code, name, active                             | Local form                   | Duplicate code, version conflicts surfaced; type/default account not stored | Partial                     |
+| Journal entry          | journal, date, currency, description, ≥2 lines | Configured journals/accounts | Missing period/accounts/journals banner; balanced total shown               | Yes, subject to open period |
+| Posting                | exact entry version + approval                 | Business approvals           | Reviewer selector; no self-approval path                                    | Yes                         |
+| Reversal               | date, reason                                   | Local form                   | Posted history stays immutable                                              | Yes                         |
+| Period                 | name, start, end; lock reason                  | Local form                   | Reason required for state change                                            | Yes                         |
+| Invoice/bill detail    | none (canonical records)                       | Invoicing/Procurement        | Read-only disclosure and service link                                       | Yes                         |
+| Payment/reconciliation | none in Accounting                             | Payments/Reconciliation      | Links to the authoritative workspace                                        | Partial by design           |
 
 ### Verification
 
-| Check | Result |
-| --- | --- |
-| `website: npm run typecheck` | Pass |
-| `node --test tests/accounting-app.test.mjs` | 7/7 pass |
-| Accounting + Procurement + Inventory + Sales + Commerce + navigation + application-quality | 44/44 pass |
-| Root `npm run lint` | Pass (189 frontend modules, no static import cycles) |
-| Root `npm run build` | Pass |
-| `dist/__tests__/accounting.test.js` | 17/17 pass |
-| `website: npm run build` (Vite, prerender 82 pages, content tests) | 107/107 pass |
-| Full backend regression `npm test` | 446 tests, 445 pass, 0 fail, 1 skipped (21 suites) |
-| `npm run validate:openapi` | Pass: 59/59 mounted legacy operations documented |
-| `npm run validate:platform` | Pass: 430 workspace operations validated after regeneration |
+| Check                                                                                      | Result                                                      |
+| ------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| `website: npm run typecheck`                                                               | Pass                                                        |
+| `node --test tests/accounting-app.test.mjs`                                                | 7/7 pass                                                    |
+| Accounting + Procurement + Inventory + Sales + Commerce + navigation + application-quality | 44/44 pass                                                  |
+| Root `npm run lint`                                                                        | Pass (189 frontend modules, no static import cycles)        |
+| Root `npm run build`                                                                       | Pass                                                        |
+| `dist/__tests__/accounting.test.js`                                                        | 17/17 pass                                                  |
+| `website: npm run build` (Vite, prerender 82 pages, content tests)                         | 107/107 pass                                                |
+| Full backend regression `npm test`                                                         | 446 tests, 445 pass, 0 fail, 1 skipped (21 suites)          |
+| `npm run validate:openapi`                                                                 | Pass: 59/59 mounted legacy operations documented            |
+| `npm run validate:platform`                                                                | Pass: 430 workspace operations validated after regeneration |
 
 ### Limitations
 
@@ -368,11 +370,11 @@ such as Products could leave the installed app for a shared service tab.
 
 ### Boundary preserved
 
-| Layer | Responsibility |
-| --- | --- |
+| Layer                    | Responsibility                                                                                                          |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
 | POS service (`/pos/...`) | Registers, sessions, drawered cash, drafts, quotes, confirmation, receipts, handovers, cash/stock returns, daily report |
-| Canonical services | Products, Orders, Invoicing, Cash Flow, Customers, Inventory, Payments |
-| Installed POS app | Management workspace and cashier flow that coordinate the authoritative service APIs |
+| Canonical services       | Products, Orders, Invoicing, Cash Flow, Customers, Inventory, Payments                                                  |
+| Installed POS app        | Management workspace and cashier flow that coordinate the authoritative service APIs                                    |
 
 No second transaction engine, stock authority, invoice ledger or payment processor was created.
 
@@ -406,31 +408,31 @@ and back/forward keep the current destination.
 
 ### Service dependency audit
 
-| Dependency | Actual behavior |
-| --- | --- |
-| Products | Required; canonical product search, price, unit and tracking flag |
-| Orders | Required; confirmed sale creates the canonical channel order |
-| Invoicing | Required; confirmed sale creates one issued invoice linked to the order |
-| Cash Flow | Required; recorded cash is a merchant-observed drawer movement, not bank settlement |
-| Customers | Canonical walk-in/named customer is required by register/quote validation; the POS app reports this dependency and links to Customers, but the marketplace dependency list still omits it |
-| Inventory | Required for tracked products; warehouse/location must be configured and active; stock is checked on quote and dispatched through the canonical order flow |
-| Payments | Sandbox electronic intent only; a request is not confirmed collection |
-| Business policy | Sales discount ceiling is read authoritatively; the lower of register/policy ceiling applies |
-| Team/permissions | Managers configure and close; cashiers may only use assigned registers and their own sessions |
+| Dependency       | Actual behavior                                                                                                                                                                           |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Products         | Required; canonical product search, price, unit and tracking flag                                                                                                                         |
+| Orders           | Required; confirmed sale creates the canonical channel order                                                                                                                              |
+| Invoicing        | Required; confirmed sale creates one issued invoice linked to the order                                                                                                                   |
+| Cash Flow        | Required; recorded cash is a merchant-observed drawer movement, not bank settlement                                                                                                       |
+| Customers        | Canonical walk-in/named customer is required by register/quote validation; the POS app reports this dependency and links to Customers, but the marketplace dependency list still omits it |
+| Inventory        | Required for tracked products; warehouse/location must be configured and active; stock is checked on quote and dispatched through the canonical order flow                                |
+| Payments         | Sandbox electronic intent only; a request is not confirmed collection                                                                                                                     |
+| Business policy  | Sales discount ceiling is read authoritatively; the lower of register/policy ceiling applies                                                                                              |
+| Team/permissions | Managers configure and close; cashiers may only use assigned registers and their own sessions                                                                                             |
 
 ### Form completeness
 
-| Action | Required fields and resolved dependencies |
-| --- | --- |
+| Action                 | Required fields and resolved dependencies                                                                                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Create/revise register | Name, currency, timezone, tax, canonical customer, ≥1 payment intent, cashier/manager members, discount ceilings, acknowledgements; warehouse/location only when Inventory is active |
-| Open shift | Register version, opening cash, note, counted-cash acknowledgement |
-| Save draft | Open session, version, customer, ≥1 eligible product line, non-negative discount |
-| Review quote | Current session version; server validates products, tracked availability, discount ceiling, tax and totals |
-| Confirm sale | Exact quote hash, payment intent, tenders/acknowledgements, optional handover; backend rejects stale/duplicate requests |
-| Record cash / close | Manager authority, open session, exact version, counted cash, variance reason |
-| Cash return | Original cash receipt, manager, open original session, amount not exceeding remaining cash |
-| Stock return | Original dispatch, manager, Inventory/warehouse, remaining quantity |
-| Drawer adjustment | Manager, direction, amount, reason, physical-cash acknowledgement |
+| Open shift             | Register version, opening cash, note, counted-cash acknowledgement                                                                                                                   |
+| Save draft             | Open session, version, customer, ≥1 eligible product line, non-negative discount                                                                                                     |
+| Review quote           | Current session version; server validates products, tracked availability, discount ceiling, tax and totals                                                                           |
+| Confirm sale           | Exact quote hash, payment intent, tenders/acknowledgements, optional handover; backend rejects stale/duplicate requests                                                              |
+| Record cash / close    | Manager authority, open session, exact version, counted cash, variance reason                                                                                                        |
+| Cash return            | Original cash receipt, manager, open original session, amount not exceeding remaining cash                                                                                           |
+| Stock return           | Original dispatch, manager, Inventory/warehouse, remaining quantity                                                                                                                  |
+| Drawer adjustment      | Manager, direction, amount, reason, physical-cash acknowledgement                                                                                                                    |
 
 Warehouse requests show their error and a Retry action; they are not converted into an empty list.
 Register submit validates at least one enabled intent and cashier ceiling ≤ manager ceiling before
@@ -448,15 +450,15 @@ posting. Closing and receipt actions surface backend errors rather than generic 
 
 ### Verification
 
-| Check | Result |
-| --- | --- |
-| `website: npm run typecheck` | Pass |
-| `node --test tests/pos-app.test.mjs` | 6/6 pass |
-| POS + Accounting + Procurement + Inventory + Sales + Commerce + navigation + application-quality + app-intent | 52/52 pass |
-| Root `npm run lint` | Pass (197 frontend modules, no static import cycles) |
-| `npm run clean:test && npm run build` | Pass |
-| Backend `pos-registers`, `pos-settlement` suites | 21/21 pass |
-| `website: npm run build` | See the checkpoint verification row below |
+| Check                                                                                                         | Result                                               |
+| ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `website: npm run typecheck`                                                                                  | Pass                                                 |
+| `node --test tests/pos-app.test.mjs`                                                                          | 6/6 pass                                             |
+| POS + Accounting + Procurement + Inventory + Sales + Commerce + navigation + application-quality + app-intent | 52/52 pass                                           |
+| Root `npm run lint`                                                                                           | Pass (197 frontend modules, no static import cycles) |
+| `npm run clean:test && npm run build`                                                                         | Pass                                                 |
+| Backend `pos-registers`, `pos-settlement` suites                                                              | 21/21 pass                                           |
+| `website: npm run build`                                                                                      | See the checkpoint verification row below            |
 
 ### Limitations and unsupported capability
 
@@ -496,42 +498,42 @@ physical-device acceptance were **not executed**. The next application has not b
 
 ## Verification
 
-| Check | Result |
-| --- | --- |
-| `website: npm run typecheck` | Pass |
-| `website: node --test tests/sales-app.test.mjs` | 6/6 pass |
-| `website: npm run build` (tsc, Vite 492 modules, prerender 82 pages, content tests) | 87/87 pass |
-| Root `npm run lint` | Pass (181 frontend modules, no static import cycles) |
-| Root `npm run build` | Pass |
-| Backend `business-app-workflows`, `financial-operations` suites | 52/52 pass |
-| `website/src/apps/sales-app-model.ts` money/quantity tests | Exact integer minor-unit totals, tax rounding, discounts and paging |
-| Inventory: `website: npm run typecheck` | Pass |
-| Inventory: `node --test tests/inventory-app.test.mjs` | 6/6 pass |
-| Inventory + Sales + Commerce + navigation + application-quality tests | 30/30 pass |
-| Inventory: `website: npm run build` (Vite 494 modules, prerender 82 pages, content tests) | 93/93 pass |
-| Inventory: Root `npm run lint` | Pass (183 frontend modules, no static import cycles) |
-| Inventory: Root `npm run build` | Pass |
-| Inventory: backend `business-app-workflows`, `app-installations`, `marketplace` suites | 47/47 pass |
-| Full backend regression `npm test` | 435 tests, 434 pass, 0 fail, 1 skipped (21 suites) |
-| Procurement: `website: npm run typecheck` | Pass |
-| Procurement: `node --test tests/procurement-app.test.mjs` | 7/7 pass |
-| Procurement + Inventory + Sales + Commerce + navigation + application-quality | 37/37 pass |
-| Procurement: `website: npm run build` (Vite 498 modules, prerender 82 pages, content tests) | 100/100 pass |
-| Procurement: Root `npm run lint` | Pass (187 frontend modules, no static import cycles) |
-| Procurement: Root `npm run build` | Pass |
-| Procurement: backend `procurement`, `app-installations` suites | 17/17 pass |
-| Accounting: `website: npm run typecheck` | Pass |
-| Accounting: `node --test tests/accounting-app.test.mjs` | 7/7 pass |
-| Accounting: `website: npm run build` (prerender 82 pages, content tests) | 107/107 pass |
-| Accounting: Root `npm run lint` | Pass (189 frontend modules, no static import cycles) |
-| Accounting: backend full regression | 446 tests, 445 pass, 0 fail, 1 skipped |
-| Accounting: `validate:openapi` / `validate:platform` | 59/59 operations / 430 workspace operations |
-| POS: `website: npm run typecheck` | Pass |
-| POS: `node --test tests/pos-app.test.mjs` | 6/6 pass |
-| POS + Accounting + Procurement + Inventory + Sales + Commerce + navigation + application-quality + app-intent | 52/52 pass |
-| POS: Root `npm run lint` | Pass (197 frontend modules, no static import cycles) |
-| POS: backend `pos-registers`, `pos-settlement` | 21/21 pass |
-| POS: `website: npm run build` (Vite 509 modules, prerender 82 pages, content tests) | 113/113 pass |
+| Check                                                                                                         | Result                                                              |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `website: npm run typecheck`                                                                                  | Pass                                                                |
+| `website: node --test tests/sales-app.test.mjs`                                                               | 6/6 pass                                                            |
+| `website: npm run build` (tsc, Vite 492 modules, prerender 82 pages, content tests)                           | 87/87 pass                                                          |
+| Root `npm run lint`                                                                                           | Pass (181 frontend modules, no static import cycles)                |
+| Root `npm run build`                                                                                          | Pass                                                                |
+| Backend `business-app-workflows`, `financial-operations` suites                                               | 52/52 pass                                                          |
+| `website/src/apps/sales-app-model.ts` money/quantity tests                                                    | Exact integer minor-unit totals, tax rounding, discounts and paging |
+| Inventory: `website: npm run typecheck`                                                                       | Pass                                                                |
+| Inventory: `node --test tests/inventory-app.test.mjs`                                                         | 6/6 pass                                                            |
+| Inventory + Sales + Commerce + navigation + application-quality tests                                         | 30/30 pass                                                          |
+| Inventory: `website: npm run build` (Vite 494 modules, prerender 82 pages, content tests)                     | 93/93 pass                                                          |
+| Inventory: Root `npm run lint`                                                                                | Pass (183 frontend modules, no static import cycles)                |
+| Inventory: Root `npm run build`                                                                               | Pass                                                                |
+| Inventory: backend `business-app-workflows`, `app-installations`, `marketplace` suites                        | 47/47 pass                                                          |
+| Full backend regression `npm test`                                                                            | 435 tests, 434 pass, 0 fail, 1 skipped (21 suites)                  |
+| Procurement: `website: npm run typecheck`                                                                     | Pass                                                                |
+| Procurement: `node --test tests/procurement-app.test.mjs`                                                     | 7/7 pass                                                            |
+| Procurement + Inventory + Sales + Commerce + navigation + application-quality                                 | 37/37 pass                                                          |
+| Procurement: `website: npm run build` (Vite 498 modules, prerender 82 pages, content tests)                   | 100/100 pass                                                        |
+| Procurement: Root `npm run lint`                                                                              | Pass (187 frontend modules, no static import cycles)                |
+| Procurement: Root `npm run build`                                                                             | Pass                                                                |
+| Procurement: backend `procurement`, `app-installations` suites                                                | 17/17 pass                                                          |
+| Accounting: `website: npm run typecheck`                                                                      | Pass                                                                |
+| Accounting: `node --test tests/accounting-app.test.mjs`                                                       | 7/7 pass                                                            |
+| Accounting: `website: npm run build` (prerender 82 pages, content tests)                                      | 107/107 pass                                                        |
+| Accounting: Root `npm run lint`                                                                               | Pass (189 frontend modules, no static import cycles)                |
+| Accounting: backend full regression                                                                           | 446 tests, 445 pass, 0 fail, 1 skipped                              |
+| Accounting: `validate:openapi` / `validate:platform`                                                          | 59/59 operations / 430 workspace operations                         |
+| POS: `website: npm run typecheck`                                                                             | Pass                                                                |
+| POS: `node --test tests/pos-app.test.mjs`                                                                     | 6/6 pass                                                            |
+| POS + Accounting + Procurement + Inventory + Sales + Commerce + navigation + application-quality + app-intent | 52/52 pass                                                          |
+| POS: Root `npm run lint`                                                                                      | Pass (197 frontend modules, no static import cycles)                |
+| POS: backend `pos-registers`, `pos-settlement`                                                                | 21/21 pass                                                          |
+| POS: `website: npm run build` (Vite 509 modules, prerender 82 pages, content tests)                           | 113/113 pass                                                        |
 
 Browser click-through: **not executed**. No authenticated local workspace/browser control is
 available to this session; demo mode has no `/apps` transport, so it cannot install the app.
@@ -539,22 +541,22 @@ Do not present screenshots or live-flow evidence as completed.
 
 ## Phase 2 application matrix (working assessment)
 
-| App | Required services | Current app screen | Duplication / gap | Target next action |
-| --- | --- | --- | --- | --- |
-| Commerce | products, commerce, orders, invoicing, payments | Dedicated merchant workspace (new) | Service editor intentionally separate | Verify with an installed app and browser session |
-| Finance | invoicing, expenses, cash_flow | `FinanceDashboard`; nav mirrors service tabs | High: Invoices/Payments/Expenses/Reconciliation open service views | Operational finance overview; keep record detail shared |
-| Sales | customers, products, sales, orders, invoicing, fulfillment | Dedicated Odoo-style sales workspace (new) | Service editor remains separate | Verify with an installed app and browser session |
-| Inventory | products, inventory | Dedicated Odoo-style warehouse workspace (new) | Service register remains independent; no document/draft states invented | Verify operation cards and receipts/deliveries with an installed app |
-| CRM | customers, crm | `CrmWorkspace` | Medium: pipeline exists; Customers duplicates service | Pipeline-first composition, shared customer detail |
-| Procurement | customers, products, procurement (+ inventory, accounting, documents) | Dedicated Odoo-style purchasing workspace (new) | Service register remains independent; vendor pricing/agreements unsupported by backend | Verify RFQ → approval → order → receipt → bill flow with an installed app |
-| Accounting | accounting | Dedicated Odoo-style ledger workspace (new) | Service journals screen remains independent; no second ledger | Verify forms and reports in an installed browser session |
-| POS | products, orders, invoicing, cash_flow, pos (+ customers, inventory, payments) | Dedicated Odoo-style POS workspace (new): dashboard, orders, products, reporting, configuration, cashier/payment/receipt | Service register remains independent; cashier flow is shared | Verify register setup, counted shift, sale, receipt, return, close and nine-screen fidelity in an installed browser session |
-| Work | work | `WorkWorkspace` | High | Portfolio/board composition distinct from project service |
-| People | people | `PeopleWorkspace` | High | HR overview; preserve private access rules |
-| Documents | documents | `DocumentsWorkspace` | High | File manager is legitimate app workspace; distinguish service access |
-| Analytics | intelligence (+ forecasting) | `AnalyticsWorkspace` | Low-medium: already app-shaped | Confirm coverage/unsupported measures |
-| Automations | automations | `AutomationsWorkspace` | Medium | Run/exception overview distinct from rule editor |
-| Business ID | passport, verification, credentials, trust_network (+ blockchain) | `BusinessIDWorkspace` wraps `PassportWorkspace` sections | High: same trust workspace under app identity | Identity/evidence overview with app workflow; retain trust detail |
+| App         | Required services                                                              | Current app screen                                                                                                       | Duplication / gap                                                                      | Target next action                                                                                                          |
+| ----------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Commerce    | products, commerce, orders, invoicing, payments                                | Dedicated merchant workspace (new)                                                                                       | Service editor intentionally separate                                                  | Verify with an installed app and browser session                                                                            |
+| Finance     | invoicing, expenses, cash_flow                                                 | `FinanceDashboard`; nav mirrors service tabs                                                                             | High: Invoices/Payments/Expenses/Reconciliation open service views                     | Operational finance overview; keep record detail shared                                                                     |
+| Sales       | customers, products, sales, orders, invoicing, fulfillment                     | Dedicated Odoo-style sales workspace (new)                                                                               | Service editor remains separate                                                        | Verify with an installed app and browser session                                                                            |
+| Inventory   | products, inventory                                                            | Dedicated Odoo-style warehouse workspace (new)                                                                           | Service register remains independent; no document/draft states invented                | Verify operation cards and receipts/deliveries with an installed app                                                        |
+| CRM         | customers, crm                                                                 | `CrmWorkspace`                                                                                                           | Medium: pipeline exists; Customers duplicates service                                  | Pipeline-first composition, shared customer detail                                                                          |
+| Procurement | customers, products, procurement (+ inventory, accounting, documents)          | Dedicated Odoo-style purchasing workspace (new)                                                                          | Service register remains independent; vendor pricing/agreements unsupported by backend | Verify RFQ → approval → order → receipt → bill flow with an installed app                                                   |
+| Accounting  | accounting                                                                     | Dedicated Odoo-style ledger workspace (new)                                                                              | Service journals screen remains independent; no second ledger                          | Verify forms and reports in an installed browser session                                                                    |
+| POS         | products, orders, invoicing, cash_flow, pos (+ customers, inventory, payments) | Dedicated Odoo-style POS workspace (new): dashboard, orders, products, reporting, configuration, cashier/payment/receipt | Service register remains independent; cashier flow is shared                           | Verify register setup, counted shift, sale, receipt, return, close and nine-screen fidelity in an installed browser session |
+| Work        | work                                                                           | `WorkWorkspace`                                                                                                          | High                                                                                   | Portfolio/board composition distinct from project service                                                                   |
+| People      | people                                                                         | `PeopleWorkspace`                                                                                                        | High                                                                                   | HR overview; preserve private access rules                                                                                  |
+| Documents   | documents                                                                      | `DocumentsWorkspace`                                                                                                     | High                                                                                   | File manager is legitimate app workspace; distinguish service access                                                        |
+| Analytics   | intelligence (+ forecasting)                                                   | `AnalyticsWorkspace`                                                                                                     | Low-medium: already app-shaped                                                         | Confirm coverage/unsupported measures                                                                                       |
+| Automations | automations                                                                    | `AutomationsWorkspace`                                                                                                   | Medium                                                                                 | Run/exception overview distinct from rule editor                                                                            |
+| Business ID | passport, verification, credentials, trust_network (+ blockchain)              | `BusinessIDWorkspace` wraps `PassportWorkspace` sections                                                                 | High: same trust workspace under app identity                                          | Identity/evidence overview with app workflow; retain trust detail                                                           |
 
 ## Service-overlap register (deferred)
 
@@ -567,9 +569,9 @@ Do not present screenshots or live-flow evidence as completed.
 
 ## Next step
 
-Checkpoint 2.8 POS is complete pending founder acceptance. The remaining apps continue in separate
-checkpoints; no next application is authorized in this checkpoint. Do not start Work, People, Documents,
-Analytics, Automations or Business ID without founder approval.
+The preceding next-step note records the plan at the time it was written. Checkpoint 2.11 Documents is
+now recorded at the end of this file. Founder acceptance remains pending; do not start Phase 2.12 or
+modify `odoo-reference` as part of this checkpoint.
 
 ## Checkpoint 2.5 — CRM implementation in progress (14 November 2026)
 
@@ -616,3 +618,307 @@ The isolated CRM workflow suite passed 43/43, including configuration compatibil
 The existing operations worker now emits durable, deduplicated daily reminders for assigned open follow-ups due by the end of the Nairobi day, in bounded batches. It uses the existing CRM event and notification infrastructure, respects current member permissions and notification preferences, and rechecks CRM entitlement, assignee, due date and open status before delivery. Reminder identity includes the assignee so reassignment can notify the new owner. No email or external message is sent.
 
 The focused SQLite CRM suite passed 44/44 after the final reassignment change, including deduplication, completion suppression and reassignment. The immediately preceding full SQLite backend run passed 444/445 with one PostgreSQL-only skip and zero failures; that run preceded the final reminder-key refinement, which was covered by the focused suite. The website build and 93 frontend/content tests passed for the current report and settings UI; workspace OpenAPI validates 428 operations. Due notifications have not been browser-tested, and PostgreSQL, exhaustive cross-role/browser, and physical-device acceptance remain unverified. The earlier statement that due reminders were unsupported is superseded by this entry.
+
+## Work Phase 2.9 — implementation and focused verification, 15 November 2026
+
+Work remains an installed application over the canonical Work service, encrypted ERP records, current workspace membership and project grants. Existing project/task mutation, review, template, workflow and document services were reused. No parallel project store, customer register, financial workflow or file store was introduced.
+
+The application now provides the two-column Projects directory, project search/status/owner filters and grouping, card/register modes, authoritative task totals, participant initials, horizontal task stages, stage quick creation, priority and labels, drag/drop plus accessible movement and ordering, full-page task documents, and a dense sortable/groupable/paged task register. Task documents preserve descriptions, parents, dependencies, checklists, subtasks, followers, discussions, attachments and paginated revisions. Project settings provide members, owner, status, deadline, stages and milestones in a full-page form. Used stages cannot be removed or reclassified, and the final complete/incomplete category is protected.
+
+Calendar uses recorded starts, deadlines and milestones. Timeline provides a real date grid, date-span bars, milestone positions, day/week/month scale, previous/next/Today and task opening. Task analysis provides graph/table modes, measures (count, open, completed, overdue, estimated minutes), stage/assignee/priority grouping, recorded-deadline filters, completion rate and milestone states. Workload uses real project assignments. Project and task URLs support refresh and browser history; selected view is retained. Financial and customer links open their existing canonical record screens.
+
+Dependency fixes: project reads no longer depend on Team success; templates and Sales sources load independently; attachment reads survive a document-chooser failure. Missing member data has retry and restricts member-dependent creation. Member search preserves selected values. Customer/order fields use searchable readable canonical selectors, retain existing links if lookup fails, clear an order when its customer changes and expose service availability. Predecessor selection uses a searchable checked-row dialog and detects mixed parent/dependency cycles; parent choices also prevent completion deadlocks. Rejected moves roll back and retain their error message. Task saves reopen the authoritative saved task. Backend authorization, version conflicts, idempotency and completion checks remain mandatory.
+
+Backend additions: authorized project-directory aggregates for total/open/completed/overdue tasks; validated discussion page offset on the existing project GET; bounded SQL message pages with current project ACL; separate task-coverage flag so older discussions do not incorrectly invalidate task reporting. No schema migration or service entitlement change was required. The task graph remains bounded to 1,000 and the directory to 1,000; coverage is disclosed. Message and task revision history load in pages of 100. Customer/order lookup discloses its 100-record matching limit; document choices retain the existing 50-record limit.
+
+| Dependency         | Actual integration and failure behavior                                                                                                         |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Work               | Canonical project/task/stage/milestone/message/history APIs; scoped grants and expected versions; no client-side authority                      |
+| Team/identity      | Current owner, participants, assignee, follower, mention and separate-reviewer choices; role/project eligibility; independent load and retry    |
+| Customers          | Searchable authorized customer records; canonical ID persisted; optional link retained on service error                                         |
+| Sales/Orders       | Searchable customer-consistent order links and canonical navigation; existing separately reviewed Sales-source templates                        |
+| Documents          | Existing authorized attachment read/link/upload and document viewer; private permissions retained; service-availability explanation             |
+| Business approvals | Existing exact-version request/decision/reason/history; separate reviewer required; no self-approval shortcut                                   |
+| Automations        | Existing policy configuration, service/readiness state, separate policy review and paginated run history; inactive service does not block board |
+| Notifications      | Existing permitted Work workflow/mention notification infrastructure; no invented email or push delivery                                        |
+| Reporting          | Authorized loaded task graph plus directory SQL aggregates; explicit bounded coverage and planned-effort labels                                 |
+
+Form-completeness audit:
+
+| Form                     | Supplied contract and usable prerequisites                                                                                                                               |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Project create/edit      | Name, owner, current eligible members/permissions, stable stages, status, deadline, milestones, canonical optional customer/order; expected version for update           |
+| Task create/edit         | Title, stage, eligible assignee/followers, description, dates, priority, labels, estimate, parent, predecessor IDs, checklist; expected version; ordered date validation |
+| Dependency selection     | Real same-project tasks, staged selection/removal, readable assignee/stage/status/date, mixed-cycle checks; persisted by task mutation                                   |
+| Subtask/checklist        | Existing parent linkage and checklist IDs/completion; backend rejects incomplete parent completion                                                                       |
+| Milestones               | Stable ID, name, due date, completed state through versioned project settings                                                                                            |
+| Discussion/reply/mention | Existing task/thread/member selectors and persistent Work message API; older-history navigation                                                                          |
+| Documents                | Authorized document selection or existing private uploader, canonical source kind/ID and current file rights                                                             |
+| Review                   | Current project version and separate eligible reviewer; decision/reason through shared approvals; missing reviewer explained                                             |
+| Workflow                 | Current project/policy version, supported completion recipe, eligibility filters, service readiness, independent review and execution history                            |
+| Sales-source project     | Existing approved template/source selection, required owner/participants and idempotent source conversion; missing prerequisites explained                               |
+
+Focused verification: isolated SQLite integration passed **61/61** across Work, business-app workflows and workspace experiences. Work tests cover current membership/grants, private projects, assignee/date/dependency validation, optimistic concurrency, subtasks/checklists, retained history, threaded discussion/mentions, deactivation, exact reviews, Sales-template conversion and approved workflow fences. Added coverage checks authoritative directory counts, discussion access and history beyond 100 messages. Frontend tests additionally cover mixed cycles, cancelled subtasks, quick filters and independent directory loading with Team failure/retry. Build, lint and contract results are recorded below after final execution.
+
+Running-screen comparison used a disposable synthetic local SQLite workspace in the isolated in-app browser. Compared all eight corresponding structures: (1) two-column project cards, (2) horizontal Kanban with compact actions, (3) full-page task sheet and tabs, (4) dense task register, (5) wide searchable predecessor dialog with lower-left actions, (6) date-grid timeline, (7) grouped project settings/stages/milestones, and (8) measures/grouping/chart/table analysis. The comparisons exposed excess board administration panels, a short dependency dialog, hidden record-save return and overwritten failure feedback; these were corrected. The existing global shell, AfriCore typography/green controls, real fields and permissions intentionally remain. Configuration exposes actual supported settings rather than copying Odoo billing/recurrence toggles. Reporting uses present-state task counts rather than fabricating historical burndown points. This is running-screen engineering comparison, not a claim of pixel identity or founder acceptance.
+
+Browser flows exercised project creation with a selectable current owner, task editing and return to the saved record, persisted predecessor selection, rejected blocked completion, milestone completion reflected in scheduling/reporting, task opening from timeline, Documents capability controls and refresh of a selected task. Final responsive and navigation checks are recorded below. Approval, Sales-source and workflow failure/security paths were exercised by integration tests; comprehensive browser acceptance of those paths remains the founder's checklist, not a fabricated test claim.
+
+Unsupported by the current authoritative model: actual timesheets/time spent, task billing/invoice/report signing, automatic recurring tasks, automatic schedule changes, historical burndown reconstruction, map routes, external email/push delivery, document unlink where no API exists, and graphical dependency connectors. No enabled decorative controls advertise those actions. Project milestones are project records; task-to-milestone assignment is not represented by the current task schema. Estimated effort and checklist completion remain distinct from recorded time. Offset discussion history is bounded to the supported 100,000 offset and can shift if new messages arrive between page reads; duplicate IDs are merged in the client.
+
+Files: `src/erp/work.ts`, `src/erp/store.ts`, `src/erp/routes.ts`, `src/__tests__/work.test.ts`; `website/src/apps/WorkWorkspace.tsx`, `WorkEditors.tsx`, `WorkTaskDetails.tsx`, `WorkTaskTable.tsx`, `WorkDateViews.tsx`, `WorkDependencyPicker.tsx`, `WorkRecordLinks.tsx`, `work-app-model.ts`, `WorkReviews.tsx`, `WorkTemplates.tsx`, `DocumentAttachments.tsx`, `AppsWorkspace.tsx`; `website/src/BusinessApp.tsx`, `website/src/approved-platform.css`, `website/tests/work-app.test.mjs`, and this report.
+
+Founder manual acceptance checklist:
+
+1. Open Work and compare Projects to Image 1; search, group, filter and switch register/cards.
+2. Create a project, choose owner/members and refresh; verify private access with another account.
+3. Edit settings/stages/deadline/customer/order and confirm canonical linked-record navigation.
+4. Create/assign/date/prioritize/tag tasks; refresh and compare board to Image 2.
+5. Drag and reorder tasks, then use the keyboard-accessible stage actions; test stale edits.
+6. Open the full task document and compare Image 3; inspect every information tab and retained history.
+7. Create a subtask/checklist and test completion constraints, predecessor selection/removal/cycle rejection against Image 5.
+8. Compare list/grouping/sorting/pagination to Image 4 and exercise overdue/unassigned/blocked/week filters.
+9. Inspect calendar dates and open a task; compare timeline to Image 6 and test all scales/navigation.
+10. Save milestone dates/completion and compare project configuration to Image 7.
+11. Post/reply/mention and refresh discussion; load earlier messages.
+12. Link/upload/open authorized documents; verify unrelated private documents remain inaccessible.
+13. Request a separate review, approve/reject with reason and test stale snapshots.
+14. Configure/review/run supported workflows; inspect inactive-service and blocked execution states.
+15. Create from an eligible Sales source and separately reviewed template; test duplicate protection.
+16. Compare reporting to Image 8, switch graph/table/measures/grouping and reconcile against real tasks.
+17. Test browser Back/Forward/refresh and narrow-screen layouts; verify no lost edits on error.
+
+Status: supported Phase 2.9 implementation is ready for founder review after the final checks below. Unsupported capabilities are explicitly separated above. No commit, push, deployment, production records or live notifications were performed. At the time of this historical Work report, People was the next checkpoint.
+
+Final verification: backend production build passed; isolated focused integration **61/61** passed (the sandbox initially denied loopback connections; the same disposable tests passed with localhost access). Website production build and frontend/content tests **117/117** passed. Lint, architecture/import isolation, `git diff --check`, development configuration **3/3**, and API registration validation **430 operations** passed. No PostgreSQL/physical-device or exhaustive browser acceptance is claimed. The tested board had no document-wide horizontal overflow at requested 390, 768, 1280 and 1440 widths; horizontal board scrolling stays inside the board. Refresh retained both selected task and reporting view. A final board screenshot is retained locally in `.tmp/work-final-board.jpg`; it contains only synthetic fixture records. The isolated server was stopped. All edits remain uncommitted for founder review.
+
+## Checkpoint 2.10 — People Odoo reference and dependency repair, 16 November 2026
+
+The Phase 2.9 Work implementation and its completion report are recorded above; the original checkpoint table was stale and has been corrected. Founder acceptance of Work remains pending. This prompt explicitly starts the People checkpoint; Documents and later apps have not been started.
+
+### Odoo Community reference
+
+Focused read-only study at Odoo `20.0`, commit `9d233dca4156d58ca573e9cdc3b32327c97aa282`: `addons/hr` (employee/department), `addons/hr_attendance` (attendance validation), and `addons/hr_holidays` (leave and approval states). Odoo Employee and Attendance manifests are LGPL-3. Model paths and observed validation/state behavior are indexed in `docs/odoo-reference/notes/hr.md` and `docs/odoo-reference/RESEARCH_LOG.md`. No Odoo code/assets were copied; no Odoo files changed.
+
+### AfriCore findings and parity
+
+People already has dedicated employee, department, org-chart, onboarding, policy, leave, balance, approval, attendance, correction, compensation privacy and reporting flows. Authoritative services are `src/erp/people-profiles.ts`, `people-access.ts`, `people-leave.ts`, `people-attendance.ts`, `people-contracts.ts`, and `people-reports.ts`; routes are in `src/erp/routes.ts`. UI flows live in `PeopleWorkspace.tsx`, `PeopleEditors.tsx`, `PeopleManagement.tsx`, `PeopleRecordActions.tsx`, and `PeopleReports.tsx`. Service tests are in `src/__tests__/people.test.ts`. The People service, not Odoo, remains the authorization and business-rule authority. Payroll and statutory deductions are not supported or represented as calculated.
+
+| Feature                                    | Odoo source                                                                        | AfriCore implementation                                                              | Status / gap                                                                                | Priority |
+| ------------------------------------------ | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- | -------- |
+| Employee profile, department and hierarchy | `addons/hr/models/hr_employee.py`, `hr_department.py`                              | `people-profiles.ts`, private employee directory and organization chart              | Existing; founder role/browser acceptance pending                                           | High     |
+| HR privacy and manager visibility          | HR manifest/security and employee field groups                                     | `people-access.ts`, scoped projections and current-member checks                     | Existing service fences; test cross-role boundaries                                         | Critical |
+| Leave request, balance and approvals       | `addons/hr_holidays/models/hr_leave.py` state transitions and validation           | `people-leave.ts`, policy versioning, integer-milli ledger and separate exact review | Existing; no statutory entitlement assumed                                                  | Critical |
+| Attendance interval and correction         | `addons/hr_attendance/models/hr_attendance.py` date/order/open/overlap constraints | `people-attendance.ts`, overlap validation and reasoned retained corrections         | Existing; no location or biometric claim                                                    | High     |
+| Auxiliary service failure                  | Odoo integrated addon registry                                                     | Independently loaded People/team/approval sources                                    | Fixed here; per-source errors and People data retry, including policy load failure recovery | High     |
+| Payroll/work-entry calculations            | Separate Odoo dependencies/addons                                                  | No AfriCore payroll service                                                          | Unsupported and disclosed                                                                   | Low      |
+
+### Change in this increment
+
+`PeopleWorkspace.tsx` no longer uses one all-or-nothing `Promise.all` for configuration, employees, Team, departments, leave types, leave requests, attendance and approvals. Each response is applied independently. Employee detail, leave balances and restricted compensation also load independently. Failures stay visible with their source name and a People data retry; policy failure has a retry path instead of an endless initial spinner. Permission errors and backend validation remain unchanged.
+
+Changed files for this checkpoint: `website/src/apps/PeopleWorkspace.tsx`; `docs/PHASE2_APP_PROGRESS.md`; `docs/odoo-reference/RESEARCH_LOG.md`; `docs/odoo-reference/MODULES.md`; new `docs/odoo-reference/notes/hr.md`. Existing unrelated uncommitted Work, workspace and documentation changes were preserved.
+
+### Verification and completion
+
+The People frontend typecheck and production build completed; the build's content/frontend suite passed **117/117**. The focused backend People integration suite passed **9/9** against disposable test data. Backend production build and repository lint, architecture and import-isolation checks passed. `git diff --check` passed (Git emitted only its standard working-copy LF-to-CRLF notices). The detail-panel regression was also repaired so balance-read failure cannot suppress an authorized compensation read. No visual browser comparison was performed; there was no People-specific approved screenshot in this checkpoint's attachments, and founder browser/role acceptance remains pending.
+
+Checkpoint status: implementation and engineering checks complete for the audited People functionality and source-loading recovery. Existing People records, policy, directory, leave, approval, attendance, correction, compensation privacy and reports continue to use their existing canonical services; no parallel business model was added. No migration, production records, deployment, commit or push. This report records the completed checkpoint and stops here as instructed; Documents has not been started.
+
+## Checkpoint 2.11 — Documents implementation and verification, 16 November 2026
+
+### Architecture findings and Odoo comparison
+
+AfriCore Documents is a dedicated installed application over the existing `documents` service, not a
+second storage authority. `website/src/apps/DocumentsWorkspace.tsx` owns the file browser, folder
+navigation, details panel, preview, configuration, request/review sections and file actions. The
+authoritative data and policy live in `src/erp/documents.ts`, `documents-access.ts`,
+`documents-contracts.ts`, `document-links.ts`, `document-requests.ts`, and `document-reviews.ts`;
+route and capability declarations are in `src/erp/routes.ts` and `src/erp/metadata.ts`. Content is
+encrypted and retained in the existing document blob/version tables, with grants, usage limits,
+audit events, optimistic versions and idempotent operations enforced server-side.
+
+Odoo 20's official Documents documentation describes a left tree for All, Company, My Drive, Shared
+with me, Recent and Trash, folder/file views, preview actions, sharing, version management, request
+reminders and centralization settings. The supplied images show those structures. AfriCore now uses
+the same recognizable three-region workspace: workspace sections at left, searchable grid/list in
+the center, and file properties/activity at right, with modal preview, sharing and request flows.
+AfriCore retains its own shell, palette, labels, services and authorization. It does not copy Odoo
+code, logos or proprietary assets, and intentionally does not reproduce unsafe public sharing or
+unsupported Odoo operations. The reference page is [Odoo 20 Documents documentation](https://www.odoo.com/documentation/20.0/applications/productivity/documents.html).
+
+### Dependency and integration matrix
+
+| Dependency                        | Actual dependency and behavior                                                                                                                                                                              | Status                                                                                                         |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Documents service and storage     | Encrypted private file/version storage, current grants, quota accounting, audit, idempotency and expected-version contracts; deactivation stops new writes while authorized retained reads remain available | Implemented and covered by focused backend tests                                                               |
+| Workspace identity and Team       | Current member names, recipient search, permission gates and server-side membership rechecks; file directory, member names and record sources load independently with visible retry/error states            | Server endpoint is implemented and integration-tested; the current local browser server returned `Resource not found` for this new route, so recipient loading needs runtime verification after the API process is refreshed |
+| Folder service                    | Authorized server-paged folder options, parent/child paths, explicit inherited access and matching personnel classification                                                                                 | Implemented and covered by folder permission tests                                                             |
+| Business approvals                | Exact retained document version, separate eligible reviewer, durable decision and reason; changed file revisions invalidate an earlier decision                                                             | Implemented and covered by focused backend tests                                                               |
+| People                            | Employee classification, People service and HR/self-service checks are evaluated alongside document rights on each relevant read/write                                                                      | Implemented; cross-role acceptance remains manual                                                              |
+| Work                              | Canonical project/task source checks, existing private file grants and task/project navigation                                                                                                              | Implemented; Work regression suite passes                                                                      |
+| Sales and Orders                  | Canonical quotation (`ac_sales_quotes`) and order (`ac_records`, kind `orders`) selectors and attachment panels; current Sales/Orders service and operational authority are required                        | Implemented in this checkpoint; covered by the Documents integration suite                                     |
+| Procurement                       | Canonical purchase-order and supplier-bill sources; financial source access remains separate; supported order/bill panels use the existing Procurement workspace                                            | Implemented; upload into these screens remains disabled where the panel only supports linking an existing file |
+| Accounting / Invoicing            | Canonical invoice relationship and invoice detail attachment panel; financial role plus Invoicing service are independently required                                                                        | Implemented; invoice source access is covered by existing security tests                                       |
+| Expenses                          | Receipt/supporting files attach through the existing Expenses service; Documents and financial source rights are rechecked                                                                                  | Implemented and covered by cross-app permission tests                                                          |
+| Customers                         | Canonical customer relationship and readable customer selector; a linked file retains its own grants                                                                                                        | Implemented in the customer record detail workflow                                                             |
+| Business ID                       | Supplemental verification-document links are kept separate from primary Trust evidence and never raise identity assurance                                                                                   | Implemented in the Trust/Passport workspace                                                                    |
+| Notifications                     | Requests notify through existing in-app notification infrastructure; there is no outbound email claim                                                                                                       | Implemented for in-app notifications; email is unsupported                                                     |
+| API body parsing and file storage | Route-specific Base64 JSON allowance is 4 MiB to admit a 2 MiB file; unrelated application routes retain the 1 MiB JSON limit                                                                               | Implemented; streaming uploads remain a dependency for larger files                                            |
+
+### Defects investigated and changes completed
+
+| Defect or workflow                                   | Change and evidence                                                                                                                                                                                                                                                                               | State                                                                                                                                |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Coupled Team/folder reads                            | Independent reads retain their own loading, error and retry state; one failed source no longer hides the other                                                                                                                                                                                    | Implemented; typecheck/build and UI behavior checks pass                                                                             |
+| Incomplete folder discovery                          | Folder pickers search and page authorized folders, show readable hierarchy, filter destination type/classification, and submit canonical IDs                                                                                                                                                      | Implemented; backend checks destination access and prevents cycles/classification changes                                            |
+| Incomplete existing-file selection                   | Cross-app attachment picker searches the editable authorized file window and pages results; it is not offered after source access fails                                                                                                                                                           | Implemented; Work/Documents integration coverage passes                                                                              |
+| Missing inline PDF preview                           | Authorized content is fetched through the protected endpoint and rendered in the preview dialog; image and UTF-8 text previews are also supported                                                                                                                                                 | Implemented; actual file preview awaits populated local data/manual acceptance                                                       |
+| Small uploads                                        | The existing bounded 2 MiB per-file and 50 MiB retained workspace limits are disclosed and consistently enforced. They were not raised because the current Base64 JSON, full-buffer validation/encryption path has no streaming backpressure; larger limits would multiply request and memory use | Partially implemented; safe larger upload architecture remains outstanding                                                           |
+| Upload destination                                   | Create/upload form exposes authorized destination folder and classification; backend validates the target and effective access                                                                                                                                                                    | Implemented and covered by folder tests                                                                                              |
+| Raw source UUID inputs                               | Request and link workflows use server-searched readable records. The selector supports customer, invoice, Sales quotation/order, expense, purchase order, supplier bill, employee, Work task and verification review sources                                                                      | Implemented; source authorization and Sales attachment paths are tested                                                              |
+| Candidate coverage                                   | Directory, source and member lookups search server-side before paging; pages contain 50 items and bounded 5,000-candidate windows disclose truncation                                                                                                                                             | Implemented with explicit coverage notices; very large workspaces remain bounded                                                     |
+| Malware and physical deletion                        | Configuration and file details state no malware scan; trash is recoverable and retained blobs/versions count toward quota; no permanent-delete control was added                                                                                                                                  | Implemented honestly; external scanning and physical erase are unsupported                                                           |
+| Sensitive source access                              | Personnel, financial and Sales links are rechecked against current People/financial/Sales roles and services. Sharing a record never creates file access. File grants, download rights and expiry remain independent                                                                              | Implemented and covered by security regression tests                                                                                 |
+| Request recipient could select self/ineligible users | Added `GET /document-request-assignees`: filters the current requester, current membership, operational role, selected source rights and destination folder rights. Request creation revalidates all conditions                                                                                   | Backend integration test verifies requester/viewer exclusion, pagination metadata and eligible recipients; live UI currently receives `Resource not found` from the running API instance               |
+| Sales attachments absent                             | Added canonical `sales_quotation` and `sales_order` source kinds, read-time source permission checks, searchable selectors, request choices and attachment panels                                                                                                                                 | Implemented; quote/order creation, linking, listing and explicit-file-grant/source-access boundary pass focused integration coverage |
+| Trash displayed create/drop controls                 | Upload, folder creation and drag/drop are disabled in Trash; the empty message describes recoverable retention                                                                                                                                                                                    | Implemented; manually inspected in the local browser                                                                                 |
+| Duplicate current folder in sidebar                  | The active folder is omitted from the root quick list when already present in the path                                                                                                                                                                                                            | Implemented; manually inspected in the local browser                                                                                 |
+
+### Screen and feature status
+
+| Screen or feature                  | AfriCore implementation                                                                                                                                      | Status / verification                                                                                                     |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| Image 1 — main Documents workspace | AfriCore app shell, toolbar/search, folder/workspace tree, document browser, view controls and optional detail panel                                         | Implemented. Live empty-state structure was compared; live workspace had no files to compare populated tiles              |
+| Image 2 — grid                     | Folder and file cards, metadata, selectable items, quick actions, folder breadcrumbs and paging                                                              | Implemented and frontend build-tested. Populated file cards were not available for live visual comparison                 |
+| Image 3 — list                     | Server-backed sortable/searchable rows, selection, metadata and paging                                                                                       | Implemented and frontend build-tested. Live list was empty; populated row proportions remain founder acceptance           |
+| Image 4 — preview                  | Protected PDF iframe, bounded image preview, text preview, safe unsupported-type message, metadata/activity and authorized download                          | Implemented. A real PDF/image/text file was not available for live preview verification                                   |
+| Image 5 — actions                  | Rename/description/tags, move, duplicate, star, download, versions, share and recoverable trash/restore use real endpoints                                   | Implemented and endpoint-backed. Populated action menu was not exercised in the empty user workspace                      |
+| Image 6 — sharing                  | Current member selector, Viewer/Editor, separate download permission, expiry, folder inheritance acknowledgement and version conflict handling               | Implemented and API/security tested. No live populated share dialog comparison was possible                               |
+| Image 7 — request document         | Title, eligible recipient, instructions, due time in East Africa, authorized destination, related-source search, private submission and exact-version review | Dialog structure was visually inspected. Backend selector passes integration tests, but the live request dialog currently shows `Resource not found` for recipient lookup; verify after refreshing the API runtime |
+| Reviews                            | Queue, exact file/version, eligible reviewer, reasoned accept/reject and changed-version invalidation                                                        | Implemented and focused backend tested; manual reviewer session remains pending                                           |
+| Trash / restore                    | Reasoned state transition, recoverable list, parent/permission checks and folder restrictions                                                                | Implemented and backend tested; empty Trash view was visually inspected                                                   |
+| Cross-app links                    | Work, People, Sales/order, Procurement, invoice/accounting, expense, customer and verification links described above                                         | Implemented for supported source kinds; focused Documents, Work and security tests pass                                   |
+| Image 8 — configuration            | Actual quota usage/limits, type rules, sharing, version retention, trash, cross-app sources, requests/reviews and honest service availability                | Implemented; configuration page was visually inspected in the live local app                                              |
+| Responsive layout                  | CSS adapts the browser, detail panel, toolbar, preview and settings for narrow screens                                                                       | Implemented in stylesheets; representative 1440/1280/768/390 live viewport checks remain founder manual acceptance        |
+
+### Form and API contract audit
+
+| Workflow                | Contract and prerequisite result                                                                                                                                                                      |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Upload / create         | File name, allowed MIME/signature, metadata, private policy, optional authorized folder and optional canonical source; server rechecks current service, rights, quota, classification and idempotency |
+| Create folder           | Readable name, optional existing authorized parent and policy; server validates parent folder, rights and no cycle                                                                                    |
+| Rename / metadata       | Name, description and tags use the document's expected version; server returns conflict instead of overwriting stale edits                                                                            |
+| Move                    | Existing file, authorized destination selector, expected version and policy-change acknowledgement; no automatic source audience inheritance                                                          |
+| Share                   | Search current members by readable names, Viewer/Editor, distinct download permission and expiry; no public bearer links                                                                              |
+| Download / preview      | Current document access and download permission checked by content endpoint; browser does not load content from unauthenticated URLs                                                                  |
+| New version             | File, 8+ character change reason and current document version; content is appended as retained immutable version                                                                                      |
+| Duplicate               | Authorized source, readable name/metadata and explicit target policy; future source revisions do not grant access to copy                                                                             |
+| Trash / restore         | Current version and reason; folder restrictions and parent-state checks remain server-enforced; there is no delete-forever button                                                                     |
+| Request                 | Document title, eligible current operational submitter, expiry, optional authorized destination and optional readable canonical source; requester cannot assign themself                              |
+| Request submission      | Assigned current member, permitted file, note and current request version; creates retained private file and exact-version review; no role grant occurs                                               |
+| Review                  | Authorized separate reviewer, exact version, decision and reason; edit invalidates earlier decision                                                                                                   |
+| Source link / cross-app | Canonical source type and server-verified source ID selected by label; `documentSourceAccess` checks each source, and file grants remain separate                                                     |
+
+No database migration or parallel file authority was added. New endpoints are present in route
+metadata and generated workspace OpenAPI. The route-level upload parser is limited to the specific
+document upload endpoints.
+
+### Visual comparison and limitations
+
+The local Documents screen was opened in the authenticated in-app browser. The live data set had one
+empty “Mine” folder and no documents. I compared the shell, workspace sidebar, central browser,
+toolbar/search, empty grid/list states, request dialog, configuration grouping and Trash state with
+the supplied references. This revealed the duplicate-folder label and misleading Trash create actions,
+which were fixed. The request dialog has the expected fields, but its eligible-recipient request returns
+`Resource not found` in the currently running API instance even though the endpoint is registered in
+source and passes integration tests. The live API process therefore needs to load the current route
+before that selector can be accepted. The global AfriCore shell, branding, palette and typography
+intentionally differ from Odoo. Populated file cards, row contents, preview, share dialog, version
+history and action menu could not be visually compared without file records. I did not create or
+upload data in the founder's sandbox. No 1440/1280/768/390 viewport comparison was made. This is a
+partial running-screen comparison, not pixel verification or founder acceptance.
+
+The current per-file limit is 2 MiB; storage retains at most 50 MiB per workspace environment,
+including trash and historical versions. Uploads travel as Base64 JSON and are buffered for
+signature/structure validation and encryption. A larger cap is not claimed until streamed/binary
+upload, backpressure, bounded validation and corresponding quota/transaction/idempotency handling
+are available. Only PDF, PNG, JPEG and UTF-8 text are accepted. Files are not malware-scanned.
+There is no permanent erasure lifecycle, outbound request reminder/email provider, public bearer
+sharing, Office-native rendering, OCR/AI sorting, signature, PDF split/merge, ZIP folder download,
+file lock, folder automation, full attachment centralization, or app-driven removal from Trash.
+These are unsupported and are not shown as operational controls.
+
+### Focused verification
+
+| Check                                                                                   | Result                                                                                                        |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `npm run build`                                                                         | Passed after the final backend changes                                                                        |
+| `npm --prefix website run typecheck`                                                    | Passed                                                                                                        |
+| `npm --prefix website run build` and frontend/content suite                             | Passed; **117/117**                                                                                           |
+| `node --test dist/__tests__/documents.test.js dist/__tests__/document-requests.test.js` | Passed; **23/23** (isolated SQLite data, loopback permission granted)                                         |
+| `node --test dist/__tests__/work.test.js`                                               | Passed; **14/14** after the final Sales source-link changes                                                   |
+| `npm run lint`                                                                          | Passed; ESLint, architecture and test-isolation checks                                                        |
+| `npm run validate:openapi`                                                              | Passed; all **59** mounted Express operations documented                                                      |
+| `npm run validate:platform`                                                             | Passed; **433** workspace operations validated against Express registrations                                  |
+| `git diff --check`                                                                      | Passed; Git printed only line-ending normalization notices                                                    |
+
+Loopback integration tests require the test process to bind local HTTP servers; the initial sandbox
+run was denied by the operating system. Re-running the same isolated tests with loopback permission
+passed. Website production builds print the existing Zod/Rollup pure-comment warnings; the build
+completes successfully.
+
+### Files changed for Documents and shared integrations
+
+Backend/contracts/tests and contract artifacts: `src/app.ts`, `src/apps/catalog.ts`,
+`src/common/private-file.ts`, `src/erp/document-links.ts`, `document-requests.ts`,
+`document-reviews.ts`, `documents-access.ts`, `documents-contracts.ts`, `documents.ts`, `routes.ts`,
+`metadata.ts`, `store.ts`, `src/operations/business-routes.ts`, `src/erp/work.ts`,
+`src/__tests__/documents.test.ts`, `src/__tests__/document-requests.test.ts`,
+`src/__tests__/work.test.ts`, and `platform-openapi.json`.
+
+Frontend and styles: `website/src/BusinessApp.tsx`, `website/src/accounts/FocusedWorkspace.tsx`,
+`website/src/approved-platform.css`, `website/src/apps/AppsWorkspace.tsx`,
+`DocumentAttachments.tsx`, `DocumentEditors.tsx`, `DocumentRequests.tsx`, `DocumentReviews.tsx`,
+`DocumentsWorkspace.tsx`, `PeopleWorkspace.tsx`, `SalesAppWorkspace.tsx`,
+`AccountingAppWorkspace.tsx`, `website/src/apps/apps.css`, `website/src/apps/document-files.ts`,
+`website/src/marketplace/MoneyTools.tsx`, `website/src/trust/PassportWorkspace.tsx`, and
+`website/tests/document-files.test.mjs`.
+
+The shared working tree also contains uncommitted Phase 2.5 CRM, Phase 2.9 Work, Phase 2.10 People,
+workspace setup and Odoo-reference research changes. Those remain intact and are not represented as
+new Documents behavior. No files in `odoo-reference` were modified during this checkpoint. All work
+remains uncommitted; no migration, dependency installation, commit, push, deployment, provider change
+or production record mutation was performed.
+
+### Founder manual acceptance checklist
+
+The founder should complete these checks against the running app and compare every screenshot before
+calling visual acceptance complete:
+
+1. Open AfriCore Documents and compare the landing layout with Image 1.
+2. Open My Drive and Company and verify their distinct folder scopes.
+3. Create and open a nested folder.
+4. Upload a permitted PDF to that folder and verify it appears in grid and list.
+5. Open, preview and download the PDF.
+6. Rename it, edit tags, move it and duplicate it.
+7. Create a new version and open history; download an older version.
+8. Share with an eligible current member; verify Viewer, Editor, download and expiry behavior with that account.
+9. Revoke or expire the grant and verify access is removed.
+10. Create a document request, submit as the eligible person and review the exact retained file.
+11. Approve/reject with an authorized reviewer and reason; verify a later version is not certified by the old review.
+12. Move a file to Trash, inspect the original-folder metadata, restore it and test parent-folder constraints.
+13. Link a document to a Work task and confirm authorized navigation.
+14. Verify Work/People/financial source users still need separate document grants.
+15. Test Sales quotation/order, procurement order/bill, invoice, expense, customer and verification links.
+16. Search, filter, paginate and inspect the 5,000-record coverage notices.
+17. Open Configuration and compare quota, supported types, scanning, retention and integrations with Image 8.
+18. Compare all eight references with a populated workspace, including the preview, action and share screens.
+19. Repeat key flows at 1440px, 1280px, 768px and 390px; verify keyboard focus, touch targets and no page-wide overflow.
+
+Checkpoint 2.11 source implementation and automated verification are complete. The local browser
+request dialog still receives `Resource not found` for the new recipient endpoint, despite the route
+passing isolated integration tests; the running API runtime must be refreshed or aligned before that
+workflow is accepted end to end. Populated-data screenshot comparison, role-by-role browser
+acceptance, representative responsive checks and founder approval remain outstanding. Do not start
+the next checkpoint until the founder authorizes it.

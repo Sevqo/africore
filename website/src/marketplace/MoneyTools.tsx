@@ -3,17 +3,20 @@ import { DateRange } from '../components/DateRange';
 import { Field, today, money, type API } from '../operations/UI';
 import { parseMoney } from '../../../src/finance/money';
 import { Overlay } from '../components/Overlay';
+import { DocumentAttachments } from '../apps/DocumentAttachments';
 const categories = ['stock', 'rent', 'utilities', 'payroll', 'delivery', 'other'];
 export function MoneyTools({
   api,
   scope,
   cashFlow = false,
   writable,
+  documentsEnabled = false,
 }: {
   api: API;
   scope: string;
   cashFlow?: boolean;
   writable: boolean;
+  documentsEnabled?: boolean;
 }) {
   const [expenses, setExpenses] = useState<any[]>([]),
     [obligations, setObligations] = useState<any[]>([]),
@@ -22,7 +25,8 @@ export function MoneyTools({
     [busy, setBusy] = useState(false),
     [version, setVersion] = useState(0),
     [range, setRange] = useState({ from: '', to: '' }),
-    [editing, setEditing] = useState<any>(null);
+    [editing, setEditing] = useState<any>(null),
+    [documentsFor, setDocumentsFor] = useState<any>(null);
   const formKeys = useRef(new WeakMap<HTMLFormElement, string>());
   useEffect(() => {
     let live = true;
@@ -244,6 +248,11 @@ export function MoneyTools({
               {e.description} · {e.occurred_on} · {e.category}
             </span>
             <strong>{money(e.amount_minor, e.currency)}</strong>
+            {documentsEnabled && (
+              <button className="secondary-button" onClick={() => setDocumentsFor(e)}>
+                Documents
+              </button>
+            )}
             {writable && (
               <button className="secondary-button" disabled={busy} onClick={() => setEditing(e)}>
                 Correct / archive
@@ -411,6 +420,32 @@ export function MoneyTools({
                 Keep record
               </button>
             </div>
+          </section>
+        </Overlay>
+      )}
+      {documentsFor && (
+        <Overlay onClose={() => setDocumentsFor(null)}>
+          <section
+            className="service-detail"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="expense-documents-heading"
+          >
+            <h2 id="expense-documents-heading">Documents · {documentsFor.description}</h2>
+            <p>
+              Expense files remain private and are accessible only through their own current file
+              permissions. Linking does not verify the expense or alter its financial record.
+            </p>
+            <DocumentAttachments
+              api={api}
+              sourceKind="expense"
+              sourceId={documentsFor.id}
+              writable={writable}
+              allowUpload
+            />
+            <button className="secondary-button" onClick={() => setDocumentsFor(null)}>
+              Close
+            </button>
           </section>
         </Overlay>
       )}

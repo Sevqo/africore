@@ -249,16 +249,39 @@ export async function editProject(a: Access, projectId: string, input: unknown, 
 export async function workProjects(a: Access) {
   const role = await authorize(a, 'work');
   const data = await visible(a, 'work_project');
+  const ids = data.slice(0, 1000).map((p) => p.id);
+  const counts = ids.length
+    ? await dbAll(
+        "SELECT root_id,COUNT(*) AS total,SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) AS completed,SUM(CASE WHEN status='open' THEN 1 ELSE 0 END) AS open,SUM(CASE WHEN status='open' AND due_on<? THEN 1 ELSE 0 END) AS overdue FROM ac_erp_objects WHERE org_id=? AND environment=? AND kind='work_task' AND root_id IN (" +
+          ids.map(() => '?').join(',') +
+          ') GROUP BY root_id',
+        [
+          new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Nairobi' }),
+          a.org,
+          a.environment,
+          ...ids,
+        ],
+      )
+    : [];
   return {
     actor_id: a.actor,
     can_create:
       permitted(role, 'operations') && (await entitlement(a, 'work'))?.status === 'active',
-    data: data.slice(0, 1000),
+    data: data.slice(0, 1000).map((p) => ({
+      ...p,
+      task_summary: {
+        total: Number(counts.find((c) => c.root_id === p.id)?.total || 0),
+        completed: Number(counts.find((c) => c.root_id === p.id)?.completed || 0),
+        open: Number(counts.find((c) => c.root_id === p.id)?.open || 0),
+        overdue: Number(counts.find((c) => c.root_id === p.id)?.overdue || 0),
+      },
+    })),
     truncated: data.length > 1000,
     limit: 1000,
   };
 }
-export async function workProject(a: Access, projectId: string) {
+export async function workProject(a: Access, projectId: string, messageOffset = 0) {
+  z.number().int().min(0).max(100000).parse(messageOffset);
   const p = await project(a, projectId),
     role = await authorize(a, 'work', p.id),
     grant = await dbGet(
@@ -268,7 +291,7 @@ export async function workProject(a: Access, projectId: string) {
     admin = ['owner', 'admin'].includes(role);
   const active = (await entitlement(a, 'work'))?.status === 'active',
     tasks = await visible(a, 'work_task', p.id),
-    messages = await visible(a, 'work_message', p.id);
+    messages = await visible(a, 'work_message', p.id, messageOffset);
   return {
     project: p,
     permissions: {
@@ -281,8 +304,11 @@ export async function workProject(a: Access, projectId: string) {
     },
     tasks: tasks.slice(0, 1000),
     messages: messages.slice(0, 100).reverse(),
+    message_page: { offset: messageOffset, has_more: messages.length > 100 },
     truncated: tasks.length > 1000 || messages.length > 100,
-    coverage: 'Up to 1000 tasks and the latest 100 messages; historical messages remain retained.',
+    tasks_truncated: tasks.length > 1000,
+    coverage:
+      'Up to 1000 tasks; discussions load in pages of 100 messages with earlier-history navigation.',
   };
 }
 async function validateTask(a: Access, p: ERPObject, d: z.infer<typeof taskInput>, taskId: string) {

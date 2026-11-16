@@ -1,5 +1,38 @@
 # AfriCore agent guide
 
+## External reference checkout — Odoo Community Edition, 15 November 2026
+
+Odoo Community Edition is available as an independent, read-only reference
+checkout for engineering research:
+
+- Source: `C:\Users\cypri\OneDrive\Desktop\AfriScore\odoo-reference`
+  (branch `20.0`, its own Git repository, push disabled, never committed into
+  AfriCore)
+- Research memory: `docs/odoo-reference/` — read `README.md` first, then
+  `RESEARCH_LOG.md`, `MODULES.md`, `GLOSSARY.md`, `PATTERNS.md`,
+  `DECISIONS.md`, and per-module notes under `notes/`
+- Multi-root workspace: `C:\Users\cypri\OneDrive\Desktop\AfriScore\AfriCore-Odoo-Reference.code-workspace`
+
+Rules for using it:
+
+1. The Odoo tree is read-only. Read, grep, `git log`/`git blame` only. Never
+   edit, format, patch or switch branches in it; never treat it as an AfriCore
+   dependency, submodule or workspace package.
+2. Study on demand, driven by a concrete AfriCore question. Do not analyze Odoo
+   modules in bulk, and do not open a module without recording the question.
+3. Cite the reviewed file path (`odoo-reference/<path>`) in every finding.
+   Record observations in `docs/odoo-reference/RESEARCH_LOG.md` (or
+   `notes/<module>.md`) and AfriCore decisions in `DECISIONS.md` — never mix
+   observation and decision.
+4. Odoo is prior art, not authority. Its behaviour never overrides AfriCore's
+   financial provenance, integer-money, tenant isolation, security or release
+   rules in this file and `docs/`.
+5. Odoo Community is LGPL-3.0. Never transcribe its code into AfriCore without
+   explicit owner approval and a licensing review; prefer re-implementing the
+   idea in AfriCore's own stack.
+6. A research session produces notes and proposals only. It does not modify
+   AfriCore application code, migrations, contracts or deployment configuration.
+
 ## Modular service marketplace — 28 October 2026
 
 Read docs/SERVICE_ARCHITECTURE.md, SERVICE_CATALOG.md, SERVICE_PRICING.md, NEON_EMAIL_VERIFICATION.md, AUTH_PERFORMANCE.md and MODULAR_RELEASE_REPORT.md before service/auth/billing changes. Migration 007 is additive. New workspaces explicitly select products; existing evaluation access is preserved. Keep customer entry included with Invoicing/Orders, foundation reports/security/revocation independent, and service/kind/capability authorization separate. Never meter from client success assertions. Preserve immutable price/event history, bounded internal corrections, transactional caps/reservations and worker fences. Platform statements are estimates with zero due; collection stays disabled. Real mailbox receipt remains unverified by owner choice. Shared controls use 8px corners; retain 16px mobile edit text and touch-size floors. Run both database suites, frontend/content, contracts, lint/type, gateway/startup and local chain checks. Never run tests against Neon.

@@ -24,5 +24,5 @@ test('ordinary upload names become bounded plain filenames while retaining their
 });
 test('empty and oversized file selections fail before any browser read or upload', async () => {
   await assert.rejects(readDocumentFile({ name: 'empty.txt', size: 0 }), /non-empty/);
-  await assert.rejects(readDocumentFile({ name: 'large.txt', size: 512 * 1024 + 1 }), /512 KiB/);
+  await assert.rejects(readDocumentFile({ name: 'large.txt', size: 2 * 1024 * 1024 + 1 }), /2 MiB/);
 });

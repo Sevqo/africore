@@ -117,6 +117,7 @@ for (const suffix of [
 for (const key of [
   'POST /organizations/:org/documents/:id/links',
   'GET /organizations/:org/document-attachments',
+  'GET /organizations/:org/document-source-options',
 ]) {
   erpRouteKinds[key] = ['business'];
   erpPolicies[key] = { services: ['documents'] };
@@ -124,8 +125,11 @@ for (const key of [
 
 erpRouteKinds['POST /organizations/:org/documents/:id/review'] = ['business'];
 erpPolicies['POST /organizations/:org/documents/:id/review'] = { services: ['documents'] };
+erpRouteKinds['GET /organizations/:org/documents/:id/reviewers'] = ['business'];
+erpPolicies['GET /organizations/:org/documents/:id/reviewers'] = { services: ['documents'] };
 
 for (const key of [
+  'GET /organizations/:org/document-request-assignees',
   'GET /organizations/:org/document-requests',
   'POST /organizations/:org/document-requests',
   'POST /organizations/:org/document-requests/:id/submit',

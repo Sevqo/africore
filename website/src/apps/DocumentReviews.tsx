@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Field, Form, type API } from '../operations/UI';
-import { ApprovalDetails } from '../operations/ApprovalDetails';
+function approvalValue(value: any) {
+  if (typeof value !== 'string') return value || {};
+  try {
+    return JSON.parse(value);
+  } catch {
+    return {};
+  }
+}
 export function DocumentReviews({
   document: d,
   members,
@@ -15,7 +22,10 @@ export function DocumentReviews({
   onChanged: () => void;
 }) {
   const [reviews, setReviews] = useState<any[]>([]),
-    [error, setError] = useState('');
+    [error, setError] = useState(''),
+    [reviewers, setReviewers] = useState<any[]>([]),
+    [reviewerError, setReviewerError] = useState(''),
+    [reviewerRetry, setReviewerRetry] = useState(0);
   useEffect(() => {
     let current = true;
     setReviews([]);
@@ -34,6 +44,21 @@ export function DocumentReviews({
       current = false;
     };
   }, [d.id, d.version]);
+  useEffect(() => {
+    let current = true;
+    setReviewers([]);
+    setReviewerError('');
+    api('/documents/' + d.id + '/reviewers')
+      .then((result) => {
+        if (current) setReviewers(result.data);
+      })
+      .catch((e) => {
+        if (current) setReviewerError(e.message || 'Eligible reviewers could not be loaded.');
+      });
+    return () => {
+      current = false;
+    };
+  }, [api, d.id, reviewerRetry]);
   return (
     <section className="app-price-review">
       <h3>Exact file-content review</h3>
@@ -43,6 +68,18 @@ export function DocumentReviews({
         operation.
       </p>
       {error && <p role="alert">{error}</p>}
+      {reviewerError && (
+        <p role="alert">
+          {reviewerError}{' '}
+          <button
+            className="quiet-button"
+            type="button"
+            onClick={() => setReviewerRetry((n) => n + 1)}
+          >
+            Retry eligible reviewers
+          </button>
+        </p>
+      )}
       {d.data.review && (
         <p>
           Latest recorded review: {d.data.review.decision} ·{' '}
@@ -62,29 +99,59 @@ export function DocumentReviews({
             onChanged();
           }}
         >
-          <Field label="Separate file reviewer">
-            <select name="approver" required>
-              <option value="">Choose a current member with file download access</option>
-              {members
-                .filter((m) => m.id !== actorId)
-                .map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.display_name || m.email}
-                  </option>
-                ))}
-            </select>
-          </Field>
+          {reviewers.length === 0 && !reviewerError ? (
+            <p role="status">No other current member can inspect this file for review.</p>
+          ) : (
+            <Field label="Separate file reviewer">
+              <select name="approver" required defaultValue="" disabled={!!reviewerError}>
+                <option value="">Choose a current member with file download access</option>
+                {reviewers
+                  .filter((reviewer) => reviewer.id !== actorId)
+                  .map((reviewer) => {
+                    const member = members.find((candidate) => candidate.id === reviewer.id);
+                    return (
+                      <option key={reviewer.id} value={reviewer.id}>
+                        {member?.display_name || member?.email || 'Current workspace member'}
+                      </option>
+                    );
+                  })}
+              </select>
+            </Field>
+          )}
           <p>
             The current file grant and any financial/personnel restrictions must allow the reviewer
             to inspect this content. Requesting a review does not grant access.
           </p>
-          <button className="button">Request exact-version file review</button>
+          <button
+            className="button"
+            disabled={!!reviewerError || !reviewers.some((reviewer) => reviewer.id !== actorId)}
+          >
+            Request exact-version file review
+          </button>
         </Form>
       )}
       {reviews.map((a) => (
         <article className="app-price-review" key={a.id}>
           <h4>{a.status}</h4>
-          <ApprovalDetails approval={a} />
+          <p>
+            {approvalValue(a.review_summary).file?.filename || 'Retained file version'} ·{' '}
+            {approvalValue(a.review_summary).file?.size_bytes ?? 'Size unavailable'} bytes ·
+            document revision{' '}
+            {approvalValue(a.parameters).document_review?.document_version ?? 'unavailable'}
+          </p>
+          {approvalValue(a.review_summary).file?.sha256 && (
+            <p>Content fingerprint: {approvalValue(a.review_summary).file.sha256}</p>
+          )}
+          {a.source_changed && (
+            <p role="status">
+              The document changed after this review request. This approval cannot certify the
+              current file.
+            </p>
+          )}
+          <p>
+            A human review records a decision on the submitted version. It does not establish that
+            the file is safe, truthful, legally valid or independently verified.
+          </p>
           {a.can_decide && (
             <Form
               submit={async (value) => {

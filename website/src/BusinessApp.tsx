@@ -2,6 +2,7 @@ import { CommerceWorkspace } from './apps/lazy-workspaces';
 import { POSWorkspace } from './apps/lazy-workspaces';
 import { ProcurementWorkspace } from './apps/lazy-workspaces';
 import { DocumentsWorkspace } from './apps/lazy-workspaces';
+import { DocumentAttachments } from './apps/DocumentAttachments';
 import { PeopleWorkspace } from './apps/lazy-workspaces';
 import { WorkWorkspace } from './apps/lazy-workspaces';
 import { AccountingWorkspace } from './apps/lazy-workspaces';
@@ -1509,6 +1510,7 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
                 )}
                 {tab === 'Work' && (
                   <WorkWorkspace
+                    openRecord={openRecord}
                     key={org + '\0' + environment}
                     api={call}
                     scope={org + '\0' + environment}
@@ -1576,6 +1578,11 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
                     scope={org + '\0' + environment}
                     cashFlow={tab === 'Cash Flow'}
                     writable={['owner', 'admin', 'finance'].includes(organization?.role)}
+                    documentsEnabled={
+                      !!market.catalog?.services.some(
+                        (s: any) => s.id === 'documents' && s.status === 'active',
+                      )
+                    }
                   />
                 )}
                 {tab === 'Notifications' && (
@@ -2251,10 +2258,18 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
                           </button>
                         </>
                       ) : selected.kind === 'customers' ? (
-                        <p>
-                          {selected.email || 'No email recorded'} ·{' '}
-                          {selected.phone || 'No phone recorded'}
-                        </p>
+                        <>
+                          <p>
+                            {selected.email || 'No email recorded'} ·{' '}
+                            {selected.phone || 'No phone recorded'}
+                          </p>
+                          <DocumentAttachments
+                            api={call}
+                            sourceKind="customer"
+                            sourceId={selected.id}
+                            writable={!!writable}
+                          />
+                        </>
                       ) : (
                         <pre>{JSON.stringify(selected, null, 2)}</pre>
                       )}

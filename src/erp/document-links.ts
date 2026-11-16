@@ -6,6 +6,8 @@ import { permitted } from '../platform/domain';
 import { now } from '../platform/crypto';
 import { requireServices, checkLimits, recordUsage } from '../marketplace/engine';
 import { currentMember, read, authorize, operation, decode, update } from './store';
+import { decode as decodeTrust } from '../trust/store';
+import { z } from 'zod';
 import { employeeAccess } from './people-access';
 import {
   documentsContext,
@@ -14,6 +16,130 @@ import {
   personnelDocumentFilter,
 } from './documents-access';
 export const documentLinkInput = documentSource;
+
+const documentSourceOptionsInput = z
+  .object({
+    source_kind: documentSource.shape.source_kind,
+    q: z.string().trim().max(100).default(''),
+    offset: z.coerce.number().int().min(0).max(1000000).default(0),
+  })
+  .strict();
+
+function sourceLabel(kind: string, data: any, id: string) {
+  const values: Record<string, unknown> = {
+    customer: data.name,
+    invoice: data.reference || data.number,
+    sales_quotation: data.reference || data.number,
+    sales_order: data.number || data.reference,
+    expense: data.description,
+    purchase_order: data.reference || data.name || data.supplier,
+    supplier_bill: data.reference || data.bill_number || data.supplier,
+    employee: data.name,
+    work_task: data.name || data.title,
+    verification: 'Business identity review · ' + (data.status || 'pending'),
+  };
+  const fallback = kind.replace(/_/g, ' '),
+    label = String(values[kind] || fallback)
+      .trim()
+      .slice(0, 180);
+  return label || fallback + ' ' + id.slice(0, 8);
+}
+
+/** Search a bounded, authorized source window for human-selectable document relationships. */
+export async function documentSourceOptions(a: Access, input: unknown) {
+  const q = documentSourceOptionsInput.parse(input),
+    role = await currentMember(a);
+  await documentsContext(a);
+  const service: Record<string, string> = {
+    customer: 'customers',
+    invoice: 'invoicing',
+    sales_quotation: 'sales',
+    sales_order: 'orders',
+    expense: 'expenses',
+    purchase_order: 'procurement',
+    supplier_bill: 'procurement',
+    employee: 'people',
+    work_task: 'work',
+    verification: 'verification',
+  };
+  await requireServices(a, [service[q.source_kind]], true);
+  if (
+    ['invoice', 'expense', 'supplier_bill'].includes(q.source_kind) &&
+    !permitted(role, 'finance')
+  )
+    fail(403, 'Financial source authority required independently of document access');
+  if (
+    ['purchase_order', 'work_task', 'sales_quotation', 'sales_order'].includes(q.source_kind) &&
+    !permitted(role, 'operations')
+  )
+    fail(403, 'Operational source authority required');
+  if (q.source_kind === 'verification' && !['owner', 'admin'].includes(role))
+    fail(403, 'Current verification administrator required');
+
+  const table = ['customer', 'invoice', 'sales_order'].includes(q.source_kind)
+      ? 'ac_records'
+      : q.source_kind === 'sales_quotation'
+        ? 'ac_sales_quotes'
+        : q.source_kind === 'expense'
+          ? 'ac2_objects'
+          : q.source_kind === 'verification'
+            ? 'ac3_objects'
+            : 'ac_erp_objects',
+    kind =
+      q.source_kind === 'customer'
+        ? 'customers'
+        : q.source_kind === 'invoice'
+          ? 'invoices'
+          : q.source_kind === 'sales_quotation'
+            ? 'sales_quotation'
+            : q.source_kind === 'sales_order'
+              ? 'orders'
+              : q.source_kind === 'expense'
+                ? 'expenses'
+                : q.source_kind === 'purchase_order'
+                  ? 'purchase_order'
+                  : q.source_kind === 'supplier_bill'
+                    ? 'supplier_bill'
+                    : q.source_kind === 'employee'
+                      ? 'employee'
+                      : q.source_kind === 'work_task'
+                        ? 'work_task'
+                        : 'identity_review',
+    rows = await dbAll(
+      `SELECT * FROM ${table} WHERE org_id=? AND environment=?${table === 'ac_sales_quotes' ? '' : ' AND kind=?'} ORDER BY created_at DESC,id DESC LIMIT 5001`,
+      [a.org, a.environment, ...(table === 'ac_sales_quotes' ? [] : [kind])],
+    ),
+    needle = q.q.normalize('NFKC').toLocaleLowerCase(),
+    matching: { id: string; source_kind: string; label: string }[] = [];
+
+  for (const row of rows.slice(0, 5000)) {
+    try {
+      await documentSourceAccess(a, q.source_kind, row.id);
+    } catch (error) {
+      if ([400, 402, 403, 404, 409].includes((error as any).status)) continue;
+      throw error;
+    }
+    const data =
+        table === 'ac_erp_objects'
+          ? decode(a, row).data
+          : table === 'ac3_objects'
+            ? decodeTrust(row)
+            : JSON.parse(row.data),
+      label = sourceLabel(q.source_kind, data, row.id);
+    if (!needle || label.normalize('NFKC').toLocaleLowerCase().includes(needle))
+      matching.push({ id: row.id, source_kind: q.source_kind, label });
+  }
+  return {
+    data: matching.slice(q.offset, q.offset + 50),
+    offset: q.offset,
+    limit: 50,
+    has_more: matching.length > q.offset + 50,
+    truncated: rows.length > 5000,
+    notice:
+      'Only source records that pass the current service, role and record authorization checks are listed. Search covers at most 5,000 recent candidates for this source kind; the link is checked again when saved.',
+  };
+}
+
 export async function documentSourceAccess(a: Access, kind: string, id: string) {
   const role = await currentMember(a);
   if (['invoice', 'expense', 'supplier_bill'].includes(kind) && !permitted(role, 'finance'))
@@ -36,6 +162,31 @@ export async function documentSourceAccess(a: Access, kind: string, id: string) 
     if (!permitted(role, 'operations')) fail(403, 'Operational source authority required');
     await requireServices(a, ['procurement'], true);
     await read(a, id, 'purchase_order');
+    return;
+  }
+  if (kind === 'sales_quotation') {
+    if (!permitted(role, 'operations')) fail(403, 'Operational source authority required');
+    await requireServices(a, ['sales'], true);
+    if (
+      !(await dbGet('SELECT id FROM ac_sales_quotes WHERE org_id=? AND environment=? AND id=?', [
+        a.org,
+        a.environment,
+        id,
+      ]))
+    )
+      fail(404, 'Sales quotation not found');
+    return;
+  }
+  if (kind === 'sales_order') {
+    if (!permitted(role, 'operations')) fail(403, 'Operational source authority required');
+    await requireServices(a, ['orders'], true);
+    if (
+      !(await dbGet(
+        "SELECT id FROM ac_records WHERE org_id=? AND environment=? AND id=? AND kind='orders'",
+        [a.org, a.environment, id],
+      ))
+    )
+      fail(404, 'Sales order not found');
     return;
   }
   if (kind === 'verification') {
@@ -78,7 +229,7 @@ export async function documentSourceAccess(a: Access, kind: string, id: string) 
 /** A financial attachment cannot bypass the financial source through its file URL. */
 export async function sensitiveDocumentLinks(a: Access, id: string) {
   const rows = await dbAll(
-    "SELECT source_kind,source_id FROM ac_document_links WHERE document_id=? AND org_id=? AND environment=? AND source_kind IN ('invoice','expense','supplier_bill','employee')",
+    "SELECT source_kind,source_id FROM ac_document_links WHERE document_id=? AND org_id=? AND environment=? AND source_kind IN ('invoice','expense','supplier_bill','employee','sales_quotation','sales_order')",
     [id, a.org, a.environment],
   );
   for (const row of rows) await documentSourceAccess(a, row.source_kind, row.source_id);
@@ -86,12 +237,14 @@ export async function sensitiveDocumentLinks(a: Access, id: string) {
 export async function financialDocumentFilter(a: Access) {
   const role = await currentMember(a),
     denied: string[] = [];
-  for (const [kind, service] of [
-    ['invoice', 'invoicing'],
-    ['expense', 'expenses'],
-    ['supplier_bill', 'procurement'],
+  for (const [kind, service, capability] of [
+    ['invoice', 'invoicing', 'finance'],
+    ['expense', 'expenses', 'finance'],
+    ['supplier_bill', 'procurement', 'finance'],
+    ['sales_quotation', 'sales', 'operations'],
+    ['sales_order', 'orders', 'operations'],
   ]) {
-    if (!permitted(role, 'finance')) {
+    if (!permitted(role, capability)) {
       denied.push(kind);
       continue;
     }

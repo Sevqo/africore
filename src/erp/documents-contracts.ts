@@ -5,6 +5,8 @@ export const documentSource = z
     source_kind: z.enum([
       'customer',
       'invoice',
+      'sales_quotation',
+      'sales_order',
       'expense',
       'purchase_order',
       'supplier_bill',
@@ -43,7 +45,7 @@ export const documentFile = z
   .object({
     filename: z.string().max(120),
     content_type: z.enum(['application/pdf', 'image/png', 'image/jpeg', 'text/plain']),
-    content_base64: z.string().max(699052),
+    content_base64: z.string().max(2796204),
   })
   .strict();
 export const documentCreateInput = z
@@ -89,7 +91,15 @@ export const documentCopyInput = z
 export const documentQuery = z
   .object({
     view: z.enum(['mine', 'company', 'shared', 'recent', 'starred', 'trash']).default('mine'),
-    folder_id: id.optional(),
+    folder_id: z.union([id, z.literal('root')]).optional(),
+    kind: z.enum(['file', 'folder']).optional(),
+    editable_only: z
+      .preprocess((value) => value === true || value === 'true', z.boolean())
+      .default(false),
+    hide_personnel: z
+      .preprocess((value) => value === true || value === 'true', z.boolean())
+      .default(false),
+    employee_id: id.optional(),
     q: z.string().trim().max(100).default(''),
     tag: z.string().max(60).optional(),
     sort: z.enum(['recent', 'name']).default('recent'),

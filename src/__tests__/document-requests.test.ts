@@ -127,6 +127,26 @@ test('requests are encrypted and participant-bound without granting roles or adm
     400,
   );
 });
+test('request recipient selector lists only other current operational members', async () => {
+  const result = await api(root() + '/document-request-assignees');
+  assert.equal(result.status, 200, JSON.stringify(result.data));
+  const ids = result.data.data.map((member: any) => member.id);
+  assert.ok(ids.includes(submitter.id));
+  assert.ok(ids.includes(bystander.id));
+  assert.ok(!ids.includes(owner.id));
+  assert.ok(!ids.includes(viewer.id));
+  assert.equal(result.data.limit, 50);
+  assert.equal(result.data.can_submit, true);
+  assert.match(result.data.notice, /server validates them again/i);
+  const searched = await api(root() + '/document-request-assignees?q=' + bystander.id);
+  assert.equal(searched.status, 200);
+  assert.deepEqual(searched.data.data, []);
+  const filtered = await api(
+    root() + '/document-request-assignees?q=' + encodeURIComponent('synthetic requester'),
+  );
+  assert.equal(filtered.status, 200);
+  assert.ok(!filtered.data.data.some((member: any) => member.id === owner.id));
+});
 test('only the assigned current submitter can atomically upload and create the exact separate review', async () => {
   const body = {
       expected_version: request.version,

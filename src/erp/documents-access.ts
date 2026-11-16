@@ -91,12 +91,17 @@ export async function personnelDocumentFilter(a: Access) {
 }
 export async function documentDetails(a: Access, id: string, allowTrash = false) {
   const c = await documentAccess(a, id, 'read', allowTrash),
-    value = await read(a, id, 'document');
+    value = await read(a, id, 'document'),
+    star = await dbGet(
+      'SELECT 1 AS starred FROM ac_document_stars WHERE document_id=? AND org_id=? AND environment=? AND user_id=?',
+      [id, a.org, a.environment, a.actor],
+    );
   return {
     ...value,
     permissions: { edit: c.can_edit, manage: c.can_manage, download: c.can_download },
     kind: c.row.doc_kind,
     folder_id: c.row.folder_id,
+    starred: !!star,
     classification: c.row.employee_id ? 'personnel' : 'general',
     employee_id: c.row.employee_id,
   };

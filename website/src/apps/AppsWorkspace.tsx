@@ -390,7 +390,13 @@ export function AppsWorkspace({
                   section={activeSection}
                 />
               ) : app.id === 'work' ? (
-                <WorkWorkspace key={scope} api={api} scope={scope} section={activeSection} />
+                <WorkWorkspace
+                  key={scope}
+                  api={api}
+                  scope={scope}
+                  section={activeSection}
+                  openRecord={openRecord}
+                />
               ) : app.id === 'finance' ? (
                 <>
                   <FinanceDashboard

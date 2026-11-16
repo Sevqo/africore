@@ -3,6 +3,7 @@ import { Icon } from '../components/Icon';
 import { Overlay } from '../components/Overlay';
 import { Field, money, today, type API } from '../operations/UI';
 import { QuotationPreview } from './QuotationPreview';
+import { DocumentAttachments } from './DocumentAttachments';
 import { ReviewFields } from './ReviewFields';
 import { SalesPriceLists } from './SalesPriceLists';
 import {
@@ -2007,6 +2008,16 @@ function QuotationDocument({
               </p>
             </section>
           )}
+          {current?.id && (
+            <section className="sales-doc-section">
+              <DocumentAttachments
+                api={api}
+                sourceKind="sales_quotation"
+                sourceId={current.id}
+                writable={writable}
+              />
+            </section>
+          )}
         </article>
         <aside className="sales-activity panel">
           <div className="sales-activity-head">
@@ -2525,6 +2536,14 @@ function OrderDocument({
               </p>
             </section>
           )}
+          <section className="sales-doc-section">
+            <DocumentAttachments
+              api={api}
+              sourceKind="sales_order"
+              sourceId={order.id}
+              writable={writable}
+            />
+          </section>
         </article>
         <aside className="sales-activity panel">
           <div className="sales-activity-head">

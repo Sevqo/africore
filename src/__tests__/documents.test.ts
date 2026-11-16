@@ -70,7 +70,17 @@ before(async () => {
     kind: 'business',
     name: 'Synthetic private document suite',
     display_name: 'Synthetic owner',
-    services: ['documents', 'people', 'work', 'customers', 'invoicing'],
+    services: [
+      'documents',
+      'people',
+      'work',
+      'customers',
+      'products',
+      'sales',
+      'orders',
+      'invoicing',
+      'fulfillment',
+    ],
   });
   assert.equal(w.status, 201, JSON.stringify(w.data));
   org = w.data.id;
@@ -235,11 +245,61 @@ test('folder inheritance rechecks current grants and prevents cycles or silent a
       .status,
     404,
   );
-  assert.equal(
-    (await api(root() + '/documents?view=recent', 'GET', undefined, viewer.cookie)).data.data
-      .length,
-    0,
+  const recentAfterRevoke = await api(
+    root() + '/documents?view=recent',
+    'GET',
+    undefined,
+    viewer.cookie,
   );
+  assert.equal(recentAfterRevoke.data.data.length, 0, JSON.stringify(recentAfterRevoke.data.data));
+});
+test('folder browsing and pickers are server-paged, root-scoped and permission-filtered', async () => {
+  const rootFolder = await api(root() + '/documents', 'POST', {
+      kind: 'folder',
+      metadata: { name: 'Synthetic browse root' },
+      policy: policy(),
+    }),
+    nested = await api(root() + '/documents', 'POST', {
+      kind: 'folder',
+      metadata: { name: 'Synthetic nested folder' },
+      policy: policy({ folder_id: rootFolder.data.id }),
+    }),
+    nestedFile = await api(root() + '/documents', 'POST', {
+      metadata: { name: 'Synthetic nested evidence' },
+      policy: policy({ folder_id: nested.data.id }),
+      file: content(),
+    });
+  assert.equal(rootFolder.status, 200, JSON.stringify(rootFolder.data));
+  assert.equal(nested.status, 200, JSON.stringify(nested.data));
+  assert.equal(nestedFile.status, 200, JSON.stringify(nestedFile.data));
+  const rootList = await api(root() + '/documents?view=recent&kind=folder&folder_id=root');
+  assert.ok(rootList.data.data.some((row: any) => row.id === rootFolder.data.id));
+  assert.ok(!rootList.data.data.some((row: any) => row.id === nested.data.id));
+  const children = await api(
+    root() + '/documents?view=recent&folder_id=' + rootFolder.data.id + '&kind=folder',
+  );
+  assert.deepEqual(
+    children.data.data.map((row: any) => row.id),
+    [nested.data.id],
+  );
+  const search = await api(root() + '/documents?view=recent&kind=folder&q=nested');
+  assert.ok(search.data.data.some((row: any) => row.id === nested.data.id));
+  const wrongParent = await api(root() + '/documents?view=recent&folder_id=' + nestedFile.data.id);
+  assert.equal(wrongParent.status, 400);
+
+  const viewerFile = await api(root() + '/documents', 'POST', {
+    metadata: { name: 'Synthetic viewer-only candidate' },
+    policy: policy({ grants: [{ user_id: viewer.id, permission: 'viewer', download: true }] }),
+    file: content(),
+  });
+  assert.equal(viewerFile.status, 200, JSON.stringify(viewerFile.data));
+  const editable = await api(
+    root() + '/documents?view=recent&kind=file&editable_only=true',
+    'GET',
+    undefined,
+    viewer.cookie,
+  );
+  assert.ok(!editable.data.data.some((row: any) => row.id === viewerFile.data.id));
 });
 test('personnel files require both file access and current People policy on every read', async () => {
   assert.equal(
@@ -291,11 +351,8 @@ test('personnel files require both file access and current People policy on ever
       .status,
     403,
   );
-  assert.equal(
-    (await api(root() + '/documents?view=shared', 'GET', undefined, viewer.cookie)).data.data
-      .length,
-    0,
-  );
+  const shared = await api(root() + '/documents?view=shared', 'GET', undefined, viewer.cookie);
+  assert.ok(!shared.data.data.some((row: any) => row.id === p.data.id));
   assert.equal(
     (
       await api(root() + '/documents/' + p.data.id + '/policy', 'PUT', {
@@ -411,14 +468,14 @@ test('authorized copies retain a reviewed version without granting access to fut
     404,
   );
 });
-test('file validation enforces the published body-safe size, extension and UTF-8 boundaries', async () => {
+test('file validation enforces the bounded upload body size, extension and UTF-8 boundaries', async () => {
   const body = {
     metadata: { name: 'Synthetic bounded content' },
     policy: policy(),
     file: {
       filename: 'bounded.txt',
       content_type: 'text/plain',
-      content_base64: Buffer.alloc(512 * 1024, 65).toString('base64'),
+      content_base64: Buffer.alloc(1024 * 1024, 65).toString('base64'),
     },
   };
   assert.equal((await api(root() + '/documents', 'POST', body)).status, 200);
@@ -426,7 +483,10 @@ test('file validation enforces the published body-safe size, extension and UTF-8
     (
       await api(root() + '/documents', 'POST', {
         ...body,
-        file: { ...body.file, content_base64: Buffer.alloc(512 * 1024 + 1, 65).toString('base64') },
+        file: {
+          ...body.file,
+          content_base64: Buffer.alloc(2 * 1024 * 1024 + 1, 65).toString('base64'),
+        },
       })
     ).status,
     400,
@@ -466,6 +526,22 @@ test('project attachment discovery requires both current project access and an e
     task: { title: 'Synthetic private attachment task', stage: 'planned' },
   });
   assert.equal(task.status, 201);
+  const sourceOptions = await api(
+    root() + '/document-source-options?source_kind=work_task&q=private%20attachment',
+  );
+  assert.equal(sourceOptions.status, 200, JSON.stringify(sourceOptions.data));
+  assert.ok(sourceOptions.data.data.some((candidate: any) => candidate.id === task.data.id));
+  assert.equal(
+    (
+      await api(
+        root() + '/document-source-options?source_kind=work_task',
+        'GET',
+        undefined,
+        viewer.cookie,
+      )
+    ).status,
+    403,
+  );
   const document = await api(root() + '/documents', 'POST', {
     metadata: { name: 'Synthetic private project reference' },
     policy: policy(),
@@ -505,6 +581,103 @@ test('project attachment discovery requires both current project access and an e
     200,
   );
   assert.equal((await api(root() + query, 'GET', undefined, viewer.cookie)).status, 404);
+});
+test('Sales quotations and orders expose authorized document attachments without bypassing source access', async () => {
+  const customer = await api(root() + '/records/customers', 'POST', {
+      name: 'Synthetic Sales attachment customer',
+    }),
+    quotation = await api(root() + '/sales/quotations', 'POST', {
+      customer_id: customer.data.id,
+      currency: 'KES',
+      items: [
+        { description: 'Synthetic Sales attachment line', quantity: 1, unit_price_minor: 12000 },
+      ],
+      issue_date: '2026-11-01',
+      due_date: '2026-11-30',
+    });
+  assert.equal(customer.status, 201, JSON.stringify(customer.data));
+  assert.equal(quotation.status, 201, JSON.stringify(quotation.data));
+  const quoteOptions = await api(
+    root() + '/document-source-options?source_kind=sales_quotation&q=' + quotation.data.reference,
+  );
+  assert.equal(quoteOptions.status, 200, JSON.stringify(quoteOptions.data));
+  assert.ok(quoteOptions.data.data.some((candidate: any) => candidate.id === quotation.data.id));
+
+  const quoteFile = await api(root() + '/documents', 'POST', {
+    metadata: { name: 'Synthetic quotation evidence' },
+    policy: policy(),
+    file: content(),
+  });
+  assert.equal(quoteFile.status, 200, JSON.stringify(quoteFile.data));
+  const quoteLink = await api(root() + '/documents/' + quoteFile.data.id + '/links', 'POST', {
+    source_kind: 'sales_quotation',
+    source_id: quotation.data.id,
+  });
+  assert.equal(quoteLink.status, 200, JSON.stringify(quoteLink.data));
+  const quoteAttachments = await api(
+    root() + '/document-attachments?source_kind=sales_quotation&source_id=' + quotation.data.id,
+  );
+  assert.equal(quoteAttachments.status, 200, JSON.stringify(quoteAttachments.data));
+  assert.ok(quoteAttachments.data.data.some((document: any) => document.id === quoteFile.data.id));
+  const currentQuoteFile = await api(root() + '/documents/' + quoteFile.data.id);
+  assert.equal(
+    (
+      await api(root() + '/documents/' + quoteFile.data.id + '/policy', 'PUT', {
+        expected_version: currentQuoteFile.data.version,
+        policy: policy({ grants: [{ user_id: viewer.id, permission: 'viewer', download: true }] }),
+        acknowledge_access_change: true,
+      })
+    ).status,
+    200,
+  );
+  assert.equal(
+    (
+      await api(
+        root() + '/documents/' + quoteFile.data.id + '/content',
+        'GET',
+        undefined,
+        viewer.cookie,
+      )
+    ).status,
+    403,
+  );
+
+  const accepted = await api(
+    root() + '/sales/quotations/' + quotation.data.id + '/action',
+    'POST',
+    { action: 'accept', expected_version: quotation.data.version },
+  );
+  assert.equal(accepted.status, 200, JSON.stringify(accepted.data));
+  const converted = await api(
+    root() + '/sales/quotations/' + quotation.data.id + '/action',
+    'POST',
+    { action: 'convert', expected_version: accepted.data.version },
+  );
+  assert.equal(converted.status, 200, JSON.stringify(converted.data));
+  const orderId = converted.data.order_id;
+  const orderOptions = await api(root() + '/document-source-options?source_kind=sales_order');
+  assert.equal(orderOptions.status, 200, JSON.stringify(orderOptions.data));
+  assert.ok(orderOptions.data.data.some((candidate: any) => candidate.id === orderId));
+  const orderFile = await api(root() + '/documents', 'POST', {
+    metadata: { name: 'Synthetic order evidence' },
+    policy: policy(),
+    file: content(),
+  });
+  assert.equal(orderFile.status, 200, JSON.stringify(orderFile.data));
+  assert.equal(
+    (
+      await api(root() + '/documents/' + orderFile.data.id + '/links', 'POST', {
+        source_kind: 'sales_order',
+        source_id: orderId,
+      })
+    ).status,
+    200,
+  );
+  const orderAttachments = await api(
+    root() + '/document-attachments?source_kind=sales_order&source_id=' + orderId,
+  );
+  assert.equal(orderAttachments.status, 200, JSON.stringify(orderAttachments.data));
+  assert.ok(orderAttachments.data.data.some((document: any) => document.id === orderFile.data.id));
 });
 test('financial attachment restrictions survive direct file URLs and retained copies', async () => {
   const customer = await api(root() + '/records/customers', 'POST', {
@@ -597,6 +770,16 @@ test('a permitted file reviewer can record only the exact private file decision,
   });
   assert.equal(grant.status, 200);
   file = grant.data;
+  const reviewers = await api(root() + '/documents/' + file.id + '/reviewers');
+  assert.equal(reviewers.status, 200, JSON.stringify(reviewers.data));
+  assert.ok(reviewers.data.data.some((member: any) => member.id === owner.id));
+  assert.ok(reviewers.data.data.some((member: any) => member.id === viewer.id));
+  assert.ok(!reviewers.data.data.some((member: any) => member.id === other.id));
+  assert.equal(
+    (await api(root() + '/documents/' + file.id + '/reviewers', 'GET', undefined, other.cookie))
+      .status,
+    404,
+  );
   assert.equal(
     (
       await api(root() + '/documents/' + file.id + '/review', 'POST', {

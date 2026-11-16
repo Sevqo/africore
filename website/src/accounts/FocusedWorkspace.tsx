@@ -872,6 +872,11 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
                     scope={w.id + environment}
                     cashFlow
                     writable={['owner', 'admin', 'finance'].includes(w.role)}
+                    documentsEnabled={
+                      !!market.catalog?.services.some(
+                        (s: any) => s.id === 'documents' && s.status === 'active',
+                      )
+                    }
                   />
                 )}
                 {tab === 'Payment Records' && (

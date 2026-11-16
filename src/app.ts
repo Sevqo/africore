@@ -86,6 +86,19 @@ export function createApp() {
   // Limit before parsing: an unauthenticated flood should be rejected without
   // paying for JSON parsing (and its 1 MB body allowance).
   app.use(ipRateLimit);
+  // File payloads are Base64 JSON in the current private Documents service.
+  // Allow its bounded 2 MiB file contract (plus JSON metadata) without raising
+  // the body allowance for unrelated application routes.
+  const documentUploadJson = express.json({ limit: '4mb' });
+  app.use((req, res, next) => {
+    const documentUploadRoute =
+      req.method === 'POST' &&
+      /^\/api\/v1\/organizations\/[^/]+\/(?:documents|documents\/[^/]+\/versions|document-requests\/[^/]+\/submit)$/.test(
+        req.path,
+      );
+    if (documentUploadRoute) return documentUploadJson(req, res, next);
+    next();
+  });
   app.use(
     express.json({
       limit: '1mb',

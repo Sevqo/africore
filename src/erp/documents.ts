@@ -36,6 +36,7 @@ const blobContext = (a: Access, row: any) =>
     row.version_id,
   ]);
 const maximumBytes = 50 * 1024 * 1024;
+const maximumFileBytes = 2 * 1024 * 1024;
 
 async function reviewPolicy(
   a: Access,
@@ -95,7 +96,12 @@ async function grants(a: Access, id: string, policy: ReturnType<typeof documentP
     );
 }
 async function appendContent(a: Access, document: any, file: any, reason: string) {
-  const validated = validatePrivateFile(file.filename, file.content_type, file.content_base64),
+  const validated = validatePrivateFile(
+      file.filename,
+      file.content_type,
+      file.content_base64,
+      maximumFileBytes,
+    ),
     usage = await dbGet(
       'SELECT COALESCE(SUM(size_bytes),0) AS bytes FROM ac_document_blobs WHERE org_id=? AND environment=?',
       [a.org, a.environment],
@@ -335,15 +341,22 @@ export async function setDocumentState(a: Access, id: string, input: unknown, ke
 export async function documents(a: Access, input: unknown) {
   const context = await documentsContext(a);
   const q = documentQuery.parse(input),
-    rights = documentRights(a),
+    parent =
+      q.folder_id && q.folder_id !== 'root' ? await documentAccess(a, q.folder_id, 'read') : null;
+  if (parent && parent.row.doc_kind !== 'folder') fail(400, 'Choose a folder location');
+  const rights = documentRights(a),
     personnel = await personnelDocumentFilter(a),
     financial = await financialDocumentFilter(a),
     rows = await dbAll(
       rights.sql +
-        'SELECT o.*,d.doc_kind,d.owner_id AS document_owner FROM ac_documents d JOIN allowed r ON r.id=d.id JOIN ac_erp_objects o ON o.id=d.id AND o.org_id=d.org_id AND o.environment=d.environment WHERE d.org_id=? AND d.environment=? AND ' +
+        'SELECT o.*,d.doc_kind,d.owner_id AS document_owner,d.folder_id,d.employee_id,d.visibility,r.permission,r.download,EXISTS(SELECT 1 FROM ac_document_stars s WHERE s.document_id=d.id AND s.org_id=d.org_id AND s.environment=d.environment AND s.user_id=?) AS is_starred FROM ac_documents d JOIN allowed r ON r.id=d.id JOIN ac_erp_objects o ON o.id=d.id AND o.org_id=d.org_id AND o.environment=d.environment WHERE d.org_id=? AND d.environment=? AND ' +
         personnel.sql +
         ' AND ' +
         financial.sql +
+        (q.hide_personnel ? ' AND d.employee_id IS NULL' : '') +
+        (q.employee_id ? ' AND d.employee_id=?' : '') +
+        (q.kind ? ' AND d.doc_kind=?' : '') +
+        (q.editable_only ? (context.write ? ' AND r.permission>=2' : ' AND 1=0') : '') +
         ' AND d.status=?' +
         (q.view === 'trash'
           ? ' AND d.owner_id=?'
@@ -356,23 +369,42 @@ export async function documents(a: Access, input: unknown) {
                 : q.view === 'starred'
                   ? ' AND EXISTS(SELECT 1 FROM ac_document_stars s WHERE s.document_id=d.id AND s.org_id=d.org_id AND s.environment=d.environment AND s.user_id=?)'
                   : '') +
-        (q.folder_id ? ' AND d.folder_id=?' : '') +
+        (q.folder_id === 'root'
+          ? ' AND d.folder_id IS NULL'
+          : q.folder_id
+            ? ' AND d.folder_id=?'
+            : '') +
         ' ORDER BY o.updated_at DESC,o.id DESC LIMIT 5001',
       [
         ...rights.params,
+        a.actor,
         a.org,
         a.environment,
         ...personnel.params,
         ...financial.params,
+        ...(q.employee_id ? [q.employee_id] : []),
+        ...(q.kind ? [q.kind] : []),
         q.view === 'trash' ? 'trashed' : 'active',
         ...(['trash', 'mine', 'shared', 'starred'].includes(q.view) ? [a.actor] : []),
-        ...(q.folder_id ? [q.folder_id] : []),
+        ...(q.folder_id && q.folder_id !== 'root' ? [q.folder_id] : []),
       ],
     ),
     needle = q.q.normalize('NFKC').toLowerCase();
   let visible = rows
     .slice(0, 5000)
-    .map((r) => decode(a, r))
+    .map((r) => ({
+      ...decode(a, r),
+      kind: r.doc_kind,
+      owner_id: r.document_owner,
+      folder_id: r.folder_id,
+      employee_id: r.employee_id,
+      is_starred: !!Number(r.is_starred),
+      permissions: {
+        edit: context.write && Number(r.permission) >= 2,
+        manage: context.write && r.document_owner === a.actor,
+        download: !!Number(r.download),
+      },
+    }))
     .filter(
       (r) =>
         (!needle ||
@@ -395,7 +427,19 @@ export async function documents(a: Access, input: unknown) {
     truncated: rows.length > 5000,
     matching_covered: visible.length,
     notice:
-      'Search and sorting cover up to 5000 currently authorized records, filtered before paging. Private files require explicit access; personnel files additionally require current People authority. Retained content is limited to 512 KiB per file and 50 MiB per workspace environment, including trash and historical versions. No malware scanning or physical erasure is claimed.',
+      'Search and sorting cover a bounded window of up to 5000 currently authorized records; filters are applied on the server before pages are returned. Search does not claim coverage beyond that window. Private files require explicit access; personnel files additionally require current People authority. Retained content is limited to 2 MiB per file and 50 MiB per workspace environment, including trash and historical versions. No malware scanning or physical erasure is claimed.',
+    storage: {
+      used_bytes: Number(
+        (
+          await dbGet(
+            'SELECT COALESCE(SUM(size_bytes),0) AS bytes FROM ac_document_blobs WHERE org_id=? AND environment=?',
+            [a.org, a.environment],
+          )
+        ).bytes,
+      ),
+      limit_bytes: maximumBytes,
+      per_file_limit_bytes: maximumFileBytes,
+    },
   };
 }
 export async function documentVersions(a: Access, id: string, input: any = {}) {

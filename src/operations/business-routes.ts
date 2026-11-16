@@ -640,7 +640,7 @@ business.put(
 );
 business.get(
   '/organizations/:org/business/approvals',
-  route(async (req, res) => res.json(await approvalQueue(await access(req)))),
+  route(async (req, res) => res.json(await approvalQueue(await access(req), 100, offset(req)))),
 );
 business.post(
   '/organizations/:org/business/invoices/:id/correction-review',

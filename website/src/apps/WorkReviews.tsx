@@ -93,6 +93,12 @@ export function WorkReviews({
           </Form>
         </details>
       )}
+      {canRequest && !approvers.length && (
+        <p>
+          Another current project manager or workspace administrator is required to review this
+          project. Add an eligible reviewer through project participants or Team, then retry.
+        </p>
+      )}
       {canRequest && (
         <Form
           submit={async (d) => {

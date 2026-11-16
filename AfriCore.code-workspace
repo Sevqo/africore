@@ -1,11 +1,7 @@
 {
-  "folders": [
-    {
-      "path": "."
-    }
-  ],
-  "settings": {
-    "typescript.tsdk": "website/node_modules/typescript/lib",
-    "typescript.enablePromptUseWorkspaceTsdk": true
-  }
+    "folders": [
+        {
+            "path": ".."
+        }
+    ]
 }

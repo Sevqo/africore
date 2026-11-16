@@ -1,17 +1,21 @@
 import { useState } from 'react';
+import { WorkDependencyPicker } from './WorkDependencyPicker';
+import { createsWorkCycle } from './work-app-model';
+import { WorkRecordLinks } from './WorkRecordLinks';
 import { Field, Form, type API } from '../operations/UI';
-import { Overlay } from '../components/Overlay';
 export function ProjectEditor({
   project: p,
+  usedStages = [],
   members,
   api,
   onSaved,
   onClose,
 }: {
   project?: any;
+  usedStages?: string[];
   members: any[];
   api: API;
-  onSaved: () => void;
+  onSaved: (record?: any) => void;
   onClose: () => void;
 }) {
   const [participants, setParticipants] = useState<any[]>(p?.data.members || []),
@@ -24,17 +28,16 @@ export function ProjectEditor({
     ),
     [milestones, setMilestones] = useState<any[]>(p?.data.milestones || []),
     [owner, setOwner] = useState(p?.data.owner_id || '');
+  const [memberSearch, setMemberSearch] = useState('');
+  const matchesMember = (m: any) =>
+    !memberSearch ||
+    (m.display_name || m.email || '').toLowerCase().includes(memberSearch.toLowerCase());
   const operational = members.filter((m) =>
     ['owner', 'admin', 'finance', 'operations'].includes(m.role),
   );
   return (
-    <Overlay onClose={onClose}>
-      <section
-        className="panel work-editor"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="project-editor-title"
-      >
+    <div className="work-edit-document">
+      <section className="panel work-editor" aria-labelledby="project-editor-title">
         <h2 id="project-editor-title">{p ? 'Project settings' : 'Create a project'}</h2>
         <p>
           Private to the selected participants and workspace administrators. Participants receive
@@ -43,6 +46,8 @@ export function ProjectEditor({
         </p>
         <Form
           submit={async (d) => {
+            if (!stages.some((s) => s.complete) || !stages.some((s) => !s.complete))
+              throw new Error('Keep at least one incomplete stage and one completed stage.');
             const value = {
               name: d.name,
               description: d.description,
@@ -55,12 +60,12 @@ export function ProjectEditor({
               order_id: d.order || null,
               milestones,
             };
-            await api(
+            const result = await api(
               '/work/projects' + (p ? '/' + p.id : ''),
               p ? 'PUT' : 'POST',
               p ? { expected_version: p.version, project: value } : value,
             );
-            onSaved();
+            onSaved(result);
           }}
         >
           <Field label="Project name">
@@ -71,6 +76,14 @@ export function ProjectEditor({
               name="description"
               maxLength={10000}
               defaultValue={p?.data.description || ''}
+            />
+          </Field>
+          <Field label="Find project members">
+            <input
+              type="search"
+              value={memberSearch}
+              onChange={(e) => setMemberSearch(e.target.value)}
+              placeholder="Search name or email"
             />
           </Field>
           <div className="form-grid">
@@ -87,11 +100,16 @@ export function ProjectEditor({
                 }}
               >
                 <option value="">Choose current member</option>
-                {operational.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.display_name || m.email}
-                  </option>
-                ))}
+                {owner && !operational.some((m) => m.id === owner) && (
+                  <option value={owner}>Retain current project owner</option>
+                )}
+                {operational
+                  .filter((m) => m.id === owner || matchesMember(m))
+                  .map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.display_name || m.email}
+                    </option>
+                  ))}
               </select>
             </Field>
             <Field label="Project deadline">
@@ -107,29 +125,31 @@ export function ProjectEditor({
           </div>
           <fieldset>
             <legend>Project participants</legend>
-            {members.map((m) => (
-              <Field key={m.id} label={m.display_name || m.email}>
-                <select
-                  value={participants.find((v) => v.user_id === m.id)?.permission || ''}
-                  disabled={m.id === owner}
-                  onChange={(e) =>
-                    setParticipants((v) => [
-                      ...v.filter((n) => n.user_id !== m.id),
-                      ...(e.target.value ? [{ user_id: m.id, permission: e.target.value }] : []),
-                    ])
-                  }
-                >
-                  <option value="">No project access</option>
-                  <option value="view">View project</option>
-                  {operational.some((o) => o.id === m.id) && (
-                    <>
-                      <option value="edit">Edit tasks and discussions</option>
-                      <option value="manage">Manage project and participants</option>
-                    </>
-                  )}
-                </select>
-              </Field>
-            ))}
+            {members
+              .filter((m) => participants.some((p) => p.user_id === m.id) || matchesMember(m))
+              .map((m) => (
+                <Field key={m.id} label={m.display_name || m.email}>
+                  <select
+                    value={participants.find((v) => v.user_id === m.id)?.permission || ''}
+                    disabled={m.id === owner}
+                    onChange={(e) =>
+                      setParticipants((v) => [
+                        ...v.filter((n) => n.user_id !== m.id),
+                        ...(e.target.value ? [{ user_id: m.id, permission: e.target.value }] : []),
+                      ])
+                    }
+                  >
+                    <option value="">No project access</option>
+                    <option value="view">View project</option>
+                    {operational.some((o) => o.id === m.id) && (
+                      <>
+                        <option value="edit">Edit tasks and discussions</option>
+                        <option value="manage">Manage project and participants</option>
+                      </>
+                    )}
+                  </select>
+                </Field>
+              ))}
           </fieldset>
           <fieldset>
             <legend>Board stages</legend>
@@ -151,6 +171,10 @@ export function ProjectEditor({
                   <input
                     type="checkbox"
                     checked={s.complete}
+                    disabled={
+                      usedStages.includes(s.id) ||
+                      stages.filter((n) => n.complete === s.complete).length === 1
+                    }
                     onChange={(e) =>
                       setStages((v) =>
                         v.map((n) => (n.id === s.id ? { ...n, complete: e.target.checked } : n)),
@@ -176,7 +200,11 @@ export function ProjectEditor({
                 <button
                   className="quiet-button"
                   type="button"
-                  disabled={stages.length <= 2}
+                  disabled={
+                    usedStages.includes(s.id) ||
+                    stages.length <= 2 ||
+                    stages.filter((n) => n.complete === s.complete).length === 1
+                  }
                   onClick={() => setStages((v) => v.filter((n) => n.id !== s.id))}
                 >
                   Remove unused stage
@@ -265,15 +293,10 @@ export function ProjectEditor({
           <details>
             <summary>Optional shared record references</summary>
             <p>
-              Use an existing authorized shared customer/order identifier. These references do not
-              copy a customer or create a financial document.
+              Choose an authorized shared customer or order. These references do not copy a customer
+              or create a financial document.
             </p>
-            <Field label="Shared customer ID">
-              <input name="customer" defaultValue={p?.data.customer_id || ''} />
-            </Field>
-            <Field label="Shared order ID">
-              <input name="order" defaultValue={p?.data.order_id || ''} />
-            </Field>
+            <WorkRecordLinks api={api} project={p} />
           </details>
           <button className="button">Save reviewed project</button>
         </Form>
@@ -281,12 +304,14 @@ export function ProjectEditor({
           Cancel project editing
         </button>
       </section>
-    </Overlay>
+    </div>
   );
 }
 export function TaskEditor({
   project: p,
   task: t,
+  initialStage,
+  initialParent,
   tasks,
   members,
   api,
@@ -295,31 +320,36 @@ export function TaskEditor({
 }: {
   project: any;
   task?: any;
+  initialStage?: string;
+  initialParent?: string;
   tasks: any[];
   members: any[];
   api: API;
-  onSaved: () => void;
+  onSaved: (record?: any) => void;
   onClose: () => void;
 }) {
   const [dependencies, setDependencies] = useState<string[]>(t?.data.dependencies || []),
     [checklist, setChecklist] = useState<any[]>(t?.data.checklist || []),
-    [followers, setFollowers] = useState<string[]>(t?.data.followers || []);
+    [followers, setFollowers] = useState<string[]>(t?.data.followers || []),
+    [parentId, setParentId] = useState(t?.parent_id || initialParent || '');
+  const [memberSearch, setMemberSearch] = useState(''),
+    [assignee, setAssignee] = useState(t?.data.assignee_id || '');
+  const matchesMember = (m: any) =>
+    !memberSearch ||
+    (m.display_name || m.email || '').toLowerCase().includes(memberSearch.toLowerCase());
   const participants = members.filter((m) => p.data.members.some((v: any) => v.user_id === m.id)),
     editors = participants.filter((m) =>
       p.data.members.some((v: any) => v.user_id === m.id && v.permission !== 'view'),
     );
   return (
-    <Overlay onClose={onClose}>
-      <section
-        className="panel work-editor"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="task-editor-title"
-      >
+    <div className="work-edit-document">
+      <section className="panel work-editor" aria-labelledby="task-editor-title">
         <h2 id="task-editor-title">{t ? 'Edit task' : 'Create task'}</h2>
         <Form
           submit={async (d) => {
-            await api(
+            if (d.starts && d.due && d.starts > d.due)
+              throw new Error('Start date must not follow due date.');
+            const result = await api(
               '/work/projects/' + p.id + '/tasks' + (t ? '/' + t.id : ''),
               t ? 'PUT' : 'POST',
               {
@@ -337,14 +367,14 @@ export function TaskEditor({
                     .split(',')
                     .map((v: string) => v.trim())
                     .filter(Boolean),
-                  parent_id: d.parent || null,
+                  parent_id: parentId || null,
                   dependencies,
                   checklist,
                   estimate_minutes: Number(d.estimate),
                 },
               },
             );
-            onSaved();
+            onSaved(result);
           }}
         >
           <Field label="Task title">
@@ -359,7 +389,7 @@ export function TaskEditor({
           </Field>
           <div className="form-grid">
             <Field label="Task stage">
-              <select name="stage" defaultValue={t?.stage || p.data.stages[0].id}>
+              <select name="stage" defaultValue={t?.stage || initialStage || p.data.stages[0].id}>
                 {p.data.stages.map((s: any) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
@@ -367,14 +397,31 @@ export function TaskEditor({
                 ))}
               </select>
             </Field>
+            <Field label="Find assignees and followers">
+              <input
+                type="search"
+                value={memberSearch}
+                onChange={(e) => setMemberSearch(e.target.value)}
+                placeholder="Search project members"
+              />
+            </Field>
             <Field label="Task assignee">
-              <select name="assignee" defaultValue={t?.data.assignee_id || ''}>
+              <select
+                name="assignee"
+                value={assignee}
+                onChange={(e) => setAssignee(e.target.value)}
+              >
                 <option value="">Unassigned</option>
-                {editors.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.display_name || m.email}
-                  </option>
-                ))}
+                {assignee && !editors.some((m) => m.id === assignee) && (
+                  <option value={assignee}>Retain current assignee</option>
+                )}
+                {editors
+                  .filter((m) => m.id === assignee || matchesMember(m))
+                  .map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.display_name || m.email}
+                    </option>
+                  ))}
               </select>
             </Field>
             <Field label="Priority">
@@ -404,36 +451,30 @@ export function TaskEditor({
             <input name="labels" defaultValue={t?.data.labels?.join(', ') || ''} />
           </Field>
           <Field label="Parent task">
-            <select name="parent" defaultValue={t?.parent_id || ''}>
+            <select name="parent" value={parentId} onChange={(e) => setParentId(e.target.value)}>
               <option value="">Top-level task</option>
               {tasks
                 .filter((n) => n.id !== t?.id)
                 .map((n) => (
-                  <option key={n.id} value={n.id}>
+                  <option
+                    key={n.id}
+                    value={n.id}
+                    disabled={createsWorkCycle(tasks, t?.id, n.id, dependencies)}
+                  >
                     {n.data.title}
                   </option>
                 ))}
             </select>
           </Field>
-          <fieldset>
-            <legend>Complete these dependencies first</legend>
-            {tasks
-              .filter((n) => n.id !== t?.id)
-              .map((n) => (
-                <label className="checkbox-field" key={n.id}>
-                  <input
-                    type="checkbox"
-                    checked={dependencies.includes(n.id)}
-                    onChange={(e) =>
-                      setDependencies((v) =>
-                        e.target.checked ? [...v, n.id] : v.filter((id) => id !== n.id),
-                      )
-                    }
-                  />
-                  {n.data.title} · {n.status}
-                </label>
-              ))}
-          </fieldset>
+          <WorkDependencyPicker
+            members={members}
+            stages={p.data.stages}
+            tasks={tasks}
+            taskId={t?.id}
+            parentId={parentId}
+            value={dependencies}
+            onChange={setDependencies}
+          />
           <fieldset>
             <legend>Checklist</legend>
             {checklist.map((c) => (
@@ -486,20 +527,22 @@ export function TaskEditor({
           </fieldset>
           <fieldset>
             <legend>Followers</legend>
-            {participants.map((m) => (
-              <label className="checkbox-field" key={m.id}>
-                <input
-                  type="checkbox"
-                  checked={followers.includes(m.id)}
-                  onChange={(e) =>
-                    setFollowers((v) =>
-                      e.target.checked ? [...v, m.id] : v.filter((id) => id !== m.id),
-                    )
-                  }
-                />
-                {m.display_name || m.email}
-              </label>
-            ))}
+            {participants
+              .filter((m) => followers.includes(m.id) || matchesMember(m))
+              .map((m) => (
+                <label className="checkbox-field" key={m.id}>
+                  <input
+                    type="checkbox"
+                    checked={followers.includes(m.id)}
+                    onChange={(e) =>
+                      setFollowers((v) =>
+                        e.target.checked ? [...v, m.id] : v.filter((id) => id !== m.id),
+                      )
+                    }
+                  />
+                  {m.display_name || m.email}
+                </label>
+              ))}
           </fieldset>
           <button className="button">Save reviewed task</button>
         </Form>
@@ -507,6 +550,6 @@ export function TaskEditor({
           Cancel task editing
         </button>
       </section>
-    </Overlay>
+    </div>
   );
 }

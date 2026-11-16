@@ -992,3 +992,47 @@ test('approved private completion workflows deduplicate, preserve privacy and re
   assert.equal(history.data.runs.filter((r: any) => r.status === 'succeeded').length, 1);
   assert.equal(history.data.runs.filter((r: any) => r.status === 'blocked').length, 4);
 });
+
+test('project directory task totals are authoritative and discussion pages retain project authorization', async () => {
+  const directory = await api(root() + '/work/projects');
+  assert.equal(directory.status, 200);
+  const item = directory.data.data.find((p: any) => p.id === projectId);
+  assert.ok(item);
+  const total = await dbGet(
+    "SELECT COUNT(*) AS total,SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) AS completed FROM ac_erp_objects WHERE org_id=? AND environment='sandbox' AND kind='work_task' AND root_id=?",
+    [org, projectId],
+  );
+  assert.equal(item.task_summary.total, Number(total.total));
+  assert.equal(item.task_summary.completed, Number(total.completed || 0));
+  for (let i = 0; i < 103; i++) {
+    const posted = await api(root() + '/work/projects/' + projectId + '/messages', 'POST', {
+      body: 'History paging ' + i,
+    });
+    assert.equal(posted.status, 201);
+  }
+  const older = await api(root() + '/work/projects/' + projectId + '?messages_offset=100');
+  assert.ok(older.data.messages.length >= 3);
+  assert.equal(older.data.tasks_truncated, false);
+  const first = await api(root() + '/work/projects/' + projectId),
+    second = await api(root() + '/work/projects/' + projectId + '?messages_offset=1');
+  assert.equal(second.status, 200);
+  assert.equal(second.data.message_page.offset, 1);
+  if (first.data.messages.length)
+    assert.ok(!second.data.messages.some((m: any) => m.id === first.data.messages.at(-1).id));
+  assert.equal(
+    (await api(root() + '/work/projects/' + projectId + '?messages_offset=-1')).status,
+    400,
+  );
+  const stranger = await identity();
+  assert.equal(
+    (
+      await api(
+        root() + '/work/projects/' + projectId + '?messages_offset=1',
+        'GET',
+        undefined,
+        stranger.cookie,
+      )
+    ).status,
+    403,
+  );
+});

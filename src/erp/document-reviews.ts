@@ -27,6 +27,31 @@ export async function canReviewDocument(a: Access, id: string, active = false) {
   if (c.row.doc_kind !== 'file') fail(400, 'Review a retained file, not a folder');
   return true;
 }
+/** Return only members who can currently inspect this exact protected file. */
+export async function documentReviewers(a: Access, id: string) {
+  await documentAccess(a, id, 'edit');
+  await documentAccess(a, id, 'download');
+  const members = await dbAll(
+      'SELECT user_id,role FROM ac_memberships WHERE org_id=? ORDER BY user_id LIMIT 5001',
+      [a.org],
+    ),
+    eligible = [];
+  for (const member of members.slice(0, 5000)) {
+    try {
+      await canReviewDocument({ ...a, actor: member.user_id, role: member.role }, id);
+      eligible.push({ id: member.user_id, role: member.role });
+    } catch (error) {
+      if (![400, 402, 403, 404, 409].includes((error as any).status)) throw error;
+    }
+  }
+  return {
+    data: eligible,
+    limit: 5000,
+    truncated: members.length > 5000,
+    notice:
+      'Only current workspace members with current access to this file are listed. The reviewer permission is checked again when the review is requested and decided.',
+  };
+}
 export async function validateDocumentReviewRequest(a: Access, id: string, parameters: any) {
   await documentAccess(a, id, 'edit');
   await documentAccess(a, id, 'download');

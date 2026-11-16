@@ -38,6 +38,7 @@ export function PeopleWorkspace({
     [editing, setEditing] = useState<any>(null),
     [preview, setPreview] = useState<any>(null),
     [error, setError] = useState(''),
+    [loadErrors, setLoadErrors] = useState<Record<string, string>>({}),
     [notice, setNotice] = useState(''),
     [revision, setRevision] = useState(0),
     [query, setQuery] = useState(''),
@@ -59,31 +60,35 @@ export function PeopleWorkspace({
   useEffect(() => {
     let active = true;
     setError('');
-    Promise.all([
-      api('/people/configuration'),
-      api('/people/employees?q=' + encodeURIComponent(query) + '&offset=' + offset),
-      api('/team'),
-      api('/people/departments'),
-      api('/people/leave-types'),
-      api('/people/leave'),
-      api('/people/attendance'),
-      api('/business/approvals'),
-    ])
-      .then(([c, d, m, dep, t, l, a, r]) => {
-        if (active) {
-          setConfig(c);
-          setDirectory(d);
-          setMembers(m.data);
-          setDepartments(dep.data);
-          setTypes(t.data);
-          setRequests(l);
-          setAttendance(a);
-          setReviews(r.data.filter((v: any) => v.action === 'leave_approval'));
+    const sources: [string, string, (value: any) => void][] = [
+      ['policy', '/people/configuration', (value) => setConfig(value)],
+      [
+        'employees',
+        '/people/employees?q=' + encodeURIComponent(query) + '&offset=' + offset,
+        (value) => setDirectory(value),
+      ],
+      ['team', '/team', (value: any) => setMembers(value.data)],
+      ['departments', '/people/departments', (value: any) => setDepartments(value.data)],
+      ['leave types', '/people/leave-types', (value: any) => setTypes(value.data)],
+      ['leave requests', '/people/leave', (value) => setRequests(value)],
+      ['attendance', '/people/attendance', (value) => setAttendance(value)],
+      [
+        'approvals',
+        '/business/approvals',
+        (value: any) => setReviews(value.data.filter((v: any) => v.action === 'leave_approval')),
+      ],
+    ];
+    setLoadErrors({});
+    void Promise.allSettled(
+      sources.map(async ([label, path, apply]) => {
+        try {
+          const value = await api(path);
+          if (active) apply(value);
+        } catch (e) {
+          if (active) setLoadErrors((previous) => ({ ...previous, [label]: (e as Error).message }));
         }
-      })
-      .catch((e) => {
-        if (active) setError(e.message);
-      });
+      }),
+    );
     return () => {
       active = false;
     };
@@ -94,24 +99,49 @@ export function PeopleWorkspace({
     setBalances(null);
     setCompensation(null);
     setPreview(null);
-    if (selected)
-      api('/people/employees/' + selected)
-        .then(async (d) => {
+    if (selected) {
+      const employeeKey = 'employee record';
+      void api('/people/employees/' + selected)
+        .then((employee) => {
           if (!active) return;
-          setDetail(d);
+          setDetail(employee);
+          const reads: [string, string, (value: any) => void][] = [];
           const own = selected === config?.employee_id;
-          if (config?.access.hr_view || own) {
-            const b = await api('/people/employees/' + selected + '/leave-balances');
-            if (active) setBalances(b);
-          }
-          if (d.access.compensation) {
-            const c = await api('/people/employees/' + selected + '/compensation');
-            if (active) setCompensation(c);
-          }
+          if (config?.access.hr_view || own)
+            reads.push([
+              'leave balances',
+              '/people/employees/' + selected + '/leave-balances',
+              setBalances,
+            ]);
+          if (employee.access.compensation)
+            reads.push([
+              'compensation',
+              '/people/employees/' + selected + '/compensation',
+              setCompensation,
+            ]);
+          void Promise.allSettled(
+            reads.map(async ([label, path, apply]) => {
+              try {
+                const value = await api(path);
+                if (active) apply(value);
+              } catch (e) {
+                if (active)
+                  setLoadErrors((previous) => ({
+                    ...previous,
+                    [label]: (e as Error).message,
+                  }));
+              }
+            }),
+          );
         })
         .catch((e) => {
-          if (active) setError(e.message);
+          if (active)
+            setLoadErrors((previous) => ({
+              ...previous,
+              [employeeKey]: (e as Error).message,
+            }));
         });
+    }
     return () => {
       active = false;
     };
@@ -119,13 +149,26 @@ export function PeopleWorkspace({
   if (!config)
     return (
       <div>
-        {error ? (
+        {loadErrors.policy ? (
           <p role="alert" className="alert error">
-            {error}
+            People policy unavailable: {loadErrors.policy}{' '}
+            <button className="quiet-button" onClick={() => setRevision((v) => v + 1)}>
+              Retry People data
+            </button>
           </p>
         ) : (
           <p role="status">Loading authorized People records…</p>
         )}
+        {Object.entries(loadErrors)
+          .filter(([source]) => source !== 'policy')
+          .map(([source, message]) => (
+            <p className="alert" role="status" key={source}>
+              {source} unavailable: {message}{' '}
+              <button className="quiet-button" onClick={() => setRevision((v) => v + 1)}>
+                Retry People data
+              </button>
+            </p>
+          ))}
       </div>
     );
   const access = config.access,
@@ -138,6 +181,14 @@ export function PeopleWorkspace({
         </p>
       )}
       {notice && <p role="status">{notice}</p>}
+      {Object.entries(loadErrors).map(([source, message]) => (
+        <p className="alert" role="status" key={source}>
+          {source} unavailable: {message}{' '}
+          <button className="quiet-button" onClick={() => setRevision((v) => v + 1)}>
+            Retry People data
+          </button>
+        </p>
+      ))}
       <section className="panel">
         <h2>People operations</h2>
         <p>

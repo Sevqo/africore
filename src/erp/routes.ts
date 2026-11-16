@@ -23,12 +23,13 @@ import {
 } from './procurement';
 import {
   createDocumentRequest,
+  documentRequestAssignees,
   documentRequests,
   submitRequestedDocument,
   cancelDocumentRequest,
 } from './document-requests';
-import { requestDocumentReview } from './document-reviews';
-import { linkDocument, sourceDocuments } from './document-links';
+import { requestDocumentReview, documentReviewers } from './document-reviews';
+import { linkDocument, sourceDocuments, documentSourceOptions } from './document-links';
 import {
   documents,
   documentDetails,
@@ -259,7 +260,15 @@ erp.post(
 );
 erp.get(
   '/organizations/:org/work/projects/:id',
-  route(async (req, res) => res.json(await workProject(await access(req), String(req.params.id)))),
+  route(async (req, res) =>
+    res.json(
+      await workProject(
+        await access(req),
+        String(req.params.id),
+        z.coerce.number().int().min(0).max(100000).default(0).parse(req.query.messages_offset),
+      ),
+    ),
+  ),
 );
 erp.put(
   '/organizations/:org/work/projects/:id',
@@ -571,6 +580,10 @@ erp.get(
   '/organizations/:org/document-attachments',
   route(async (req, res) => res.json(await sourceDocuments(await access(req), req.query))),
 );
+erp.get(
+  '/organizations/:org/document-source-options',
+  route(async (req, res) => res.json(await documentSourceOptions(await access(req), req.query))),
+);
 
 erp.post(
   '/organizations/:org/documents/:id/review',
@@ -580,7 +593,17 @@ erp.post(
     ),
   ),
 );
+erp.get(
+  '/organizations/:org/documents/:id/reviewers',
+  route(async (req, res) =>
+    res.json(await documentReviewers(await access(req), String(req.params.id))),
+  ),
+);
 
+erp.get(
+  '/organizations/:org/document-request-assignees',
+  route(async (req, res) => res.json(await documentRequestAssignees(await access(req), req.query))),
+);
 erp.get(
   '/organizations/:org/document-requests',
   route(async (req, res) => res.json(await documentRequests(await access(req), req.query))),

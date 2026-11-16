@@ -5,7 +5,7 @@ export function validatePrivateFile(
   filename: string,
   contentType: string,
   base64: string,
-  maxBytes = 512 * 1024,
+  maxBytes = 2 * 1024 * 1024,
 ) {
   const reject = (message: string): never => {
     throw Object.assign(new Error(message), { status: 400 });

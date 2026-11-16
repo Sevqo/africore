@@ -19,15 +19,22 @@ export function WorkTemplates({
     let live = true;
     lifecycle.current++;
     setError('');
-    Promise.all([api('/work/templates'), api('/work/sales-sources')])
-      .then(([t, s]) => {
-        if (live) {
-          setTemplates(t);
-          setSources(s);
-        }
+    api('/work/templates')
+      .then((t) => {
+        if (live) setTemplates(t);
       })
       .catch((e) => {
-        if (live) setError(e.message);
+        if (live) setError('Templates: ' + e.message);
+      });
+    api('/work/sales-sources')
+      .then((s) => {
+        if (live) setSources(s);
+      })
+      .catch((e) => {
+        if (live)
+          setError((previous) =>
+            [previous, 'Sales sources: ' + e.message].filter(Boolean).join(' · '),
+          );
       });
     return () => {
       live = false;
@@ -45,6 +52,18 @@ export function WorkTemplates({
       {error && <p role="alert">{error}</p>}
       {(!templates || !sources) && !error && (
         <p role="status">Loading currently authorized templates and confirmed orders…</p>
+      )}
+      {templates && !sources && (
+        <p>
+          {templates.data.length} authorized templates loaded. Sales sources are required only to
+          create a project from an order.
+        </p>
+      )}
+      {sources && !templates && (
+        <p>
+          {sources.data.length} eligible Sales sources loaded. An approved template is required to
+          continue.
+        </p>
       )}
       {templates && sources && (
         <>

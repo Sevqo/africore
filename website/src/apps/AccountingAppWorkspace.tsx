@@ -6,6 +6,7 @@ import { JournalEditor } from './JournalEditor';
 import { AccountingConfiguration } from './AccountingConfiguration';
 import { AccountingAging } from './AccountingAging';
 import { AccountingTax } from './AccountingTax';
+import { DocumentAttachments } from './DocumentAttachments';
 import {
   accountingSections,
   balanceTotals,
@@ -465,6 +466,8 @@ export function AccountingAppWorkspace({
           {invoiceDetail && (
             <InvoiceDetail
               invoice={invoiceDetail}
+              api={api}
+              writable={configuration.writable}
               navigate={navigate}
               onClose={() => setInvoiceDetail(null)}
             />
@@ -1593,7 +1596,7 @@ function Closing({ drafts, events, periods, accounts }: any) {
   );
 }
 
-function InvoiceDetail({ invoice, navigate, onClose }: any) {
+function InvoiceDetail({ invoice, api, writable, navigate, onClose }: any) {
   const data = recordData(invoice);
   const items = Array.isArray(data.items) ? data.items : [];
   return (
@@ -1689,6 +1692,13 @@ function InvoiceDetail({ invoice, navigate, onClose }: any) {
         This is the canonical invoice record. Issued ledger evidence is posted separately; opening
         this panel does not create a second invoice or a payment.
       </p>
+      <DocumentAttachments
+        api={api}
+        sourceKind="invoice"
+        sourceId={invoice.id}
+        writable={writable}
+        allowUpload
+      />
     </section>
   );
 }

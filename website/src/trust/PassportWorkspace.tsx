@@ -2,6 +2,7 @@ import { TrustAssessment } from './TrustAssessment';
 import { Icon } from '../components/Icon';
 import { useEffect, useState } from 'react';
 import { Field, Form, Provenance, request, Timeline } from '../operations/UI';
+import { DocumentAttachments } from '../apps/DocumentAttachments';
 import { isDemo } from '../demo/transport';
 export const trustTypes = [
   'BusinessIdentityCredential',
@@ -90,7 +91,9 @@ export function PassportWorkspace({
   const editable = ['owner', 'admin'].includes(role),
     base = '/organizations/' + org + '/trust',
     api = (path: string, method = 'GET', body?: any) =>
-      request(base + path, method, body, environment);
+      request(base + path, method, body, environment),
+    documentsApi = (path: string, method = 'GET', body?: any) =>
+      request('/organizations/' + org + path, method, body, environment);
   async function load() {
     const [result, sourceRows, historyRows, issuerRows, issuanceRows] = await Promise.all([
       api('/passport'),
@@ -378,6 +381,21 @@ export function PassportWorkspace({
                       {r.status} · Review {r.id}
                     </p>
                     <Timeline items={r.history} />
+                    {editable && enabled('documents') && (
+                      <>
+                        <p>
+                          Supplemental Documents attachments do not replace Trust evidence or change
+                          verification assurance.
+                        </p>
+                        <DocumentAttachments
+                          api={documentsApi}
+                          sourceKind="verification"
+                          sourceId={r.id}
+                          writable={editable}
+                          allowUpload
+                        />
+                      </>
+                    )}
                   </article>
                 ))}
               </section>
@@ -432,8 +450,21 @@ export function PassportWorkspace({
                       Malware scanning is not configured. A document upload is not independent
                       verification.
                     </p>
-                    <Field label="Pending review ID">
-                      <input name="review_id" required />
+                    <Field label="Pending identity review">
+                      <select name="review_id" required defaultValue="">
+                        <option value="" disabled>
+                          Choose a current review accepting evidence
+                        </option>
+                        {data.identity_reviews
+                          ?.filter((review: any) =>
+                            ['pending', 'additional_information_required'].includes(review.status),
+                          )
+                          .map((review: any) => (
+                            <option key={review.id} value={review.id}>
+                              {review.status.replaceAll('_', ' ')} · {review.id.slice(0, 8)}
+                            </option>
+                          ))}
+                      </select>
                     </Field>
                     <Field label="TXT, PDF, PNG or JPEG · up to 250 KB">
                       <input
@@ -458,7 +489,17 @@ export function PassportWorkspace({
                         }}
                       />
                     </Field>
-                    <button className="secondary-button">Upload privately</button>
+                    <button
+                      className="secondary-button"
+                      disabled={
+                        !file ||
+                        !data.identity_reviews?.some((review: any) =>
+                          ['pending', 'additional_information_required'].includes(review.status),
+                        )
+                      }
+                    >
+                      Upload privately
+                    </button>
                   </Form>
                 </>
               )}
