@@ -441,6 +441,7 @@ export function AppsWorkspace({
                 <AnalyticsWorkspace
                   api={api}
                   scope={scope}
+                  manager={manager}
                   section={activeSection}
                   kind={catalog.kind}
                   navigate={navigate}

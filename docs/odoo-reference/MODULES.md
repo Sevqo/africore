@@ -31,6 +31,7 @@ the relevant source paths. Earlier focused HR findings remain in `notes/hr.md`.
 | `purchase` | `odoo-reference/addons/purchase` | read | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | AfriCore Procurement |
 | `sale` | `odoo-reference/addons/sale` | read | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | AfriCore Sales and Commerce |
 | `spreadsheet` | `odoo-reference/addons/spreadsheet` | skimmed | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | Analytics authoring comparison; not a standalone app in this manifest |
+| `spreadsheet_dashboard` | `odoo-reference/addons/spreadsheet_dashboard` | read | [spreadsheet_dashboard.md](notes/spreadsheet_dashboard.md) | Spreadsheet-backed dashboards, favorites and saved global filters |
 | `stock` | `odoo-reference/addons/stock` | read | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | AfriCore Inventory and fulfillment |
 | `web` | `odoo-reference/addons/web` | read | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | Shared generic view client and UI patterns |
 | `website` | `odoo-reference/addons/website` | skimmed | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | AfriCore Commerce storefront |

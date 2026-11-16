@@ -371,9 +371,13 @@ export const appCatalog: AppDefinition[] = [
     optional: ['forecasting'],
     navigation: [
       { label: 'Dashboard', section: 'dashboard' },
-      { label: 'Financial patterns', section: 'Intelligence' },
-      { label: 'Saved reports', section: 'saved-reports' },
+      { label: 'Reporting', section: 'reporting' },
+      { label: 'Explore data', section: 'explore' },
+      { label: 'Saved dashboards', section: 'saved-dashboards' },
+      { label: 'Saved report views', section: 'saved-reports' },
       { label: 'Data quality', section: 'coverage' },
+      { label: 'Configuration', section: 'configuration' },
+      { label: 'Financial patterns', section: 'Intelligence' },
     ],
     documentation: '/products/intelligence',
     setup: [

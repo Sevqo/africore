@@ -12,6 +12,7 @@ import { processProviderResult } from '../platform/payments';
 import { processBusinessEvents, processCrmDueReminders } from '../operations/business-worker';
 import { runAutomations, notify } from '../operations/automation';
 import { quantityMilli } from '../inventory/quantity';
+import { analyticsCSV } from '../operations/business-analytics';
 import { day, addDays } from '../operations/store';
 let server: any,
   base: string,
@@ -733,6 +734,218 @@ test('analytics uses covered sources and actor-private saved reports', async () 
     200,
   );
   assert.equal((await api(path('/business/analytics?from=2026-10-29&to=2026-10-01'))).status, 400);
+});
+
+test('analytics registry, grouped reports, pivots, exports and versioned dashboard CRUD are enforced', async () => {
+  const registry = await api(path('/business/analytics/registry'));
+  assert.equal(registry.status, 200, JSON.stringify(registry.data));
+  assert.equal(registry.data.sources.orders.readable, true);
+  assert.ok(registry.data.metrics.some((metric: any) => metric.id === 'orders.count'));
+  const lowStockMetric = registry.data.metrics.find((metric: any) => metric.id === 'inventory.low_stock');
+  assert.equal(lowStockMetric.available, true);
+  assert.deepEqual(lowStockMetric.allowed_charts, ['kpi']);
+  assert.deepEqual(lowStockMetric.groups, ['snapshot']);
+  const report = await api(
+    path(
+      '/business/analytics/report?metric=orders.count&group_by=status&from=2026-10-01&to=2026-10-29',
+    ),
+  );
+  assert.equal(report.status, 200, JSON.stringify(report.data));
+  assert.equal(
+    report.data.value,
+    report.data.rows.reduce((total: number, row: any) => total + row.value, 0),
+  );
+  assert.ok(report.data.rows.every((row: any) => row.drilldown?.kind === 'orders'));
+  assert.match(report.data.coverage, /matching source records/);
+  const excluded = await api(
+    path('/business/analytics/report?metric=orders.count&group_by=month&source=customers&from=2026-10-01&to=2026-10-29'),
+  );
+  assert.equal(excluded.status, 200);
+  assert.equal(excluded.data.excluded_by_source_filter, true);
+  assert.equal(excluded.data.value, null);
+  const snapshot = await api(
+    path('/business/analytics/report?metric=inventory.low_stock&group_by=snapshot&from=2026-10-01&to=2026-10-29'),
+  );
+  assert.equal(snapshot.status, 200, JSON.stringify(snapshot.data));
+  assert.ok(Number.isInteger(snapshot.data.value));
+  assert.match(snapshot.data.coverage, /products included/);
+  const pivot = await api(
+    path(
+      '/business/analytics/pivot?metric=orders.count&row_by=month&column_by=status&from=2026-10-01&to=2026-10-29',
+    ),
+  );
+  assert.equal(pivot.status, 200, JSON.stringify(pivot.data));
+  assert.equal(
+    pivot.data.totals.overall,
+    pivot.data.rows.reduce((total: number, row: any) => total + row.total, 0),
+  );
+  assert.equal(
+    (
+      await api(
+        path('/business/analytics/pivot?metric=orders.count&row_by=day&column_by=status&range=all'),
+      )
+    ).status,
+    400,
+  );
+  const exported = await api(
+    path(
+      '/business/analytics/report/export-data?metric=orders.count&group_by=month&from=2026-10-01&to=2026-10-29',
+    ),
+  );
+  assert.equal(exported.status, 200, JSON.stringify(exported.data));
+  assert.match(exported.data.content, /"Metric","Orders created"/);
+  const pivotExport = await api(
+    path('/business/analytics/pivot/export-data?metric=orders.count&row_by=month&column_by=status&from=2026-10-01&to=2026-10-29'),
+  );
+  assert.equal(pivotExport.status, 200, JSON.stringify(pivotExport.data));
+  assert.match(pivotExport.data.content, /"Total"/);
+  assert.equal(analyticsCSV([['Value', 'Label'], [-25, '=1+1']]), '"Value","Label"\r\n"-25","\'=1+1"');
+  const savedExploration = await api(path('/business/saved-reports'), 'POST', {
+    name: 'Synthetic Orders exploration',
+    configuration: {
+      query: { currency: 'KES', from: '2026-10-01', to: '2026-10-29' },
+      widgets: ['sales'],
+      exploration: {
+        metric: 'orders.count', source: 'orders', group_by: 'month', chart: 'line', view: 'graph',
+      },
+    },
+  });
+  assert.equal(savedExploration.status, 201, JSON.stringify(savedExploration.data));
+  assert.equal(
+    (await api(path('/business/saved-reports'), 'POST', {
+      name: 'Invalid filtered exploration',
+      configuration: {
+        query: { currency: 'KES', source: 'customers' },
+        widgets: ['sales'],
+        exploration: {
+          metric: 'orders.count', source: 'orders', group_by: 'month', chart: 'line', view: 'graph',
+        },
+      },
+    })).status,
+    400,
+  );
+  const definition = {
+    name: 'Synthetic Analytics dashboard',
+    template: 'sales',
+    configuration: {
+      filters: { currency: 'KES', from: '2026-10-01', to: '2026-10-29' },
+      widgets: [
+        {
+          id: 'orders-by-month',
+          metric: 'orders.count',
+          title: 'Orders by month',
+          chart: 'bar',
+          group_by: 'month',
+        },
+      ],
+    },
+  };
+  const created = await api(path('/business/analytics/dashboards'), 'POST', definition);
+  assert.equal(created.status, 201, JSON.stringify(created.data));
+  assert.equal(created.data.version, 1);
+  const visible = await api(path('/business/analytics/dashboards'));
+  assert.ok(visible.data.data.some((dashboard: any) => dashboard.id === created.data.id));
+  const update = await api(path('/business/analytics/dashboards/' + created.data.id), 'PATCH', {
+    expected_version: 1,
+    name: 'Updated Analytics dashboard',
+    configuration: definition.configuration,
+  });
+  assert.equal(update.status, 200, JSON.stringify(update.data));
+  assert.equal(update.data.version, 2);
+  assert.equal(
+    (
+      await api(path('/business/analytics/dashboards/' + created.data.id), 'PATCH', {
+        expected_version: 1,
+        name: 'Stale Analytics dashboard',
+        configuration: definition.configuration,
+      })
+    ).status,
+    409,
+  );
+  const duplicate = await api(
+    path('/business/analytics/dashboards/' + created.data.id + '/duplicate'),
+    'POST',
+    { name: 'Synthetic dashboard copy' },
+  );
+  assert.equal(duplicate.status, 201, JSON.stringify(duplicate.data));
+  assert.equal(duplicate.data.version, 1);
+  await dbRun("UPDATE ac_memberships SET role='viewer' WHERE org_id=? AND user_id=?", [org, actor]);
+  try {
+    assert.equal(
+      (await api(path('/business/analytics/dashboards'), 'POST', definition)).status,
+      403,
+    );
+    assert.equal(
+      (await api(path('/business/analytics/dashboards/' + created.data.id), 'DELETE', {})).status,
+      403,
+    );
+  } finally {
+    await dbRun("UPDATE ac_memberships SET role='owner' WHERE org_id=? AND user_id=?", [
+      org,
+      actor,
+    ]);
+  }
+  assert.equal(
+    (await api(path('/business/analytics/dashboards/' + duplicate.data.id), 'DELETE', {})).status,
+    200,
+  );
+  assert.equal(
+    (await api(path('/business/analytics/dashboards/' + created.data.id), 'DELETE', {})).status,
+    200,
+  );
+  assert.equal(
+    (await api(path('/business/saved-reports/' + savedExploration.data.id), 'DELETE', {})).status,
+    200,
+  );
+});
+
+test('analytics buckets use the configured IANA timezone across daylight-saving transitions', async () => {
+  const workspace = await dbGet('SELECT profile FROM ac_organizations WHERE id=?', [org]),
+    profile = JSON.parse(workspace.profile || '{}'),
+    customers = [
+      await api(path('/records/customers'), 'POST', { name: 'Synthetic before New York midnight' }),
+      await api(path('/records/customers'), 'POST', { name: 'Synthetic after New York midnight' }),
+    ];
+  assert.ok(customers.every((result: any) => result.status === 201));
+  await dbRun('UPDATE ac_organizations SET profile=? WHERE id=?', [
+    JSON.stringify({ ...profile, timezone: 'America/New_York' }),
+    org,
+  ]);
+  try {
+    await dbRun('UPDATE ac_records SET created_at=? WHERE id=?', [
+      '2026-03-08T04:30:00.000Z',
+      customers[0].data.id,
+    ]);
+    await dbRun('UPDATE ac_records SET created_at=? WHERE id=?', [
+      '2026-03-08T05:30:00.000Z',
+      customers[1].data.id,
+    ]);
+    const beforeMidnight = await api(
+      path(
+        '/business/analytics/records?kind=customers&from=2026-03-07&to=2026-03-07&date=2026-03-07',
+      ),
+    );
+    const afterMidnight = await api(
+      path(
+        '/business/analytics/records?kind=customers&from=2026-03-08&to=2026-03-08&date=2026-03-08',
+      ),
+    );
+    assert.equal(beforeMidnight.data.timezone, 'America/New_York');
+    assert.ok(beforeMidnight.data.data.some((record: any) => record.id === customers[0].data.id));
+    assert.ok(!beforeMidnight.data.data.some((record: any) => record.id === customers[1].data.id));
+    assert.ok(afterMidnight.data.data.some((record: any) => record.id === customers[1].data.id));
+    const report = await api(
+      path(
+        '/business/analytics/report?metric=customers.count&group_by=day&from=2026-03-07&to=2026-03-08',
+      ),
+    );
+    assert.equal(report.status, 200, JSON.stringify(report.data));
+    assert.equal(report.data.timezone, 'America/New_York');
+    assert.ok(report.data.rows.find((row: any) => row.key === '2026-03-07').value >= 1);
+    assert.ok(report.data.rows.find((row: any) => row.key === '2026-03-08').value >= 1);
+  } finally {
+    await dbRun('UPDATE ac_organizations SET profile=? WHERE id=?', [JSON.stringify(profile), org]);
+  }
 });
 
 test('warehouse editing, location transfers, incoming plans and exact fractional stock remain distinct', async () => {

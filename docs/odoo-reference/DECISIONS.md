@@ -31,7 +31,13 @@ decided, and why. An entry here is authoritative for future sessions; a note in
 
 ## Log
 
-_No decisions recorded yet._
+### D-001 — Keep analytics aggregates registry-driven and source-authorized
+- Date: 2026-11-16
+- Status: accepted
+- Evidence: `odoo-reference/addons/web/static/src/views/graph/graph_model.js`, `odoo-reference/addons/web/static/src/views/pivot/pivot_model.js`, and `odoo-reference/addons/spreadsheet_dashboard/models/spreadsheet_dashboard.py` (+ `RESEARCH_LOG.md`, Analytics entry)
+- Constraint: AfriCore must preserve tenant/environment isolation, current service and role permissions, integer-money/currency semantics, and authoritative source records.
+- Decision: reimplement compatible graph, pivot, dashboard and saved-filter behavior using AfriCore's typed measure registry, approved SQL expressions, existing service APIs and versioned actor-owned configuration. Do not copy Odoo source or assets, expose public links without an approved share service, or present unsupported sources as available.
+- Consequences: report dimensions and chart types remain capability-checked; financial measures stay separate from record counts and preserve source currencies; saved configurations are validated on read/write. Test tenant, service, role, stale-version and filter behavior independently from visual acceptance.
 
 ## Rejected
 

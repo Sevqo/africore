@@ -62,6 +62,16 @@ import {
   savedReports,
   saveReport,
   removeReport,
+  analyticsRegistry,
+  analyticsReport,
+  analyticsPivot,
+  analyticsDashboards,
+  createAnalyticsDashboard,
+  updateAnalyticsDashboard,
+  deleteAnalyticsDashboard,
+  duplicateAnalyticsDashboard,
+  businessAnalyticsExport,
+  analyticsCSV,
 } from './business-analytics';
 import { safeCSV, all } from './store';
 export const business = Router();
@@ -127,12 +137,102 @@ business.post(
   }),
 );
 business.get(
+  '/organizations/:org/business/analytics/registry',
+  route(async (req, res) => res.json(await analyticsRegistry(await access(req)))),
+);
+business.get(
+  '/organizations/:org/business/analytics/report',
+  route(async (req, res) => res.json(await analyticsReport(await access(req), req.query))),
+);
+business.get(
+  '/organizations/:org/business/analytics/pivot',
+  route(async (req, res) => res.json(await analyticsPivot(await access(req), req.query))),
+);
+business.get(
+  '/organizations/:org/business/analytics/report/export',
+  route(async (req, res) => {
+    const report = await analyticsReport(await access(req), req.query),
+      rows: any[][] = [
+        ['Metric', report.label],
+        ['Period', `${report.period.from} to ${report.period.to}`],
+        ['Timezone', report.timezone],
+        ['Currency', report.currency || 'Not applicable'],
+        ['Definition', report.definition],
+        [],
+        ['Group', 'Value', 'Currency'],
+        ...report.rows.map((row: any) => [row.label, row.value, row.currency || report.currency || 'count']),
+      ];
+    res.type('text/csv').attachment('africore-analytics-report.csv').send(analyticsCSV(rows));
+  }),
+);
+business.get(
+  '/organizations/:org/business/analytics/report/export-data',
+  route(async (req, res) => {
+    const report = await analyticsReport(await access(req), req.query),
+      rows: any[][] = [
+        ['Metric', report.label],
+        ['Period', `${report.period.from} to ${report.period.to}`],
+        ['Timezone', report.timezone],
+        ['Currency', report.currency || 'Not applicable'],
+        ['Definition', report.definition],
+        [],
+        ['Group', 'Value', 'Currency'],
+        ...report.rows.map((row: any) => [row.label, row.value, row.currency || report.currency || 'count']),
+      ];
+    res.json({ filename: 'africore-analytics-report.csv', content: analyticsCSV(rows), content_type: 'text/csv' });
+  }),
+);
+business.get(
+  '/organizations/:org/business/analytics/pivot/export-data',
+  route(async (req, res) => {
+    const result = await analyticsPivot(await access(req), req.query),
+      rows: unknown[][] = [
+        ['Metric', result.label],
+        ['Definition', result.definition],
+        ['Period', `${result.period.from} to ${result.period.to}`],
+        ['Timezone', result.timezone],
+        ['Row dimension', result.row_by],
+        ['Column dimension', result.column_by],
+        ['Currency filter', result.currency || 'Not applicable'],
+        [],
+        [result.row_by, ...result.columns, 'Total'],
+        ...result.rows.map((row: any) => [row.label, ...result.columns.map((column: string) => row.values[column] || 0), row.total]),
+        ['Total', ...result.columns.map((column: string) => (result.totals.columns as Record<string, number>)[column] || 0), result.totals.overall],
+      ];
+    res.json({ filename: 'africore-analytics-pivot.csv', content: analyticsCSV(rows), content_type: 'text/csv' });
+  }),
+);
+business.get(
+  '/organizations/:org/business/analytics/dashboards',
+  route(async (req, res) => res.json(await analyticsDashboards(await access(req)))),
+);
+business.post(
+  '/organizations/:org/business/analytics/dashboards',
+  route(async (req, res) => res.status(201).json(await createAnalyticsDashboard(await access(req), req.body))),
+);
+business.patch(
+  '/organizations/:org/business/analytics/dashboards/:id',
+  route(async (req, res) => res.json(await updateAnalyticsDashboard(await access(req), String(req.params.id), req.body))),
+);
+business.post(
+  '/organizations/:org/business/analytics/dashboards/:id/duplicate',
+  route(async (req, res) => res.status(201).json(await duplicateAnalyticsDashboard(await access(req), String(req.params.id), req.body))),
+);
+business.delete(
+  '/organizations/:org/business/analytics/dashboards/:id',
+  route(async (req, res) => res.json(await deleteAnalyticsDashboard(await access(req), String(req.params.id)))),
+);
+business.get(
   '/organizations/:org/business/analytics/records',
   route(async (req, res) => res.json(await analyticsRecords(await access(req), req.query))),
 );
 business.get(
   '/organizations/:org/business/analytics',
   route(async (req, res) => res.json(await businessAnalytics(await access(req), req.query))),
+);
+business.get(
+  '/organizations/:org/business/analytics/export-data',
+  route(async (req, res) => res.json(await businessAnalyticsExport(await access(req), req.query))),
 );
 business.get(
   '/organizations/:org/business/analytics/export',

@@ -2733,6 +2733,22 @@
                     "type": "string",
                     "format": "date",
                     "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                  },
+                  "status": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  },
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "orders",
+                      "customers",
+                      "crm",
+                      "sales",
+                      "inventory",
+                      "financial"
+                    ]
                   }
                 },
                 "required": [
@@ -2753,6 +2769,93 @@
                     "inventory"
                   ]
                 }
+              },
+              "exploration": {
+                "type": "object",
+                "properties": {
+                  "metric": {
+                    "type": "string",
+                    "enum": [
+                      "orders.count",
+                      "customers.count",
+                      "crm.leads",
+                      "sales.quotations",
+                      "inventory.movements",
+                      "inventory.low_stock",
+                      "financial.collections",
+                      "financial.expenses",
+                      "financial.net_movement",
+                      "financial.receivables"
+                    ]
+                  },
+                  "group_by": {
+                    "type": "string",
+                    "enum": [
+                      "day",
+                      "month",
+                      "status",
+                      "currency",
+                      "snapshot"
+                    ]
+                  },
+                  "chart": {
+                    "type": "string",
+                    "enum": [
+                      "kpi",
+                      "line",
+                      "bar",
+                      "pie",
+                      "table"
+                    ]
+                  },
+                  "view": {
+                    "type": "string",
+                    "enum": [
+                      "graph",
+                      "pivot",
+                      "table"
+                    ]
+                  },
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "orders",
+                      "customers",
+                      "crm",
+                      "sales",
+                      "inventory",
+                      "financial"
+                    ]
+                  },
+                  "row_by": {
+                    "type": "string",
+                    "enum": [
+                      "day",
+                      "month",
+                      "status",
+                      "currency",
+                      "snapshot"
+                    ]
+                  },
+                  "column_by": {
+                    "type": "string",
+                    "enum": [
+                      "day",
+                      "month",
+                      "status",
+                      "currency",
+                      "snapshot"
+                    ]
+                  }
+                },
+                "required": [
+                  "metric",
+                  "group_by",
+                  "chart",
+                  "view",
+                  "source"
+                ],
+                "additionalProperties": false
               }
             },
             "required": [
@@ -23557,6 +23660,917 @@
         }
       }
     },
+    "/api/v1/organizations/{org}/business/analytics/registry": {
+      "get": {
+        "summary": "GET /organizations/:org/business/analytics/registry",
+        "operationId": "workspace_get__organizations__org_business_analytics_registry",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organizations/{org}/business/analytics/report": {
+      "get": {
+        "summary": "GET /organizations/:org/business/analytics/report",
+        "operationId": "workspace_get__organizations__org_business_analytics_report",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organizations/{org}/business/analytics/pivot": {
+      "get": {
+        "summary": "GET /organizations/:org/business/analytics/pivot",
+        "operationId": "workspace_get__organizations__org_business_analytics_pivot",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organizations/{org}/business/analytics/report/export": {
+      "get": {
+        "summary": "GET /organizations/:org/business/analytics/report/export",
+        "operationId": "workspace_get__organizations__org_business_analytics_report_export",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organizations/{org}/business/analytics/report/export-data": {
+      "get": {
+        "summary": "GET /organizations/:org/business/analytics/report/export-data",
+        "operationId": "workspace_get__organizations__org_business_analytics_report_export_data",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organizations/{org}/business/analytics/pivot/export-data": {
+      "get": {
+        "summary": "GET /organizations/:org/business/analytics/pivot/export-data",
+        "operationId": "workspace_get__organizations__org_business_analytics_pivot_export_data",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organizations/{org}/business/analytics/dashboards": {
+      "get": {
+        "summary": "GET /organizations/:org/business/analytics/dashboards",
+        "operationId": "workspace_get__organizations__org_business_analytics_dashboards",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "POST /organizations/:org/business/analytics/dashboards",
+        "operationId": "workspace_post__organizations__org_business_analytics_dashboards",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Runtime-validated by Zod schemas in src/platform; examples and fields documented in docs/API.md"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/business/analytics/dashboards/{id}": {
+      "patch": {
+        "summary": "PATCH /organizations/:org/business/analytics/dashboards/:id",
+        "operationId": "workspace_patch__organizations__org_business_analytics_dashboards__id",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Runtime-validated by Zod schemas in src/platform; examples and fields documented in docs/API.md"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "DELETE /organizations/:org/business/analytics/dashboards/:id",
+        "operationId": "workspace_delete__organizations__org_business_analytics_dashboards__id",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Runtime-validated by Zod schemas in src/platform; examples and fields documented in docs/API.md"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/business/analytics/dashboards/{id}/duplicate": {
+      "post": {
+        "summary": "POST /organizations/:org/business/analytics/dashboards/:id/duplicate",
+        "operationId": "workspace_post__organizations__org_business_analytics_dashboards__id_duplicate",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Runtime-validated by Zod schemas in src/platform; examples and fields documented in docs/API.md"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organizations/{org}/business/analytics/records": {
       "get": {
         "summary": "GET /organizations/:org/business/analytics/records",
@@ -23638,6 +24652,83 @@
       "get": {
         "summary": "GET /organizations/:org/business/analytics",
         "operationId": "workspace_get__organizations__org_business_analytics",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organizations/{org}/business/analytics/export-data": {
+      "get": {
+        "summary": "GET /organizations/:org/business/analytics/export-data",
+        "operationId": "workspace_get__organizations__org_business_analytics_export_data",
         "parameters": [
           {
             "name": "org",

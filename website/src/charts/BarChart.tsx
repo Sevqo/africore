@@ -5,10 +5,12 @@ export function BarChart({
   title,
   rows,
   onInspect,
+  color = '#426900',
 }: {
   title: string;
   rows: { key: string; label: string; value: number }[];
   onInspect?: (key: string) => void;
+  color?: string;
 }) {
   const id = useId(),
     valid = rows.filter((row) => Number.isFinite(row.value) && row.value >= 0),
@@ -30,7 +32,9 @@ export function BarChart({
                 >
                   <span>{row.label}</span>
                   <span className="workspace-bar-track" aria-hidden="true">
-                    <span style={{ width: (row.value / max) * 100 + '%' }} />
+                    <span
+                      style={{ width: (row.value / max) * 100 + '%', backgroundColor: color }}
+                    />
                   </span>
                   <strong>{row.value.toLocaleString('en-KE')}</strong>
                 </button>
@@ -38,7 +42,9 @@ export function BarChart({
                 <div>
                   <span>{row.label}</span>
                   <span className="workspace-bar-track" aria-hidden="true">
-                    <span style={{ width: (row.value / max) * 100 + '%' }} />
+                    <span
+                      style={{ width: (row.value / max) * 100 + '%', backgroundColor: color }}
+                    />
                   </span>
                   <strong>{row.value.toLocaleString('en-KE')}</strong>
                 </div>

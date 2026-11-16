@@ -922,3 +922,139 @@ passing isolated integration tests; the running API runtime must be refreshed or
 workflow is accepted end to end. Populated-data screenshot comparison, role-by-role browser
 acceptance, representative responsive checks and founder approval remain outstanding. Do not start
 the next checkpoint until the founder authorizes it.
+
+## Checkpoint 2.12 — Analytics and Business Intelligence
+
+### Completion state
+
+The supported Phase 2.12 Analytics implementation and local automated verification are complete. Founder running-screen comparison and final manual acceptance remain outstanding; this report does not claim pixel verification. Automations work was not started.
+
+### Existing architecture and technology decisions
+
+The active workspace Analytics API is implemented in src/operations/business-analytics.ts, uses src/operations/intelligence.ts for canonical financial snapshots, and is registered through src/operations/business-routes.ts. Workspace route authorization is separately allowlisted in src/operations/business-metadata.ts; the generated workspace API inventory is platform-openapi.json. The React app is website/src/apps/AnalyticsWorkspace.tsx and reuses the existing chart, table and date-range components.
+
+src/services/analyticsService.ts and src/services/businessMetricsService.ts serve older transaction/profile and business-dashboard paths; this checkpoint did not conflate those authorities with the workspace Analytics API. businessMetricsService.ts exists even though an earlier source inventory did not list it.
+
+The implementation stays on TypeScript + React, TypeScript + Express, SQL through src/db/adapter.ts, existing PostgreSQL/SQLite persistence, and CSS/SVG chart components. SQL uses fixed metric/dimension mappings, not client-supplied SQL. This avoids a second backend, arbitrary query execution, a warehouse dependency or another chart framework. Financial values remain canonical integer minor units with explicit currency; order value is never labelled recognized revenue. No package was installed and no migration was added.
+
+### Odoo source findings
+
+The local read-only Odoo Community 20.0 checkout is at commit 1f622740a0688c940c9ed6ab40a4a174326a345d. addons/spreadsheet_dashboard/__manifest__.py confirms Community includes a dashboard module depending on the separate spreadsheet module. The dashboard model persists spreadsheet state, group/sequence, publication, company/group and allowed-user access plus favorites (addons/spreadsheet_dashboard/models/spreadsheet_dashboard.py). Named dashboard filter values and optional default/user scope have their own model (addons/spreadsheet_dashboard/models/spreadsheet_dashboard_favorite_filters.py) and are applied by the dashboard search model. Generic graph and pivot behavior lives in addons/web/static/src/views/graph/graph_model.js and addons/web/static/src/views/pivot/pivot_model.js: graphs bind search domain, measure, mode and group-by; pivots represent two grouped dimensions with expansion and totals.
+
+AfriCore adopts those interaction concepts in its own code and data contracts. It does not copy Odoo source/assets, embed a spreadsheet runtime, or expose public dashboard links without an approved AfriCore sharing service. AfriCore branding, global shell and design tokens remain. Source evidence and the decision are recorded in docs/odoo-reference/notes/spreadsheet_dashboard.md, docs/odoo-reference/RESEARCH_LOG.md, docs/odoo-reference/MODULES.md and docs/odoo-reference/DECISIONS.md. The actual odoo-reference repository was not modified.
+
+### Service dependency matrix
+
+| Capability | Source/service | Permission and coverage behavior |
+| --- | --- | --- |
+| Business Analytics app | intelligence for Business workspaces | App entitlement does not grant access to every underlying source. Personal workspace access remains subject to its own allowed records. |
+| Orders | orders | Counts canonical order headers; orders.count supports status/currency filters and authorized order drill-down. Not revenue. |
+| Customers | customers, or eligible invoicing/orders/crm/sales customer authority | Counts canonical customer records; not verified new paying customers. Authorized customer drill-down is supported. |
+| CRM | crm | Lead counts by supported date/status; requires operations permission. No opportunity-value metric is inferred. |
+| Sales | sales | Canonical quotation counts by date/status/currency; requires operations permission. Not recognized revenue. |
+| Inventory | inventory | Movement-row counts and bounded current low-stock snapshot. As-of time, coverage and truncation are exposed; no mixed-unit sum or valuation. |
+| Finance | intelligence plus finance role | Canonical confirmed collections, recorded outflows, net movement and receivables, in selected currency; source quality/history limits remain visible. |
+| Forecasting | Separate existing Forecasting capability | Not registered as a historical Analytics measure/widget in this checkpoint. |
+| Procurement, POS, Work, People, Documents, Automations | Existing separate services | No Analytics measures are registered for these sources. Unsupported or sensitive data is not queried. |
+
+### Metric registry and source access audit
+
+analyticsRegistry() reports source state, record coverage, required service/role, unit, definition, groupings, filters, chart capabilities and drill-down authority. Status choices are queried only from readable sources. Metrics/dimensions map to fixed SQL expressions and strict Zod inputs; authorization is rechecked on each request. The new routes are explicitly added to the workspace capability map, so unknown routes remain denied.
+
+| Metric | Definition and source | Grouping/presentation |
+| --- | --- | --- |
+| orders.count | Canonical order headers created in the selected window; count, not revenue | Day/month/status/currency; KPI, line, bar, pie, pivot, table; order drill-down |
+| customers.count | Canonical customer records created in the selected window | Day/month/status; KPI, line, bar, pie, pivot, table; customer drill-down |
+| crm.leads | CRM entries whose canonical kind is lead, grouped by current status | Day/month/status; CRM operations permission; no Analytics drill-down |
+| sales.quotations | Canonical quotation records by record date and current status | Day/month/status/currency; Sales operations permission; not recognized revenue |
+| inventory.movements | Physical movement rows; transfers have separate outgoing/incoming rows | Day/month; no quantity/value summing |
+| inventory.low_stock | Current tracked products at/below reorder point | Snapshot KPI only; timestamp, covered products and truncation notice |
+| financial.collections | Confirmed inflows from canonical financial snapshot | KPI only; finance role, selected currency and source quality |
+| financial.expenses | Recorded outflows from canonical financial snapshot | KPI only; finance role, selected currency and source quality |
+| financial.net_movement | Confirmed collections less recorded outflows | KPI only; not profit or bank balance |
+| financial.receivables | Outstanding invoice receivables from canonical financial snapshot | KPI only; finance role, selected currency and source quality |
+
+PostgreSQL and SQLite JSON expressions are isolated behind the existing adapter. Date buckets use a valid workspace IANA timezone. Report windows are bounded to 366 days unless all-history is explicitly selected; day grouping over all-history is rejected. Results state period, timezone, currency, definition, source coverage and refresh/as-of time.
+
+### Feature states
+
+| Feature | State |
+| --- | --- |
+| Main dashboard | Implemented and automatically verified: Odoo-like dashboard navigation, compact KPI row, trend and lower panels, empty/source coverage and independent source errors. Values use authorized APIs. |
+| Sales/business dashboard | Implemented and automatically verified within supported Sales/Orders measures; unavailable sources remain unavailable. |
+| Global filters | Implemented and automatically verified: date presets/custom range, source, status and currency are applied to server queries; incompatible status clears when source changes. |
+| Graph reporting | Implemented and automatically verified: registry-constrained measure/group/chart choices, date-only line grouping, and table alternative. |
+| Pivot analysis | Implemented and automatically verified: server aggregates axes and totals, validates dimensions, expands supported month/day detail and exports cells/totals. |
+| Dashboard builder/widget configuration | Implemented and automatically verified for supported types: add/configure/reorder/remove, source/measure/group/chart selection, preview and validated save. |
+| Dashboard creation | Implemented and automatically verified: blank, Overview, Sales, Finance, Customers and Inventory templates. |
+| Saved dashboards | Implemented and automatically verified: actor-scoped CRUD, duplication/deletion, owner/admin write restriction and optimistic version checks use existing ac_saved_reports. No new schema table/migration. |
+| Report explorer/saved views | Implemented and automatically verified: graph/table/pivot query state and axes can be named, saved and reopened; legacy saved report records remain readable. |
+| Drill-down | Implemented for registered order/customer aggregates and pivot cells. Unsupported sources show no fake record-open control. CRM/quotation/stock/finance row drill-down is not provided. |
+| Exports | Implemented for dashboard, report and pivot CSV. Context/coverage are retained and spreadsheet formula prefixes are escaped. XLSX/PDF are unsupported. |
+| Data quality | Implemented and automatically verified: source readiness/coverage, financial quality/history, inventory snapshot timestamp/truncation, metric definition and refresh time. |
+| Form/filter completeness | Audited: required names/configuration are validated, incompatible options are disabled or removed, dependencies are explicit, and API failures are surfaced independently. |
+
+### Issues found and fixed
+
+- Analytics and saved-report reads were coupled. They now settle independently; a saved-view failure does not hide successful dashboard data, and sections retain their own error/loading state.
+- Date grouping assumed Nairobi. Reports use the configured IANA timezone; integration coverage includes a New York daylight-saving transition.
+- Source filters could leave another source's values visible. Queries are source-scoped; excluded metrics return an explicit excluded/null response rather than a made-up zero.
+- Status filtering could be applied across incompatible record categories. Registry choices are source-scoped and stale choices clear when the source changes.
+- Financial and inventory values could be misleading. Finance uses the canonical snapshot and finance permission; low stock is an as-of snapshot; mixed currency, inventory valuation, mixed-unit quantities, profit and bank balance are not implied.
+- Saved dashboards lacked complete version-aware management. CRUD/duplicate/delete, schema validation, role restrictions and expected-version checks now exist.
+- New APIs were not in workspace route authorization metadata. The focused tests exposed HTTP 403 failures; the route allowlist was fixed, platform-openapi.json regenerated, and Express route validation now passes.
+- Older report/preview responses could replace current selections. Request sequence gates protect dashboard, report, pivot, drill-down and preview state.
+
+No Analytics migration, dependency installation, live-provider change, production record mutation, deployment, commit or push occurred.
+
+### Cross-service, authorization and form audit
+
+Every report endpoint resolves current member/API identity, workspace, environment and route kind. Business metrics require Intelligence service access. Metric source services and roles are checked server-side: finance metrics require finance permission; CRM and Sales reports require operations permission. Status options are only queried for readable sources. User input is enum/schema validated and cannot select SQL columns. Table reads include organization and environment scope. People-private fields, document names and unsupported services are not queried.
+
+### Files modified for Phase 2.12
+
+- Backend: src/operations/business-analytics.ts, src/operations/business-routes.ts, src/operations/business-metadata.ts, src/operations/contracts.ts, src/apps/catalog.ts.
+- Contract artifact: platform-openapi.json, regenerated from the workspace route registry.
+- Frontend: website/src/apps/AnalyticsWorkspace.tsx, website/src/apps/AppsWorkspace.tsx, website/src/apps/apps.css, website/src/charts/BarChart.tsx, website/src/components/DateRange.tsx.
+- Tests: src/__tests__/business-app-workflows.test.ts.
+- Documentation/research: this file, docs/odoo-reference/AFRICORE_APPLICATION_COMPARISON.md, docs/odoo-reference/MODULES.md, docs/odoo-reference/RESEARCH_LOG.md, docs/odoo-reference/DECISIONS.md, and new docs/odoo-reference/notes/spreadsheet_dashboard.md.
+
+package-lock.json was already modified in the shared working tree before this Analytics work and was not changed for Phase 2.12. Other pre-existing application checkpoints remain intact.
+
+### Automated verification
+
+| Check | Result |
+| --- | --- |
+| npm run typecheck | Passed |
+| npm --prefix website run typecheck | Passed |
+| npm run lint | Passed; architecture and test-isolation checks passed |
+| npm run build | Passed |
+| npm --prefix website run build | Passed; 82 routes prerendered and content suite 117/117. Existing Zod/Rollup annotation warnings remain non-fatal. |
+| business-app-workflows.test.js | Passed 46/46, including metric coverage, source isolation, pivot, CSV safety, dashboard CRUD/roles/versioning and timezone/DST |
+| Full npm test | Passed: 452 passed, 0 failed, 1 skipped; disposable SQLite fixtures; TEST_DATABASE_URL unset |
+| npm run validate:openapi | Passed; 59 mounted operations match OpenAPI |
+| npm run validate:platform | Passed; 445 workspace operations match Express registrations |
+| git diff --check | Passed; Git printed line-ending normalization notices only |
+
+PostgreSQL integration was not run because a dedicated local TEST_DATABASE_URL was not configured. No hosted service was contacted. Official Odoo documentation URLs timed out during this run; the local read-only Odoo source checkout was inspected instead.
+
+### Visual fidelity, limitations and unsupported capabilities
+
+The implementation follows the supplied composition in code: dashboard sidebar, search/filter/date toolbar, scorecards, trend/lower panels, report view controls, measures/grouping, pivot axes/totals, widget builder and creation flows. AfriCore branding and global shell remain distinct. No running AfriCore screen was captured or compared with the seven supplied screenshots in this checkpoint; these are reference-informed changes, not verified visual parity. Founder comparison remains required.
+
+Current limitations: only the ten registry measures above are supported. Financial measures are KPI snapshots without dimensional pivots. Low stock is not historical. CRM/Sales/Inventory lack Analytics row-level drill-down. There are no saved shared/global filters separate from named report views, public sharing, XLSX/PDF export, scheduled snapshots, arbitrary model joins, embedded spreadsheet authoring, forecasting widgets or data warehouse. Procurement, POS, Work, People, Documents and Automations are not Analytics sources. Large-workspace performance and PostgreSQL-specific behavior remain to be qualified.
+
+### Founder manual acceptance checklist
+
+1. Open Analytics in a populated Business workspace and compare every supplied screenshot; check sidebar width, toolbar, KPI proportions, charts, measures, pivot, builder and creation dialog.
+2. Compare finance figures against canonical records. Confirm order totals are not labelled revenue and currencies are not mixed.
+3. Test source/date/status/currency filters and switch sources; stale status/data must disappear. Test empty, unavailable, restricted and API error states.
+4. Compare graph/table/pivot totals to records; test axis changes, month/day expansion, keyboard navigation and table alternatives.
+5. Open order/customer drill-down and confirm unsupported sources expose no fake links.
+6. Create blank/template dashboards, add/reconfigure/reorder/remove widgets, save/reopen/duplicate/delete and test owner/admin versus viewer access.
+7. Download dashboard/report/pivot CSV and confirm the selected filters/definitions are present and spreadsheet formulas are escaped.
+8. Review coverage, finance quality/history, inventory snapshot timestamp/truncation and unsupported-source notices at desktop, tablet and mobile widths.
+
+### Readiness for the next checkpoint
+
+The supported Phase 2.12 implementation, source research and local automated gates are complete. It is ready for founder screenshot, responsive, populated-data and role acceptance. The next app checkpoint remains unstarted until the founder completes acceptance and explicitly authorizes it.

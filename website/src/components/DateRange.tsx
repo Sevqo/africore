@@ -5,11 +5,13 @@ export function DateRange({
   children,
   from = '',
   to = '',
+  applyLabel = 'Apply',
 }: {
   onApply: (from: string, to: string) => void;
   children?: ReactNode;
   from?: string;
   to?: string;
+  applyLabel?: string;
 }) {
   const [start, setStart] = useState(from),
     [end, setEnd] = useState(to),
@@ -60,7 +62,7 @@ export function DateRange({
       </label>
       {children}
       <div className="date-range-actions">
-        <button className="secondary-button">Apply</button>
+        <button className="secondary-button">{applyLabel}</button>
         <button
           type="button"
           className="quiet-button"

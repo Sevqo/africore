@@ -53,6 +53,8 @@ export const analyticsQuery = z.object({
   currency: currencySchema.default('KES'),
   from: z.string().date().optional(),
   to: z.string().date().optional(),
+  status: z.string().trim().min(1).max(40).optional(),
+  source: z.enum(['orders', 'customers', 'crm', 'sales', 'inventory', 'financial']).optional(),
 });
 export const forecastSchema = z
   .object({

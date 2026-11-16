@@ -41,6 +41,16 @@ that produced a conclusion does.
 - Follow-ups: wait for explicit owner instruction before implementation. Founder/manual app acceptance remains distinct from this source audit.
 - Limits: source-based review of relevant Community files and selected tests/manifests; no Odoo server was launched, no exhaustive addon audit, and no new browser screenshot comparisons were performed.
 
+## 2026-11-16 — Analytics dashboard, graph, pivot and global filters
+
+- Question: how does the local Odoo Community dashboard/reporting stack persist dashboards, drive graph and pivot aggregates, and save global filters for the AfriCore Analytics implementation?
+- Odoo commit: `1f622740a0688c940c9ed6ab40a4a174326a345d` (`20.0`).
+- Read (paths): `addons/spreadsheet_dashboard/__manifest__.py`; `addons/spreadsheet_dashboard/models/spreadsheet_dashboard.py`; `addons/spreadsheet_dashboard/models/spreadsheet_dashboard_group.py`; `addons/spreadsheet_dashboard/models/spreadsheet_dashboard_favorite_filters.py`; `addons/spreadsheet_dashboard/static/src/bundle/dashboard_action/dashboard_search_model.js`; `addons/web/static/src/views/graph/graph_model.js`; `addons/web/static/src/views/pivot/pivot_model.js`.
+- Findings: Community includes a `spreadsheet_dashboard` module depending on `spreadsheet`; the dashboard model stores spreadsheet state and access/favorite metadata. A separate model persists named dashboard filter values. Graph reports combine a search domain with a declared measure/grouping and guard against stale responses. Pivot reports use row/column dimensions, expansion and totals. Evidence and paths are recorded in `notes/spreadsheet_dashboard.md`.
+- Decision: see D-001 in `DECISIONS.md`; adapt the reporting patterns within AfriCore's registry, SQL, tenant and role boundaries.
+- Follow-ups: live AfriCore screenshot comparison and founder interaction acceptance remain outstanding.
+- Limits: focused source review only; no Odoo server launch, no running AfriCore browser comparison, and no Odoo file changes.
+
 ## 2026-11-16 — People service and independent loading
 
 - Question: which employee, department, attendance and leave validations should inform the active AfriCore People checkpoint, and does the frontend preserve usable records when an auxiliary source fails?
