@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import ts from 'typescript';
 import { serviceOpenDestination } from '../src/marketplace/service-open-destination.ts';
+import { appSectionActive, appSectionTarget } from '../src/workspace-navigation.ts';
 import {
   businessTabs,
   personalTabs,
@@ -19,6 +20,13 @@ const catalogJs = ts.transpileModule(catalogSource, {
 }).outputText;
 const { serviceCatalog } = await import(
   'data:text/javascript;base64,' + Buffer.from(catalogJs).toString('base64')
+);
+const appCatalogSource = fs.readFileSync(new URL('../../src/apps/catalog.ts', import.meta.url), 'utf8');
+const appCatalogJs = ts.transpileModule(appCatalogSource, {
+  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+}).outputText;
+const { appCatalog } = await import(
+  'data:text/javascript;base64,' + Buffer.from(appCatalogJs).toString('base64')
 );
 
 const requiredServices = [
@@ -102,6 +110,24 @@ test('every registered service resolves to a real destination in each workspace 
         );
       }
     }
+  }
+});
+
+test('every installed app section stays immersive while independent service routes remain separate', () => {
+  const direct = Object.fromEntries(businessTabs.map((tab) => [tab.toLowerCase(), tab]));
+  for (const app of appCatalog) {
+    for (const item of app.navigation) {
+      assert.equal(
+        appSectionTarget(app, item.section, direct),
+        'Apps',
+        `${app.id}/${item.section} must stay in its installed app`,
+      );
+      assert.equal(appSectionActive(app, item.section, 'Apps', item.section, direct), true);
+    }
+  }
+  for (const service of serviceCatalog.filter((item) => item.kinds.includes('business'))) {
+    const destination = serviceOpenDestination(service, 'business');
+    if (!destination.app) assert.ok(businessTabs.includes(destination.tab));
   }
 });
 

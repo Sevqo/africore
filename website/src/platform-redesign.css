@@ -1793,3 +1793,316 @@
     pointer-events: auto;
   }
 }
+
+/* Immersive installed-app shell: the existing global navigation becomes a drawer. */
+.business-shell.is-app-immersive .sidebar:not(.is-open) {
+  display: none;
+}
+.business-shell.is-app-immersive .sidebar.is-open {
+  display: flex;
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: min(320px, 88vw);
+  height: 100svh;
+  z-index: 200;
+  box-shadow: var(--shadow-menu);
+}
+.business-shell.is-app-immersive .nav-scrim {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 190;
+}
+.business-shell.is-app-immersive .app-nav-toggle {
+  display: inline-flex;
+}
+.business-shell.is-app-immersive .app-header {
+  display: flex;
+  min-height: 56px;
+  height: auto;
+  gap: 8px;
+  padding: 6px 16px;
+}
+.business-shell.is-app-immersive .app-header > .immersive-app-context {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  min-width: 80px;
+  line-height: 1.25;
+}
+.business-shell.is-app-immersive .immersive-app-context strong {
+  font-size: 14px;
+}
+.business-shell.is-app-immersive .immersive-app-context span {
+  font-size: 11px;
+}
+.business-shell.is-app-immersive .app-header > div:not(.immersive-app-context) {
+  flex: 0 1 auto;
+}
+.business-shell.is-app-immersive .app-header > div:not(.immersive-app-context) > .quiet-button,
+.business-shell.is-app-immersive .app-header > .workspace-search-trigger {
+  display: none;
+}
+.business-shell.is-app-immersive .app-header > div:not(.immersive-app-context) select {
+  width: 180px;
+  max-width: 22vw;
+  min-height: 36px;
+}
+.business-shell.is-app-immersive .app-header > div:last-child {
+  flex: 0 0 auto;
+}
+.business-shell.is-app-immersive .immersive-app-info-panel {
+  width: min(520px, calc(100vw - 32px));
+  max-height: min(80vh, 720px);
+  overflow: auto;
+  padding: 22px;
+}
+.immersive-app-services {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 18px;
+}
+.immersive-app-services li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid var(--line);
+  padding: 10px 0;
+}
+.immersive-app-services small {
+  color: var(--muted);
+}
+.business-shell.is-app-immersive .workspace-content {
+  width: 100%;
+  max-width: none;
+  padding-top: 12px;
+}
+.business-shell.is-app-immersive .workspace-breadcrumbs,
+.business-shell.is-app-immersive .workspace-title {
+  display: none;
+}
+.business-shell.is-app-immersive .apps-workspace[data-app-selected='true'] > .app-identity,
+.business-shell.is-app-immersive .apps-workspace[data-app-selected='true'] .app-service-details,
+.business-shell.is-app-immersive .apps-workspace[data-app-selected='true'] .related-apps {
+  display: none;
+}
+.business-shell.is-app-immersive .apps-workspace[data-app-selected='true'] > .environment-note {
+  margin: 0 0 12px;
+  padding: 7px 10px;
+  font-size: 11px;
+}
+
+@media (max-width: 900px) {
+  .business-shell.is-app-immersive .app-header {
+    display: flex;
+    min-height: 56px;
+    height: auto;
+    padding: 6px 8px;
+    gap: 4px;
+  }
+  .business-shell.is-app-immersive .app-header > .workspace-launcher-trigger,
+  .business-shell.is-app-immersive .app-header > .app-nav-toggle,
+  .business-shell.is-app-immersive .app-header > .immersive-app-info {
+    display: inline-flex;
+    flex: 0 0 40px;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    padding: 8px;
+  }
+  .business-shell.is-app-immersive .app-header > .immersive-app-context {
+    flex: 1 1 80px;
+    min-width: 60px;
+  }
+  .business-shell.is-app-immersive .app-header > div:not(.immersive-app-context) select {
+    width: 120px;
+    max-width: 25vw;
+    min-height: 36px;
+    padding: 5px 20px 5px 6px;
+    font-size: 11px;
+  }
+  .business-shell.is-app-immersive .app-header > div:last-child {
+    gap: 2px;
+  }
+  .business-shell.is-app-immersive .app-header .workspace-account-label {
+    display: none;
+  }
+}
+
+@media (max-width: 430px) {
+  .business-shell.is-app-immersive .app-header > .immersive-app-info {
+    display: none;
+  }
+  .business-shell.is-app-immersive .app-header > div:not(.immersive-app-context) select {
+    width: 94px;
+    max-width: 23vw;
+  }
+  .business-shell.is-app-immersive .immersive-app-context strong {
+    font-size: 12px;
+  }
+  .business-shell.is-app-immersive .immersive-app-context span {
+    font-size: 10px;
+  }
+}
+
+/* Personal workspace apps use the same full-width, URL-derived app mode. */
+.focused-account.is-app-immersive {
+  display: block;
+  min-height: 100dvh;
+}
+.focused-account.is-app-immersive > .account-nav:not(.focused-drawer) {
+  display: none;
+}
+.focused-account.is-app-immersive .account-content {
+  width: 100%;
+  max-width: none;
+  padding: 12px 18px 24px;
+}
+.focused-account.is-app-immersive .account-top,
+.focused-account.is-app-immersive > .account-content > h2 {
+  display: none;
+}
+.focused-account.is-app-immersive .focused-app-header {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  min-height: 54px;
+  margin: -12px -18px 10px;
+  padding: 6px 14px;
+  gap: 8px;
+  background: #fff;
+  border-bottom: 1px solid var(--workspace-line);
+}
+.focused-account.is-app-immersive .focused-app-header > .quiet-button,
+.focused-account.is-app-immersive .focused-app-header > .workspace-launcher-trigger,
+.focused-account.is-app-immersive .focused-app-info-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 38px;
+  width: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  padding: 7px;
+}
+.focused-account.is-app-immersive .focused-app-header > span {
+  flex: 1 1 auto;
+  font-size: 13px;
+  font-weight: 650;
+}
+.focused-account.is-app-immersive .focused-app-workspace-switch {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+  font-size: 11px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.focused-account.is-app-immersive .focused-drawer {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: min(320px, 88vw);
+  height: 100dvh;
+  z-index: 220;
+  padding: 18px;
+  box-shadow: var(--shadow-menu);
+}
+.focused-account.is-app-immersive .focused-app-header .focused-user-actions {
+  margin-left: 0;
+}
+.focused-account.is-app-immersive .focused-mobile-header > .focused-user-actions {
+  flex: 0 0 auto;
+}
+@media (max-width: 600px) {
+  .focused-account.is-app-immersive .account-content {
+    padding: 8px 10px 18px;
+  }
+  .focused-account.is-app-immersive .focused-app-header {
+    margin: -8px -10px 8px;
+    padding-inline: 8px;
+    gap: 4px;
+  }
+  .focused-account.is-app-immersive .focused-app-header > span {
+    max-width: none;
+    font-size: 11px;
+  }
+  .focused-account.is-app-immersive .focused-app-workspace-switch {
+    display: none;
+  }
+  .focused-account.is-app-immersive .focused-app-header > .quiet-button,
+  .focused-account.is-app-immersive .focused-app-header > .workspace-launcher-trigger,
+  .focused-account.is-app-immersive .focused-app-info-trigger {
+    flex-basis: 34px;
+    width: 34px;
+    min-width: 34px;
+    min-height: 34px;
+    padding: 5px;
+  }
+  .focused-account.is-app-immersive .focused-user-actions {
+    gap: 2px;
+  }
+}
+
+.crm-record-actions {
+  position: relative;
+}
+.crm-record-actions > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.crm-record-actions > summary::-webkit-details-marker {
+  display: none;
+}
+.crm-record-actions-menu {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 4px);
+  right: 0;
+  display: grid;
+  min-width: 180px;
+  padding: 5px;
+  background: #fff;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-menu);
+}
+.crm-record-actions-menu > button {
+  text-align: left;
+  padding: 8px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+}
+.crm-record-actions-menu > button:hover {
+  background: var(--surface);
+}
+.crm-dialog {
+  width: min(760px, calc(100vw - 32px));
+  padding: 0 !important;
+  background: #fff;
+}
+.crm-dialog-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 58px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.crm-dialog-heading h3 {
+  margin: 0;
+}
+.crm-dialog > form {
+  padding: 16px 18px 20px;
+}
+@media (max-width: 600px) {
+  .crm-dialog {
+    width: calc(100vw - 20px);
+  }
+  .crm-dialog > form {
+    padding: 12px;
+  }
+}

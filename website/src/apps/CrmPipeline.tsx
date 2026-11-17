@@ -3,7 +3,7 @@ import { Form, money } from '../operations/UI';
 import { Icon } from '../components/Icon';
 export function CrmPipeline({
   entries,
-  allEntries,
+  stageSummary = [],
   customers,
   members,
   writable,
@@ -14,7 +14,7 @@ export function CrmPipeline({
   stages,
 }: {
   entries: any[];
-  allEntries: any[];
+  stageSummary?: { stage: string; count: number; totals: Record<string, number> }[];
   customers: any[];
   members: any[];
   writable: boolean;
@@ -69,15 +69,10 @@ export function CrmPipeline({
           const records = entries
             .filter((e) => e.kind === 'opportunity' && e.stage === stage)
             .sort((a, b) => (a.position || 0) - (b.position || 0) || a.id.localeCompare(b.id));
-          const amounts: Record<string, number> = records
-            .filter((e) => e.status === 'open')
-            .reduce(
-              (totals: Record<string, number>, entry: any) => ({
-                ...totals,
-                [entry.currency]: (totals[entry.currency] || 0) + entry.amount_minor,
-              }),
-              {},
-            );
+          const summary = stageSummary.find((item) => item.stage === stage),
+            amounts = summary?.totals || {},
+            matchingTotal = stageSummary.reduce((sum, item) => sum + item.count, 0),
+            share = matchingTotal ? Math.round(((summary?.count || 0) / matchingTotal) * 100) : 0;
           return (
             <section
               className={'crm-board-column' + (drag?.stage === stage ? ' is-drop-target' : '')}
@@ -97,7 +92,7 @@ export function CrmPipeline({
             >
               <header className="crm-stage-heading">
                 <h4>
-                  {name} <span className="badge">{records.length}</span>
+                  {name} <span className="badge">{summary?.count ?? records.length}</span>
                   {writable && (
                     <button
                       className="quiet-button"
@@ -111,8 +106,15 @@ export function CrmPipeline({
                 <small>
                   {Object.entries(amounts)
                     .map(([currency, total]) => money(total, currency))
-                    .join(' · ') || 'No open value'}
+                    .join(' · ') || 'No expected value'}
                 </small>
+                <div
+                  className="crm-stage-volume"
+                  role="img"
+                  aria-label={`${summary?.count || 0} matching opportunities, ${share}% of current results`}
+                >
+                  <span style={{ width: `${share}%` }} />
+                </div>
               </header>
               {!records.length && <p className="crm-stage-empty">Drop an opportunity here</p>}
               {records.map((entry) => (
@@ -243,22 +245,6 @@ export function CrmPipeline({
                     )}
                   </div>
                   {entry.expected_close_on && <p>Expected close {entry.expected_close_on}</p>}
-                  {(() => {
-                    const next = allEntries
-                      .filter(
-                        (a) =>
-                          a.parent_entry_id === entry.id &&
-                          a.kind === 'follow_up' &&
-                          a.status === 'open' &&
-                          a.due_at,
-                      )
-                      .sort((a, b) => a.due_at.localeCompare(b.due_at))[0];
-                    return next ? (
-                      <p title={'Next activity: ' + next.title}>
-                        ◷ {next.title} · {new Date(next.due_at).toLocaleDateString()}
-                      </p>
-                    ) : null;
-                  })()}
                   <p className="crm-card-owner">
                     {members.find((m) => m.id === entry.assigned_to)?.display_name ||
                       members.find((m) => m.id === entry.assigned_to)?.email ||

@@ -95,8 +95,8 @@ test('sales sidebar sections stay inside the installed app', () => {
   assert.equal(appSectionActive(sales, 'orders', 'Orders', 'orders', direct), false);
   assert.equal(
     appSectionTarget({ id: 'crm' }, 'Orders', direct),
-    'Orders',
-    'other apps keep their shared-tab mapping',
+    'Apps',
+    'CRM navigation stays inside its installed app workspace',
   );
 });
 

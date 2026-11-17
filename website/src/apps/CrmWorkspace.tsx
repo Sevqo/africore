@@ -5,6 +5,7 @@ import { CrmExtraFields, crmExtraValues } from './CrmExtraFields';
 import { CrmSettings } from './CrmSettings';
 import { CrmPipeline } from './CrmPipeline';
 import { CrmEntryDetails } from './CrmEntryDetails';
+import { CrmCustomerSelect } from './CrmCustomerSelect';
 import { useIdempotentAPI } from './useIdempotentAPI';
 import { useEffect, useRef, useState } from 'react';
 import { DataTable } from '../components/DataTable';
@@ -17,8 +18,10 @@ export function CrmWorkspace({
   initialSection = 'dashboard',
   writable = false,
   admin = false,
+  salesEnabled = false,
 }: {
   admin?: boolean;
+  salesEnabled?: boolean;
   writable?: boolean;
   initialSection?: string;
   api: API;
@@ -32,56 +35,176 @@ export function CrmWorkspace({
   const [moveNotice, setMoveNotice] = useState('');
   useEffect(() => setMoveNotice(''), [scope]);
   const [data, setData] = useState<any>(null),
+    [entryPage, setEntryPage] = useState<any>(null),
     [customers, setCustomers] = useState<any[]>([]),
     [members, setMembers] = useState<any[]>([]),
     [error, setError] = useState(''),
+    [customerError, setCustomerError] = useState(''),
+    [teamError, setTeamError] = useState(''),
     [revision, setRevision] = useState(0),
-    [section, setSection] = useState('dashboard'),
+    [section, setSection] = useState(initialSection === 'dashboard' ? 'pipeline' : initialSection),
     [activity, setActivity] = useState<any>(null),
+    [profileContactType, setProfileContactType] = useState<'individual' | 'company'>('individual'),
+    [customerQuery, setCustomerQuery] = useState(''),
+    [customerRows, setCustomerRows] = useState<any[]>([]),
+    [customerTotal, setCustomerTotal] = useState(0),
+    [customerOffset, setCustomerOffset] = useState(0),
+    [customerListLoading, setCustomerListLoading] = useState(false),
+    [activityMoreLoading, setActivityMoreLoading] = useState(false),
     [selected, setSelected] = useState<string | null>(null),
     [extraSelected, setExtraSelected] = useState<any>(null),
     [query, setQuery] = useState(''),
+    [createKind, setCreateKind] = useState(
+      initialSection === 'leads'
+        ? 'lead'
+        : initialSection === 'followups'
+          ? 'follow_up'
+          : 'opportunity',
+    ),
     [stateFilter, setStateFilter] = useState('all'),
     [outcomeFilter, setOutcomeFilter] = useState('active'),
     [ownerFilter, setOwnerFilter] = useState('mine'),
+    [stageFilter, setStageFilter] = useState('all'),
+    [teamFilter, setTeamFilter] = useState('all'),
+    [currencyFilter, setCurrencyFilter] = useState('all'),
     [leadFilter, setLeadFilter] = useState('all'),
     [sortOrder, setSortOrder] = useState('recent'),
     [page, setPage] = useState(1),
-    [board, setBoard] = useState(false),
+    [board, setBoard] = useState(initialSection === 'dashboard' || initialSection === 'pipeline'),
     [calendar, setCalendar] = useState(false),
     [createStage, setCreateStage] = useState(''),
     [moving, setMoving] = useState(false),
     [hasMore, setHasMore] = useState(true),
-    [loadingMore, setLoadingMore] = useState(false);
+    [loadingMore, setLoadingMore] = useState(false),
+    [listLoading, setListLoading] = useState(false);
+  function changeSection(next: string, replace = false) {
+    const url = new URL(location.href);
+    url.searchParams.set('app', 'crm');
+    url.searchParams.set('section', next);
+    url.searchParams.delete('crm-record');
+    url.hash = 'Apps';
+    history[replace ? 'replaceState' : 'pushState'](null, '', url.pathname + url.search + url.hash);
+    setSection(next);
+    dispatchEvent(new Event('africore:app-navigation'));
+    navigate('Apps');
+  }
+  function entryParams(offset = 0) {
+    const params = new URLSearchParams({ limit: '200', offset: String(offset), sort: sortOrder });
+    if (section === 'pipeline') {
+      params.set('kind', 'opportunity');
+      if (outcomeFilter !== 'all') params.set('outcome', outcomeFilter);
+      if (ownerFilter === 'mine' && data?.current_actor)
+        params.set('assigned_to', data.current_actor);
+      else if (!['mine', 'all'].includes(ownerFilter)) params.set('assigned_to', ownerFilter);
+      if (stageFilter !== 'all') params.set('stage', stageFilter);
+      if (teamFilter !== 'all') params.set('team_id', teamFilter);
+    } else if (section === 'leads') {
+      params.set('kind', 'lead');
+      if (leadFilter === 'mine' && data?.current_actor)
+        params.set('assigned_to', data.current_actor);
+      else if (!['mine', 'all', 'unassigned', 'open', 'cancelled'].includes(leadFilter))
+        params.set('assigned_to', leadFilter);
+      if (leadFilter === 'unassigned') params.set('unassigned', 'true');
+      if (leadFilter === 'open' || leadFilter === 'cancelled') params.set('status', leadFilter);
+    } else if (section === 'followups') params.set('kind', 'follow_up');
+    if (stateFilter !== 'all') params.set('status', stateFilter);
+    if (currencyFilter !== 'all') params.set('currency', currencyFilter);
+    if (query.trim()) params.set('q', query.trim());
+    return params;
+  }
   useEffect(() => {
     setData(null);
+    setEntryPage(null);
     setCustomers([]);
     setMembers([]);
   }, [scope]);
   useEffect(() => {
     let current = true;
     setError('');
-    Promise.all([api('/crm'), api('/records/customers?limit=100'), api('/team')])
-      .then(([r, c, t]) => {
-        if (current) {
-          setData(r);
-          setHasMore(r.entries.length === 200);
-          setCustomers(c.data);
+    setCustomerError('');
+    setTeamError('');
+    api('/crm')
+      .then((r) => current && setData(r))
+      .catch((e) => current && setError(e.message));
+    api('/records/customers?limit=100')
+      .then((r) => current && setCustomers(r.data || []))
+      .catch((e) => current && setCustomerError(e.message));
+    api('/team')
+      .then(
+        (r) =>
+          current &&
           setMembers(
-            t.data.filter((m: any) => ['owner', 'admin', 'finance', 'operations'].includes(m.role)),
-          );
-        }
-      })
-      .catch((e) => {
-        if (current) setError(e.message);
-      });
+            (r.data || []).filter((m: any) =>
+              ['owner', 'admin', 'finance', 'operations'].includes(m.role),
+            ),
+          ),
+      )
+      .catch((e) => current && setTeamError(e.message));
     return () => {
       current = false;
     };
   }, [scope, revision]);
   useEffect(() => {
+    if (section !== 'customers') return;
+    let current = true;
+    const timer = window.setTimeout(() => {
+      setCustomerListLoading(true);
+      api(
+        '/records/customers?' +
+          new URLSearchParams({ limit: '50', offset: String(customerOffset), q: customerQuery }),
+      )
+        .then((result) => {
+          if (current) {
+            setCustomerRows(result.data || []);
+            setCustomerTotal(result.total || 0);
+          }
+        })
+        .catch((e) => current && setCustomerError((e as Error).message))
+        .finally(() => current && setCustomerListLoading(false));
+    }, 180);
+    return () => {
+      current = false;
+      clearTimeout(timer);
+    };
+  }, [scope, section, customerQuery, customerOffset, revision]);
+  useEffect(() => {
+    if (!data) return;
+    let current = true;
+    const params = entryParams(0);
+    setListLoading(true);
+    setEntryPage(null);
+    api('/crm/entries?' + params)
+      .then((result) => {
+        if (current) {
+          setEntryPage(result);
+          setHasMore(result.has_more);
+        }
+      })
+      .catch((e) => current && setError((e as Error).message))
+      .finally(() => current && setListLoading(false));
+    return () => {
+      current = false;
+    };
+  }, [
+    scope,
+    revision,
+    !!data,
+    section,
+    query,
+    stateFilter,
+    outcomeFilter,
+    ownerFilter,
+    stageFilter,
+    teamFilter,
+    currencyFilter,
+    leadFilter,
+    sortOrder,
+    data?.current_actor,
+  ]);
+  useEffect(() => {
     const next = initialSection === 'dashboard' ? 'pipeline' : initialSection;
     setSection(next);
+    setCreateKind(next === 'leads' ? 'lead' : next === 'followups' ? 'follow_up' : 'opportunity');
     setActivity(null);
     setSelected(null);
     setQuery('');
@@ -170,49 +293,21 @@ export function CrmWorkspace({
       setMoving(false);
     }
   }
-  const matching =
-    data?.entries.filter((e: any) =>
-      section === 'followups'
-        ? e.kind === 'follow_up'
-        : section === 'pipeline'
-          ? e.kind === 'opportunity'
-          : section === 'leads'
-            ? e.kind === 'lead'
-            : true,
-    ) || [];
-  const entries = matching
-    .filter(
-      (e: any) =>
-        (section !== 'leads' ||
-          leadFilter === 'all' ||
-          (leadFilter === 'mine'
-            ? e.assigned_to === data.current_actor
-            : leadFilter === 'unassigned'
-              ? !e.assigned_to
-              : e.status === leadFilter)) &&
-        (stateFilter === 'all' || e.status === stateFilter) &&
-        (section !== 'pipeline' ||
-          ownerFilter === 'all' ||
-          !members.some((m) => m.id === data.current_actor) ||
-          e.assigned_to === data.current_actor) &&
-        (section !== 'pipeline' ||
-          outcomeFilter === 'all' ||
-          (outcomeFilter === 'active'
-            ? !['won', 'lost'].includes(e.stage)
-            : e.stage === outcomeFilter)) &&
-        [e.title, e.notes, customers.find((c) => c.id === e.customer_id)?.name]
-          .join(' ')
-          .toLowerCase()
-          .includes(query.trim().toLowerCase()),
-    )
-    .sort((a: any, b: any) =>
-      sortOrder === 'title'
-        ? a.title.localeCompare(b.title) || a.id.localeCompare(b.id)
-        : b.created_at.localeCompare(a.created_at) || b.id.localeCompare(a.id),
-    );
+  const entries: any[] = entryPage?.data || [];
   useEffect(
     () => setPage(1),
-    [query, stateFilter, outcomeFilter, ownerFilter, leadFilter, sortOrder, section],
+    [
+      query,
+      stateFilter,
+      outcomeFilter,
+      ownerFilter,
+      stageFilter,
+      teamFilter,
+      currencyFilter,
+      leadFilter,
+      sortOrder,
+      section,
+    ],
   );
   const selectedEntry =
     data?.entries.find((e: any) => e.id === selected) ||
@@ -225,42 +320,33 @@ export function CrmWorkspace({
         </p>
       )}
       {!writable && <p className="environment-note">Read-only access in your current role.</p>}
-      <nav className="app-service-chips" aria-label="CRM sections">
-        {[
-          ['pipeline', 'Sales'],
-          ['leads', 'Leads'],
-          ['followups', 'Activities'],
-          ['report', 'Reporting'],
-          ['settings', 'Configuration'],
-          ['import', 'Import leads'],
-          ['activity', 'Customer activity'],
-        ].map(([id, label]) => (
-          <button
-            className="secondary-button"
-            key={id}
-            aria-pressed={section === id}
-            onClick={() => {
-              setSection(id);
-              if (selected) closeRecord();
-              setBoard(id === 'pipeline');
-              setCalendar(false);
-            }}
-          >
-            {label}
-          </button>
-        ))}
-        <button className="quiet-button" onClick={() => navigate('Customers')}>
-          Shared customers
-        </button>
-      </nav>
       {error && (
         <p role="alert" className="alert error">
           {error}
+          <button className="quiet-button" onClick={() => setRevision((value) => value + 1)}>
+            Retry CRM data
+          </button>
         </p>
       )}
       {!data && !error && <p role="status">Loading customer relationships…</p>}
       {data && (
         <>
+          {teamError && (
+            <p className="alert warning" role="alert">
+              Team assignments could not load. CRM records remain available; retry team data before assigning.
+              <button className="quiet-button" onClick={() => setRevision((value) => value + 1)}>
+                Retry
+              </button>
+            </p>
+          )}
+          {customerError && section !== 'customers' && (
+            <p className="alert warning" role="alert">
+              The shared customer list could not load. Search and customer-linked actions may be limited.
+              <button className="quiet-button" onClick={() => setRevision((value) => value + 1)}>
+                Retry
+              </button>
+            </p>
+          )}
           {section === 'dashboard' && (
             <div className="app-metric-grid">
               {[
@@ -282,9 +368,9 @@ export function CrmWorkspace({
               customers={customers}
               members={members}
               writable={writable && !moving}
+              salesEnabled={salesEnabled}
               configuration={data.configuration}
               api={api}
-              entries={data.entries}
               openQuotation={(quoteId) => {
                 const url = new URL(location.href);
                 url.searchParams.set('app', 'sales');
@@ -342,7 +428,7 @@ export function CrmWorkspace({
                 customers={customers}
                 writable={writable}
                 onSaved={() => {
-                  setSection('dashboard');
+                  changeSection('leads', true);
                   setRevision((v) => v + 1);
                 }}
               />
@@ -355,32 +441,78 @@ export function CrmWorkspace({
                 onSaved={() => setRevision((v) => v + 1)}
                 admin={admin}
               />
-            ) : section === 'activity' ? (
+            ) : section === 'customers' ? (
               <section className="panel">
-                <h3>One customer across services</h3>
-                <Field label="Customer">
-                  <select
-                    defaultValue=""
-                    onChange={async (e) => {
-                      setActivity(null);
-                      setError('');
-                      try {
-                        setActivity(await api('/crm/customers/' + e.target.value + '/activity'));
-                      } catch (error) {
-                        setError((error as Error).message);
-                      }
-                    }}
-                  >
-                    <option disabled value="">
-                      Choose a shared customer
-                    </option>
-                    {customers.map((c) => (
-                      <option value={c.id} key={c.id}>
-                        {c.name}
-                      </option>
+                <div className="crm-customer-heading">
+                  <h3>Customers</h3>
+                  <Field label="Search all shared customers">
+                    <input
+                      type="search"
+                      value={customerQuery}
+                      placeholder="Name, email or phone"
+                      onChange={(e) => {
+                        setCustomerQuery(e.target.value);
+                        setCustomerOffset(0);
+                      }}
+                    />
+                  </Field>
+                </div>
+                {customerError && (
+                  <p className="alert error" role="alert">
+                    Customer directory unavailable: {customerError}
+                  </p>
+                )}
+                {customerListLoading ? (
+                  <p role="status">Searching shared customers…</p>
+                ) : (
+                  <div className="crm-customer-results" aria-label="Shared customers">
+                    {customerRows.map((c) => (
+                      <button
+                        className="secondary-button"
+                        key={c.id}
+                        aria-pressed={activity?.customer?.id === c.id}
+                        onClick={async () => {
+                          setActivity(null);
+                          setError('');
+                          try {
+                          const result = await api(
+                            '/crm/customers/' + c.id + '/activity?' +
+                              new URLSearchParams({ limit: '50', offset: '0' }),
+                          );
+                          setActivity(result);
+                          setProfileContactType(result.profile.contact_type || 'individual');
+                          } catch (e) {
+                            setError((e as Error).message);
+                          }
+                        }}
+                      >
+                        <strong>{c.name}</strong>
+                        <small>{c.email || c.phone || 'No contact details'}</small>
+                      </button>
                     ))}
-                  </select>
-                </Field>
+                    {!customerRows.length && <p>No shared customers match this search.</p>}
+                  </div>
+                )}
+                <div className="form-actions">
+                  <button
+                    className="secondary-button"
+                    disabled={customerOffset <= 0}
+                    onClick={() => setCustomerOffset(Math.max(0, customerOffset - 50))}
+                  >
+                    Previous
+                  </button>
+                  <span>
+                    {customerTotal ? customerOffset + 1 : 0}–
+                    {Math.min(customerOffset + customerRows.length, customerTotal)} of {customerTotal}
+                  </span>
+                  <button
+                    className="secondary-button"
+                    disabled={customerOffset + customerRows.length >= customerTotal}
+                    onClick={() => setCustomerOffset(customerOffset + 50)}
+                  >
+                    Next
+                  </button>
+                </div>
                 {activity && (
                   <>
                     <h3>{activity.customer.name}</h3>
@@ -398,8 +530,35 @@ export function CrmWorkspace({
                     ))}
                     <h4>Linked operations</h4>
                     <p>
-                      {activity.quotations.length} quotations · {activity.orders.length} orders
+                      {activity.quotation_count} quotations · {activity.order_count} orders
                     </p>
+                    {activity.has_more && (
+                      <button
+                        className="secondary-button"
+                        disabled={activityMoreLoading}
+                        onClick={async () => {
+                          setActivityMoreLoading(true);
+                          try {
+                            const offset = activity.offset + activity.limit;
+                            const result = await api(
+                              '/crm/customers/' + activity.customer.id + '/activity?' +
+                                new URLSearchParams({ limit: String(activity.limit), offset: String(offset) }),
+                            );
+                            setActivity((previous: any) =>
+                              previous?.customer?.id === result.customer.id
+                                ? { ...result, entries: [...previous.entries, ...result.entries] }
+                                : previous,
+                            );
+                          } catch (e) {
+                            setError((e as Error).message);
+                          } finally {
+                            setActivityMoreLoading(false);
+                          }
+                        }}
+                      >
+                        {activityMoreLoading ? 'Loading…' : `Load older CRM activity (${activity.entries_total} total)`}
+                      </button>
+                    )}
                     {activity.financial_activity && (
                       <p>
                         {activity.financial_activity.invoices.length} linked invoices visible to
@@ -407,6 +566,7 @@ export function CrmWorkspace({
                       </p>
                     )}
                     <Form
+                      key={activity.customer.id + ':' + activity.profile.version}
                       disabled={!writable}
                       submit={(d) =>
                         write(
@@ -419,7 +579,7 @@ export function CrmWorkspace({
                               .filter(Boolean),
                             assigned_to: activity.profile.assigned_to,
                             contact_type: d.contact_type,
-                            company_id: d.company_id || null,
+                            company_id: profileContactType === 'company' ? null : d.company_id || null,
                           },
                           'PUT',
                         ).then(() => setActivity(null))
@@ -429,30 +589,25 @@ export function CrmWorkspace({
                         <select
                           name="contact_type"
                           defaultValue={activity.profile.contact_type || 'individual'}
+                          onChange={(event) =>
+                            setProfileContactType(event.target.value as 'individual' | 'company')
+                          }
                         >
                           <option value="individual">Individual</option>
                           <option value="company">Company</option>
                         </select>
                       </Field>
-                      <Field label="Company relationship">
-                        <select name="company_id" defaultValue={activity.profile.company_id || ''}>
-                          <option value="">No company link</option>
-                          {customers
-                            .filter(
-                              (c) =>
-                                c.id !== activity.customer.id &&
-                                data.profiles.some(
-                                  (p: any) =>
-                                    p.customer_id === c.id && p.contact_type === 'company',
-                                ),
-                            )
-                            .map((c) => (
-                              <option key={c.id} value={c.id}>
-                                {c.name}
-                              </option>
-                            ))}
-                        </select>
-                      </Field>
+                      {profileContactType !== 'company' && (
+                        <Field label="Company relationship">
+                          <CrmCustomerSelect
+                            api={api}
+                            name="company_id"
+                            defaultValue={activity.profile.company_id || ''}
+                            companyOnly
+                            excludeId={activity.customer.id}
+                          />
+                        </Field>
+                      )}
                       <Field label="Customer tags (comma separated)">
                         <input
                           name="tags"
@@ -496,8 +651,17 @@ export function CrmWorkspace({
                         }
                       }}
                     >
-                      New
+                      {section === 'pipeline'
+                        ? 'New opportunity'
+                        : section === 'leads'
+                          ? 'New lead'
+                          : 'New activity'}
                     </button>
+                    {section === 'leads' && (
+                      <button className="secondary-button" onClick={() => changeSection('import')}>
+                        Import leads
+                      </button>
+                    )}
                     <h3>
                       {section === 'pipeline'
                         ? 'Pipeline'
@@ -509,7 +673,7 @@ export function CrmWorkspace({
                     </h3>
                   </div>
                   <div className="form-grid">
-                    <Field label="Search loaded records">
+                    <Field label="Search all matching records">
                       <input
                         type="search"
                         value={query}
@@ -525,6 +689,11 @@ export function CrmWorkspace({
                           <option value="unassigned">Unassigned</option>
                           <option value="open">Open</option>
                           <option value="cancelled">Cancelled</option>
+                          {members.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.display_name || m.email}
+                            </option>
+                          ))}
                         </select>
                       </Field>
                     )}
@@ -534,7 +703,7 @@ export function CrmWorkspace({
                         <option value="title">Title</option>
                       </select>
                     </Field>
-                    {section === 'pipeline' && members.some((m) => m.id === data.current_actor) && (
+                    {section === 'pipeline' && data.current_actor && (
                       <Field label="Salesperson">
                         <select
                           value={ownerFilter}
@@ -542,6 +711,35 @@ export function CrmWorkspace({
                         >
                           <option value="mine">My pipeline</option>
                           <option value="all">All authorized opportunities</option>
+                          {members.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.display_name || m.email}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                    )}
+                    {section === 'pipeline' && (
+                      <Field label="Stage">
+                        <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)}>
+                          <option value="all">All stages</option>
+                          {data.configuration.stages.map((s: any) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                    )}
+                    {section === 'pipeline' && data.configuration.teams.length > 0 && (
+                      <Field label="Sales team">
+                        <select value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)}>
+                          <option value="all">All teams</option>
+                          {data.configuration.teams.filter((t: any) => t.active).map((t: any) => (
+                            <option key={t.id} value={t.id}>
+                              {t.name}
+                            </option>
+                          ))}
                         </select>
                       </Field>
                     )}
@@ -565,7 +763,23 @@ export function CrmWorkspace({
                         ))}
                       </select>
                     </Field>
+                    <Field label="Currency">
+                      <select
+                        value={currencyFilter}
+                        onChange={(e) => setCurrencyFilter(e.target.value)}
+                      >
+                        <option value="all">All currencies</option>
+                        {['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF'].map((c) => (
+                          <option key={c}>{c}</option>
+                        ))}
+                      </select>
+                    </Field>
                   </div>
+                  <p className="crm-result-count" role="status">
+                    {listLoading
+                      ? 'Searching CRM records…'
+                      : `${entryPage?.total || 0} matching record${entryPage?.total === 1 ? '' : 's'} · ${entries.length} loaded`}
+                  </p>
                   <div className="app-service-chips" role="group" aria-label="CRM record view">
                     <button
                       className="secondary-button"
@@ -608,7 +822,7 @@ export function CrmWorkspace({
                     <CrmPipeline
                       stages={data.configuration.stages}
                       entries={entries}
-                      allEntries={data.entries}
+                      stageSummary={entryPage?.stages || []}
                       customers={customers}
                       members={members}
                       writable={writable && !moving}
@@ -739,7 +953,7 @@ export function CrmWorkspace({
                       </button>
                     </div>
                   )}
-                  {!entries.length && (
+                  {!listLoading && !entries.length && (
                     <p>No matching relationship records. Add a lead, opportunity or task below.</p>
                   )}
                 </section>
@@ -747,8 +961,9 @@ export function CrmWorkspace({
                   <summary>New relationship record</summary>
                   <Form
                     disabled={!writable}
-                    submit={(d) =>
-                      write('/crm/entries', {
+                    submit={(d) => {
+                      if (!d.customer) throw new Error('Choose a customer from the search results.');
+                      return write('/crm/entries', {
                         ...crmExtraValues(d, parseMoney),
                         customer_id: d.customer,
                         kind: d.kind,
@@ -759,26 +974,18 @@ export function CrmWorkspace({
                         due_at: d.due ? new Date(d.due).toISOString() : null,
                         amount_minor: parseMoney(d.amount || '0', d.currency),
                         currency: d.currency,
-                      })
-                    }
+                      });
+                    }}
                   >
                     <div className="form-grid">
                       <Field label="Customer">
-                        <select name="customer" required>
-                          <option value="">Choose customer</option>
-                          {customers
-                            .filter((c) => c.status !== 'archived')
-                            .map((c) => (
-                              <option key={c.id} value={c.id}>
-                                {c.name}
-                              </option>
-                            ))}
-                        </select>
+                        <CrmCustomerSelect api={api} name="customer" required />
                       </Field>
                       <Field label="Type">
                         <select
                           key={section}
                           name="kind"
+                          onChange={(event) => setCreateKind(event.target.value)}
                           defaultValue={
                             section === 'pipeline'
                               ? 'opportunity'
@@ -811,7 +1018,7 @@ export function CrmWorkspace({
                         </select>
                       </Field>
                       <Field label="Due time (required for follow-up)">
-                        <input name="due" type="datetime-local" />
+                        <input name="due" type="datetime-local" required={createKind === 'follow_up'} />
                       </Field>
                       <Field label="Assigned member">
                         <select name="assigned_to">
@@ -843,31 +1050,21 @@ export function CrmWorkspace({
                 </details>
               </>
             ))}
-          {hasMore && (
+          {hasMore && ['pipeline', 'leads', 'followups'].includes(section) && (
             <button
               className="secondary-button"
               disabled={loadingMore}
               onClick={async () => {
                 setLoadingMore(true);
                 try {
-                  const last = data.entries[data.entries.length - 1];
                   const result = await api(
-                    '/crm/entries?' +
-                      new URLSearchParams({
-                        before_created_at: last.created_at,
-                        before_id: last.id,
-                      }),
+                    '/crm/entries?' + entryParams(entryPage.offset + entryPage.limit),
                   );
-                  setData((previous: any) => ({
-                    ...previous,
-                    entries: [
-                      ...previous.entries,
-                      ...result.data.filter(
-                        (item: any) => !previous.entries.some((e: any) => e.id === item.id),
-                      ),
-                    ],
+                  setEntryPage((previous: any) => ({
+                    ...result,
+                    data: [...(previous?.data || []), ...result.data],
                   }));
-                  setHasMore(result.data.length === 200);
+                  setHasMore(result.has_more);
                 } catch (e) {
                   setError((e as Error).message);
                 } finally {
@@ -875,7 +1072,7 @@ export function CrmWorkspace({
                 }
               }}
             >
-              {loadingMore ? 'Loading…' : 'Load older CRM records'}
+              {loadingMore ? 'Loading…' : `Load more records (${entryPage?.total || 0} total)`}
             </button>
           )}
           <small>

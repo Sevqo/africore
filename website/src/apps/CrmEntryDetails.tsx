@@ -1,5 +1,7 @@
 import { CrmExtraFields, crmExtraValues } from './CrmExtraFields';
+import { CrmCustomerSelect } from './CrmCustomerSelect';
 import { useEffect, useRef, useState } from 'react';
+import { Overlay } from '../components/Overlay';
 import { Field, Form, type API } from '../operations/UI';
 import { parseMoney } from '../../../src/finance/money';
 
@@ -13,17 +15,16 @@ export function CrmEntryDetails({
   close,
   configuration,
   api,
-  entries,
   refresh,
   newQuotation,
   openQuotation,
+  salesEnabled = false,
 }: {
   api: API;
   configuration: any;
   entry: any;
   customers: any[];
   members: any[];
-  entries: any[];
   writable: boolean;
   save: (entry: any) => Promise<any>;
   convert: (assignment: any) => Promise<any>;
@@ -31,10 +32,13 @@ export function CrmEntryDetails({
   refresh: () => void;
   newQuotation: () => void;
   openQuotation: (id: string) => void;
+  salesEnabled?: boolean;
 }) {
   const [history, setHistory] = useState<any>(null),
+    [activityPage, setActivityPage] = useState<any>(null),
+    [activityError, setActivityError] = useState(''),
     [historyError, setHistoryError] = useState(''),
-    [dialog, setDialog] = useState<'convert' | 'lost' | null>(null),
+    [dialog, setDialog] = useState<'convert' | 'lost' | 'schedule' | null>(null),
     [tab, setTab] = useState<'notes' | 'activities' | 'history'>('notes'),
     [quotes, setQuotes] = useState<any[]>([]),
     [customerMode, setCustomerMode] = useState<'existing' | 'new'>('existing'),
@@ -55,11 +59,26 @@ export function CrmEntryDetails({
     };
   }, [entry.id, entry.version, api]);
   useEffect(() => {
+    let current = true;
+    setActivityPage(null);
+    setActivityError('');
+    if (entry.kind !== 'opportunity') return;
+    api(
+      '/crm/entries?' +
+        new URLSearchParams({ parent_entry_id: entry.id, limit: '200', offset: '0' }),
+    )
+      .then((result) => current && setActivityPage(result))
+      .catch((e) => current && setActivityError((e as Error).message));
+    return () => {
+      current = false;
+    };
+  }, [api, entry.id, entry.kind]);
+  useEffect(() => {
     let live = true;
     setQuotes([]);
     setQuoteError('');
-    if (entry.kind === 'opportunity')
-      api('/sales/quotations')
+    if (entry.kind === 'opportunity' && salesEnabled)
+      api('/sales/quotations?' + new URLSearchParams({ customer_id: entry.customer_id }))
         .then((r) => {
           if (live)
             setQuotes((r.data || []).filter((q: any) => q.customer_id === entry.customer_id));
@@ -71,32 +90,35 @@ export function CrmEntryDetails({
     return () => {
       live = false;
     };
-  }, [api, entry.id, entry.customer_id, entry.kind]);
+  }, [api, entry.id, entry.customer_id, entry.kind, salesEnabled]);
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
     ref.current?.focus();
     setDialog(null);
   }, [entry.id]);
   const customer = customers.find((c) => c.id === entry.customer_id),
-    activities = entries
-      .filter((e) => e.parent_entry_id === entry.id)
-      .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+    activities: any[] = activityPage?.data || [];
   function payload(changes: any) {
     const { id: _, version: __, created_at: ___, updated_at: ____, ...rest } = entry;
     return { ...rest, ...changes };
   }
   async function updateActivity(item: any, changes: any) {
     const { id, version, created_at, updated_at, ...rest } = item;
-    await api(
+    const updated = await api(
       '/crm/entries/' + id,
       'PATCH',
       { expected_version: version, entry: { ...rest, ...changes } },
       { 'Idempotency-Key': crypto.randomUUID() },
     );
+    setActivityPage((previous: any) =>
+      previous
+        ? { ...previous, data: previous.data.map((activity: any) => activity.id === id ? updated : activity) }
+        : previous,
+    );
     refresh();
   }
   async function addActivity(d: any, kind: 'follow_up' | 'interaction') {
-    await api(
+    const created = await api(
       '/crm/entries',
       'POST',
       {
@@ -112,6 +134,16 @@ export function CrmEntryDetails({
       },
       { 'Idempotency-Key': crypto.randomUUID() },
     );
+    setActivityPage((previous: any) =>
+      previous
+        ? {
+            ...previous,
+            data: [created, ...previous.data],
+            total: previous.total + 1,
+            has_more: previous.data.length + 1 < previous.total + 1,
+          }
+        : previous,
+    );
     refresh();
     setTab('activities');
   }
@@ -124,7 +156,7 @@ export function CrmEntryDetails({
         <span>{entry.kind.replaceAll('_', ' ')}</span>
       </div>
       <div className="crm-document-actions">
-        {entry.kind === 'opportunity' && (
+        {entry.kind === 'opportunity' && salesEnabled && (
           <button className="secondary-button" disabled={!writable} onClick={newQuotation}>
             New quotation
           </button>
@@ -163,6 +195,22 @@ export function CrmEntryDetails({
               Convert to opportunity
             </button>
           )}
+        <details className="crm-record-actions">
+          <summary className="secondary-button">Actions</summary>
+          <div className="crm-record-actions-menu">
+            {entry.kind === 'opportunity' && (
+              <button type="button" onClick={() => setDialog('schedule')}>
+                Schedule activity
+              </button>
+            )}
+            <button type="button" onClick={() => setTab('activities')}>
+              View activities
+            </button>
+            <button type="button" onClick={() => setTab('history')}>
+              Revision history
+            </button>
+          </div>
+        </details>
       </div>
       {entry.kind === 'opportunity' && (
         <nav className="crm-stage-progress" aria-label="Opportunity stage">
@@ -284,7 +332,9 @@ export function CrmEntryDetails({
         {entry.kind === 'opportunity' && (
           <section>
             <h3>Related sales</h3>
-            {quoteError ? (
+            {!salesEnabled ? (
+              <p>Sales service is not active. Linked quotation information remains read-only.</p>
+            ) : quoteError ? (
               <p>{quoteError}</p>
             ) : (
               <Form
@@ -316,9 +366,13 @@ export function CrmEntryDetails({
             {entry.quotation_id && (
               <p>
                 Linked quotation:{' '}
-                <button className="quiet-button" onClick={() => openQuotation(entry.quotation_id)}>
-                  {quotes.find((q) => q.id === entry.quotation_id)?.reference || entry.quotation_id}
-                </button>
+                {salesEnabled ? (
+                  <button className="quiet-button" onClick={() => openQuotation(entry.quotation_id)}>
+                    {quotes.find((q) => q.id === entry.quotation_id)?.reference || entry.quotation_id}
+                  </button>
+                ) : (
+                  <span>{entry.quotation_id}</span>
+                )}
               </p>
             )}
             {entry.order_id && <p>Linked order: {entry.order_id}</p>}
@@ -359,44 +413,14 @@ export function CrmEntryDetails({
       {tab === 'activities' && (
         <section className="panel">
           <h3>Activities and notes</h3>
-          <p>Only activities linked to this opportunity in the loaded CRM records are shown.</p>
+          {activityError && <p role="alert">Activity history unavailable: {activityError}</p>}
           {entry.kind === 'opportunity' && (
-            <details>
-              <summary>Schedule activity</summary>
-              <Form disabled={!writable} submit={(d) => addActivity(d, 'follow_up')}>
-                <div className="form-grid">
-                  <Field label="Activity type">
-                    <select name="activity_type">
-                      <option value="call">Call</option>
-                      <option value="meeting">Meeting</option>
-                      <option value="task">To do</option>
-                    </select>
-                  </Field>
-                  <Field label="Summary">
-                    <input name="title" required minLength={2} maxLength={200} />
-                  </Field>
-                  <Field label="Due date and time">
-                    <input name="due" type="datetime-local" required />
-                  </Field>
-                  <Field label="Assigned member">
-                    <select name="assigned_to" defaultValue={entry.assigned_to || ''}>
-                      <option value="">Unassigned</option>
-                      {members.map((m) => (
-                        <option value={m.id} key={m.id}>
-                          {m.display_name || m.email}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                </div>
-                <Field label="Description">
-                  <textarea name="notes" maxLength={4000} />
-                </Field>
-                <button className="button">Schedule activity</button>
-              </Form>
-            </details>
+            <button className="secondary-button" disabled={!writable} onClick={() => setDialog('schedule')}>
+              Schedule activity
+            </button>
           )}
-          {!activities.length && <p>No linked activities or notes in the loaded records.</p>}
+          {!activityPage && !activityError && <p role="status">Loading all linked activities…</p>}
+          {activityPage && !activities.length && <p>No linked activities or notes recorded.</p>}
           {activities.map((a) => (
             <article className="crm-timeline-item" key={a.id}>
               <strong>{a.title}</strong>
@@ -447,6 +471,31 @@ export function CrmEntryDetails({
               )}
             </article>
           ))}
+          {activityPage?.has_more && (
+            <button
+              className="secondary-button"
+              onClick={async () => {
+                try {
+                  const next = await api(
+                    '/crm/entries?' +
+                      new URLSearchParams({
+                        parent_entry_id: entry.id,
+                        limit: String(activityPage.limit),
+                        offset: String(activityPage.offset + activityPage.limit),
+                      }),
+                  );
+                  setActivityPage((previous: any) => ({
+                    ...next,
+                    data: [...previous.data, ...next.data],
+                  }));
+                } catch (e) {
+                  setActivityError((e as Error).message);
+                }
+              }}
+            >
+              Load more linked activities
+            </button>
+          )}
         </section>
       )}
       {tab === 'history' && (
@@ -473,14 +522,31 @@ export function CrmEntryDetails({
         </section>
       )}
       {dialog && (
-        <div className="crm-dialog-backdrop">
+        <Overlay portal onClose={() => setDialog(null)}>
           <section
             className="panel crm-dialog"
             role="dialog"
             aria-modal="true"
-            aria-label={dialog === 'lost' ? 'Mark opportunity lost' : 'Convert to opportunity'}
+            aria-label={
+              dialog === 'lost'
+                ? 'Mark opportunity lost'
+                : dialog === 'schedule'
+                  ? 'Schedule activity'
+                  : 'Convert to opportunity'
+            }
           >
-            <h3>{dialog === 'lost' ? 'Mark opportunity lost' : 'Convert to opportunity'}</h3>
+            <div className="crm-dialog-heading">
+              <h3>
+                {dialog === 'lost'
+                  ? 'Mark opportunity lost'
+                  : dialog === 'schedule'
+                    ? 'Schedule activity'
+                    : 'Convert to opportunity'}
+              </h3>
+              <button className="icon-button" aria-label="Close dialog" onClick={() => setDialog(null)}>
+                ×
+              </button>
+            </div>
             {dialog === 'lost' ? (
               <Form
                 disabled={!writable}
@@ -518,10 +584,55 @@ export function CrmEntryDetails({
                   Cancel
                 </button>
               </Form>
+            ) : dialog === 'schedule' ? (
+              <Form
+                disabled={!writable}
+                submit={async (d) => {
+                  await addActivity(d, 'follow_up');
+                  setDialog(null);
+                }}
+              >
+                <div className="form-grid">
+                  <Field label="Activity type">
+                    <select name="activity_type" defaultValue="task">
+                      <option value="task">To-do</option>
+                      <option value="call">Call</option>
+                      <option value="meeting">Meeting</option>
+                    </select>
+                  </Field>
+                  <Field label="Summary">
+                    <input name="title" required minLength={2} maxLength={200} />
+                  </Field>
+                  <Field label="Due date and time">
+                    <input name="due" type="datetime-local" required />
+                  </Field>
+                  <Field label="Assigned member">
+                    <select name="assigned_to" defaultValue={entry.assigned_to || ''}>
+                      <option value="">Unassigned</option>
+                      {members.map((m) => (
+                        <option value={m.id} key={m.id}>
+                          {m.display_name || m.email}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+                <Field label="Description">
+                  <textarea name="notes" maxLength={4000} />
+                </Field>
+                <div className="form-actions">
+                  <button className="button">Schedule activity</button>
+                  <button type="button" className="secondary-button" onClick={() => setDialog(null)}>
+                    Cancel
+                  </button>
+                </div>
+              </Form>
             ) : (
               <Form
                 disabled={!writable}
                 submit={async (d) => {
+                  if (customerMode === 'existing' && !d.customer_id)
+                    throw new Error('Choose a customer from the search results.');
                   await convert({
                     assigned_to: d.assigned_to || null,
                     team_id: d.team_id || null,
@@ -568,15 +679,12 @@ export function CrmEntryDetails({
                 </fieldset>
                 {customerMode === 'existing' ? (
                   <Field label="Customer">
-                    <select name="customer_id" defaultValue={entry.customer_id} required>
-                      {customers
-                        .filter((c) => c.status !== 'archived')
-                        .map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
-                    </select>
+                    <CrmCustomerSelect
+                      api={api}
+                      name="customer_id"
+                      defaultValue={entry.customer_id}
+                      required
+                    />
                   </Field>
                 ) : (
                   <div className="form-grid">
@@ -630,7 +738,7 @@ export function CrmEntryDetails({
               </Form>
             )}
           </section>
-        </div>
+        </Overlay>
       )}
     </section>
   );

@@ -130,17 +130,23 @@ export const workspaceTabs: Record<WorkspaceKind, string[]> = {
   developer: developerTabs,
 };
 
-// Installed apps normally share canonical service tabs, but an app with its own
-// operational sections (Commerce, Sales) must keep sidebar navigation inside
-// the app workspace instead of leaving for the standalone service.
+// App-owned sections stay in the selected app. Independent service navigation
+// continues to use the workspace tab registry below.
 const appOwnedWorkspaces = new Set([
-  'commerce',
-  'sales',
-  'inventory',
-  'procurement',
-  'accounting',
-  'finance',
   'pos',
+  'commerce',
+  'procurement',
+  'documents',
+  'people',
+  'business_id',
+  'accounting',
+  'work',
+  'finance',
+  'crm',
+  'inventory',
+  'sales',
+  'analytics',
+  'automations',
 ]);
 
 export function appSectionTarget(

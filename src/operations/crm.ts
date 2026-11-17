@@ -200,6 +200,128 @@ export async function crmEntries(
     )
   ).map(decode);
 }
+export async function crmEntryPage(
+  a: Access,
+  query: {
+    kind?: string;
+    status?: string;
+    stage?: string;
+    assigned_to?: string;
+    team_id?: string;
+    currency?: string;
+    unassigned?: boolean;
+    customer_id?: string;
+    parent_entry_id?: string;
+    q?: string;
+    outcome?: 'active' | 'won' | 'lost';
+    sort?: 'recent' | 'title';
+    limit: number;
+    offset: number;
+  },
+) {
+  const value = (column: string, key: string) =>
+    isPostgres ? `${column}.data::jsonb ->> '${key}'` : `json_extract(${column}.data,'$.${key}')`;
+  const where = ['e.org_id=?', 'e.environment=?'];
+  const params: (string | number)[] = [a.org, a.environment];
+  if (query.kind) {
+    where.push('e.kind=?');
+    params.push(query.kind);
+  }
+  if (query.status) {
+    where.push('e.status=?');
+    params.push(query.status);
+  }
+  if (query.stage) {
+    where.push(value('e', 'stage') + '=?');
+    params.push(query.stage);
+  }
+  if (query.team_id) {
+    where.push(value('e', 'team_id') + '=?');
+    params.push(query.team_id);
+  }
+  if (query.currency) {
+    where.push(value('e', 'currency') + '=?');
+    params.push(query.currency);
+  }
+  if (query.assigned_to) {
+    where.push('e.assigned_to=?');
+    params.push(query.assigned_to);
+  }
+  if (query.unassigned) where.push('e.assigned_to IS NULL');
+  if (query.customer_id) {
+    where.push('e.customer_id=?');
+    params.push(query.customer_id);
+  }
+  if (query.parent_entry_id) {
+    where.push(value('e', 'parent_entry_id') + '=?');
+    params.push(query.parent_entry_id);
+  }
+  if (query.outcome === 'active') where.push(value('e', 'stage') + " NOT IN ('won','lost')");
+  else if (query.outcome) {
+    where.push(value('e', 'stage') + '=?');
+    params.push(query.outcome);
+  }
+  if (query.q) {
+    const pattern = '%' + query.q.toLowerCase().replace(/[\\%_]/g, '\\$&') + '%';
+    const textSearch = [value('e', 'title'), value('e', 'notes'), 'e.id'].map(
+      (expression) => `LOWER(COALESCE(${expression},'')) LIKE ? ESCAPE '\\'`,
+    );
+    const customerName = value('c', 'name');
+    where.push(
+      '(' +
+        textSearch.join(' OR ') +
+        ` OR EXISTS (SELECT 1 FROM ac_records c WHERE c.org_id=? AND c.environment=? AND c.kind='customers' AND c.id=e.customer_id AND LOWER(COALESCE(${customerName},'')) LIKE ? ESCAPE '\\'))`,
+    );
+    params.push(...textSearch.map(() => pattern), a.org, a.environment, pattern);
+  }
+  const predicate = where.join(' AND ');
+  const count = await dbGet<{ total: number }>(
+    'SELECT COUNT(*) AS total FROM ac_crm_entries e WHERE ' + predicate,
+    params,
+  );
+  const rows = await dbAll(
+    'SELECT e.* FROM ac_crm_entries e WHERE ' +
+      predicate +
+      (query.sort === 'title'
+        ? ` ORDER BY LOWER(${value('e', 'title')}),e.id`
+        : ' ORDER BY e.created_at DESC,e.id DESC') +
+      ' LIMIT ? OFFSET ?',
+    [...params, query.limit, query.offset],
+  );
+  const stageRows = await dbAll<{ stage: string; currency: string; count: number; amount_minor: number }>(
+    'SELECT ' +
+      value('e', 'stage') +
+      ' AS stage,' +
+      value('e', 'currency') +
+      ' AS currency,COUNT(*) AS count,SUM(CAST(COALESCE(' +
+      value('e', 'amount_minor') +
+      ",'0') AS BIGINT)) AS amount_minor FROM ac_crm_entries e WHERE " +
+      predicate +
+      ' GROUP BY ' +
+      value('e', 'stage') +
+      ',' +
+      value('e', 'currency'),
+    params,
+  );
+  const stageMap = new Map<string, { stage: string; count: number; totals: Record<string, number> }>();
+  for (const row of stageRows) {
+    const id = row.stage || 'new';
+    const entry = stageMap.get(id) || { stage: id, count: 0, totals: {} };
+    entry.count += Number(row.count);
+    entry.totals[row.currency || 'KES'] = Number(row.amount_minor || 0);
+    stageMap.set(id, entry);
+  }
+  const total = Number(count?.total || 0);
+  return {
+    data: rows.map(decode),
+    limit: query.limit,
+    offset: query.offset,
+    total,
+    has_more: query.offset + rows.length < total,
+    stages: [...stageMap.values()],
+    coverage: 'All current CRM records matching the selected server filters.',
+  };
+}
 export async function createCrmEntry(a: Access, input: unknown, key: string, resourceId?: string) {
   const d = crmEntryInput.parse(input);
   return financialOperation(a, 'crm.entry.create', key, crmFingerprint(d), async () => {
@@ -439,6 +561,48 @@ export async function customerProfile(a: Access, id: string) {
       : { tags: [], assigned_to: null, contact_type: 'individual', company_id: null, version: 0 },
   };
 }
+
+/** Search only canonical customer records explicitly classified as companies in CRM. */
+export async function crmCompanySearch(a: Access, input: unknown) {
+  const query = z.object({ q: z.string().trim().max(100).default(''), limit: z.number().int().min(1).max(50).default(20) }).strict().parse(input);
+  const fields = (column: string, key: string) =>
+    isPostgres
+      ? `${column}.data::jsonb ->> '${key}'`
+      : `json_extract(${column}.data,'$.${key}')`;
+  const where = [
+    'c.org_id=?',
+    'c.environment=?',
+    "c.kind='customers'",
+    "COALESCE(" + fields('c', 'status') + ",'active')<>'archived'",
+    fields('p', 'contact_type') + "='company'",
+  ];
+  const params: (string | number)[] = [a.org, a.environment];
+  if (query.q) {
+    const pattern = '%' + query.q.toLowerCase().replace(/[\\%_]/g, '\\$&') + '%';
+    where.push(
+      '(' + ['name', 'email', 'phone'].map((field) => `LOWER(COALESCE(${fields('c', field)},'')) LIKE ? ESCAPE '\\'`).join(' OR ') + ')',
+    );
+    params.push(pattern, pattern, pattern);
+  }
+  const predicate = where.join(' AND ');
+  const [count, rows] = await Promise.all([
+    dbGet<{ total: number }>(
+      'SELECT COUNT(*) AS total FROM ac_records c JOIN ac_crm_profiles p ON p.customer_id=c.id AND p.org_id=c.org_id AND p.environment=c.environment WHERE ' + predicate,
+      params,
+    ),
+    dbAll(
+      'SELECT c.* FROM ac_records c JOIN ac_crm_profiles p ON p.customer_id=c.id AND p.org_id=c.org_id AND p.environment=c.environment WHERE ' + predicate + ' ORDER BY c.created_at DESC,c.id DESC LIMIT ?',
+      [...params, query.limit],
+    ),
+  ]);
+  return {
+    data: rows.map((row) => ({ ...JSON.parse(row.data), id: row.id, created_at: row.created_at })),
+    total: Number(count?.total || 0),
+    limit: query.limit,
+    coverage: 'Active shared customers classified as companies in this CRM workspace.',
+  };
+}
+
 export async function setCustomerProfile(a: Access, id: string, input: unknown, key: string) {
   const d = z
     .object({
@@ -496,32 +660,45 @@ export async function setCustomerProfile(a: Access, id: string, input: unknown, 
     return customerProfile(a, id);
   });
 }
-export async function crmCustomerActivity(a: Access, id: string) {
+export async function crmCustomerActivity(
+  a: Access,
+  id: string,
+  page: { limit: number; offset: number } = { limit: 50, offset: 0 },
+) {
   const profile = await customerProfile(a, id),
-    entries = await crmEntries(a, undefined, id),
-    quotes = await dbAll(
-      'SELECT id,status,currency,version,order_id,created_at FROM ac_sales_quotes WHERE org_id=? AND environment=? AND customer_id=? ORDER BY created_at DESC LIMIT 100',
+    total = await dbGet<{ total: number }>(
+      'SELECT COUNT(*) AS total FROM ac_crm_entries WHERE org_id=? AND environment=? AND customer_id=?',
+      [a.org, a.environment, id],
+    ),
+    entries = (
+      await dbAll(
+        'SELECT * FROM ac_crm_entries WHERE org_id=? AND environment=? AND customer_id=? ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?',
+        [a.org, a.environment, id, page.limit, page.offset],
+      )
+    ).map(decode),
+    quotes = await dbGet<{ total: number }>(
+      'SELECT COUNT(*) AS total FROM ac_sales_quotes WHERE org_id=? AND environment=? AND customer_id=?',
       [a.org, a.environment, id],
     );
   const finance = permitted(a.role, 'finance') ? await customerActivity(a, id) : null;
-  const orders = (
-    await dbAll(
-      "SELECT id,data,created_at FROM ac_records WHERE org_id=? AND environment=? AND kind='orders' ORDER BY created_at DESC",
-      [a.org, a.environment],
-    )
-  )
-    .map((r) => ({ ...JSON.parse(r.data), id: r.id, created_at: r.created_at }))
-    .filter((o) => o.customer_id === id)
-    .slice(0, 100);
+  const orders = await dbGet<{ total: number }>(
+    "SELECT COUNT(*) AS total FROM ac_records WHERE org_id=? AND environment=? AND kind='orders' AND " +
+      (isPostgres ? "data::jsonb ->> 'customer_id'=?" : "json_extract(data,'$.customer_id')=?"),
+    [a.org, a.environment, id],
+  );
   return {
     ...profile,
     entries,
-    quotations: quotes,
-    orders,
+    entries_total: Number(total?.total || 0),
+    limit: page.limit,
+    offset: page.offset,
+    has_more: page.offset + entries.length < Number(total?.total || 0),
+    quotation_count: Number(quotes?.total || 0),
+    order_count: Number(orders?.total || 0),
     financial_activity: finance,
     financial_visibility: !!finance,
     coverage:
-      'Canonical customer identity and current linked records; private finance is omitted unless the current role has finance authority.',
+      'Customer CRM activity is paginated from canonical entries; quotation and order counts are workspace scoped. Private finance is omitted unless the current role has finance authority.',
   };
 }
 export async function crmOverview(a: Access) {

@@ -51,9 +51,11 @@ export function WorkspaceAppLauncher({
     setOpen(false);
     navigate('Apps');
   }
-  const matches = apps?.filter((app) =>
-    (app.name + ' ' + app.description).toLowerCase().includes(query.trim().toLowerCase()),
-  );
+  const matches = apps
+    ?.filter((app) => app.installation?.status === 'installed')
+    .filter((app) =>
+      (app.name + ' ' + app.description).toLowerCase().includes(query.trim().toLowerCase()),
+    );
   return (
     <>
       <button
@@ -119,13 +121,17 @@ export function WorkspaceAppLauncher({
                     <Icon name={appIcons[app.id] || 'grid'} />
                   </span>
                   <strong>{app.name.replace('AfriCore ', '')}</strong>
-                  <small>
-                    {app.installation?.status === 'installed' ? 'Installed' : 'View requirements'}
-                  </small>
+                  <small>Installed</small>
                 </button>
               ))}
             </div>
-            {matches?.length === 0 && <p role="status">No apps match this search.</p>}
+            {matches?.length === 0 && (
+              <p role="status">
+                {apps?.some((app) => app.installation?.status === 'installed')
+                  ? 'No installed apps match this search.'
+                  : 'No apps are installed in this workspace yet.'}
+              </p>
+            )}
             <button className="secondary-button" onClick={() => select()}>
               Browse all apps <Icon name="right" />
             </button>

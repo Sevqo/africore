@@ -1377,3 +1377,29 @@ Use sandbox records only.
 ### Phase 2 status
 
 **Checkpoint 2.2 Finance: implemented and automatically verified; awaiting founder manual and visual acceptance.** Visual screenshot comparison is explicitly incomplete. The recorded Phase 2.14 Business ID implementation remains separate and unaccepted pending its own manual/visual review; CRM remains partial. The full Phase 2 sequence is not marked accepted. No operation remains running or incomplete in this checkpoint. No commit, push, deployment, migration or dependency installation occurred.
+
+## Phase 2.5 CRM and immersive application navigation — implementation checkpoint, 18 November 2026
+
+This entry supersedes the earlier CRM-partial status above for the current local source tree. The implementation covers the nine supplied CRM reference screens and the shared installed-app navigation requested in the Phase 2.5 prompt. CRM remains backed by canonical CRM, customer, team, Sales, activity, and reporting services. App availability is derived from the authorized installed-app catalog. Switching sections of an installed app retains its immersive app context; explicit independent service routes retain their own navigation and authority. The app header, launcher, overlay navigation drawer, app information panel, company/workspace controls, direct section/record URLs, browser history, refresh handling, and context updates are integrated across the Business shell and supported Personal/Developer shells. Service detail and related-app repetition is suppressed in the immersive app view while environment and permission notices and installation controls remain available.
+
+CRM implementation includes the stage Kanban with recorded stage totals and priority, opportunity detail and revision history, lead create/edit and conversion, lost-reason configuration, searchable canonical customer selection, scoped Sales quotation handoff/link-back, activity scheduling and lifecycle, activity grid, pipeline graph/pivot-style analysis, and CRM/activity reports. CRM lists use scoped server search, filters, stable pagination and explicit result counts; service lookups load independently so a customer/team lookup failure does not silently invalidate CRM data. Existing server-side tenant, workspace, environment, membership, role, version, idempotency and customer-link checks remain authoritative. Reporting discloses its 10,000-record bound and truncation. No unsupported email delivery or external provider result is represented as working.
+
+The reusable visual and implementation requirements are recorded in [APP_UI_IMPLEMENTATION_STANDARD.md](APP_UI_IMPLEMENTATION_STANDARD.md) and linked from `AGENTS.md`. The nine screenshots were inspected at their supplied native pixel dimensions:
+
+| Reference | Screen | Image dimensions |
+| --- | --- | ---: |
+| 1 | Pipeline Kanban | 1716 × 894 |
+| 2 | Opportunity detail | 1844 × 966 |
+| 3 | Lead detail/form | 1842 × 962 |
+| 4 | Lead action menu | 1900 × 559 |
+| 5 | Schedule activity dialog | 645 × 468 |
+| 6 | Activity grid | 1849 × 930 |
+| 7 | Pipeline graph | 1918 × 893 |
+| 8 | Pipeline pivot | 933 × 439 |
+| 9 | Lead conversion dialog | 1904 × 824 |
+
+Visual acceptance is **not complete**. One authenticated sandbox capture showed the immersive CRM pipeline shell at 912 × 960, with no matching records. It confirmed the full-width shell and navigation; its multirow filters and empty board could not be compared at a similar viewport to Reference 1's populated board. The other eight running screens were not captured or compared side by side. The final browser refresh returned a different desktop window, so no further captures are claimed. No final screenshot set is archived. Populated-board geometry, the other eight operational screens, and all-screen responsive/accessibility/manual acceptance remain founder review items.
+
+Automated verification on the current source: website content/app suite **133/133**; full backend suite **460 passed, 1 PostgreSQL-only test skipped, 0 failed**; root TypeScript check passed; lint and architecture checks passed; legacy OpenAPI validation passed (**59 routes**); generated workspace OpenAPI validation passed (**451 operations**); development configuration tests passed (**3/3**); and the website production build passed. A sandbox loopback restriction prevented the initial backend test run; the successful full run used the approved local-network execution context. `git diff --check` passed; Git emitted only its normal Windows LF/CRLF conversion notices. No schema migration, dependency installation, hosted data change, commit, push or deployment occurred.
+
+Source changes for this checkpoint are limited to CRM UI/service integration, generated workspace API metadata, app catalog and immersive navigation/shell behavior, tests, and the implementation standard linked above. The local code and automated checks are complete for this increment. The nine-screen visual comparison and manual acceptance are explicitly pending; this is not a claim of completed Odoo visual reproduction or whole-project acceptance.

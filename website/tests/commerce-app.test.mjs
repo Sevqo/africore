@@ -96,12 +96,12 @@ test('merchant sidebar sections stay inside the installed app', () => {
   );
   assert.equal(
     appSectionTarget({ id: 'crm' }, 'Orders', direct),
-    'Orders',
-    'other apps keep their existing shared-tab mapping',
+    'Apps',
+    'CRM navigation stays inside its installed app workspace',
   );
   assert.equal(appSectionActive(commerce, 'orders', 'Apps', 'orders', direct), true);
   assert.equal(appSectionActive(commerce, 'orders', 'Orders', 'orders', direct), false);
-  assert.equal(appSectionActive({ id: 'crm' }, 'Orders', 'Orders', 'Orders', direct), true);
+  assert.equal(appSectionActive({ id: 'crm' }, 'Orders', 'Apps', 'Orders', direct), true);
 });
 
 test('the Commerce app keeps its canonical service requirements and preview availability', () => {

@@ -59,7 +59,8 @@ test('inventory sidebar sections stay inside the installed app', () => {
   assert.equal(appSectionTarget(inventory, 'reporting', direct), 'Apps');
   assert.equal(appSectionActive(inventory, 'products', 'Apps', 'products', direct), true);
   assert.equal(appSectionActive(inventory, 'products', 'Products', 'products', direct), false);
-  assert.equal(appSectionTarget({ id: 'crm' }, 'products', direct), 'Products');
+  assert.equal(appSectionTarget({ id: 'crm' }, 'products', direct), 'Apps');
+  assert.equal(appSectionActive({ id: 'crm' }, 'products', 'Apps', 'products', direct), true);
 });
 
 test('the installed Inventory app renders the operational workspace, not the service screen', () => {

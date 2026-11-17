@@ -37,6 +37,8 @@ import {
   convertCrmLead,
   crmOverview,
   crmEntries,
+  crmEntryPage,
+  crmCompanySearch,
   createCrmEntry,
   editCrmEntry,
   customerProfile,
@@ -530,19 +532,43 @@ business.get(
   '/organizations/:org/crm/entries',
   route(async (req, res) => {
     const a = await access(req),
-      kind = z
-        .enum(['lead', 'opportunity', 'follow_up', 'interaction'])
-        .optional()
-        .parse(req.query.kind),
-      cursor = z
-        .object({ created_at: z.string().datetime({ offset: true }), id: z.string().uuid() })
-        .optional()
-        .parse(
-          req.query.before_created_at || req.query.before_id
-            ? { created_at: req.query.before_created_at, id: req.query.before_id }
-            : undefined,
-        );
-    res.json({ data: await crmEntries(a, kind, undefined, cursor), limit: 200 });
+      query = z
+        .object({
+          kind: z.enum(['lead', 'opportunity', 'follow_up', 'interaction']).optional(),
+          status: z.enum(['open', 'completed', 'cancelled', 'archived']).optional(),
+          stage: z.string().regex(/^[a-z][a-z0-9_]{0,39}$/).optional(),
+          assigned_to: z.string().uuid().optional(),
+          team_id: z.string().uuid().optional(),
+          currency: z.enum(['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF']).optional(),
+          unassigned: z.enum(['true']).optional(),
+          customer_id: z.string().uuid().optional(),
+          parent_entry_id: z.string().uuid().optional(),
+          q: z.string().trim().max(200).optional(),
+          outcome: z.enum(['active', 'won', 'lost']).optional(),
+          sort: z.enum(['recent', 'title']).default('recent'),
+          before_created_at: z.string().datetime({ offset: true }).optional(),
+          before_id: z.string().uuid().optional(),
+          limit: z.coerce.number().int().min(1).max(200).default(100),
+          offset: z.coerce.number().int().min(0).max(1_000_000).default(0),
+        })
+        .strict()
+        .superRefine((value, context) => {
+          if (!!value.before_created_at !== !!value.before_id)
+            context.addIssue({ code: 'custom', message: 'Both cursor fields are required' });
+        })
+        .parse(req.query);
+    if (query.before_created_at && query.before_id) {
+      res.json({
+        data: await crmEntries(a, query.kind, query.customer_id, {
+          created_at: query.before_created_at,
+          id: query.before_id,
+        }),
+        limit: 200,
+      });
+      return;
+    }
+    const { before_created_at: _beforeAt, before_id: _beforeId, ...pageQuery } = query;
+    res.json(await crmEntryPage(a, { ...pageQuery, unassigned: query.unassigned === 'true' }));
   }),
 );
 business.post(
@@ -578,6 +604,16 @@ business.post(
   ),
 );
 business.get(
+  '/organizations/:org/crm/companies',
+  route(async (req, res) => {
+    const query = z
+      .object({ q: z.string().trim().max(100).default(''), limit: z.coerce.number().int().min(1).max(50).default(20) })
+      .strict()
+      .parse(req.query);
+    res.json(await crmCompanySearch(await access(req), query));
+  }),
+);
+business.get(
   '/organizations/:org/crm/customers/:id',
   route(async (req, res) =>
     res.json(await customerProfile(await access(req), String(req.params.id))),
@@ -598,9 +634,16 @@ business.put(
 );
 business.get(
   '/organizations/:org/crm/customers/:id/activity',
-  route(async (req, res) =>
-    res.json(await crmCustomerActivity(await access(req), String(req.params.id))),
-  ),
+  route(async (req, res) => {
+    const query = z
+      .object({
+        limit: z.coerce.number().int().min(1).max(100).default(50),
+        offset: z.coerce.number().int().min(0).max(1_000_000).default(0),
+      })
+      .strict()
+      .parse(req.query);
+    res.json(await crmCustomerActivity(await access(req), String(req.params.id), query));
+  }),
 );
 business.get(
   '/organizations/:org/sales/templates',
@@ -663,17 +706,20 @@ business.get(
       status = z
         .enum(['draft', 'shared', 'accepted', 'converted', 'cancelled'])
         .optional()
-        .parse(req.query.status);
+        .parse(req.query.status),
+      customerId = z.string().uuid().optional().parse(req.query.customer_id);
     const rows = await dbAll(
       'SELECT id FROM ac_sales_quotes WHERE org_id=? AND environment=?' +
         (status ? ' AND status=?' : '') +
+        (customerId ? ' AND customer_id=?' : '') +
         ' ORDER BY created_at DESC,id DESC LIMIT 100 OFFSET ?',
-      [a.org, a.environment, ...(status ? [status] : []), page],
+      [a.org, a.environment, ...(status ? [status] : []), ...(customerId ? [customerId] : []), page],
     );
     res.json({
       data: await Promise.all(rows.map((row) => quote(a, row.id))),
       offset: page,
       limit: 100,
+      customer_id: customerId || null,
     });
   }),
 );

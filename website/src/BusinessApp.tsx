@@ -282,7 +282,8 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
     [documentCurrency, setDocumentCurrency] = useState('KES'),
     [urlRevision, setUrlRevision] = useState(0);
   const passportInitialTab = new URLSearchParams(location.search).get('section') || undefined;
-  const [navOpen, setNavOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false),
+    [appInfoOpen, setAppInfoOpen] = useState(false);
   const market = useMarketplace(org, environment, 'business', account?.service_catalog, isDemo());
   const [offset, setOffset] = useState(0),
     [search, setSearch] = useState('');
@@ -482,6 +483,10 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
     };
   }, [recordTarget, tab, org, environment]);
   const appContext = useAppContext(call, org + '\0' + environment, !!org && !isDemo());
+  const immersiveApp = (appContext.app || appContext.resolving) && tab === 'Apps';
+  const appSectionLabel = appContext.app?.navigation.find(
+    (item: any) => item.section === appContext.section,
+  )?.label || 'Opening app';
   async function load() {
     if (currentScope.current !== viewScope) return;
     const latest = requestGate.current.begin();
@@ -958,7 +963,7 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
       </main>
     );
   return (
-    <div className="business-shell" data-platform-density>
+    <div className={'business-shell' + (immersiveApp ? ' is-app-immersive' : '')} data-platform-density data-app-immersive={immersiveApp ? 'true' : undefined}>
       <a
         className="workspace-skip"
         href="#workspace-main"
@@ -1096,18 +1101,33 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
       </aside>
       <div className="app-main" inert={navOpen || undefined}>
         <header className="app-header">
-          {!isDemo() && org && (
-            <WorkspaceAppLauncher api={call} scope={org + '\0' + environment} navigate={setTab} />
-          )}
           <button
             className="icon-button app-nav-toggle"
-            aria-label="Open business navigation"
+            aria-label={navOpen ? 'Close app navigation' : 'Open workspace navigation'}
             aria-expanded={navOpen}
             aria-controls="workspace-menu"
             onClick={() => setNavOpen(true)}
           >
             <Icon name="menu" />
           </button>
+          {!isDemo() && org && (
+            <WorkspaceAppLauncher api={call} scope={org + '\0' + environment} navigate={setTab} />
+          )}
+          {immersiveApp && (
+            <>
+              <div className="immersive-app-context" aria-live="polite">
+                <strong>{appContext.app?.name.replace('AfriCore ', '') || 'App'}</strong>
+                <span>{appSectionLabel}</span>
+              </div>
+              <button
+                className="icon-button immersive-app-info"
+                aria-label={'About ' + (appContext.app?.name || 'this app')}
+                onClick={() => setAppInfoOpen(true)}
+              >
+                <Icon name="document" />
+              </button>
+            </>
+          )}
           <div>
             <select
               aria-label="Switch organization"
@@ -1123,7 +1143,11 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
                   if (!isDemo())
                     await api('/api/auth/account/workspace', 'POST', { workspace_id: id });
                   if (version === workspaceSwitch.current) {
-                    if (initialOrg && !isDemo()) location.href = '/app/business/' + id;
+                    if (initialOrg && !isDemo()) {
+                      const target = new URL(location.href);
+                      target.pathname = '/app/business/' + id;
+                      location.href = target.pathname + target.search + target.hash;
+                    }
                     else setOrg(id);
                   }
                 } catch (error) {
@@ -1182,6 +1206,51 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
             )}
           </div>
         </header>
+        {appInfoOpen && appContext.app && (
+          <Overlay portal onClose={() => setAppInfoOpen(false)}>
+            <section
+              className="panel immersive-app-info-panel"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="immersive-app-info-title"
+            >
+              <div className="section-heading">
+                <div>
+                  <span className="eyebrow">App information</span>
+                  <h2 id="immersive-app-info-title">{appContext.app.name}</h2>
+                </div>
+                <button
+                  className="icon-button"
+                  aria-label="Close app information"
+                  onClick={() => setAppInfoOpen(false)}
+                >
+                  <Icon name="close" />
+                </button>
+              </div>
+              <p>{appContext.app.description}</p>
+              <p className="environment-note">
+                {environment === 'sandbox'
+                  ? 'Sandbox records are separate from production records.'
+                  : 'Production environment · Only authorized live operations are available.'}
+              </p>
+              <h3>Required services</h3>
+              <ul className="immersive-app-services">
+                {appContext.app.required_services.map((id: string) => {
+                  const service = market.catalog?.services?.find((item: any) => item.id === id);
+                  return (
+                    <li key={id}>
+                      <span>{service?.name || id.replaceAll('_', ' ')}</span>
+                      <small>{service?.status?.replaceAll('_', ' ') || 'Access managed by workspace'}</small>
+                    </li>
+                  );
+                })}
+              </ul>
+              <button className="button" onClick={() => setAppInfoOpen(false)}>
+                Done
+              </button>
+            </section>
+          </Overlay>
+        )}
         <main className="workspace-content" id="workspace-main" tabIndex={-1}>
           <nav className="workspace-breadcrumbs" aria-label="Breadcrumb">
             <button

@@ -19,7 +19,8 @@ export function CrmReport({
     [error, setError] = useState(''),
     [group, setGroup] = useState<'stage' | 'assigned_to' | 'team_id' | 'loss_reason'>('stage'),
     [measure, setMeasure] = useState<'count' | 'value' | 'weighted' | 'won' | 'lost'>('count'),
-    [view, setView] = useState<'graph' | 'table'>('graph'),
+    [view, setView] = useState<'graph' | 'pivot' | 'table'>('graph'),
+    [pivotBy, setPivotBy] = useState<'team_id' | 'assigned_to' | 'currency'>('team_id'),
     [reportMode, setReportMode] = useState<'pipeline' | 'activities'>('pipeline');
   async function load(q: Record<string, string> = {}) {
     setData(null);
@@ -42,7 +43,14 @@ export function CrmReport({
           members.find((m) => m.id === id)?.email ||
           id;
   if (reportMode === 'activities')
-    return <CrmActivityReport api={api} members={members} back={() => setReportMode('pipeline')} />;
+    return (
+      <CrmActivityReport
+        api={api}
+        members={members}
+        back={() => setReportMode('pipeline')}
+        open={open}
+      />
+    );
   return (
     <section className="panel">
       <h3>Pipeline and team reporting</h3>
@@ -142,6 +150,13 @@ export function CrmReport({
             >
               Table
             </button>
+            <button
+              className="secondary-button"
+              aria-pressed={view === 'pivot'}
+              onClick={() => setView('pivot')}
+            >
+              Pivot
+            </button>
           </div>
           {(() => {
             const records =
@@ -185,6 +200,98 @@ export function CrmReport({
                 ),
             }));
             const max = Math.max(1, ...rows.map((r) => r.value));
+            if (view === 'pivot') {
+              const dimensions = [
+                ...new Set<string>(records.map((record: any) => String(record[pivotBy] || 'unassigned'))),
+              ];
+              const totals = dimensions
+                .map((dimension) => ({
+                  dimension,
+                  total: records.filter(
+                    (record: any) => String(record[pivotBy] || 'unassigned') === dimension,
+                  ).length,
+                }))
+                .sort((a, b) => b.total - a.total)
+                .slice(0, 8)
+                .map((item) => item.dimension);
+              const stages = configuration.stages.map((stage: any) => ({
+                id: stage.id,
+                label: stage.name,
+              }));
+              const measureValue = (record: any) =>
+                measure === 'count'
+                  ? 1
+                  : measure === 'won'
+                    ? Number(record.stage === 'won')
+                    : measure === 'lost'
+                      ? Number(record.stage === 'lost')
+                      : measure === 'weighted'
+                        ? !['won', 'lost'].includes(record.stage) && record.probability_bps != null
+                          ? basisPoints(record.amount_minor, record.probability_bps)
+                          : 0
+                        : record.amount_minor;
+              const renderValue = (value: number) =>
+                ['count', 'won', 'lost'].includes(measure) ? String(value) : money(value, data.currency);
+              return (
+                <>
+                  <Field label="Pivot columns">
+                    <select value={pivotBy} onChange={(event) => setPivotBy(event.target.value as typeof pivotBy)}>
+                      <option value="team_id">Sales team</option>
+                      <option value="assigned_to">Salesperson</option>
+                      <option value="currency">Currency</option>
+                    </select>
+                  </Field>
+                  <DataTable>
+                    <thead>
+                      <tr>
+                        <th>Stage</th>
+                        {totals.map((dimension) => (
+                          <th key={dimension}>
+                            {pivotBy === 'currency' ? dimension : name(dimension, pivotBy === 'team_id')}
+                          </th>
+                        ))}
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stages.map((stage: any) => {
+                        const stageRecords = records.filter((record: any) => record.stage === stage.id);
+                        return (
+                          <tr key={stage.id}>
+                            <th scope="row">{stage.label}</th>
+                            {totals.map((dimension) => (
+                              <td key={dimension}>
+                                {renderValue(
+                                  stageRecords
+                                    .filter((record: any) => String(record[pivotBy] || 'unassigned') === dimension)
+                                    .reduce((sum: number, record: any) => sum + measureValue(record), 0),
+                                )}
+                              </td>
+                            ))}
+                            <td>
+                              {renderValue(stageRecords.reduce((sum: number, record: any) => sum + measureValue(record), 0))}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      <tr>
+                        <th scope="row">Total</th>
+                        {totals.map((dimension) => (
+                          <td key={dimension}>
+                            {renderValue(
+                              records
+                                .filter((record: any) => String(record[pivotBy] || 'unassigned') === dimension)
+                                .reduce((sum: number, record: any) => sum + measureValue(record), 0),
+                            )}
+                          </td>
+                        ))}
+                        <td>{renderValue(records.reduce((sum: number, record: any) => sum + measureValue(record), 0))}</td>
+                      </tr>
+                    </tbody>
+                  </DataTable>
+                </>
+              );
+            }
             return view === 'graph' ? (
               <div className="crm-report-graph" aria-label="Opportunity report">
                 {rows.map((row) => (

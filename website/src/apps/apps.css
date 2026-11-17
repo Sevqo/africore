@@ -4294,3 +4294,159 @@
   outline: 2px solid var(--accent-text);
   outline-offset: 2px;
 }
+
+/* CRM relationship picker and compact Odoo-inspired operation surfaces. */
+.crm-customer-picker {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  width: 100%;
+}
+.crm-customer-picker > input[type='search'] {
+  width: 100%;
+  min-height: 38px;
+}
+.crm-customer-options {
+  position: absolute;
+  inset: calc(100% + 3px) 0 auto;
+  z-index: 60;
+  max-height: 260px;
+  overflow: auto;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--white);
+  box-shadow: var(--shadow-menu);
+}
+.crm-customer-options > button {
+  display: grid;
+  width: 100%;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+.crm-customer-options > button:hover,
+.crm-customer-options > button.is-active {
+  background: var(--accent-light);
+}
+.crm-customer-options small,
+.crm-selected-customer {
+  color: var(--muted);
+  font-size: 12px;
+}
+.crm-customer-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 12px;
+}
+.crm-customer-heading > .field {
+  flex: 0 1 380px;
+}
+.crm-customer-results {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.crm-customer-results > button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-width: 0;
+  gap: 14px;
+  text-align: left;
+}
+.crm-customer-results > button small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.crm-result-count {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 0 0 10px;
+}
+.crm-activity-cell {
+  display: inline-block;
+  min-width: 70px;
+  padding: 4px 7px;
+  border-radius: 4px;
+  background: #e4f1e8;
+  color: #176631;
+  text-transform: capitalize;
+}
+.crm-activity-cell.is-completed {
+  background: #e9f0fa;
+  color: #315a86;
+}
+.crm-activity-cell.is-cancelled {
+  background: #f1f1f1;
+  color: #60676a;
+}
+.crm-activity-cell.is-open {
+  background: #fff0d9;
+  color: #79510a;
+}
+.crm-activity-empty {
+  color: var(--muted);
+}
+
+@media (min-width: 768px) {
+  .business-shell.is-app-immersive .crm-workspace {
+    max-width: none;
+  }
+  .business-shell.is-app-immersive .crm-board {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(280px, 310px);
+    grid-template-columns: none;
+    gap: 10px;
+    overflow-x: auto;
+    align-items: start;
+    padding-bottom: 8px;
+  }
+  .business-shell.is-app-immersive .crm-board-column {
+    padding: 8px;
+    border-radius: 3px;
+  }
+  .business-shell.is-app-immersive .crm-stage-heading {
+    min-height: 64px;
+  }
+  .business-shell.is-app-immersive .crm-stage-volume {
+    height: 4px;
+    margin-top: 7px;
+    overflow: hidden;
+    background: #e6e8e9;
+  }
+  .business-shell.is-app-immersive .crm-stage-volume > span {
+    display: block;
+    height: 100%;
+    background: #0d9e4f;
+  }
+  .business-shell.is-app-immersive .crm-opportunity {
+    padding: 10px;
+    border-radius: 3px;
+  }
+  .business-shell.is-app-immersive .crm-record-list {
+    border-radius: 3px;
+  }
+}
+
+@media (max-width: 600px) {
+  .crm-customer-heading {
+    display: grid;
+    align-items: stretch;
+  }
+  .crm-customer-results {
+    grid-template-columns: 1fr;
+  }
+  .crm-customer-results > button {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

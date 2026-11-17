@@ -2668,6 +2668,11 @@ test('company contacts and legacy tag edits retain canonical relationships witho
     company_id: company.data.id,
   });
   assert.equal(linked.status, 200, JSON.stringify(linked.data));
+  const companies = await api(path('/crm/companies?q=parent%20company'));
+  assert.equal(companies.status, 200, JSON.stringify(companies.data));
+  assert.deepEqual(companies.data.data.map((item: any) => item.id), [company.data.id]);
+  await api(path('/records/customers/' + company.data.id), 'PATCH', { status: 'archived' });
+  assert.equal((await api(path('/crm/companies?q=parent%20company'))).data.total, 0);
   const legacy = await api(path('/crm/customers/' + person.data.id), 'PUT', {
     expected_version: 1,
     tags: ['repeat'],
@@ -2699,6 +2704,41 @@ test('company contacts and legacy tag edits retain canonical relationships witho
     ).status,
     404,
   );
+});
+
+test('CRM customer activity pages canonical linked records and reports complete counts', async () => {
+  const customer = await api(path('/records/customers'), 'POST', {
+    name: 'Synthetic paged activity customer',
+  });
+  assert.equal(customer.status, 201, JSON.stringify(customer.data));
+  const created = await Promise.all(
+    ['A', 'B', 'C'].map((suffix) =>
+      api(path('/crm/entries'), 'POST', {
+        kind: 'interaction',
+        customer_id: customer.data.id,
+        title: 'Paged customer interaction ' + suffix,
+      }),
+    ),
+  );
+  assert.ok(created.every((result) => result.status === 201));
+  const first = await api(
+    path('/crm/customers/' + customer.data.id + '/activity?limit=2&offset=0'),
+  );
+  assert.equal(first.status, 200, JSON.stringify(first.data));
+  assert.equal(first.data.entries_total, 3);
+  assert.equal(first.data.entries.length, 2);
+  assert.equal(first.data.has_more, true);
+  const second = await api(
+    path('/crm/customers/' + customer.data.id + '/activity?limit=2&offset=2'),
+  );
+  assert.equal(second.data.entries.length, 1);
+  assert.equal(second.data.has_more, false);
+  assert.equal(
+    new Set([...first.data.entries, ...second.data.entries].map((entry: any) => entry.id)).size,
+    3,
+  );
+  assert.equal(typeof first.data.quotation_count, 'number');
+  assert.equal(typeof first.data.order_count, 'number');
 });
 
 test('legacy completed CRM creation remains replayable after adding defaulted opportunity metadata', async () => {
@@ -2870,6 +2910,37 @@ test('CRM cursor continues after a stable record even when newer records arrive'
     expected,
   );
   assert.equal((await api(path('/crm/entries?before_id=' + first.id))).status, 400);
+});
+
+test('CRM directory searches and pages filtered records on the server with matching stage summaries', async () => {
+  const created = await api(path('/crm/entries'), 'POST', {
+    kind: 'opportunity',
+    customer_id: customerId,
+    title: 'Filtered board fixture',
+    stage: 'new',
+    currency: 'KES',
+    amount_minor: 24500,
+  });
+  assert.equal(created.status, 201, JSON.stringify(created.data));
+  const other = await api(path('/crm/entries'), 'POST', {
+    kind: 'lead',
+    customer_id: customerId,
+    title: 'Filtered lead fixture',
+  });
+  assert.equal(other.status, 201);
+  const result = await api(
+    path('/crm/entries?') +
+      new URLSearchParams({ kind: 'opportunity', q: 'Filtered board', currency: 'KES', limit: '1' }),
+  );
+  assert.equal(result.status, 200, JSON.stringify(result.data));
+  assert.equal(result.data.total, 1);
+  assert.equal(result.data.data[0].id, created.data.id);
+  assert.equal(result.data.has_more, false);
+  assert.deepEqual(result.data.stages, [
+    { stage: 'new', count: 1, totals: { KES: 24500 } },
+  ]);
+  const mismatch = await api(path('/crm/entries?kind=opportunity&q=Filtered%20lead'));
+  assert.equal(mismatch.data.total, 0);
 });
 
 test('CRM priority is bounded, persists and retains legacy replay behavior', async () => {

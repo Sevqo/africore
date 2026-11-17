@@ -21,6 +21,8 @@ import { money, amount, today, Field, Alert, Currency } from './AccountUI';
 import { DeveloperPanels } from './DeveloperPanels';
 import { Overlay } from '../components/Overlay';
 import { Icon, type IconName } from '../components/Icon';
+import { AppContextNavigation, useAppContext } from '../apps/AppNavigation';
+import { WorkspaceAppLauncher } from '../apps/WorkspaceAppLauncher';
 import {
   useMarketplace,
   Services,
@@ -34,6 +36,7 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
   const personal = w.kind === 'personal';
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [navigationOpen, setNavigationOpen] = useState(false);
+  const [appInfoOpen, setAppInfoOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
       return localStorage.getItem('africore-focused-sidebar-collapsed') === 'true';
@@ -107,6 +110,21 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
       return result;
     });
   };
+  const appContext = useAppContext(call, w.id + '\0' + environment, personal),
+    immersiveApp = personal && (appContext.app || appContext.resolving),
+    appSectionLabel = appContext.app?.navigation.find(
+      (item: any) => item.section === appContext.section,
+    )?.label || 'Opening app';
+  const navigateWorkspaceTab = (target: string) => {
+    const url = new URL(location.href);
+    url.searchParams.delete('app');
+    url.searchParams.delete('section');
+    url.hash = encodeURIComponent(target);
+    history.pushState(null, '', url.pathname + url.search + url.hash);
+    window.dispatchEvent(new Event('africore:app-navigation'));
+    setTab(target);
+    setNavigationOpen(false);
+  };
   useEffect(() => {
     const change = () => {
       const t = decodeURIComponent(location.hash.slice(1));
@@ -117,6 +135,7 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
   }, [personal]);
   useEffect(() => {
     setSelectedInvoice(null);
+    setAppInfoOpen(false);
     setKey('');
     setResult('');
   }, [w.id, environment, tab]);
@@ -333,8 +352,7 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
               href={'#' + encodeURIComponent(item.tab)}
               aria-current={tab === item.tab ? 'page' : undefined}
               onClick={() => {
-                setTab(item.tab);
-                setNavigationOpen(false);
+                navigateWorkspaceTab(item.tab);
               }}
             >
               <Icon name={item.icon as IconName} />
@@ -342,6 +360,17 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
             </a>
           ))}
       </nav>
+      {appContext.app && (
+        <AppContextNavigation
+          app={appContext.app}
+          section={appContext.section}
+          tab={tab}
+          navigate={(target) => {
+            setTab(target);
+            setNavigationOpen(false);
+          }}
+        />
+      )}
       {toolItems.length > 0 && (
         <details className="focused-nav-group" open={toolItems.includes(tab) || undefined}>
           <summary>
@@ -357,8 +386,7 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
                 href={t === 'Learn' ? '/learn' : '#' + encodeURIComponent(t)}
                 aria-current={tab === t ? 'page' : undefined}
                 onClick={() => {
-                  setTab(t);
-                  setNavigationOpen(false);
+                  navigateWorkspaceTab(t);
                 }}
               >
                 <Icon
@@ -395,8 +423,7 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
                 href={t === 'Settings' ? '/app/account' : '#' + encodeURIComponent(t)}
                 aria-current={tab === t ? 'page' : undefined}
                 onClick={() => {
-                  setTab(t);
-                  setNavigationOpen(false);
+                  navigateWorkspaceTab(t);
                 }}
               >
                 <Icon
@@ -427,9 +454,10 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
   );
   return (
     <div
-      className="focused-account"
+      className={'focused-account' + (immersiveApp ? ' is-app-immersive' : '')}
       data-platform-density
       data-workspace-kind={personal ? 'personal' : 'developer'}
+      data-app-immersive={immersiveApp ? 'true' : undefined}
     >
       <a
         className="workspace-skip"
@@ -445,16 +473,38 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
         {navigation}
       </aside>
       <main className="account-content" id="focused-workspace-main" tabIndex={-1}>
-        <div className="focused-mobile-header">
+        <div className={'focused-mobile-header' + (immersiveApp ? ' focused-app-header' : '')}>
           <button
             className="quiet-button"
-            aria-label={'Open ' + (personal ? 'Personal' : 'Developer') + ' navigation'}
+            aria-label={navigationOpen ? 'Close app navigation' : 'Open workspace navigation'}
             aria-expanded={navigationOpen}
+            aria-controls="focused-workspace-nav"
             onClick={() => setNavigationOpen(true)}
           >
             <Icon name="menu" />
           </button>
-          <span>{w.name}</span>
+          {immersiveApp && (
+            <WorkspaceAppLauncher api={call} scope={w.id + '\0' + environment} navigate={setTab} />
+          )}
+          <span>
+            {immersiveApp
+              ? `${appContext.app?.name.replace('AfriCore ', '') || 'App'} · ${appSectionLabel}`
+              : w.name}
+          </span>
+          {immersiveApp && (
+            <button
+              className="icon-button focused-app-info-trigger"
+              aria-label={'About ' + (appContext.app?.name || 'this app')}
+              onClick={() => setAppInfoOpen(true)}
+            >
+              <Icon name="document" />
+            </button>
+          )}
+          {immersiveApp && (
+            <a className="focused-app-workspace-switch" href="/app/workspaces">
+              {w.name}
+            </a>
+          )}
           <div className="focused-user-actions">
             <NotificationBell
               kind={w.kind}
@@ -475,6 +525,7 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
               role="dialog"
               aria-modal="true"
               aria-label="Workspace navigation"
+              id="focused-workspace-nav"
               className="account-nav focused-drawer"
             >
               <button onClick={() => setNavigationOpen(false)}>
@@ -531,7 +582,7 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
               ? 'Sandbox · test records only. No live funds move.'
               : 'Recorded personal activity. Manual entries are not provider confirmation.'}
         </p>
-        <h2>{tab}</h2>
+        {!immersiveApp && <h2>{tab}</h2>}
         <Alert error={error} />
         {busy && <p role="status">Updating workspace…</p>}
         {tab === 'Notifications' ? (
@@ -547,7 +598,7 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
             api={call}
             scope={w.id + '\0' + environment}
             manager={['owner', 'admin'].includes(w.role)}
-            navigate={(tab) =>
+            navigate={(tab) => {
               setTab(
                 (
                   {
@@ -556,8 +607,9 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
                     Reconciliation: 'Payment Records',
                   } as Record<string, string>
                 )[tab] || tab,
-              )
-            }
+              );
+              setNavigationOpen(false);
+            }}
             services={market.catalog?.services || []}
             onServicesChanged={market.reload}
             timezone={account?.profile?.timezone || 'Africa/Nairobi'}
@@ -909,6 +961,49 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
           </ServiceGate>
         )}
       </main>
+      {appInfoOpen && appContext.app && (
+        <Overlay portal onClose={() => setAppInfoOpen(false)}>
+          <section
+            className="panel immersive-app-info-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="focused-app-info-title"
+          >
+            <div className="section-heading">
+              <div>
+                <span className="eyebrow">App information</span>
+                <h2 id="focused-app-info-title">{appContext.app.name}</h2>
+              </div>
+              <button
+                className="icon-button"
+                aria-label="Close app information"
+                onClick={() => setAppInfoOpen(false)}
+              >
+                <Icon name="close" />
+              </button>
+            </div>
+            <p>{appContext.app.description}</p>
+            <p className="environment-note">
+              Personal records · payment simulations stay separate from manual entries.
+            </p>
+            <h3>Required services</h3>
+            <ul className="immersive-app-services">
+              {(appContext.app.required_services || []).map((id: string) => {
+                const service = market.catalog?.services?.find((item: any) => item.id === id);
+                return (
+                  <li key={id}>
+                    <span>{service?.name || id.replaceAll('_', ' ')}</span>
+                    <small>{service?.status?.replaceAll('_', ' ') || 'Access managed by workspace'}</small>
+                  </li>
+                );
+              })}
+            </ul>
+            <button className="button" onClick={() => setAppInfoOpen(false)}>
+              Done
+            </button>
+          </section>
+        </Overlay>
+      )}
     </div>
   );
 }

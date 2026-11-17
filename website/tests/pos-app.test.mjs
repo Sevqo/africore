@@ -71,7 +71,8 @@ test('POS sidebar sections stay inside the installed app', () => {
   assert.equal(appSectionTarget(pos, 'products', direct), 'Apps');
   assert.equal(appSectionActive(pos, 'reporting', 'Apps', 'reporting', direct), true);
   assert.equal(appSectionActive(pos, 'reporting', 'Reports', 'reporting', direct), false);
-  assert.equal(appSectionTarget({ id: 'analytics' }, 'reporting', direct), 'Reports');
+  assert.equal(appSectionTarget({ id: 'analytics' }, 'reporting', direct), 'Apps');
+  assert.equal(appSectionActive({ id: 'analytics' }, 'reporting', 'Apps', 'reporting', direct), true);
 });
 
 test('the installed POS app renders the operational workspace, not the service screen', () => {

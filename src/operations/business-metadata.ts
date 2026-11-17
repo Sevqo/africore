@@ -53,6 +53,7 @@ bind(
     'POST /crm/entries',
     'PATCH /crm/entries/:id',
     'POST /crm/entries/:id/convert',
+    'GET /crm/companies',
     'GET /crm/customers/:id',
     'PUT /crm/customers/:id',
     'GET /crm/customers/:id/activity',

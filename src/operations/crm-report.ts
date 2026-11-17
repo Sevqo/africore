@@ -132,6 +132,14 @@ export async function crmActivityReport(a: Access, input: unknown) {
     truncated: raw.length > 10000,
     covered_records: rows.length,
     by_assignee,
+    records: rows.map((row) => ({
+      ...JSON.parse(row.data),
+      id: row.id,
+      status: row.status,
+      assigned_to: row.assigned_to,
+      due_at: row.due_at,
+      created_at: row.created_at,
+    })),
     definition:
       'Follow-ups created in the selected Nairobi dates, grouped by assignee. Overdue counts are open items due before the report observation time. At most 10,000 records are covered.',
   };

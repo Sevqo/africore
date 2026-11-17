@@ -92,7 +92,8 @@ test('procurement sidebar sections stay inside the installed app', () => {
   assert.equal(appSectionTarget(procurement, 'reporting', direct), 'Apps');
   assert.equal(appSectionActive(procurement, 'products', 'Apps', 'products', direct), true);
   assert.equal(appSectionActive(procurement, 'products', 'Products', 'products', direct), false);
-  assert.equal(appSectionTarget({ id: 'crm' }, 'reporting', direct), 'Reports');
+  assert.equal(appSectionTarget({ id: 'crm' }, 'reporting', direct), 'Apps');
+  assert.equal(appSectionActive({ id: 'crm' }, 'reporting', 'Apps', 'reporting', direct), true);
 });
 
 test('the installed Procurement app renders the operational workspace, not the service screen', () => {

@@ -421,6 +421,7 @@ export function AppsWorkspace({
                   navigate={navigate}
                   initialSection={activeSection}
                   writable={writable}
+                  salesEnabled={services.some((service) => service.id === 'sales' && service.status === 'active')}
                 />
               ) : app.id === 'inventory' ? (
                 <InventoryAppWorkspace

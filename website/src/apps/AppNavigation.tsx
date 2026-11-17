@@ -82,7 +82,9 @@ export function useAppContext(api: API, scope: string, enabled = true) {
       .then((r) => {
         if (current) setCatalog({ scope, apps: r.apps });
       })
-      .catch(() => {});
+      .catch(() => {
+        if (current) setCatalog({ scope, apps: [] });
+      });
     return () => {
       current = false;
     };
@@ -93,6 +95,7 @@ export function useAppContext(api: API, scope: string, enabled = true) {
       : null;
   return {
     app,
+    resolving: enabled && !!selection.id && catalog.scope !== scope,
     section: app?.navigation?.some((item: any) => item.section === selection.section)
       ? selection.section
       : app?.navigation?.[0]?.section || 'dashboard',
