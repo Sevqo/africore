@@ -2485,6 +2485,164 @@ test('conditional CRM workflows bind current stage and version, skip unmatched b
   );
 });
 
+test('automation directories filter before pagination and run history uses its saved version with sanitized results', async () => {
+  const originalName = 'Phase 2.13 history 100% literal',
+    configuration = {
+      name: originalName,
+      template: 'crm_stage_follow_up',
+      enabled: false,
+      conditions: { currency: 'KES', minimum_minor: 0, days_before_due: 1 },
+      branches: [],
+      fallback_action: 'skip',
+      retry_policy: { max_attempts: 2, base_delay_seconds: 3 },
+    },
+    workflow = await api(path('/automations'), 'POST', configuration);
+  assert.equal(workflow.status, 201, JSON.stringify(workflow.data));
+  const directory = await api(
+    path('/automations') + '?search=' + encodeURIComponent('100%') + '&source=crm&state=paused&limit=1&offset=0',
+  );
+  assert.equal(directory.status, 200, JSON.stringify(directory.data));
+  assert.equal(directory.data.total, 1);
+  assert.equal(directory.data.data.length, 1);
+  assert.equal(directory.data.data[0].id, workflow.data.id);
+  assert.equal(directory.data.data[0].owner_name, 'Synthetic owner');
+  assert.equal(directory.data.data[0].owner_permission_revoked, false);
+
+  const revised = await api(path('/automations/' + workflow.data.id + '/configuration'), 'PUT', {
+    expected_version: 1,
+    configuration: { ...configuration, name: 'Phase 2.13 current version' },
+  });
+  assert.equal(revised.status, 200, JSON.stringify(revised.data));
+  assert.equal(revised.data.version, 2);
+
+  const runId = randomUUID(), occurred = new Date().toISOString();
+  await dbRun(
+    'INSERT INTO ac2_runs(id,org_id,environment,workflow_id,trigger_key,status,attempts,next_at,result,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+    [runId, org, 'sandbox', workflow.data.id, 'phase2.13.synthetic', 'succeeded', 1, occurred, JSON.stringify({ action: 'skip', completed_units: 1, secret: 'must-not-leak' }), occurred, occurred],
+  );
+  await dbRun('INSERT INTO ac_workflow_run_versions(run_id,workflow_id,version) VALUES (?,?,?)', [
+    runId,
+    workflow.data.id,
+    1,
+  ]);
+  const history = await api(
+    path('/automation-runs') + '?workflow_id=' + workflow.data.id + '&status=succeeded&limit=1&offset=0',
+  );
+  assert.equal(history.status, 200, JSON.stringify(history.data));
+  assert.equal(history.data.total, 1);
+  assert.equal(history.data.data[0].workflow_name, originalName);
+  assert.equal(history.data.data[0].version, 1);
+  assert.deepEqual(history.data.data[0].result, { action: 'skip', completed_units: 1 });
+  const runDetail = await api(path('/automation-runs/' + runId));
+  assert.equal(runDetail.status, 200);
+  assert.equal(runDetail.data.workflow_name, originalName);
+  assert.equal(runDetail.data.action_name, 'skip');
+  assert.deepEqual(runDetail.data.result, { action: 'skip', completed_units: 1 });
+
+  const versions = await api(path('/automations/' + workflow.data.id + '/versions'));
+  assert.equal(versions.status, 200);
+  assert.deepEqual(versions.data.data.map((item: any) => item.version), [2, 1]);
+  assert.equal(versions.data.data[0].actor_name, 'Synthetic owner');
+  assert.equal('actor' in versions.data.data[0], false);
+});
+
+test('a finance member can recover a paused automation after its former owner loses authority', async () => {
+  const rule = await api(
+    path('/automations'),
+    'POST',
+    {
+      name: 'Phase 2.13 former owner recovery',
+      template: 'crm_stage_follow_up',
+      enabled: false,
+      conditions: { currency: 'KES', minimum_minor: 0, days_before_due: 1 },
+      branches: [],
+      fallback_action: 'skip',
+      retry_policy: { max_attempts: 2, base_delay_seconds: 3 },
+    },
+    approverCookie,
+  );
+  assert.equal(rule.status, 201, JSON.stringify(rule.data));
+  try {
+    await dbRun("UPDATE ac_memberships SET role='operations' WHERE org_id=? AND user_id=?", [org, approverId]);
+    const details = await api(path('/automations/' + rule.data.id));
+    assert.equal(details.status, 200);
+    assert.equal(details.data.owner_permission_revoked, true);
+    const enable = await api(path('/automations/' + rule.data.id), 'PATCH', { enabled: true });
+    assert.equal(enable.status, 409);
+    const takeover = await api(path('/automations/' + rule.data.id + '/take-ownership'), 'POST', {});
+    assert.equal(takeover.status, 200, JSON.stringify(takeover.data));
+    assert.equal(takeover.data.created_by, actor);
+    assert.equal(takeover.data.enabled, false);
+    assert.equal(takeover.data.version, 2);
+  } finally {
+    await dbRun("UPDATE ac_memberships SET role='owner' WHERE org_id=? AND user_id=?", [org, approverId]);
+  }
+});
+
+test('daily and weekly automations respect the configured local timezone through the DST transition', async () => {
+  const daily = await api(path('/automations'), 'POST', {
+    name: 'Phase 2.13 New York daily schedule',
+    template: 'daily_summary',
+    enabled: true,
+    schedule: { frequency: 'daily', hour: 9, timezone: 'America/New_York' },
+  });
+  assert.equal(daily.status, 201, JSON.stringify(daily.data));
+  await runAutomations(a(), new Date('2026-03-08T12:59:00.000Z'));
+  assert.equal(Number((await dbGet('SELECT COUNT(*) AS n FROM ac2_runs WHERE workflow_id=?', [daily.data.id])).n), 0);
+  await runAutomations(a(), new Date('2026-03-08T13:00:00.000Z'));
+  await runAutomations(a(), new Date('2026-03-08T13:01:00.000Z'));
+  assert.equal(Number((await dbGet('SELECT COUNT(*) AS n FROM ac2_runs WHERE workflow_id=?', [daily.data.id])).n), 1);
+
+  const weekly = await api(path('/automations'), 'POST', {
+    name: 'Phase 2.13 New York weekly schedule',
+    template: 'daily_summary',
+    enabled: true,
+    schedule: { frequency: 'weekly', hour: 9, timezone: 'America/New_York' },
+  });
+  assert.equal(weekly.status, 201, JSON.stringify(weekly.data));
+  await runAutomations(a(), new Date('2026-03-09T13:00:00.000Z'));
+  await runAutomations(a(), new Date('2026-03-10T13:00:00.000Z'));
+  assert.equal(Number((await dbGet('SELECT COUNT(*) AS n FROM ac2_runs WHERE workflow_id=?', [weekly.data.id])).n), 1);
+});
+
+test('manual scheduled execution runs only the selected enabled rule before its target hour', async () => {
+  const configuration = (name: string) => ({
+    name,
+    template: 'daily_summary',
+    enabled: true,
+    schedule: { frequency: 'daily', hour: 23, timezone: 'Africa/Nairobi' },
+  });
+  const selected = await api(path('/automations'), 'POST', configuration('Manual schedule selected')),
+    unrelated = await api(path('/automations'), 'POST', configuration('Manual schedule unrelated'));
+  assert.equal(selected.status, 201, JSON.stringify(selected.data));
+  assert.equal(unrelated.status, 201, JSON.stringify(unrelated.data));
+  const unrelatedPendingId = randomUUID(), stamp = new Date(Date.now() - 1000).toISOString();
+  await dbRun(
+    "INSERT INTO ac2_runs(id,org_id,environment,workflow_id,trigger_key,status,next_at,created_at,updated_at) VALUES (?,?,?,?,?,'pending',?,?,?)",
+    [unrelatedPendingId, org, 'sandbox', unrelated.data.id, 'synthetic-pending-run', stamp, stamp, stamp],
+  );
+  await dbRun('INSERT INTO ac_workflow_run_versions(run_id,workflow_id,version) VALUES (?,?,?)', [
+    unrelatedPendingId,
+    unrelated.data.id,
+    unrelated.data.version,
+  ]);
+
+  const result = await api(path('/automations/' + selected.data.id + '/process'), 'POST', {});
+  assert.equal(result.status, 200, JSON.stringify(result.data));
+  assert.equal(result.data.manual, true);
+  assert.equal(result.data.workflow_id, selected.data.id);
+  assert.equal(result.data.queued, 1);
+  assert.equal(result.data.processed, 1);
+  const selectedRuns = await dbAll('SELECT status FROM ac2_runs WHERE workflow_id=?', [selected.data.id]),
+    unrelatedRuns = await dbAll('SELECT status FROM ac2_runs WHERE workflow_id=?', [unrelated.data.id]);
+  assert.deepEqual(selectedRuns.map((run: any) => run.status), ['succeeded']);
+  assert.deepEqual(unrelatedRuns.map((run: any) => run.status), ['pending']);
+
+  await api(path('/automations/' + selected.data.id), 'PATCH', { enabled: false });
+  const paused = await api(path('/automations/' + selected.data.id + '/process'), 'POST', {});
+  assert.equal(paused.status, 409);
+});
+
 test('company contacts and legacy tag edits retain canonical relationships without cross-workspace lookup', async () => {
   const company = await api(path('/records/customers'), 'POST', {
       name: 'Synthetic parent company',

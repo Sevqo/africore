@@ -1,6 +1,6 @@
 # Phase 2 — Applications Progress
 
-Current checkpoint: **2.11 Documents app** — source implementation and focused engineering checks complete; the live recipient endpoint still needs API runtime verification, and founder manual acceptance is pending.
+Current checkpoint: **2.13 Automations** — bounded rules, scheduled-action register/detail, per-rule manual run and execution history implemented; focused engineering checks recorded below; founder visual/manual acceptance is pending.
 
 Source checkpoint: Phase 1 committed by the founder; this work is uncommitted by design.
 Hard limits observed: no commits, pushes, deployments, production data or provider changes.
@@ -20,8 +20,8 @@ Hard limits observed: no commits, pushes, deployments, production data or provid
 | 2.9        | Work        | Implemented; focused engineering/browser verification recorded below; founder acceptance pending                                                                  |
 | 2.10       | People      | Implemented — independent source loading/retry; backend People tests and production builds pass; founder browser acceptance pending                               |
 | 2.11       | Documents   | Source implementation and focused checks pass; live request-recipient route needs runtime verification; populated-file and founder acceptance pending             |
-| 2.12       | Analytics   | Not started                                                                                                                                                       |
-| 2.13       | Automations | Not started                                                                                                                                                       |
+| 2.12       | Analytics   | Implemented; prior focused checks recorded below; founder screenshot acceptance pending                                                                           |
+| 2.13       | Automations | Implemented; focused tests/checks recorded below; browser screenshot comparison not performed; founder acceptance pending                                         |
 | 2.14       | Business ID | Not started                                                                                                                                                       |
 
 ## Checkpoint 2.1 — what was wrong
@@ -1058,3 +1058,60 @@ Current limitations: only the ten registry measures above are supported. Financi
 ### Readiness for the next checkpoint
 
 The supported Phase 2.12 implementation, source research and local automated gates are complete. It is ready for founder screenshot, responsive, populated-data and role acceptance. The next app checkpoint remains unstarted until the founder completes acceptance and explicitly authorizes it.
+
+## Checkpoint 2.13 — Automations
+
+### Implementation scope
+
+- Odoo Community `base_automation` and base `ir.cron` were inspected read-only at commit `1f622740a0688c940c9ed6ab40a4a174326a345d` (`20.0`). The local source comparison is in `docs/odoo-reference/notes/base_automation.md`; the append-only evidence and accepted AfriCore constraint are in `docs/odoo-reference/RESEARCH_LOG.md` and `DECISIONS.md`.
+- The supported recipe catalogue in `src/operations/contracts.ts` is the authority for event source, business category, required services, branches and action compatibility. `src/operations/automation.ts` uses the existing durable event/run storage and worker; it does not add a competing engine or schedule service.
+- Rules can be created, versioned, filtered, enabled/paused, tested without execution, transferred for authorized review, and inspected in scoped run history. Scheduled rules show frequency/local hour/timezone; **Run Manually** executes only the selected enabled schedule through the existing worker after rechecking owner finance authority, services and rule version.
+- The UI provides Odoo-structured rule details, grouped trigger selection, action modal, dense scheduled register/detail, execution history, dashboard, template directory, service config, Work and approval connections. It keeps AfriCore's light theme and shell and excludes arbitrary code, unrestricted external messaging/webhooks, financial postings and fabricated next-call promises.
+
+### Files changed for Phase 2.13
+
+- Backend: `src/apps/catalog.ts`, `src/marketplace/policy.ts`, `src/operations/automation.ts`, `src/operations/connected-routes.ts`, `src/operations/contracts.ts`, `src/operations/routes.ts`, `src/platform/workspace-capabilities.ts`.
+- Frontend: `website/src/apps/AutomationsWorkspace.tsx`, `website/src/apps/apps.css`, `website/src/operations/WorkflowBranchFields.tsx`.
+- Tests: `src/__tests__/business-app-workflows.test.ts`.
+- Documentation/API reference: `docs/AUTOMATIONS.md`, `docs/PHASE2_APP_PROGRESS.md`, `docs/odoo-reference/MODULES.md`, `docs/odoo-reference/RESEARCH_LOG.md`, `docs/odoo-reference/DECISIONS.md`, `docs/odoo-reference/notes/base_automation.md`, `platform-openapi.json` when regenerated.
+
+### Visual acceptance matrix
+
+| Reference | Layout and control implemented | Runtime screenshot compared | Remaining acceptance |
+| --- | --- | --- | --- |
+| Image 1 — automation rule detail | Full-page record, readable title, source/trigger/conditions, Actions To Do and Notes, history, preview, permission/service state | No | Founder compare populated rule and check compact title/field/tab proportions. |
+| Image 2 — trigger dropdown | Inline grouped Business Events and Scheduled Checks selector, selected recipe updates inputs and action choices | No | Compare dropdown width/position/scroll in the running browser. |
+| Image 3 — new automation | Document-style creation, editable title, inline trigger/conditions, action tab and Add an Action modal entry | No | Founder compare initial empty action layout and toolbar at desktop/mobile. |
+| Image 4 — create action modal | Centered overlay, compact action-type buttons, contextual details, save/close/discard behavior | No | Compare modal geometry and confirm each visible type is compatible and service-gated. |
+| Image 5 — scheduled action register | Dense paginated table with name/template/frequency/hour/timezone/owner/last run/status/actions and filters | No | Compare row height/toolbar, then exercise search, state, frequency, owner, pagination and row navigation. |
+| Image 6 — schedule detail | Full-page scheduled form, TECHNICAL SETTINGS / ACTION DETAILS, Run Manually, Execution Plan / Help; scoped endpoint | No | Verify one-rule run and next target in a live worker environment; no fake nextcall displayed. |
+| Image 7 — contextual action | Modal retains the underlying rule context and shows source, trigger, action, target, conditions and dependencies | No | Compare the modal over a saved CRM rule and confirm saving edits config only; workflow action runs only on a matching event. |
+
+**No pixel parity or screenshot comparison is claimed.** The code was source-reviewed against supplied images and local Odoo view definitions, but no running AfriCore browser capture was available during this implementation. Founder manual comparison remains required for all seven images.
+
+### Focused acceptance steps
+
+1. Open Automations in a populated business workspace; inspect dashboard, rule list, grouped trigger dropdown, action modal and every supported template/service state.
+2. Create a paused CRM-stage rule with a matching branch and skip fallback; save a version, verify current-stage behavior, run history and version label, then confirm saving alone did not create the follow-up.
+3. Create a schedule at an hour later than the current local time; run **Run Manually** and confirm only the selected enabled rule is evaluated. Verify a paused rule and a revoked-owner/missing-service rule cannot run.
+4. Check New York daily/weekly schedule behavior at the DST boundary and ensure a duplicate poll does not duplicate the same natural-period run.
+5. Filter the register and run history, page results, inspect a run result, test safe cancellation/retry controls, and confirm raw payloads, stack traces and internal actor IDs are not exposed.
+6. Verify role/service restrictions, private Work message handoff, approvals assignment and empty/error/loading states. Compare each screen's macro layout and dimensions with its matching Odoo screenshot at similar viewport size.
+
+### Automated verification
+
+| Check | Result |
+| --- | --- |
+| `npm run typecheck` | Passed |
+| `npm --prefix website run typecheck` | Passed |
+| `npm run build` | Passed; backend TypeScript compiled, including final scoped manual-run implementation |
+| `npm --prefix website run build` | Passed; Vite build and 82 prerendered pages; website content suite **117/117**. Existing Zod/Rollup annotation warnings were non-fatal. |
+| `npm run lint` | Passed; ESLint, architecture-cycle check (201 frontend modules), and backend test-fixture import-order check |
+| `business-app-workflows.test.js` | Passed **50/50** against disposable SQLite and temporary localhost API. Includes filters/search escaping, saved run versions, sanitized results, former-owner recovery, New York DST schedules, manual run, and isolation of unrelated pending runs. |
+| `operations.test.js` | Passed **20/20** against disposable SQLite and temporary localhost API |
+| `connected-platform.test.js` | Passed **14/14** against disposable SQLite and temporary localhost API |
+| `npm run validate:openapi` | Passed; **59/59** mounted legacy operations documented |
+| `npm run validate:platform` | Passed; **449** workspace operations match Express registrations |
+| `git diff --check` | Passed; Git reported only working-tree LF-to-CRLF normalization notices |
+
+The three focused backend suites passed **84/84**. The full backend test suite and PostgreSQL integration were not run; a dedicated `TEST_DATABASE_URL` was not configured. All test API servers and databases were disposable local fixtures; no hosted service was contacted. No running AfriCore browser capture was made, so the seven screenshot comparisons and founder manual acceptance remain outstanding. No dependency was installed, no migration was created, and no commit, push or deploy occurred.

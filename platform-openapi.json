@@ -285,6 +285,16 @@
             "minLength": 1,
             "maxLength": 100
           },
+          "action_name": {
+            "default": "",
+            "type": "string",
+            "maxLength": 100
+          },
+          "notes": {
+            "default": "",
+            "type": "string",
+            "maxLength": 5000
+          },
           "template": {
             "type": "string",
             "enum": [
@@ -323,8 +333,15 @@
               "currency": {
                 "default": "KES",
                 "type": "string",
-                "minLength": 3,
-                "maxLength": 3
+                "enum": [
+                  "KES",
+                  "USD",
+                  "EUR",
+                  "GBP",
+                  "UGX",
+                  "TZS",
+                  "RWF"
+                ]
               },
               "minimum_minor": {
                 "default": 0,
@@ -501,6 +518,8 @@
         },
         "required": [
           "name",
+          "action_name",
+          "notes",
           "template",
           "enabled",
           "conditions",
@@ -823,6 +842,16 @@
                 "minLength": 1,
                 "maxLength": 100
               },
+              "action_name": {
+                "default": "",
+                "type": "string",
+                "maxLength": 100
+              },
+              "notes": {
+                "default": "",
+                "type": "string",
+                "maxLength": 5000
+              },
               "template": {
                 "type": "string",
                 "enum": [
@@ -861,8 +890,15 @@
                   "currency": {
                     "default": "KES",
                     "type": "string",
-                    "minLength": 3,
-                    "maxLength": 3
+                    "enum": [
+                      "KES",
+                      "USD",
+                      "EUR",
+                      "GBP",
+                      "UGX",
+                      "TZS",
+                      "RWF"
+                    ]
                   },
                   "minimum_minor": {
                     "default": 0,
@@ -1039,6 +1075,8 @@
             },
             "required": [
               "name",
+              "action_name",
+              "notes",
               "template",
               "enabled",
               "conditions",
@@ -37475,9 +37513,284 @@
       }
     },
     "/api/v1/organizations/{org}/automations/{id}": {
+      "get": {
+        "summary": "GET /organizations/:org/automations/:id",
+        "operationId": "workspace_get__organizations__org_automations__id",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ]
+      },
       "patch": {
         "summary": "PATCH /organizations/:org/automations/:id",
         "operationId": "workspace_patch__organizations__org_automations__id",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Runtime-validated by Zod schemas in src/platform; examples and fields documented in docs/API.md"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/automations/{id}/take-ownership": {
+      "post": {
+        "summary": "POST /organizations/:org/automations/:id/take-ownership",
+        "operationId": "workspace_post__organizations__org_automations__id_take_ownership",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Runtime-validated by Zod schemas in src/platform; examples and fields documented in docs/API.md"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/automations/{id}/process": {
+      "post": {
+        "summary": "POST /organizations/:org/automations/:id/process",
+        "operationId": "workspace_post__organizations__org_automations__id_process",
         "parameters": [
           {
             "name": "org",
@@ -37665,6 +37978,91 @@
         "parameters": [
           {
             "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organizations/{org}/automation-runs/{id}": {
+      "get": {
+        "summary": "GET /organizations/:org/automation-runs/:id",
+        "operationId": "workspace_get__organizations__org_automation_runs__id",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
             "in": "path",
             "required": true,
             "schema": {

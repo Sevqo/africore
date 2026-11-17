@@ -19,9 +19,16 @@ import {
 } from './intelligence';
 import {
   automationTemplates,
+  automationDirectory,
+  automationDetail,
+  automationRequiredServices,
+  automationRunDirectory,
+  automationRunDetail,
   createAutomation,
   setAutomation,
+  takeAutomationOwnership,
   runAutomations,
+  runScheduledAutomation,
   notificationPreferences,
   requestApproval,
   decideApproval,
@@ -49,6 +56,7 @@ import {
 } from './integrations';
 import { askAssistant } from './assistant';
 import { emit } from './events';
+import { crmConfiguration } from './crm-configuration';
 export const operations = Router();
 const pagination = (q: any) =>
   z
@@ -181,14 +189,58 @@ operations.post(
 operations.get(
   '/organizations/:org/automations/templates',
   route(async (req, res) => {
-    await access(req);
+    const a = await access(req),
+      [entitlements, profile] = await Promise.all([
+        dbAll(
+          'SELECT e.service_id,e.status,s.enabled FROM ac_service_entitlements e JOIN ac_services s ON s.id=e.service_id WHERE e.org_id=? AND e.environment=?',
+          [a.org, a.environment],
+        ),
+        dbGet('SELECT currency,timezone FROM ac_profiles WHERE user_id=?', [a.actor]),
+      ]),
+      active = new Set(
+        entitlements.filter((item) => item.enabled && item.status === 'active').map((item) => item.service_id),
+      ),
+      templates = automationTemplates.map((template) => {
+        const source_services = [...template.required_services],
+          required_services = ['automations', ...source_services],
+          default_action_required_services = automationRequiredServices(template.id);
+        return {
+          ...template,
+          source_services,
+          required_services,
+          unavailable_services: required_services.filter((service) => !active.has(service)),
+          available: required_services.every((service) => active.has(service)),
+          default_action_required_services,
+          default_action_unavailable_services: default_action_required_services.filter((service) => !active.has(service)),
+          default_action_available: default_action_required_services.every((service) => active.has(service)),
+        };
+      }),
+      crm_stages = active.has('crm') ? (await crmConfiguration(a)).stages : [];
     res.json({
-      data: automationTemplates,
+      data: templates,
+      crm_stages,
       available_actions: [
         'in_app_notification',
         'create_crm_follow_up',
         'replenishment_suggestion',
+        'skip',
       ],
+      action_services: {
+        in_app_notification: [],
+        create_crm_follow_up: ['crm'],
+        replenishment_suggestion: ['inventory'],
+        skip: [],
+      },
+      profile: {
+        currency: profile?.currency || 'KES',
+        timezone: profile?.timezone || 'Africa/Nairobi',
+      },
+      execution: {
+        worker_poll_seconds: 15,
+        maximum_candidates_per_pass: 50,
+        external_delivery: 'not_configured',
+        timing_notice: 'The existing worker may sleep on free hosting; scheduled delivery is not guaranteed.',
+      },
       external_delivery: 'not_configured',
     });
   }),
@@ -197,9 +249,26 @@ operations.get(
   '/organizations/:org/automations',
   route(async (req, res) => {
     const a = await access(req, 'finance'),
-      p = pagination(req.query);
-    res.json({ data: await list(a, 'automations', p.limit, p.offset), ...p });
+      q = z.object({
+        limit: z.coerce.number().int().min(1).max(100).default(50),
+        offset: z.coerce.number().int().min(0).default(0),
+        search: z.string().trim().max(120).optional(),
+        state: z.enum(['enabled', 'paused']).optional(),
+        template: z.string().max(80).optional(),
+        trigger: z.string().max(100).optional(),
+        source: z.string().max(80).optional(),
+        frequency: z.enum(['daily', 'weekly']).optional(),
+        owner: z.string().uuid().optional(),
+        sort: z.enum(['updated', 'name', 'runs']).default('updated'),
+      }).parse(req.query);
+    res.json(await automationDirectory(a, q));
   }),
+);
+operations.get(
+  '/organizations/:org/automations/:id',
+  route(async (req, res) =>
+    res.json(await automationDetail(await access(req, 'finance'), String(req.params.id))),
+  ),
 );
 operations.post(
   '/organizations/:org/automations',
@@ -230,6 +299,18 @@ operations.patch(
   }),
 );
 operations.post(
+  '/organizations/:org/automations/:id/take-ownership',
+  route(async (req, res) =>
+    res.json(await takeAutomationOwnership(await access(req, 'finance'), String(req.params.id))),
+  ),
+);
+operations.post(
+  '/organizations/:org/automations/:id/process',
+  route(async (req, res) =>
+    res.json(await runScheduledAutomation(await access(req, 'finance'), String(req.params.id))),
+  ),
+);
+operations.post(
   '/organizations/:org/automations/process',
   route(async (req, res) => res.json(await runAutomations(await access(req, 'finance')))),
 );
@@ -237,15 +318,26 @@ operations.get(
   '/organizations/:org/automation-runs',
   route(async (req, res) => {
     const a = await access(req, 'finance'),
-      p = pagination(req.query);
-    res.json({
-      data: await dbAll(
-        'SELECT * FROM ac2_runs WHERE org_id=? AND environment=? ORDER BY created_at DESC LIMIT ? OFFSET ?',
-        [a.org, a.environment, p.limit, p.offset],
-      ),
-      ...p,
-    });
+      q = z.object({
+        limit: z.coerce.number().int().min(1).max(100).default(50),
+        offset: z.coerce.number().int().min(0).default(0),
+        search: z.string().trim().max(120).optional(),
+        status: z.enum(['pending', 'succeeded', 'dead_letter', 'cancelled']).optional(),
+        workflow_id: z.string().uuid().optional(),
+        from: z.string().date().optional(),
+        to: z.string().date().optional(),
+      }).parse(req.query);
+    if (q.from && q.to && q.from > q.to) fail(400, 'From date must be before To date');
+    if (q.from && q.to && Date.parse(q.to + 'T00:00:00Z') - Date.parse(q.from + 'T00:00:00Z') > 366 * 86400000)
+      fail(400, 'Execution history date range is limited to 366 days');
+    res.json(await automationRunDirectory(a, q));
   }),
+);
+operations.get(
+  '/organizations/:org/automation-runs/:id',
+  route(async (req, res) =>
+    res.json(await automationRunDetail(await access(req, 'finance'), String(req.params.id))),
+  ),
 );
 operations.get(
   '/organizations/:org/notifications',

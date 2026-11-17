@@ -84,10 +84,14 @@ bind(
   [
     'GET /automations/templates',
     'GET /automations',
+    'GET /automations/:id',
     'POST /automations',
     'PATCH /automations/:id',
+    'POST /automations/:id/take-ownership',
+    'POST /automations/:id/process',
     'POST /automations/process',
     'GET /automation-runs',
+    'GET /automation-runs/:id',
   ],
 );
 bind(

@@ -14,13 +14,307 @@ import { movementInput } from '../inventory/contracts';
 export { automationTemplates, automationSchema } from './contracts';
 import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
-import { dbAll, dbGet, dbRun, dbSavepoint } from '../db';
+import { dbAll, dbGet, dbRun, dbSavepoint, isPostgres } from '../db';
 import { Access, audit, fail } from '../platform/auth';
 import { permitted } from '../platform/domain';
 import { now, hash } from '../platform/crypto';
 import { all, atomic, change, create, day, addDays, get, legacy } from './store';
 import { emit } from './events';
 import { requireServices, checkLimits, recordUsage } from '../marketplace/engine';
+
+const actionServices: Record<string, string> = {
+  create_crm_follow_up: 'crm',
+  replenishment_suggestion: 'inventory',
+};
+export function automationRequiredServices(template: string, configuration?: any) {
+  const source = automationTemplates.find((candidate) => candidate.id === template);
+  const actions = [
+    ...(configuration?.fallback_action ? [configuration.fallback_action] : [workflowAction(template)]),
+    ...(configuration?.branches || []).map((branch: any) => branch.action),
+  ];
+  return [
+    ...new Set([
+      'automations',
+      ...(source?.required_services || []),
+      ...actions.map((action) => actionServices[action]).filter(Boolean),
+    ]),
+  ];
+}
+async function requireAutomationServices(a: Access, template: string, configuration?: any) {
+  for (const service of automationRequiredServices(template, configuration))
+    await requireServices(a, [service]);
+}
+
+/** Scoped rule directory. Filters run before pagination and counts cover the full filtered result. */
+export async function automationDirectory(
+  a: Access,
+  query: { limit: number; offset: number; search?: string; state?: string; template?: string; trigger?: string; source?: string; frequency?: string; owner?: string; sort?: string },
+) {
+  const where = ["org_id=?", "environment=?", "kind='automations'"],
+    values: unknown[] = [a.org, a.environment],
+    enabled = isPostgres ? "data::jsonb->>'enabled'" : "json_extract(data,'$.enabled')",
+    templateValue = isPostgres ? "data::jsonb->>'template'" : "json_extract(data,'$.template')";
+  if (query.state === 'enabled' || query.state === 'paused') {
+    where.push(enabled + '=?');
+    values.push(isPostgres ? String(query.state === 'enabled') : query.state === 'enabled' ? 1 : 0);
+  }
+  if (query.template) {
+    where.push(templateValue + '=?');
+    values.push(query.template);
+  }
+  if (query.owner) {
+    where.push((isPostgres ? "data::jsonb->>'created_by'" : "json_extract(data,'$.created_by')") + '=?');
+    values.push(query.owner);
+  }
+  if (query.source) {
+    const ids = automationTemplates.filter((item) => item.category === query.source).map((item) => item.id);
+    if (!ids.length) return { data: [], limit: query.limit, offset: query.offset, total: 0, summary: { total: 0, enabled: 0, paused: 0, scheduled: 0, enabled_scheduled: 0 } };
+    where.push(templateValue + ' IN (' + ids.map(() => '?').join(',') + ')');
+    values.push(...ids);
+  }
+  if (query.trigger) {
+    const ids = automationTemplates.filter((item) => item.trigger === query.trigger).map((item) => item.id);
+    if (!ids.length) return { data: [], limit: query.limit, offset: query.offset, total: 0, summary: { total: 0, enabled: 0, paused: 0, scheduled: 0, enabled_scheduled: 0 } };
+    where.push(templateValue + ' IN (' + ids.map(() => '?').join(',') + ')');
+    values.push(...ids);
+  }
+  if (query.frequency) {
+    where.push((isPostgres ? "data::jsonb->'schedule'->>'frequency'" : "json_extract(data,'$.schedule.frequency')") + '=?');
+    values.push(query.frequency);
+    const scheduledIds = automationTemplates.filter((item) => item.trigger === 'schedule').map((item) => item.id);
+    where.push((isPostgres ? "data::jsonb->>'template'" : "json_extract(data,'$.template')") + ' IN (' + scheduledIds.map(() => '?').join(',') + ')');
+    values.push(...scheduledIds);
+  }
+  if (query.search) {
+    where.push("LOWER(data) LIKE ? ESCAPE '\\'");
+    values.push('%' + query.search.toLowerCase().replace(/[\\%_]/g, '\\$&') + '%');
+  }
+  const filter = where.join(' AND '),
+    ownerId = isPostgres ? "o.data::jsonb->>'created_by'" : "json_extract(o.data,'$.created_by')",
+    orderBy = query.sort === 'name'
+      ? 'LOWER(' + (isPostgres ? "o.data::jsonb->>'name'" : "json_extract(o.data,'$.name')") + ') ASC,o.id ASC'
+      : query.sort === 'runs'
+        ? 'run_count DESC,o.updated_at DESC,o.id DESC'
+        : 'o.updated_at DESC,o.id DESC',
+    scheduledIds = automationTemplates.filter((item) => item.trigger === 'schedule').map((item) => item.id),
+    scheduledPlaceholders = scheduledIds.map(() => '?').join(','),
+    enabledFlag = isPostgres ? "CASE WHEN data::jsonb->>'enabled'='true' THEN 1 ELSE 0 END" : "CASE WHEN json_extract(data,'$.enabled')=1 THEN 1 ELSE 0 END",
+    scheduledFlag = 'CASE WHEN ' + templateValue + ' IN (' + scheduledPlaceholders + ') THEN 1 ELSE 0 END',
+    [count, summary, pageRows] = await Promise.all([
+      dbGet('SELECT COUNT(*) AS total FROM ac2_objects WHERE ' + filter, values),
+      dbGet(
+        'SELECT COUNT(*) AS total,COALESCE(SUM(' + enabledFlag + '),0) AS enabled,COALESCE(SUM(1-' + enabledFlag + '),0) AS paused,COALESCE(SUM(' + scheduledFlag + '),0) AS scheduled,COALESCE(SUM((' + enabledFlag + ')*(' + scheduledFlag + ')),0) AS enabled_scheduled FROM ac2_objects WHERE org_id=? AND environment=? AND kind=\'automations\'',
+        [...scheduledIds, ...scheduledIds, a.org, a.environment],
+      ),
+      dbAll(
+        'SELECT o.id,o.data,o.version,o.created_at,o.updated_at,u.email AS owner_email,p.display_name AS owner_display_name,m.role AS owner_role,' +
+          "(SELECT r.status FROM ac2_runs r WHERE r.org_id=o.org_id AND r.environment=o.environment AND r.workflow_id=o.id ORDER BY r.created_at DESC,r.id DESC LIMIT 1) AS last_run_status," +
+          "(SELECT r.created_at FROM ac2_runs r WHERE r.org_id=o.org_id AND r.environment=o.environment AND r.workflow_id=o.id ORDER BY r.created_at DESC,r.id DESC LIMIT 1) AS last_run_at," +
+          "(SELECT COUNT(*) FROM ac2_runs r WHERE r.org_id=o.org_id AND r.environment=o.environment AND r.workflow_id=o.id) AS run_count " +
+          'FROM ac2_objects o LEFT JOIN ac_users u ON u.id=' + ownerId +
+          ' LEFT JOIN ac_profiles p ON p.user_id=' + ownerId +
+          ' LEFT JOIN ac_memberships m ON m.org_id=o.org_id AND m.user_id=' + ownerId +
+          ' WHERE ' + filter.replace(/\borg_id\b/g, 'o.org_id').replace(/\benvironment\b/g, 'o.environment').replace(/\bkind=/g, 'o.kind=').replace(/\bdata\b/g, 'o.data') +
+          ' ORDER BY ' + orderBy + ' LIMIT ? OFFSET ?',
+        [...values, query.limit, query.offset],
+      ),
+    ]);
+  return {
+    data: pageRows.map((row) => ({
+      ...JSON.parse(row.data),
+      id: row.id,
+      version: row.version,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      owner_name: row.owner_display_name || row.owner_email || 'Former workspace member',
+      owner_permission_revoked: !row.owner_role || !['owner', 'admin', 'finance'].includes(row.owner_role),
+      last_run_status: row.last_run_status || null,
+      last_run_at: row.last_run_at || null,
+      run_count: Number(row.run_count || 0),
+    })),
+    limit: query.limit,
+    offset: query.offset,
+    total: Number(count.total),
+    summary: {
+      total: Number(summary.total),
+      enabled: Number(summary.enabled),
+      paused: Number(summary.paused),
+      scheduled: Number(summary.scheduled),
+      enabled_scheduled: Number(summary.enabled_scheduled),
+    },
+  };
+}
+
+/** Rule detail adds the current owner's display and authority facts without exposing workspace peers. */
+export async function automationDetail(a: Access, id: string) {
+  const workflow = await get(a, id, 'automations'),
+    owner = workflow.created_by
+      ? await dbGet(
+          'SELECT u.email,p.display_name,m.role FROM ac_users u LEFT JOIN ac_profiles p ON p.user_id=u.id LEFT JOIN ac_memberships m ON m.user_id=u.id AND m.org_id=? WHERE u.id=?',
+          [a.org, workflow.created_by],
+        )
+      : null,
+    latestRun = await dbGet(
+      'SELECT status,created_at FROM ac2_runs WHERE org_id=? AND environment=? AND workflow_id=? ORDER BY created_at DESC,id DESC LIMIT 1',
+      [a.org, a.environment, id],
+    ),
+    count = await dbGet(
+      'SELECT COUNT(*) AS total FROM ac2_runs WHERE org_id=? AND environment=? AND workflow_id=?',
+      [a.org, a.environment, id],
+    );
+  return {
+    ...workflow,
+    owner_name: owner?.display_name || owner?.email || 'Former workspace member',
+    owner_permission_revoked: !owner?.role || !['owner', 'admin', 'finance'].includes(owner.role),
+    last_run_status: latestRun?.status || null,
+    last_run_at: latestRun?.created_at || null,
+    run_count: Number(count?.total || 0),
+  };
+}
+
+/** An authorized finance member can recover an automation after its prior owner loses authority. */
+export async function takeAutomationOwnership(a: Access, id: string) {
+  if (a.api) fail(403, 'A human member must take ownership');
+  return atomic(a, async () => {
+    const workflow = await get(a, id, 'automations');
+    if (workflow.created_by === a.actor) return workflow;
+    const priorOwner = workflow.created_by
+      ? await dbGet('SELECT role FROM ac_memberships WHERE org_id=? AND user_id=?', [a.org, workflow.created_by])
+      : null;
+    if (priorOwner && permitted(priorOwner.role, 'finance'))
+      fail(409, 'The current owner still has automation authority');
+    const updated = await change(a, workflow, { created_by: a.actor, enabled: false, last_error: 'owner_changed_review_required' });
+    await saveWorkflowVersion(a, updated);
+    await audit(a.org, a.actor, 'automation.owner_changed', id);
+    return updated;
+  });
+}
+
+function safeAutomationRunResult(status: string, raw: string | null) {
+  let result: any = null;
+  try {
+    result = raw ? JSON.parse(raw) : null;
+  } catch {
+    result = null;
+  }
+  if (status === 'succeeded' && result && typeof result === 'object') {
+    const safe: Record<string, unknown> = {};
+    if (['in_app_notification', 'create_crm_follow_up', 'replenishment_suggestion', 'skip'].includes(result.action))
+      safe.action = result.action;
+    for (const key of ['completed_units', 'notifications_created'])
+      if (Number.isInteger(result[key]) && result[key] >= 0 && result[key] <= 1000) safe[key] = result[key];
+    if (result.delivery_status === 'created' || result.delivery_status === 'suppressed_by_preferences_or_cap')
+      safe.delivery_status = result.delivery_status;
+    if (result.external_messages_sent === 0) safe.external_messages_sent = 0;
+    return Object.keys(safe).length ? safe : null;
+  }
+  if (status === 'cancelled' && ['source_changed', 'required_service_unavailable'].includes(result?.reason))
+    return { reason: result.reason };
+  if (status === 'dead_letter')
+    return { notice: 'Execution failed. Review the rule and service access before retrying.' };
+  return null;
+}
+
+/** Scoped run list with safe workflow labels and tenant-filtered search. */
+export async function automationRunDirectory(
+  a: Access,
+  query: { limit: number; offset: number; search?: string; status?: string; workflow_id?: string; from?: string; to?: string },
+) {
+  const where = ['r.org_id=?', 'r.environment=?'],
+    values: unknown[] = [a.org, a.environment];
+  if (query.status) {
+    where.push('r.status=?');
+    values.push(query.status);
+  }
+  if (query.workflow_id) {
+    where.push('r.workflow_id=?');
+    values.push(query.workflow_id);
+  }
+  if (query.search) {
+    const searchableName = isPostgres ? "COALESCE(w.data::jsonb->>'name','')" : "COALESCE(json_extract(w.data,'$.name'),'')";
+    where.push("LOWER(" + searchableName + ") LIKE ? ESCAPE '\\'");
+    values.push('%' + query.search.toLowerCase().replace(/[\\%_]/g, '\\$&') + '%');
+  }
+  if (query.from) {
+    where.push('r.created_at>=?');
+    values.push(query.from + 'T00:00:00.000Z');
+  }
+  if (query.to) {
+    where.push('r.created_at<?');
+    values.push(new Date(Date.parse(query.to + 'T00:00:00.000Z') + 86400000).toISOString());
+  }
+  const filter = where.join(' AND '),
+    [count, pageRows, grouped] = await Promise.all([
+      dbGet('SELECT COUNT(*) AS total FROM ac2_runs r LEFT JOIN ac2_objects w ON w.id=r.workflow_id AND w.org_id=r.org_id AND w.environment=r.environment WHERE ' + filter, values),
+      dbAll(
+        'SELECT r.id,r.workflow_id,r.status,r.attempts,r.next_at,r.result,r.created_at,r.updated_at,e.event_type,w.data AS workflow_data,b.version AS bound_version,v.configuration AS run_configuration FROM ac2_runs r LEFT JOIN ac2_objects w ON w.id=r.workflow_id AND w.org_id=r.org_id AND w.environment=r.environment LEFT JOIN ac2_events e ON e.id=r.trigger_key AND e.org_id=r.org_id AND e.environment=r.environment LEFT JOIN ac_workflow_run_versions b ON b.run_id=r.id AND b.workflow_id=r.workflow_id LEFT JOIN ac_workflow_versions v ON v.workflow_id=b.workflow_id AND v.version=b.version AND v.org_id=r.org_id AND v.environment=r.environment WHERE ' + filter + ' ORDER BY r.created_at DESC,r.id DESC LIMIT ? OFFSET ?',
+        [...values, query.limit, query.offset],
+      ),
+      dbAll('SELECT status,COUNT(*) AS total FROM ac2_runs WHERE org_id=? AND environment=? GROUP BY status', [a.org, a.environment]),
+    ]);
+  return {
+    data: pageRows.map((row) => {
+      const workflow = row.run_configuration
+        ? JSON.parse(row.run_configuration)
+        : row.workflow_data
+          ? JSON.parse(row.workflow_data)
+          : {};
+      return {
+        id: row.id,
+        short_id: String(row.id).slice(0, 8),
+        workflow_id: row.workflow_id,
+        workflow_name: workflow.name || 'Unavailable rule',
+        template: workflow.template || '',
+        action_name: workflow.action_name || workflow.fallback_action || workflowAction(workflow.template || ''),
+        trigger_label: row.event_type || (automationTemplates.find((item) => item.id === workflow.template)?.name || 'Scheduled review'),
+        status: row.status,
+        attempts: row.attempts,
+        next_at: row.next_at,
+        version: row.bound_version ? Number(row.bound_version) : null,
+        result: safeAutomationRunResult(row.status, row.result),
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        completed_at: ['succeeded', 'cancelled', 'dead_letter'].includes(row.status) ? row.updated_at : null,
+        retry_waiting: row.status === 'pending' && Number(row.attempts) > 0,
+      };
+    }),
+    limit: query.limit,
+    offset: query.offset,
+    total: Number(count.total),
+    summary: Object.fromEntries(grouped.map((row) => [row.status, Number(row.total)])),
+  };
+}
+
+export async function automationRunDetail(a: Access, id: string) {
+  const row = await dbGet(
+    'SELECT r.id,r.workflow_id,r.status,r.attempts,r.next_at,r.result,r.created_at,r.updated_at,e.event_type,w.data AS workflow_data,b.version AS bound_version,v.configuration AS run_configuration FROM ac2_runs r LEFT JOIN ac2_objects w ON w.id=r.workflow_id AND w.org_id=r.org_id AND w.environment=r.environment LEFT JOIN ac2_events e ON e.id=r.trigger_key AND e.org_id=r.org_id AND e.environment=r.environment LEFT JOIN ac_workflow_run_versions b ON b.run_id=r.id AND b.workflow_id=r.workflow_id LEFT JOIN ac_workflow_versions v ON v.workflow_id=b.workflow_id AND v.version=b.version AND v.org_id=r.org_id AND v.environment=r.environment WHERE r.id=? AND r.org_id=? AND r.environment=?',
+    [id, a.org, a.environment],
+  );
+  if (!row) fail(404, 'Run not found');
+  const workflow = row.run_configuration
+    ? JSON.parse(row.run_configuration)
+    : row.workflow_data
+      ? JSON.parse(row.workflow_data)
+      : {};
+  return {
+    id: row.id,
+    short_id: String(row.id).slice(0, 8),
+    workflow_id: row.workflow_id,
+    workflow_name: workflow.name || 'Unavailable rule',
+    template: workflow.template || '',
+    action_name: workflow.action_name || workflow.fallback_action || workflowAction(workflow.template || ''),
+    trigger_label: row.event_type || (automationTemplates.find((item) => item.id === workflow.template)?.name || 'Scheduled review'),
+    version: row.bound_version ? Number(row.bound_version) : null,
+    status: row.status,
+    attempts: row.attempts,
+    next_at: row.next_at,
+    result: safeAutomationRunResult(row.status, row.result),
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    completed_at: ['succeeded', 'cancelled', 'dead_letter'].includes(row.status) ? row.updated_at : null,
+    retry_waiting: row.status === 'pending' && Number(row.attempts) > 0,
+  };
+}
 
 export async function notify(
   a: Access,
@@ -99,11 +393,16 @@ export async function notify(
 }
 export async function createAutomation(a: Access, input: unknown) {
   const parsed = automationSchema.parse(input),
-    d = { ...parsed, action: parsed.action || workflowAction(parsed.template) };
+    d = {
+      ...parsed,
+      action: parsed.action || workflowAction(parsed.template),
+      schedule: {
+        ...parsed.schedule,
+        frequency: parsed.template === 'weekly_cashflow' ? 'weekly' : parsed.schedule.frequency,
+      },
+    };
   if (a.api) fail(403, 'A member must own an automation');
-  if (['customer_onboarding', 'crm_stage_follow_up', 'invoice_review_task'].includes(d.template))
-    await requireServices(a, ['crm']);
-  if (d.template === 'stock_replenishment') await requireServices(a, ['inventory']);
+  await requireAutomationServices(a, d.template, d);
   return atomic(a, async () => {
     const w = await create(a, 'automations', { ...d, created_by: a.actor });
     await saveWorkflowVersion(a, w);
@@ -113,6 +412,11 @@ export async function createAutomation(a: Access, input: unknown) {
 export async function setAutomation(a: Access, id: string, enabled: boolean) {
   return atomic(a, async () => {
     const w = await get(a, id, 'automations');
+    if (enabled) {
+      const owner = await dbGet('SELECT role FROM ac_memberships WHERE org_id=? AND user_id=?', [a.org, w.created_by]);
+      if (!owner || !permitted(owner.role, 'finance')) fail(409, 'Automation owner no longer has the required authority');
+      await requireAutomationServices(a, w.template, w);
+    }
     const result = await change(a, w, { enabled });
     await saveWorkflowVersion(a, result);
     await audit(a.org, a.actor, enabled ? 'automation.resumed' : 'automation.paused', id);
@@ -154,7 +458,7 @@ export async function notificationPreferences(a: Access, input: unknown) {
       : create(a, 'notification_preferences', { ...d, user_id: a.actor });
   });
 }
-async function candidates(a: Access, w: any, at: Date) {
+async function candidates(a: Access, w: any, at: Date, manualSchedule = false) {
   const template = automationTemplates.find((t) => t.id === w.template)!;
   if (template.trigger !== 'schedule')
     return (
@@ -177,7 +481,7 @@ async function candidates(a: Access, w: any, at: Date) {
         hourCycle: 'h23',
       }).format(at),
     );
-  if (hour < w.schedule.hour) return [];
+  if (!manualSchedule && hour < w.schedule.hour) return [];
   const weekly = w.schedule.frequency === 'weekly' || w.template === 'weekly_cashflow';
   const key = weekly
     ? new Date(
@@ -241,11 +545,51 @@ async function candidates(a: Access, w: any, at: Date) {
     ).map((c) => ({ key: key + ':' + c.id, resource_id: c.id, payload: { id: c.id } }));
   return [{ key, resource_id: undefined, payload: {} }];
 }
-export async function runAutomations(a: Access, at = new Date()) {
+/** Run one enabled scheduled rule on demand, without waiting for its local target hour. */
+export async function runScheduledAutomation(a: Access, workflowId: string) {
+  const workflow = await get(a, workflowId, 'automations'),
+    template = automationTemplates.find((item) => item.id === workflow.template);
+  if (template?.trigger !== 'schedule') fail(400, 'Only scheduled automations can be run manually');
+  if (!workflow.enabled) fail(409, 'Enable the scheduled automation before running it manually');
+  const owner = await dbGet('SELECT role FROM ac_memberships WHERE org_id=? AND user_id=?', [
+    a.org,
+    workflow.created_by,
+  ]);
+  if (!owner || !permitted(owner.role, 'finance'))
+    fail(409, 'The automation owner no longer has finance authority');
+  await requireAutomationServices(
+    { ...a, actor: workflow.created_by, role: owner.role, api: false },
+    workflow.template,
+    workflow,
+  );
+  return {
+    ...(await runAutomations(a, new Date(), workflowId, true, workflow.version)),
+    workflow_id: workflowId,
+    manual: true,
+  };
+}
+
+export async function runAutomations(
+  a: Access,
+  at = new Date(),
+  workflowId?: string,
+  manualSchedule = false,
+  expectedWorkflowVersion?: number,
+) {
   return atomic(a, async () => {
     await requireServices(a, ['automations']);
-    await expireApprovals(a, at);
-    const workflows = await all(a, 'automations');
+    if (!workflowId) await expireApprovals(a, at);
+    const workflows = (await all(a, 'automations')).filter(
+      (workflow) => !workflowId || workflow.id === workflowId,
+    );
+    if (workflowId && manualSchedule) {
+      const selected = workflows[0],
+        selectedTemplate = selected && automationTemplates.find((item) => item.id === selected.template);
+      if (selectedTemplate?.trigger !== 'schedule')
+        fail(409, 'The selected automation is no longer a scheduled action');
+      if (expectedWorkflowVersion !== undefined && selected.version !== expectedWorkflowVersion)
+        fail(409, 'The scheduled action changed; reload it before running manually');
+    }
     let queued = 0;
     for (const w of workflows.filter((w) => w.enabled)) {
       const member = await dbGet('SELECT role FROM ac_memberships WHERE org_id=? AND user_id=?', [
@@ -266,7 +610,27 @@ export async function runAutomations(a: Access, at = new Date()) {
         });
         continue;
       }
-      for (const trigger of await candidates(a, w, at)) {
+      const owner = { ...a, actor: w.created_by, role: member.role, api: false };
+      try {
+        await requireAutomationServices(owner, w.template, w);
+      } catch {
+        const paused = await change(a, w, {
+          enabled: false,
+          last_error: 'required_service_unavailable',
+        });
+        await saveWorkflowVersion(a, paused);
+        await audit(a.org, w.created_by, 'automation.paused_missing_service', w.id);
+        await notify(a, {
+          category: 'automation_failures',
+          title: 'Automation paused',
+          body: 'A required service is inactive. Review service access and the rule before re-enabling it.',
+          resource_id: w.id,
+          key: 'service:' + w.id + ':' + w.version,
+          user_id: w.created_by,
+        });
+        continue;
+      }
+      for (const trigger of await candidates(a, w, at, manualSchedule)) {
         if (trigger.payload.currency && trigger.payload.currency !== w.conditions.currency)
           continue;
         if (
@@ -300,8 +664,10 @@ export async function runAutomations(a: Access, at = new Date()) {
       }
     }
     const runs = await dbAll(
-      "SELECT * FROM ac2_runs WHERE org_id=? AND environment=? AND status='pending' AND next_at<=? ORDER BY created_at LIMIT 50",
-      [a.org, a.environment, at.toISOString()],
+      "SELECT * FROM ac2_runs WHERE org_id=? AND environment=? AND status='pending' AND next_at<=?" +
+        (workflowId ? ' AND workflow_id=?' : '') +
+        ' ORDER BY created_at LIMIT 50',
+      [a.org, a.environment, at.toISOString(), ...(workflowId ? [workflowId] : [])],
     );
     for (const run of runs) {
       const w = await get(a, run.workflow_id, 'automations');
@@ -345,6 +711,19 @@ export async function runAutomations(a: Access, at = new Date()) {
           now(),
           run.id,
         ]);
+        continue;
+      }
+      try {
+        await requireAutomationServices(
+          { ...a, actor: w.created_by, role: member.role, api: false },
+          w.template,
+          w,
+        );
+      } catch {
+        await dbRun(
+          "UPDATE ac2_runs SET status='cancelled',result=?,updated_at=? WHERE id=? AND org_id=? AND environment=?",
+          [JSON.stringify({ reason: 'required_service_unavailable' }), now(), run.id, a.org, a.environment],
+        );
         continue;
       }
       try {
@@ -999,21 +1378,22 @@ export async function saveWorkflowVersion(a: Access, w: any) {
 }
 export async function editAutomation(a: Access, id: string, input: unknown) {
   const d = workflowEditInput.parse(input);
+  const configuration = {
+    ...d.configuration,
+    schedule: {
+      ...d.configuration.schedule,
+      frequency: d.configuration.template === 'weekly_cashflow' ? 'weekly' : d.configuration.schedule.frequency,
+    },
+  };
   if (a.api) fail(403, 'A human member must own a workflow change');
   return atomic(a, async () => {
     const w = await get(a, id, 'automations');
     if (w.version !== d.expected_version) fail(409, 'Workflow changed; reload before editing');
     await saveWorkflowVersion(a, w);
-    if (
-      ['customer_onboarding', 'crm_stage_follow_up', 'invoice_review_task'].includes(
-        d.configuration.template,
-      )
-    )
-      await requireServices(a, ['crm']);
-    if (d.configuration.template === 'stock_replenishment') await requireServices(a, ['inventory']);
+    await requireAutomationServices(a, configuration.template, configuration);
     const result = await change(a, w, {
-      ...d.configuration,
-      action: workflowAction(d.configuration.template),
+      ...configuration,
+      action: workflowAction(configuration.template),
     });
     await saveWorkflowVersion(a, result);
     await audit(a.org, a.actor, 'automation.version_updated', id);
@@ -1033,9 +1413,7 @@ export async function previewAutomation(a: Access, id: string) {
   if (!member || !permitted(member.role, 'finance'))
     fail(409, 'Workflow owner no longer has the required authority');
   const owner = { ...a, actor: w.created_by, role: member.role, api: false };
-  if (['customer_onboarding', 'crm_stage_follow_up', 'invoice_review_task'].includes(w.template))
-    await requireServices(owner, ['crm']);
-  if (w.template === 'stock_replenishment') await requireServices(owner, ['inventory']);
+  await requireAutomationServices(owner, w.template, w);
   const template = automationTemplates.find((t) => t.id === w.template);
   if (!template) fail(409, 'Unsupported workflow template');
   const matches = (await candidates(owner, w, new Date())).filter(

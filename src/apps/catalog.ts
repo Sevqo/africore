@@ -398,10 +398,13 @@ export const appCatalog: AppDefinition[] = [
     optional: ['work'],
     navigation: [
       { label: 'Dashboard', section: 'dashboard' },
-      { label: 'Workflows', section: 'Automations' },
-      { label: 'Execution history', section: 'runs' },
+      { label: 'Automation Rules', section: 'rules' },
+      { label: 'Scheduled Actions', section: 'scheduled' },
+      { label: 'Execution History', section: 'runs' },
+      { label: 'Templates', section: 'templates' },
       { label: 'Private project workflows', section: 'private-work' },
       { label: 'Approvals', section: 'Approvals' },
+      { label: 'Configuration', section: 'configuration' },
     ],
     documentation: '/products/automations',
     setup: [

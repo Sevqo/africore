@@ -188,10 +188,15 @@ connected.get(
     res.json({
       data: (
         await dbAll(
-          'SELECT version,actor,configuration,created_at FROM ac_workflow_versions WHERE workflow_id=? AND org_id=? AND environment=? ORDER BY version DESC',
+          'SELECT v.version,v.actor,u.email,p.display_name,v.configuration,v.created_at FROM ac_workflow_versions v LEFT JOIN ac_users u ON u.id=v.actor LEFT JOIN ac_profiles p ON p.user_id=v.actor WHERE v.workflow_id=? AND v.org_id=? AND v.environment=? ORDER BY v.version DESC',
           [String(req.params.id), a.org, a.environment],
         )
-      ).map((r) => ({ ...r, configuration: JSON.parse(r.configuration) })),
+      ).map((r) => ({
+        version: r.version,
+        actor_name: r.display_name || r.email || (r.actor === 'stage2_worker' ? 'Automation worker' : 'Workspace member'),
+        configuration: JSON.parse(r.configuration),
+        created_at: r.created_at,
+      })),
     });
   }),
 );

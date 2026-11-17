@@ -19,7 +19,7 @@ the relevant source paths. Earlier focused HR findings remain in `notes/hr.md`.
 | Module | Odoo path root | Status | Notes | AfriCore relevance |
 | --- | --- | --- | --- | --- |
 | `base` | `odoo-reference/odoo/addons/base` | read | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | Shared ORM metadata, actions, menus, attachments and security architecture |
-| `base_automation` | `odoo-reference/addons/base_automation` | read | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | AfriCore Automations |
+| `base_automation` | `odoo-reference/addons/base_automation` | read | [source comparison](notes/base_automation.md) | AfriCore Automations |
 | `contacts` | `odoo-reference/addons/contacts` | skimmed | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | Business ID/contact distinction |
 | `account` | `odoo-reference/addons/account` | read | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | AfriCore Accounting and Finance concepts |
 | `crm` | `odoo-reference/addons/crm` | read | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | AfriCore CRM |

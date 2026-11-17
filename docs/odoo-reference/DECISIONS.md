@@ -31,6 +31,14 @@ decided, and why. An entry here is authoritative for future sessions; a note in
 
 ## Log
 
+### D-002 — Keep automations bounded and run scheduled actions through the existing worker
+- Date: 2026-11-17
+- Status: accepted
+- Evidence: `odoo-reference/addons/base_automation/models/base_automation.py`, `odoo-reference/addons/base_automation/views/base_automation_views.xml`, `odoo-reference/odoo/addons/base/models/ir_cron.py`, and `odoo-reference/odoo/addons/base/views/ir_cron_views.xml` (+ `RESEARCH_LOG.md`, Automation Rules and Scheduled Actions entry)
+- Constraint: automation side effects must remain workspace-scoped, finance-authorized, service-checked, audited, idempotent and safe to retry; the application must not execute user code or claim schedule guarantees its worker cannot meet.
+- Decision: use a closed registry of supported triggers, conditions and actions over AfriCore's durable event/run store. Manual schedule execution may evaluate only the selected saved, enabled scheduled rule and must use the existing worker, ownership checks, service checks and natural-period deduplication. Do not add an independent scheduler, arbitrary code/SQL, unsupported external messaging or financial actions.
+- Consequences: the UI can reproduce Odoo's record structure and **Run Manually** placement while describing AfriCore's actual polling semantics. No exact next-call time is shown for per-resource schedule candidates. The manual-run endpoint must be route-authorized, scoped, version-checked and regression-tested; time-sensitive use remains subject to worker uptime and polling delay.
+
 ### D-001 — Keep analytics aggregates registry-driven and source-authorized
 - Date: 2026-11-16
 - Status: accepted
