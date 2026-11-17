@@ -44,17 +44,8 @@ COPY website/package.json website/package-lock.json ./
 RUN npm ci
 COPY website ./
 COPY dashboard/shared /app/dashboard/shared
-# Pure shared browser/backend contracts; no server credentials or DB modules.
-COPY src/platform/password-strength.ts /app/src/platform/password-strength.ts
-COPY src/marketplace/catalog.ts /app/src/marketplace/catalog.ts
-COPY src/apps/catalog.ts /app/src/apps/catalog.ts
-COPY src/erp/routes.ts /app/src/erp/routes.ts
-COPY src/erp/accounting.ts /app/src/erp/accounting.ts
-COPY src/inventory/quantity.ts /app/src/inventory/quantity.ts
-COPY src/finance/money.ts /app/src/finance/money.ts
-COPY src/pos/queries.ts /app/src/pos/queries.ts
-COPY src/common /app/src/common
-COPY src/services/statement/csv.ts /app/src/services/statement/csv.ts
+# Keep source contracts available to the website's source-level content tests.
+COPY src /app/src
 RUN npm run build
 
 # --- Production dependencies only ------------------------------------------
