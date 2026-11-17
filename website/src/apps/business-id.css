@@ -1,0 +1,299 @@
+.business-id-workspace {
+  --business-id-accent: #7b456f;
+  --business-id-teal: #147d80;
+  --business-id-line: #d8dadd;
+  color: #252831;
+}
+
+.business-id-workspace .passport-workspace {
+  display: grid;
+  gap: 0;
+  padding: 0;
+}
+
+.business-id-record-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  gap: 12px 24px;
+  align-items: center;
+  padding: 12px 18px 10px;
+  border-bottom: 1px solid var(--business-id-line);
+  background: #fff;
+}
+
+.business-id-record-title,
+.business-id-record-actions,
+.business-id-smart-buttons,
+.business-id-row-actions,
+.business-id-form-footer,
+.business-id-pagination,
+.business-id-pagination > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.business-id-record-title { flex-wrap: wrap; color: #6c7078; }
+.business-id-record-title button,
+.business-id-table-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--business-id-teal);
+  font: inherit;
+  cursor: pointer;
+}
+.business-id-record-title strong { color: #242831; font-size: 16px; font-weight: 600; }
+.business-id-record-actions { justify-content: flex-end; }
+.business-id-record-actions > button:last-child { min-width: 38px; font-size: 20px; }
+
+.business-id-smart-buttons {
+  grid-column: 1 / -1;
+  justify-content: center;
+  gap: 0;
+  overflow-x: auto;
+}
+.business-id-smart-button {
+  display: grid;
+  min-width: 142px;
+  padding: 8px 14px;
+  border: 1px solid var(--business-id-line);
+  border-right: 0;
+  background: #fff;
+  color: var(--business-id-accent);
+  text-align: left;
+  cursor: pointer;
+}
+.business-id-smart-button:first-child { border-radius: 4px 0 0 4px; }
+.business-id-smart-button:last-child { border-right: 1px solid var(--business-id-line); border-radius: 0 4px 4px 0; }
+.business-id-smart-button span { color: #353943; }
+.business-id-smart-button strong { font-size: 16px; }
+
+.business-id-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 18px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--business-id-line);
+  background: #f8f9fa;
+  scrollbar-width: thin;
+}
+.business-id-tabs button {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 9px 16px;
+  border: 1px solid transparent;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #41454e;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.business-id-tabs button[aria-current='page'] {
+  border-color: var(--business-id-line);
+  border-bottom-color: var(--business-id-accent);
+  background: #fff;
+  color: var(--business-id-accent);
+}
+
+.business-id-workspace .business-id-profile-document,
+.business-id-workspace .business-id-profile-edit,
+.business-id-workspace .business-id-passport-document,
+.business-id-workspace .business-id-register,
+.business-id-workspace .business-id-compact-form {
+  margin: 14px 18px;
+  padding: 20px 24px;
+  border: 1px solid var(--business-id-line);
+  background: #fff;
+}
+.business-id-company-heading { display: flex; align-items: center; gap: 22px; padding: 4px 0 24px; }
+.business-id-company-heading h2,
+.business-id-passport-document h2 { margin: 0 0 4px; font-size: clamp(24px, 3vw, 36px); font-weight: 400; }
+.business-id-company-heading p { margin: 0 0 10px; color: #737780; }
+.business-id-company-mark {
+  display: grid;
+  width: 120px;
+  height: 120px;
+  place-items: center;
+  border: 1px solid var(--business-id-line);
+  border-radius: 4px;
+  color: var(--business-id-accent);
+  background: #fbfbfc;
+  font-size: 48px;
+}
+.business-id-detail-columns,
+.business-id-edit-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px 42px;
+}
+.business-id-detail-columns dl { margin: 0; }
+.business-id-detail-columns dl > div {
+  display: grid;
+  grid-template-columns: minmax(130px, 34%) minmax(0, 1fr);
+  gap: 14px;
+  padding: 11px 4px;
+  border-bottom: 1px solid #eceef0;
+}
+.business-id-detail-columns dt { font-weight: 600; }
+.business-id-detail-columns dd { margin: 0; color: #626670; overflow-wrap: anywhere; }
+.business-id-overview-summary,
+.business-id-recent-activity,
+.business-id-passport-assurance,
+.business-id-credential-detail,
+.business-id-settings-group {
+  margin-top: 24px;
+  padding-top: 17px;
+  border-top: 1px solid var(--business-id-line);
+}
+.business-id-overview-summary h3,
+.business-id-recent-activity h3,
+.business-id-settings-group h3 { margin: 0 0 10px; font-size: 16px; }
+.business-id-overview-summary a,
+.business-id-overview-summary button { margin-right: 16px; }
+.business-id-overview-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin: 4px 0 22px;
+}
+.business-id-overview-metric {
+  display: grid;
+  gap: 6px;
+  min-height: 66px;
+  padding: 10px 12px;
+  border: 1px solid var(--business-id-line);
+  background: #fafbfc;
+}
+.business-id-overview-metric span { color: #626670; font-size: 12px; }
+.business-id-overview-metric strong { color: var(--business-id-accent); font-size: 20px; line-height: 1; }
+.business-id-overview-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 28px;
+}
+.business-id-overview-columns > section { min-width: 0; }
+.business-id-overview-columns h3 { margin: 8px 0 12px; font-size: 17px; }
+.business-id-overview-columns h4 { margin: 18px 0 8px; font-size: 14px; }
+.business-id-overview-columns .list-row { gap: 12px; }
+.business-id-overview-columns > section > button { margin: 8px 12px 0 0; }
+.business-id-review-warning,
+.business-id-help { color: #666b75; font-size: 13px; }
+.business-id-register-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: -20px -24px 14px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--business-id-line);
+}
+.business-id-register-toolbar h2 { margin: 0 0 4px; font-size: 19px; }
+.business-id-register-toolbar p { margin: 0; color: #6b7079; font-size: 13px; }
+.business-id-register .data-table-wrapper { overflow-x: auto; }
+.business-id-workspace .business-id-table { width: 100%; border-collapse: collapse; }
+.business-id-table th,
+.business-id-table td { padding: 10px 9px; border-bottom: 1px solid #dedfe2; text-align: left; vertical-align: middle; }
+.business-id-table th { background: #f7f8f9; font-weight: 600; white-space: nowrap; }
+.business-id-table td { min-width: 82px; }
+.business-id-table td small { display: block; margin-top: 4px; color: #777b83; font-size: 12px; }
+.business-id-table-link { font-weight: 600; text-align: left; }
+.business-id-row-actions { flex-wrap: wrap; }
+.business-id-row-actions button,
+.business-id-table td > button,
+.business-id-table details > summary { min-height: 34px; }
+.business-id-register-filters { display: grid; grid-template-columns: repeat(3, minmax(160px, 1fr)); gap: 14px; margin: 14px 0; }
+.business-id-register .field,
+.business-id-modal .field,
+.business-id-compact-form .field { display: grid; gap: 5px; margin: 10px 0; }
+.business-id-register input:not([type='checkbox']),
+.business-id-register select,
+.business-id-register textarea,
+.business-id-modal input:not([type='checkbox']),
+.business-id-modal select,
+.business-id-modal textarea,
+.business-id-compact-form input:not([type='checkbox']),
+.business-id-compact-form select,
+.business-id-compact-form textarea { width: 100%; min-height: 38px; padding: 7px 9px; border: 1px solid #cdd0d5; border-radius: 3px; background: #fff; color: inherit; }
+.business-id-modal textarea { min-height: 84px; resize: vertical; }
+.business-id-choice-list { margin: 15px 0; padding: 12px; border: 1px solid var(--business-id-line); }
+.business-id-choice-list legend { padding: 0 5px; font-weight: 600; }
+.business-id-choice-list .check-row { display: flex; gap: 9px; align-items: flex-start; padding: 7px 0; }
+.business-id-workspace .business-selector { display: grid; gap: 6px; }
+.business-id-selector,
+.business-id-selector > small { color: #666b75; }
+.business-id-modal .business-selector input,
+.business-id-modal .business-selector select { max-width: none; }
+
+.business-id-modal {
+  width: min(960px, calc(100vw - 40px));
+  max-height: min(88vh, 850px);
+  overflow: auto;
+  border: 1px solid #cfd1d4;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 10px 40px #0003;
+}
+.business-id-modal > header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--business-id-line);
+  background: #fff;
+}
+.business-id-modal > header h2 { margin: 0; font-size: 21px; }
+.business-id-modal > header button { border: 0; background: none; font-size: 28px; cursor: pointer; }
+.business-id-modal-form { padding: 16px 20px 20px; }
+.business-id-modal-form > footer,
+.business-id-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--business-id-line); }
+.business-id-pagination { margin: 12px 0 0; padding-bottom: 2px; }
+.business-id-share-link { display: grid; gap: 8px; margin-top: 16px; padding: 14px; border: 1px solid #cbdfe0; background: #f3fafa; }
+.business-id-share-link > span { color: #626670; font-size: 13px; }
+.business-id-share-link > div { display: flex; gap: 10px; }
+.business-id-settings-group ul { padding-left: 22px; color: #5f646c; }
+.business-id-settings-group li { margin: 7px 0; }
+.business-id-settings-state { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 10px 0; }
+.business-id-resource-error { display: flex; justify-content: space-between; gap: 12px; margin: 10px 18px; }
+.business-id-workspace :is(button, input, select, textarea):focus-visible { outline: 2px solid #16858a; outline-offset: 2px; }
+
+@media (max-width: 900px) {
+  .business-id-record-toolbar { grid-template-columns: 1fr; }
+  .business-id-record-actions { justify-content: flex-start; flex-wrap: wrap; }
+  .business-id-smart-buttons { justify-content: flex-start; }
+  .business-id-detail-columns,
+  .business-id-edit-columns { gap: 12px 20px; }
+  .business-id-overview-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .business-id-register-filters { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+}
+
+@media (max-width: 600px) {
+  .business-id-record-toolbar { padding: 10px 12px; }
+  .business-id-tabs { padding: 0 8px; }
+  .business-id-tabs button { padding: 9px 12px; }
+  .business-id-workspace .business-id-profile-document,
+  .business-id-workspace .business-id-profile-edit,
+  .business-id-workspace .business-id-passport-document,
+  .business-id-workspace .business-id-register,
+  .business-id-workspace .business-id-compact-form { margin: 10px 8px; padding: 14px 12px; }
+  .business-id-company-heading { align-items: flex-start; gap: 12px; }
+  .business-id-company-mark { width: 66px; height: 66px; flex: 0 0 66px; font-size: 30px; }
+  .business-id-detail-columns,
+  .business-id-edit-columns { grid-template-columns: 1fr; }
+  .business-id-overview-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .business-id-overview-columns { grid-template-columns: 1fr; gap: 12px; }
+  .business-id-detail-columns dl > div { grid-template-columns: minmax(110px, 38%) minmax(0, 1fr); gap: 8px; }
+  .business-id-register-toolbar { align-items: flex-start; flex-direction: column; margin: -14px -12px 12px; padding: 10px 12px; }
+  .business-id-register-filters { grid-template-columns: 1fr; }
+  .business-id-table { min-width: 760px; }
+  .business-id-modal { width: calc(100vw - 16px); max-height: 92vh; }
+  .business-id-modal-form { padding: 12px; }
+  .business-id-modal-form > footer,
+  .business-id-pagination { align-items: stretch; flex-direction: column; }
+  .business-id-modal-form > footer button,
+  .business-id-pagination button { min-height: 44px; }
+  .business-id-share-link > div { align-items: stretch; flex-direction: column; }
+}

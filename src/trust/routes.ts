@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { dbAll, dbGet, dbRun } from '../db';
 import { access, route, fail, audit, Access } from '../platform/auth';
 import { now, unseal } from '../platform/crypto';
-import { atomic } from '../operations/store';
+import { all as operationRecords, atomic } from '../operations/store';
+import { requireServices } from '../marketplace/engine';
 import { emit } from '../operations/events';
 import { schemaRegistry, passportInput, credentialTypes } from './contracts';
 import { flags, list, get, put, change, operator, decode, sandbox, origin } from './store';
@@ -197,6 +198,36 @@ trust.get(
   '/organizations/:org/trust/passport',
   route(async (req, res) => res.json(await passport(await access(req)))),
 );
+trust.get(
+  '/organizations/:org/trust/organizations',
+  route(async (req, res) => {
+    const a = await access(req, 'admin'),
+      q = z.string().trim().min(2).max(100).parse(req.query.q),
+      rows = await dbAll(
+        "SELECT * FROM ac3_objects WHERE kind='passport' AND environment=? ORDER BY updated_at DESC LIMIT 5000",
+        [a.environment],
+      ),
+      query = q.toLocaleLowerCase();
+    const data = rows
+      .map(decode)
+      .filter(
+        (p) =>
+          p.org_id !== a.org &&
+          p.public_profile === true &&
+          String(p.display_name || '').toLocaleLowerCase().includes(query),
+      )
+      .slice(0, 25)
+      .map((p) => ({
+        id: p.org_id,
+        display_name: p.display_name,
+        category: p.category,
+        industry: p.industry,
+        country: p.country,
+        verification_status: p.verification_status,
+      }));
+    res.json({ data, scope: 'public_profiles_in_current_environment', has_more: data.length === 25 });
+  }),
+);
 trust.post(
   '/organizations/:org/trust/passport',
   route(async (req, res) => res.status(201).json(await createPassport(await admin(req), req.body))),
@@ -204,8 +235,9 @@ trust.post(
 trust.patch(
   '/organizations/:org/trust/passport',
   route(async (req, res) => {
-    const a = await admin(req),
-      input = passportInput.partial().parse(req.body);
+    const a = await admin(req);
+    sandbox(a);
+    const input = passportInput.partial().parse(req.body);
     res.json(
       await atomic(a, async () => {
         const p = (await list(a, 'passport'))[0];
@@ -320,12 +352,12 @@ trust.get(
   '/organizations/:org/trust/issuers',
   route(async (req, res) => {
     const a = await access(req, 'admin');
-    const issuers = await dbAll('SELECT id FROM ac3_issuers WHERE org_id=? AND environment=?', [
-      a.org,
-      a.environment,
-    ]);
+    const issuers = await dbAll(
+      "SELECT id,org_id FROM ac3_issuers WHERE environment=? AND (org_id=? OR (status='approved_sandbox' AND ?='sandbox')) ORDER BY name",
+      [a.environment, a.org, a.environment],
+    );
     res.json({
-      data: await Promise.all(issuers.map((i) => issuerMetadata(i.id))),
+      data: await Promise.all(issuers.map(async (i) => ({ ...await issuerMetadata(i.id), can_manage: i.org_id === a.org }))),
     });
   }),
 );
@@ -399,11 +431,23 @@ trust.get(
   '/organizations/:org/trust/grants',
   route(async (req, res) => {
     const a = await access(req);
+    const rows = await dbAll(
+      'SELECT id,recipient_org,expires_at,revoked_at,consumed_at,one_time,created_at,data FROM ac3_grants WHERE org_id=? AND environment=? ORDER BY created_at DESC',
+      [a.org, a.environment],
+    );
     res.json({
-      data: await dbAll(
-        'SELECT id,recipient_org,expires_at,revoked_at,consumed_at,one_time,created_at FROM ac3_grants WHERE org_id=? AND environment=?',
-        [a.org, a.environment],
-      ),
+      data: rows.map((row) => {
+        const disclosure = JSON.parse(
+          unseal(row.data, JSON.stringify(['grant', a.org, a.environment, row.id])),
+        );
+        const { data: _sealedData, ...safe } = row;
+        return {
+          ...safe,
+          purpose: disclosure.purpose,
+          types: disclosure.types,
+          request_id: disclosure.request_id || null,
+        };
+      }),
       access: await list(a, 'share_access'),
     });
   }),
@@ -420,11 +464,26 @@ trust.get(
   '/organizations/:org/trust/history',
   route(async (req, res) => {
     const a = await access(req);
+    const query = z
+      .object({ page: z.coerce.number().int().min(1).max(100000).default(1), limit: z.coerce.number().int().min(1).max(100).default(50) })
+      .parse(req.query);
+    const scope = `org_id=? AND (action LIKE 'trust.%' OR action LIKE 'credential.%' OR action LIKE 'sharing.%' OR action LIKE 'issuer.%') AND (
+      EXISTS (SELECT 1 FROM ac3_objects o WHERE o.id=ac_audit.resource_id AND o.org_id=? AND o.environment=?) OR
+      EXISTS (SELECT 1 FROM ac3_credentials c WHERE c.id=ac_audit.resource_id AND c.org_id=? AND c.environment=?) OR
+      EXISTS (SELECT 1 FROM ac3_issuers i WHERE i.id=ac_audit.resource_id AND i.org_id=? AND i.environment=?) OR
+      EXISTS (SELECT 1 FROM ac3_grants g WHERE g.id=ac_audit.resource_id AND g.org_id=? AND g.environment=?))`;
+    const scopeArgs = [a.org, a.org, a.environment, a.org, a.environment, a.org, a.environment, a.org, a.environment];
+    const count = await dbGet('SELECT COUNT(*) AS total FROM ac_audit WHERE ' + scope, scopeArgs);
+    const offset = (query.page - 1) * query.limit;
     res.json({
       data: await dbAll(
-        "SELECT id,actor,action,resource_id,created_at FROM ac_audit WHERE org_id=? AND (action LIKE 'trust.%' OR action LIKE 'credential.%' OR action LIKE 'sharing.%' OR action LIKE 'issuer.%') ORDER BY created_at DESC LIMIT 200",
-        [a.org],
+        'SELECT id,actor,action,resource_id,created_at FROM ac_audit WHERE ' + scope + ' ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?',
+        [...scopeArgs, query.limit, offset],
       ),
+      page: query.page,
+      limit: query.limit,
+      total: Number(count?.total || 0),
+      has_more: offset + query.limit < Number(count?.total || 0),
     });
   }),
 );
@@ -601,44 +660,70 @@ trust.post(
 trust.get(
   '/organizations/:org/trust/sources',
   route(async (req, res) => {
-    const a = await access(req),
-      org = await dbGet('SELECT name FROM ac_organizations WHERE id=?', [a.org]);
-    const records = await dbAll(
-      "SELECT id,kind,data FROM ac_records WHERE org_id=? AND environment=? AND kind IN ('invoices','orders') ORDER BY created_at DESC LIMIT 100",
-      [a.org, a.environment],
-    );
-    const payments = await dbAll(
-      "SELECT id,provider_ref FROM ac_events WHERE org_id=? AND environment=? AND status='succeeded' ORDER BY created_at DESC LIMIT 100",
-      [a.org, a.environment],
-    );
-    const shipments = await (await import('../operations/store')).all(a, 'shipments');
-    const relations = await list(a, 'relationship', true);
-    const data = [
-      { kind: 'profile', id: a.org, label: org.name },
-      ...records.map((r) => ({
-        kind: r.kind === 'invoices' ? 'invoice' : 'order',
-        id: r.id,
-        label: JSON.parse(r.data).reference,
-      })),
-      ...payments.map((r) => ({
-        kind: 'payment',
-        id: r.id,
-        label: r.provider_ref,
-      })),
-      ...shipments.map((r) => ({
-        kind: 'shipment',
-        id: r.id,
-        label: r.tracking_reference,
-      })),
-      ...relations
-        .filter((r) => r.status === 'confirmed')
-        .map((r) => ({
-          kind: 'relationship',
-          id: r.id,
-          label: r.relationship,
-        })),
-    ];
-    res.json({ data: data.map((d) => ({ ...d, key: d.kind + ':' + d.id })) });
+    const a = await admin(req),
+      query = z.object({
+        kind: z.enum(['profile', 'payment', 'invoice', 'order', 'shipment', 'relationship']).default('profile'),
+        page: z.coerce.number().int().min(1).max(100000).default(1),
+        limit: z.coerce.number().int().min(1).max(50).default(25),
+      }).strict().parse(req.query),
+      requiredService: Record<string, string> = {
+        profile: 'passport', payment: 'payments', invoice: 'invoicing',
+        order: 'orders', shipment: 'fulfillment', relationship: 'trust_network',
+      };
+    try {
+      await requireServices(a, [requiredService[query.kind]], true);
+    } catch (error) {
+      if ((error as any).status !== 402) throw error;
+      res.json({
+        data: [], kind: query.kind, page: query.page, limit: query.limit,
+        total: 0, has_more: false, available: false,
+        required_service: requiredService[query.kind],
+        message: 'The source service is not available for this workspace.',
+      });
+      return;
+    }
+    const offset = (query.page - 1) * query.limit;
+    let rows: any[] = [], total = 0;
+    if (query.kind === 'profile') {
+      const org = await dbGet('SELECT id,name FROM ac_organizations WHERE id=?', [a.org]);
+      rows = org ? [{ id: org.id, kind: 'profile', label: org.name }] : [];
+      total = rows.length;
+    } else if (query.kind === 'invoice' || query.kind === 'order') {
+      const sourceKind = query.kind === 'invoice' ? 'invoices' : 'orders';
+      total = Number((await dbGet(
+        'SELECT COUNT(*) AS total FROM ac_records WHERE org_id=? AND environment=? AND kind=?',
+        [a.org, a.environment, sourceKind],
+      ))?.total || 0);
+      rows = await dbAll(
+        'SELECT id,data FROM ac_records WHERE org_id=? AND environment=? AND kind=? ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?',
+        [a.org, a.environment, sourceKind, query.limit, offset],
+      );
+      rows = rows.map((r) => ({ id: r.id, kind: query.kind, label: JSON.parse(r.data).reference }));
+    } else if (query.kind === 'payment') {
+      total = Number((await dbGet(
+        "SELECT COUNT(*) AS total FROM ac_events WHERE org_id=? AND environment=? AND status='succeeded'",
+        [a.org, a.environment],
+      ))?.total || 0);
+      rows = await dbAll(
+        "SELECT id,provider_ref AS label FROM ac_events WHERE org_id=? AND environment=? AND status='succeeded' ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?",
+        [a.org, a.environment, query.limit, offset],
+      );
+      rows = rows.map((r) => ({ ...r, kind: 'payment' }));
+    } else if (query.kind === 'shipment') {
+      const shipments = await operationRecords(a, 'shipments');
+      total = shipments.length;
+      rows = shipments.slice(offset, offset + query.limit).map((r) => ({ id: r.id, kind: 'shipment', label: r.tracking_reference }));
+    } else {
+      const relationships = (await list(a, 'relationship', true)).filter((r) => r.status === 'confirmed');
+      total = relationships.length;
+      rows = relationships.slice(offset, offset + query.limit).map((r) => ({ id: r.id, kind: 'relationship', label: r.relationship }));
+    }
+    res.json({
+      data: rows.map((d) => ({ ...d, key: d.kind + ':' + d.id })),
+      kind: query.kind, page: query.page, limit: query.limit, total,
+      has_more: offset + rows.length < total, available: true,
+      required_service: requiredService[query.kind],
+    });
   }),
 );
 trust.get(
@@ -700,6 +785,14 @@ trust.post(
         .parse(req.body),
       c = await credential(a, d.credential_id),
       report = await verifyCredential(c.token);
+    const holderPassport = (await list(a, 'passport'))[0];
+    report.subject_match = holderPassport &&
+      c.credential?.credentialSubject?.id === holderPassport.subject
+      ? 'matched_current_passport_subject'
+      : 'not_matched';
+    report.evidence_assurance = Number.isInteger(c.credential?.credentialSubject?.evidence?.assurance_level)
+      ? c.credential.credentialSubject.evidence.assurance_level
+      : 'unavailable';
     if (d.verify_anchor) {
       const proof = await proofFor(a, c.id);
       report.anchor =

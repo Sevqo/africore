@@ -174,6 +174,7 @@ bind(['blockchain'], ['GET /trust/credentials/:id/proof']);
 bind(
   ['trust_network'],
   [
+    'GET /trust/organizations',
     'GET /trust/relationships',
     'POST /trust/relationships',
     'POST /trust/relationships/:id/respond',

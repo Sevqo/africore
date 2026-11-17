@@ -20,7 +20,7 @@ the relevant source paths. Earlier focused HR findings remain in `notes/hr.md`.
 | --- | --- | --- | --- | --- |
 | `base` | `odoo-reference/odoo/addons/base` | read | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | Shared ORM metadata, actions, menus, attachments and security architecture |
 | `base_automation` | `odoo-reference/addons/base_automation` | read | [source comparison](notes/base_automation.md) | AfriCore Automations |
-| `contacts` | `odoo-reference/addons/contacts` | skimmed | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | Business ID/contact distinction |
+| `contacts` | `odoo-reference/addons/contacts` | read | [contacts.md](notes/contacts.md) | Business ID profile layout; contact model is not a passport or credential system |
 | `account` | `odoo-reference/addons/account` | read | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | AfriCore Accounting and Finance concepts |
 | `crm` | `odoo-reference/addons/crm` | read | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | AfriCore CRM |
 | `hr` | `odoo-reference/addons/hr` | deep-dive | [hr.md](notes/hr.md) | AfriCore People employees and departments |

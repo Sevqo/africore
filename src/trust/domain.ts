@@ -2,27 +2,82 @@ import { randomUUID, createHash } from 'node:crypto';
 import { z } from 'zod';
 import { dbAll, dbGet, dbRun } from '../db';
 import { Access, audit, fail } from '../platform/auth';
-import { hash, now } from '../platform/crypto';
+import { hash, now, unseal } from '../platform/crypto';
 import { atomic } from '../operations/store';
 import { record } from '../platform/payments';
 import { emit } from '../operations/events';
 import { entitlement, recordUsage, raiseAlerts } from '../marketplace/engine';
 import { passportInput, evidenceInput, identityInput, relationshipInput } from './contracts';
-import { list, get, put, change, sandbox, organization } from './store';
+import { list, get, put, change, sandbox, organization, decode } from './store';
 import { newKey, credentials } from './credentials';
 export async function passport(a: Access) {
   const p = (await list(a, 'passport'))[0];
   if (!p) return { passport: null };
-  const [evidence, creds, relations, requests, grants] = await Promise.all([
-    list(a, 'evidence'),
-    credentials(a),
-    list(a, 'relationship', true),
-    list(a, 'verification_request', true),
-    dbAll(
-      'SELECT id,recipient_org,expires_at,revoked_at,consumed_at,one_time,created_at FROM ac3_grants WHERE org_id=? AND environment=?',
-      [a.org, a.environment],
+  const errors: Record<string, string> = {};
+  async function independent<T>(key: string, task: Promise<T>, fallback: T): Promise<T> {
+    try {
+      return await task;
+    } catch (error) {
+      errors[key] = (error as Error).message;
+      return fallback;
+    }
+  }
+  const [evidence, creds, relations, requests, grants, reviews, disputes] = await Promise.all([
+    independent('evidence', list(a, 'evidence'), []),
+    independent('credentials', credentials(a), []),
+    independent('relationships', list(a, 'relationship', true), []),
+    independent('requests', list(a, 'verification_request', true), []),
+    independent(
+      'sharing',
+      dbAll(
+        'SELECT id,recipient_org,expires_at,revoked_at,consumed_at,one_time,created_at,data FROM ac3_grants WHERE org_id=? AND environment=?',
+        [a.org, a.environment],
+      ).then((rows) => rows.map((row) => {
+        const disclosure = JSON.parse(
+          unseal(row.data, JSON.stringify(['grant', a.org, a.environment, row.id])),
+        );
+        const { data: _sealedData, ...safe } = row;
+        return {
+          ...safe,
+          purpose: disclosure.purpose,
+          types: disclosure.types,
+          request_id: disclosure.request_id || null,
+        };
+      })),
+      [],
     ),
+    independent('identity_reviews', list(a, 'identity_review'), []),
+    independent('corrections', list(a, 'correction'), []),
   ]);
+  const peerIds = [...new Set([
+    ...relations.map((r) => r.org_id === a.org ? r.peer_org : r.org_id),
+    ...requests.map((r) => r.org_id === a.org ? r.peer_org : r.org_id),
+    ...grants.map((g: any) => g.recipient_org),
+  ].filter((id) => typeof id === 'string' && id !== a.org))].slice(0, 200);
+  const publicPeers = new Map<string, any>();
+  if (peerIds.length) {
+    try {
+      const peerRows = await dbAll(
+        `SELECT * FROM ac3_objects WHERE kind='passport' AND environment=? AND org_id IN (${peerIds.map(() => '?').join(',')})`,
+        [a.environment, ...peerIds],
+      );
+      for (const peer of peerRows.map(decode)) {
+        if (peer.public_profile === true)
+          publicPeers.set(peer.org_id, {
+            display_name: peer.display_name,
+            category: peer.category,
+            country: peer.country,
+            verification_status: peer.verification_status,
+          });
+      }
+    } catch (error) {
+      errors.counterparties = (error as Error).message;
+    }
+  }
+  const withCounterparty = (item: any, orgId: string) => ({
+    ...item,
+    counterparty_profile: publicPeers.get(orgId) || null,
+  });
   return {
     passport: p,
     credentials: creds.map(({ token, salt, credential, ...c }) => ({
@@ -30,12 +85,13 @@ export async function passport(a: Access) {
       claims: credential.credentialSubject,
     })),
     evidence,
-    relationships: relations,
-    requests,
-    grants,
-    index: evidenceIndex(evidence, relations),
-    identity_reviews: await list(a, 'identity_review'),
-    disputes: await list(a, 'correction'),
+    relationships: relations.map((r) => withCounterparty(r, r.org_id === a.org ? r.peer_org : r.org_id)),
+    requests: requests.map((r) => withCounterparty(r, r.org_id === a.org ? r.peer_org : r.org_id)),
+    grants: grants.map((g: any) => withCounterparty(g, g.recipient_org)),
+    index: errors.evidence || errors.relationships ? null : evidenceIndex(evidence, relations),
+    identity_reviews: reviews,
+    disputes,
+    errors,
     privacy: {
       public_profile: p.public_profile,
       raw_financial_records_public: false,
@@ -96,6 +152,7 @@ export async function collectEvidence(a: Access, input: unknown) {
   sandbox(a);
   const d = evidenceInput.parse(input);
   let source: any,
+    sourceLabel = '',
     facts: any = {},
     method = 'self_reported_record',
     limitations = 'No authoritative independent source verification.';
@@ -105,6 +162,7 @@ export async function collectEvidence(a: Access, input: unknown) {
       'SELECT id,name,profile,verification_status FROM ac_organizations WHERE id=?',
       [a.org],
     );
+    sourceLabel = source.name;
     facts = {
       country: JSON.parse(source.profile).country,
       display_name: source.name,
@@ -117,6 +175,7 @@ export async function collectEvidence(a: Access, input: unknown) {
       a.environment,
     ]);
     if (!source || source.status !== 'succeeded') fail(400, 'Successful provider event required');
+    sourceLabel = source.provider_ref;
     facts = {
       status: source.status,
       currency: source.currency,
@@ -128,6 +187,7 @@ export async function collectEvidence(a: Access, input: unknown) {
     limitations = 'Sandbox event; not real provider-verified business activity.';
   } else if (d.source_kind === 'shipment') {
     source = await (await import('../operations/store')).get(a, d.source_id, 'shipments');
+    sourceLabel = source.tracking_reference || 'Shipment record';
     facts = {
       status: source.status,
       assurance: source.delivery_assurance,
@@ -141,6 +201,7 @@ export async function collectEvidence(a: Access, input: unknown) {
     source = await get(a, d.source_id, 'relationship', true);
     if (source.status !== 'confirmed')
       fail(409, 'Authenticated counterparty confirmation required');
+    sourceLabel = String(source.relationship).replace(/_/g, ' ') + ' relationship';
     facts = {
       status: source.status,
       relationship: source.relationship,
@@ -151,6 +212,7 @@ export async function collectEvidence(a: Access, input: unknown) {
       'Separate accounts do not prove counterparties are independent or free of collusion.';
   } else {
     source = await record(a, d.source_id, d.source_kind === 'invoice' ? 'invoices' : 'orders');
+    sourceLabel = source.reference;
     facts = {
       status: source.status,
       payment_status: source.payment_status,
@@ -174,6 +236,7 @@ export async function collectEvidence(a: Access, input: unknown) {
   if (old) return { ...old, duplicate: true };
   const e = await put(a, 'evidence', {
     ...d,
+    source_label: sourceLabel,
     source_hash: sourceHash,
     facts,
     assurance_level: 0,

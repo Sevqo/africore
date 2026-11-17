@@ -1,15 +1,16 @@
 import { PassportWorkspace } from '../trust/PassportWorkspace';
+import './business-id.css';
 const sections: Record<string, string> = {
   dashboard: 'Overview',
-  profile: 'Business Identity',
-  verification: 'Verification Requests',
-  passport: 'Overview',
+  profile: 'Business Profile',
+  verification: 'Verification',
+  passport: 'Business Passport',
   credentials: 'Credentials',
-  evidence: 'Trust Evidence',
+  evidence: 'Evidence',
   sharing: 'Shared Access',
-  relationships: 'Business Network',
-  history: 'Activity History',
-  settings: 'Privacy & Security',
+  relationships: 'Relationships',
+  history: 'History',
+  settings: 'Settings',
 };
 /** An app over the existing holder, evidence, credential and consent services. */
 export function BusinessIDWorkspace({
@@ -25,28 +26,7 @@ export function BusinessIDWorkspace({
 }) {
   const [org, environment] = scope.split('\0');
   return (
-    <div className="apps-workspace">
-      <details className="panel identity-reading-guide">
-        <summary>How to read identity and verification</summary>
-        <p>
-          Installing this app does not make a business independently verified. These records retain
-          separate assurance states.
-        </p>
-        <div className="identity-assurance-guide">
-          <article>
-            <h3>Business profile</h3>
-            <p>Information reported by the business. Review its source and current status.</p>
-          </article>
-          <article>
-            <h3>Source evidence</h3>
-            <p>Supporting records have their own provenance and access permissions.</p>
-          </article>
-          <article>
-            <h3>Issuer credentials</h3>
-            <p>Credential integrity and current issuer authority are separate checks.</p>
-          </article>
-        </div>
-      </details>
+    <div className="apps-workspace business-id-workspace">
       <PassportWorkspace
         holderOnly
         key={scope}

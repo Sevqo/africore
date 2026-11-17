@@ -1115,3 +1115,115 @@ The supported Phase 2.12 implementation, source research and local automated gat
 | `git diff --check` | Passed; Git reported only working-tree LF-to-CRLF normalization notices |
 
 The three focused backend suites passed **84/84**. The full backend test suite and PostgreSQL integration were not run; a dedicated `TEST_DATABASE_URL` was not configured. All test API servers and databases were disposable local fixtures; no hosted service was contacted. No running AfriCore browser capture was made, so the seven screenshot comparisons and founder manual acceptance remain outstanding. No dependency was installed, no migration was created, and no commit, push or deploy occurred.
+
+## Checkpoint 2.14 — Business ID and Business Passport
+
+### Architecture and source research
+
+- Business ID remains a presentation and workflow surface over the existing Trust/Passport authority. It does not create a second organization or credential database. Passport, review, evidence, documents, credentials, issuer metadata, grants, verification requests, relationships and audit events continue to use the existing services and SQL adapters.
+- Odoo Contacts was inspected at local reference commit `36fef5806` (Odoo 20.0). Contacts extends shared `res.partner`; its visual pattern comes primarily from `odoo/addons/base/views/res_partner_views.xml` (`view_partner_form`): compact record controls, a button box, image/name, grouped fields and notebook tabs. The Contacts extension in `addons/contacts/models/res_partner.py` adds navigation, not digital identity verification. The focused findings are in `docs/odoo-reference/notes/contacts.md`.
+- Standards considered: [W3C Verifiable Credentials Data Model 2.0](https://www.w3.org/TR/vc-data-model/) and [Verifiable Credential Data Integrity 1.0](https://www.w3.org/TR/vc-data-integrity/) are Recommendations. The [Verifiable Credentials Overview](https://www.w3.org/TR/vc-overview/) is a Group Note, not a Recommendation. The implementation keeps claim data, signature integrity, issuer authority, reviewer judgment, registry verification, status and holder consent as separate assertions.
+- TypeScript/React, existing Express/TypeScript routes, SQL through current adapters, Zod input schemas, existing `jose` and key handling, current protected Documents and Trust APIs, and CSS are retained. No identity runtime, cryptographic algorithm, key store, organization store or contract was introduced.
+
+### Dependencies and operation readiness
+
+| Workflow | Existing authority and gate | Selector / availability behavior |
+| --- | --- | --- |
+| Profile and Passport | Passport service; workspace owner/admin mutations; separate private review state | Uses the active workspace Passport; public discoverability is opt-in and minimal. Blockchain is not needed to view or edit the basic profile. |
+| Identity review | Verification service and authorized Trust reviewer | Required legal name, jurisdiction, registration reference, representative statement, selected evidence and consent; reviewer decision remains separate from document upload. |
+| Evidence | Trust Evidence plus the source-specific service; owner/admin for source capture | Paginated, kind-specific choices for profile, successful payment, invoice, order, shipment and confirmed relationship; each source kind checks its service and current workspace scope. Unavailable services return an explicit unavailable state. |
+| Supporting documents | Protected Documents capability and verification service | Only pending/current reviews are offered; file type and 250 KB UI limit are shown; backend validation/encrypted storage remain authoritative. Malware scanning is not configured. |
+| Credentials and issuance requests | Credentials service; eligible approved sandbox issuer, issuer ownership/authorization, request and holder-consent constraints | Issuers are loaded from authorized server results; the UI filters eligible approved sandbox issuers and explains that a request does not itself issue a credential. |
+| Credential verification/status | Credentials plus verification API; optional proof lookup is separately gated | Verification uses existing signature/key/status checks. Expired, suspended or revoked states are not presented as currently valid. Blockchain proof remains optional and testnet-only. |
+| Sharing | Trust Sharing with credentials and named-recipient authorization/consent | Recipient is a searchable business selector; grant is limited to active credentials, purpose, expiry and one-time/reusable choice; matching inbound requests are selected from eligible records. The server rechecks policy and status. |
+| Relationships and business lookup | Trust Network; owner/admin mutations | Search only returns public-profile opt-ins in the current environment; relationship requests remain pending until the counterparty responds. |
+| History | Existing scoped audit/event records | Paginated records; a failed history read does not block unrelated profile or evidence operations. |
+| Optional proofs | Existing optional blockchain capability | Never activated automatically and never described as proof of legal identity. |
+
+### Defects fixed and application behavior
+
+- Replaced the prior wrapper with ten real sections and URL/browser navigation: **Overview, Business Profile, Verification, Business Passport, Credentials, Evidence, Shared Access, Relationships, History and Settings**. Odoo-style nested horizontal tabs remain within the company record. Toolbar smart buttons navigate to actual sections and show authorized counts; failed reads show `—`, not fabricated zeroes.
+- Reworked the company record around the supplied Odoo structure: compact breadcrumb/action header, large business name and mark, related-record button row, aligned two-column fields and thin horizontal tabs. The Overview uses the requested business identity / credential and sharing composition, five source-derived summary measures, and linked actions rather than an unrelated generic KPI dashboard.
+- Business Profile has an editable, two-column form, readable country selection that persists ISO country codes, Save/Discard behavior and the existing backend review invalidation transition when material identity fields change.
+- Business Passport shows subject/reference, environment, exact review and issuer states, evidence coverage and explicit assurance limitations. It does not claim a DID method or legal registry result.
+- Verification supports review submission and reviewer-state display. Authorized record selection is required; the interface distinguishes self-reported claims, uploaded supporting documents and reviewer decisions. Credential verification displays signature and current status separately from issuer recognition.
+- Evidence now has a dense source register, paginated kind-specific source picker, lawful-purpose fields, correction requests that select the user's own evidence or credentials, readable persisted source labels, and protected document upload/review entry points. Source IDs remain internal form values; users choose labels rather than typing raw IDs. Old evidence without a persisted label falls back to a shortened reference.
+- Credentials show searchable/filterable records, issuer metadata and authority labels, validity/status, detail and signature verification, plus authorized issuance-request flow. No arbitrary issuer or claim can be entered in ordinary workflows.
+- Shared Access shows recipient, purpose, types, dates, access and state; the centered consent dialog selects a named recipient, exact active credentials, optional matching inbound request, purpose, expiry and one-time behavior. Newly returned recipient links are held in component state, hidden in the UI until a deliberate copy action, and can be cleared. Revocation blocks future access; the UI says it cannot erase a copy already received.
+- Relationships use a centered Odoo-sized creation dialog with counterparty selector, supported relationship type, statement and explicit consent. The workflow is a request, not confirmation; authorized counterparty response and revocation retain backend state rules.
+- Verification Requests have selectable required credential types and a named business lookup. Settings show public-profile controls, actual service/environment readiness, and limitations for signatures, issuer authority, selective disclosure, sandbox, retention and optional anchoring.
+- Independent resource reads use settled results and per-resource errors/retry paths; history, issuer or source failures no longer suppress the whole workspace. Request-generation guards prevent stale workspace/page results from overwriting current state. Source lists and activity history expose pagination rather than treating a recent page as the full record set.
+- Trust source listing now validates source kind/page/limit, enforces owner/admin access and current service/workspace scope, pages every source type, and reports its required service. Evidence records persist a readable canonical source label. Issuer metadata is safe for presentation. Public peer search returns only opt-in minimal profiles; protected issuer and credential data remain out of that endpoint.
+
+### Form and selector matrix
+
+| Form / action | Required fields or choices | Authority and persisted effect |
+| --- | --- | --- |
+| Create/update Passport | Display name, category, industry, selected country, public-profile preference | Existing Passport create/update route; identity-affecting changes run existing review/credential invalidation logic. |
+| Identity review | Legal name, jurisdiction, registration reference, representative statement, one or more eligible evidence records, explicit consent | Existing review service; submitted review remains pending until authorized reviewer action. |
+| Attach document | Current pending review, selected accepted file | Protected Documents endpoint with file checks and encrypted storage; not treated as verification. |
+| Add evidence | Source kind, authorized paginated record, lawful basis, purpose | Existing Trust Evidence route; source-kind service and business scope are checked server-side. |
+| Correction | Record kind, own evidence/credential selector, reason; optional supporting statement | Existing correction workflow and audit history. |
+| Credential verification | Credential token/eligible record according to existing verification flow | Existing cryptographic verification plus issuer/status checks; no self-issued trust inference. |
+| Issuance request | Authorized approved sandbox issuer, supported credential type(s), selected evidence, request/holder consent | Existing request and issuer authorization; does not issue automatically. |
+| Share | Named recipient, eligible active credential(s), purpose, expiry, consent; optional matching request and one-time choice | Existing recipient-bound grant API; server revalidates recipient, types, purpose, expiry and credential state. |
+| Verification request | Named public-profile business, one or more supported credential types, purpose, expiry | Existing Trust Network request lifecycle; holder can accept/decline and separately authorize a grant. |
+| Relationship request | Searchable counterparty, supported relationship type, statement and explicit consent | Existing Trust Network request; counterparty response is required for confirmation. |
+| Public profile setting | Opt in/out | Existing Passport PATCH; public data remains limited to name, category, industry, country, public reference and review status. |
+
+### Files changed for Checkpoint 2.14
+
+- Backend: `src/trust/routes.ts`, `src/trust/domain.ts`, `src/trust/credentials.ts`, `src/apps/catalog.ts`, `src/marketplace/policy.ts`, `src/platform/workspace-capabilities.ts`.
+- Frontend: `website/src/apps/BusinessIDWorkspace.tsx`, `website/src/trust/PassportWorkspace.tsx`, new `website/src/apps/business-id.css`.
+- Tests and API reference: `src/__tests__/trust.test.ts`, new `website/tests/business-id-quality.test.mjs`, regenerated `platform-openapi.json`.
+- Source notes: `docs/odoo-reference/notes/contacts.md`, `docs/odoo-reference/MODULES.md`, `docs/odoo-reference/RESEARCH_LOG.md`.
+- Completion record: `docs/PHASE2_APP_PROGRESS.md`.
+- No changes were made to the separate `odoo-reference` repository, Pixel, migrations, dependency manifests, or unrelated application screens for this checkpoint. There is no commit, push or deployment.
+
+### Cryptography, permissions and remaining capability gaps
+
+- Existing `jose` algorithms, signing keys, encrypted key storage, status lists and credential issuance controls are reused. The client does not receive private signing keys. Normal profile/evidence/public-search routes do not bypass the server's workspace, owner/admin, source-service or recipient checks.
+- A valid signature means integrity under the associated key; it does not establish issuer institutional authority. A reviewed document does not establish government registry truth or representative authority. Relationships are bilateral declarations, not endorsements. Public opt-in does not reveal registration files, credentials, contact details, finance or private relationship data. Grants cannot erase recipient copies.
+- Implemented and automatically verified: sandbox Passport/evidence/credential/share/request/relationship flows supported by existing services; paged source and history reads; status and consent gates; public opt-in minimization.
+- Partially implemented / awaiting manual acceptance: visual matching, responsive presentation, interactive roles and all populated-data flows require founder browser acceptance. Existing service sources are limited to the canonical source kinds listed above. Old evidence may have only a shortened source reference until a new label is stored.
+- Unsupported by the existing platform: government registry integration; a live institutional trust network; production credential issuance/signing; production blockchain anchoring; general cryptographic selective disclosure; full DID method deployment; malware scanning; automatic erasure/legal-hold processing; proof of legal identity based on a signature, document review or blockchain commitment.
+
+### Automated verification
+
+| Check | Result |
+| --- | --- |
+| Backend TypeScript typecheck | Passed |
+| Website TypeScript typecheck | Passed |
+| `npm run lint` | Passed; ESLint, architecture-cycle check and backend fixture import-order check |
+| `npm run build` | Passed; backend TypeScript compilation |
+| `npm --prefix website run build` | Passed; production bundle, 82 prerendered routes and website content tests **123/123**; existing Zod/Rollup annotation notices were non-fatal |
+| Focused Trust suite | Passed **21/21**, including the new paginated source-selector/readable-label coverage |
+| Full backend regression suite | Passed **457**, failed **0**, skipped **1**; rerun after the final source-selector refinement |
+| `npm run validate:openapi` | Passed; all **59** mounted legacy operations match OpenAPI |
+| `npm run validate:platform` | Passed; **450** workspace operations match Express registrations |
+| `git diff --check` | Passed; Git printed only line-ending normalization notices |
+
+Tests used disposable local database fixtures and temporary localhost servers. No hosted service or production record was used. PostgreSQL integration was not run because no dedicated `TEST_DATABASE_URL` was configured.
+
+### Visual comparison result
+
+The six supplied Odoo screenshots and written Business ID layouts were used to shape the record header, smart-button strip, two-column profile, horizontal tabs, relationship modal, compact register and identity-specific screens. **No running AfriCore screen was captured or compared side by side in this checkpoint**, so there is no claim of pixel parity or completed visual verification. No authenticated AfriCore browser session was available to inspect. Founder comparison remains required, including 1440, 1280, 768 and 390 pixel widths. This is a known acceptance item, not a completed check.
+
+### Founder manual acceptance checklist
+
+Use safe sandbox records:
+
+1. Open Business ID; compare the company profile to Image 1, edit it against Image 2, save and refresh, and confirm the actual review state.
+2. Open the Passport, submit an authorized identity review with eligible evidence, attach a supporting document, then confirm it remains pending until an authorized reviewer acts.
+3. Add authorized evidence from each available source type; verify unavailable services, paging, labels, corrections and audit events.
+4. Inspect existing credentials, issuer authority, signature and current status; submit only an authorized issuance request.
+5. Request a named business's credentials; respond as the holder; create a limited share, test recipient access, one-time/replay and expiry behavior, then revoke future access.
+6. Request a relationship, respond from the counterparty, and verify pending/confirmed/rejected/revoked states.
+7. Review history and public-profile settings; confirm private evidence, credentials, contact and financial information remain hidden when public opt-in is enabled.
+8. Test owner/admin and unauthorized roles, each inactive service, empty/loading/error/retry states, browser refresh and workspace switching.
+9. Compare all six Odoo references against their matching AfriCore screens at comparable viewport sizes. Check responsive layouts at 1440, 1280, 768 and 390 pixels.
+10. Confirm no status claims more assurance than its evidence supports; use no real identity documents in sandbox.
+
+### Phase status
+
+**Checkpoint 2.14 implementation: implemented and automatically verified; awaiting founder manual and visual acceptance.** The full Phase 2 sequence is **not marked accepted**. No other phase was started. No operation remains running or incomplete in this work session. No commit, push, deploy, migration or dependency install occurred.

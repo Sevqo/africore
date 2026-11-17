@@ -86,6 +86,7 @@ export const workspaceRouteKinds: Record<string, readonly string[]> = {
   'POST /organizations/:org/risk-signals/review': ['business'],
   'POST /organizations/:org/connectors/:id/import': ['business'],
   'GET /organizations/:org/trust/passport': ['business'],
+  'GET /organizations/:org/trust/organizations': ['business'],
   'POST /organizations/:org/trust/passport': ['business'],
   'PATCH /organizations/:org/trust/passport': ['business'],
   'POST /organizations/:org/trust/evidence': ['business'],

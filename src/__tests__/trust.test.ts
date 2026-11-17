@@ -136,6 +136,39 @@ test('passport is private, stable, tenant-scoped and migration safe', async () =
     ).status,
     402,
   );
+  const publicRecipient = await api(path(recipientOrg, '/passport'), 'POST', {
+    display_name: 'Synthetic Public Recipient',
+    category: 'Customer',
+    industry: 'Trade',
+    country: 'KE',
+    public_profile: true,
+  }, recipientCookie);
+  assert.equal(publicRecipient.status, 201);
+  const matches = await api(path(org, '/organizations?q=Synthetic%20Public'));
+  assert.deepEqual(matches.data.data.map((item: any) => item.id), [recipientOrg]);
+  assert.equal(matches.data.data[0].legal_name, undefined);
+  assert.equal((await api(path(org, '/organizations?q=a'))).status, 400);
+  const firstHistoryPage = await api(path(org, '/history?page=1&limit=1'));
+  assert.equal(firstHistoryPage.status, 200);
+  assert.equal(firstHistoryPage.data.page, 1);
+  assert.equal(firstHistoryPage.data.limit, 1);
+  assert.ok(firstHistoryPage.data.total >= 1);
+  assert.equal(firstHistoryPage.data.data.length, 1);
+  assert.equal(firstHistoryPage.data.has_more, firstHistoryPage.data.total > 1);
+});
+test('evidence source choices are admin-scoped, service-aware and server-paginated', async () => {
+  const page = await api(path(org, '/sources?kind=profile&page=1&limit=1'));
+  assert.equal(page.status, 200);
+  assert.equal(page.data.kind, 'profile');
+  assert.equal(page.data.page, 1);
+  assert.equal(page.data.limit, 1);
+  assert.equal(page.data.available, true);
+  assert.equal(page.data.total, 1);
+  assert.equal(page.data.data[0].label, 'holder synthetic business');
+  assert.equal(page.data.has_more, false);
+  assert.equal((await api(path(org, '/sources?kind=unknown'))).status, 400);
+  assert.equal((await api(path(org, '/sources?kind=profile&limit=500'))).status, 400);
+  assert.equal((await api(path(org, '/sources?kind=profile'), 'GET', undefined, stranger)).status, 403);
 });
 test('evidence derives assurance from actual records and never accepts invented source verification', async () => {
   const body = {
@@ -147,6 +180,7 @@ test('evidence derives assurance from actual records and never accepts invented 
   const r = await api(path(org, '/evidence'), 'POST', body);
   assert.equal(r.status, 201);
   evidenceId = r.data.id;
+  assert.equal(r.data.source_label, 'holder synthetic business');
   assert.equal(r.data.assurance_level, 0);
   assert.equal(
     (await api(path(org, '/evidence'), 'POST', { ...body, assurance_level: 3 })).status,
@@ -806,6 +840,13 @@ test('expired grants reveal no presentation and compromised keys revoke dependen
     consent: true,
   });
   assert.equal(shared.status, 201);
+  const safeGrant = (await api(path(org, '/passport'))).data.grants.find(
+    (item: any) => item.id === shared.data.id,
+  );
+  assert.equal(safeGrant.purpose, 'Synthetic grant expiry and key compromise tests.');
+  assert.deepEqual(safeGrant.types, ['BusinessIdentityCredential']);
+  for (const secret of ['data', 'presentation', 'nonce', 'token'])
+    assert.equal(secret in safeGrant, false, 'grant metadata must not expose ' + secret);
   await dbRun('UPDATE ac3_grants SET expires_at=? WHERE id=?', [
     new Date(Date.now() - 1000).toISOString(),
     shared.data.id,

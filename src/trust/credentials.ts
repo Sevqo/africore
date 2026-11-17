@@ -521,6 +521,10 @@ export async function credential(a: Access, id: string) {
     a.environment,
   ]);
   if (!r) fail(404, 'Credential not found');
+  const issuerInfo = await dbGet('SELECT name,status,environment FROM ac3_issuers WHERE id=? AND environment=?', [
+    r.issuer_id,
+    a.environment,
+  ]);
   const token = unseal(
       r.token_sealed,
       JSON.stringify(['credential-token', r.org_id, r.environment, r.id]),
@@ -530,6 +534,13 @@ export async function credential(a: Access, id: string) {
     id: r.id,
     type: r.schema_id,
     issuer_id: r.issuer_id,
+    issuer_name: issuerInfo?.name || 'Issuer name unavailable',
+    issuer_status: issuerInfo?.status || 'unknown',
+    issuer_authority: issuerInfo?.status === 'approved' && issuerInfo?.environment === 'production'
+      ? 'recognized'
+      : issuerInfo?.environment === 'sandbox'
+        ? 'sandbox_only_no_institutional_authority'
+        : 'unverified',
     status: r.status === 'active' && r.valid_until < now() ? 'expired' : r.status,
     valid_until: r.valid_until,
     created_at: r.created_at,

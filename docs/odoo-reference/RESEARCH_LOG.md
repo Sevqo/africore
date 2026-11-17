@@ -26,6 +26,20 @@ that produced a conclusion does.
 
 ## Entries
 
+## 2026-11-17 — Business ID contact-record layout
+
+- Question: how does Odoo Community Contacts assemble the company profile, related-record button box, grouped fields, child contacts and horizontal tabs, and which of these are presentation-only patterns for Business ID?
+- Odoo commit: `36fef5806` (`20.0`).
+- Read (paths): `addons/contacts/__manifest__.py`; `addons/contacts/models/res_partner.py`; `odoo/addons/base/models/res_partner.py`; `odoo/addons/base/views/res_partner_views.xml` (`view_partner_form`, partner child-contact subview and notebook pages).
+- Findings:
+  - Contacts extends the shared `res.partner` model and contributes the Contacts application menu; its manifest depends on address, mail and hierarchy capabilities — `addons/contacts/models/res_partner.py`, `addons/contacts/__manifest__.py`.
+  - The base company form uses a smart-button box, image/name header, grouped fields and a notebook with related contacts and notes — `odoo/addons/base/views/res_partner_views.xml` (`view_partner_form`).
+  - These sources define a contact record and its visual composition, not business passport identity, evidence assurance, holder consent, signed credentials or issuer trust.
+- Conclusions: reuse macro layout only; keep Business ID workflows on AfriCore's existing Trust/Passport services and preserve each service's own permissions and state transitions.
+- Decision: none.
+- Follow-ups: inspect other inherited view contributors only if a particular screenshot button requires its origin; compare rendered AfriCore screens visually when the local app is available.
+- Limits: focused view/model/manifest review; no full partner security, mail, inherited view or runtime tour audit. No Odoo source was modified.
+
 ## 2026-11-17 — Automation Rules and Scheduled Actions
 
 - Question: how should AfriCore's bounded automation rules, trigger/action form, scheduled-action register and manual run operation map to Odoo Community's Automation Rules and Scheduled Actions?
@@ -85,3 +99,9 @@ that produced a conclusion does.
 - Limits: focused employee, department, attendance and leave paths only; no exhaustive security-rule review, work-entry pipeline, payroll localization or browser-tour review.
 
 
+
+## 2026-11-17 — Business ID profile and related-record layouts
+
+- Question: how does Odoo Community's Contacts form assemble the compact company/person header, related-record smart buttons, horizontal tabs and child contacts shown in the supplied Business ID references, and which presentation patterns can AfriCore adapt without copying source or adopting Odoo's contact model as its identity authority?
+- Planned source inspection: `addons/contacts/views/res_partner_views.xml`, `addons/base/views/res_partner_views.xml`, `addons/contacts/models/res_partner.py`, plus the Contacts module manifest where needed.
+- Purpose: validate screenshot-level structure against the checked-out Odoo source before implementing the AfriCore Business ID presentation; no application workflow or trust semantics will be inferred from Odoo.
