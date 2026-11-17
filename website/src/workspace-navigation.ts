@@ -139,6 +139,7 @@ const appOwnedWorkspaces = new Set([
   'inventory',
   'procurement',
   'accounting',
+  'finance',
   'pos',
 ]);
 

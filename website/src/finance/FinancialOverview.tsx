@@ -1,17 +1,27 @@
 import { useEffect, useState } from 'react';
 import { InteractiveChart } from '../charts/InteractiveChart';
 import { DateRange } from '../components/DateRange';
+import { DataTable } from '../components/DataTable';
 import { Field, money, type API } from '../operations/UI';
 import { isDemo } from '../demo/transport';
 import './finance.css';
-export function FinancialOverview({ api, scope }: { api: API; scope: string }) {
+export function FinancialOverview({
+  api,
+  scope,
+  timezone = 'Africa/Nairobi',
+}: {
+  api: API;
+  scope: string;
+  timezone?: string;
+}) {
   const [data, setData] = useState<any>(null),
     [error, setError] = useState(''),
     [currency, setCurrency] = useState('KES'),
     [period, setPeriod] = useState('90D'),
     [custom, setCustom] = useState({ from: '', to: '' }),
-    [revision, setRevision] = useState(0);
-  const now = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Nairobi' }),
+    [revision, setRevision] = useState(0),
+    [view, setView] = useState<'chart' | 'table'>('chart');
+  const now = new Date().toLocaleDateString('en-CA', { timeZone: timezone }),
     from =
       period === 'Custom'
         ? custom.from
@@ -50,7 +60,7 @@ export function FinancialOverview({ api, scope }: { api: API; scope: string }) {
     return () => {
       live = false;
     };
-  }, [scope, query, revision]);
+  }, [scope, query, revision, timezone]);
   if (isDemo()) return null;
   return (
     <section className="panel finance-details">
@@ -75,6 +85,20 @@ export function FinancialOverview({ api, scope }: { api: API; scope: string }) {
         </Field>
         <button className="quiet-button" onClick={() => setRevision((v) => v + 1)}>
           Refresh totals
+        </button>
+        <button
+          className="secondary-button"
+          aria-pressed={view === 'chart'}
+          onClick={() => setView('chart')}
+        >
+          Chart
+        </button>
+        <button
+          className="secondary-button"
+          aria-pressed={view === 'table'}
+          onClick={() => setView('table')}
+        >
+          Table
         </button>
       </div>
       <DateRange
@@ -106,25 +130,56 @@ export function FinancialOverview({ api, scope }: { api: API; scope: string }) {
               </div>
             ))}
           </div>
-          <InteractiveChart
-            compact
-            title="Collections and recorded expenses"
-            currency={currency}
-            points={data.series}
-            series={[
-              {
-                key: 'confirmed_inflows_minor',
-                label: 'Net confirmed collections',
-                color: '#426900',
-              },
-              {
-                key: 'recorded_outflows_minor',
-                label: 'Recorded expenses / imports',
-                color: '#595959',
-              },
-            ]}
-            description={data.definitions.net_movement}
-          />
+          {view === 'chart' ? (
+            <InteractiveChart
+              compact
+              title="Collections and recorded expenses"
+              currency={currency}
+              points={data.series}
+              series={[
+                {
+                  key: 'confirmed_inflows_minor',
+                  label: 'Net confirmed collections',
+                  color: '#426900',
+                },
+                {
+                  key: 'recorded_outflows_minor',
+                  label: 'Recorded expenses / imports',
+                  color: '#595959',
+                },
+              ]}
+              description={data.definitions.net_movement}
+            />
+          ) : (
+            <div className="finance-report-table-wrap">
+              <DataTable>
+                <thead>
+                  <tr>
+                    <th>Period date</th>
+                    <th>Confirmed collections</th>
+                    <th>Recorded outflows</th>
+                    <th>Net movement</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.series.map((point: any) => (
+                    <tr key={point.date}>
+                      <td>{point.date}</td>
+                      <td>{money(Number(point.confirmed_inflows_minor), currency)}</td>
+                      <td>{money(Number(point.recorded_outflows_minor), currency)}</td>
+                      <td>
+                        {money(
+                          Number(point.confirmed_inflows_minor) -
+                            Number(point.recorded_outflows_minor),
+                          currency,
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </DataTable>
+            </div>
+          )}
           <p>
             Net recorded movement: {money(data.totals.net_movement_minor, currency)}. This is not a
             bank balance or profit.

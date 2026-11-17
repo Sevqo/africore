@@ -1,6 +1,6 @@
 # Phase 2 — Applications Progress
 
-Current checkpoint: **2.13 Automations** — bounded rules, scheduled-action register/detail, per-rule manual run and execution history implemented; focused engineering checks recorded below; founder visual/manual acceptance is pending.
+Current checkpoint: **2.2 Finance completion** — requested after the previously recorded 2.14 work; Finance implementation and automated checks are recorded at the end of this file; founder manual acceptance and live screenshot comparison remain pending.
 
 Source checkpoint: Phase 1 committed by the founder; this work is uncommitted by design.
 Hard limits observed: no commits, pushes, deployments, production data or provider changes.
@@ -10,7 +10,7 @@ Hard limits observed: no commits, pushes, deployments, production data or provid
 | Checkpoint | App         | State                                                                                                                                                             |
 | ---------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2.1        | Commerce    | Implemented; build/tests green; browser click-through not executed                                                                                                |
-| 2.2        | Finance     | Not started                                                                                                                                                       |
+| 2.2        | Finance     | Implemented and automatically verified; live visual comparison and founder acceptance pending                                                                    |
 | 2.3        | Sales       | Implemented (Odoo-style document workspace); build/tests green; browser click-through not executed                                                                |
 | 2.4        | Inventory   | Implemented (Odoo-style warehouse workspace); build/tests green; browser click-through not executed                                                               |
 | 2.5        | CRM         | Partial — pipeline increment recorded at the end of this file; browser acceptance not performed                                                                   |
@@ -22,7 +22,7 @@ Hard limits observed: no commits, pushes, deployments, production data or provid
 | 2.11       | Documents   | Source implementation and focused checks pass; live request-recipient route needs runtime verification; populated-file and founder acceptance pending             |
 | 2.12       | Analytics   | Implemented; prior focused checks recorded below; founder screenshot acceptance pending                                                                           |
 | 2.13       | Automations | Implemented; focused tests/checks recorded below; browser screenshot comparison not performed; founder acceptance pending                                         |
-| 2.14       | Business ID | Not started                                                                                                                                                       |
+| 2.14       | Business ID | Implemented; build/tests green; founder manual and visual acceptance pending                                                                                      |
 
 ## Checkpoint 2.1 — what was wrong
 
@@ -1227,3 +1227,153 @@ Use safe sandbox records:
 ### Phase status
 
 **Checkpoint 2.14 implementation: implemented and automatically verified; awaiting founder manual and visual acceptance.** The full Phase 2 sequence is **not marked accepted**. No other phase was started. No operation remains running or incomplete in this work session. No commit, push, deploy, migration or dependency install occurred.
+
+## Checkpoint 2.2 — Finance completion (requested after the recorded 2.14 work)
+
+### Status and starting point
+
+The old checkpoint table incorrectly said Finance was not started. Finance was already registered in `src/apps/catalog.ts` and had a working, founder-approved landing layout in `website/src/apps/FinanceDashboard.tsx`, plus canonical Invoicing, Expenses, Payment and financial-summary services. The work here preserves that dashboard and completes the missing installed-app operations surfaces around it. Phase 2.2 is implemented and automatically verified; the founder's live browser acceptance and screenshot comparison are still pending. No other phase was started in this work.
+
+### Architecture and Odoo reference findings
+
+- AfriCore's installed Finance app composes services through `website/src/apps/AppsWorkspace.tsx`; its independent service routes remain available. Invoices and customers remain canonical records, Expenses remain merchant-recorded operations, payment events remain provider evidence, and Accounting remains a separate application and ledger.
+- Existing source research at `docs/odoo-reference/AFRICORE_APPLICATION_COMPARISON.md`, `MODULES.md`, and `RESEARCH_LOG.md` records Odoo Community 20.0 at `C:\Users\cypri\OneDrive\Desktop\AfriScore\odoo-reference`, commit `9d233dca4156d58ca573e9cdc3b32327c97aa282`. Odoo has no single Community Finance app equivalent: relevant behavior is divided among `addons/account/models/account_move.py`, `addons/account/views/account_move_views.xml`, `addons/payment`, `addons/sale`, and other modules. `addons/account_reports` is absent from that Community checkout; this implementation makes no Enterprise-report parity claim.
+- All seven supplied Finance screenshots were inspected at their original resolution before the corresponding operational work. They informed the compact source panels, anchored operations menu, dense invoice register, vendor-bill handoff, aging table, evidence-matching workspace and report table/chart treatments. The previously approved Finance landing design remains the default.
+- The implementation uses the existing TypeScript/React frontend, TypeScript/Express APIs, SQL adapters, Zod validation, integer minor-unit currency helpers, CSS and the existing SVG chart component. No charting package, runtime, ledger or storage system was added. Attempts to fetch the five official Odoo documentation URLs listed in the prompt timed out; the supplied screenshots and repository's existing source-based Odoo comparison notes were available and used. No Odoo code or assets were copied.
+
+### Service dependency and workflow matrix
+
+| Screen/workflow | AfriCore authority and behavior | Availability, coverage and guardrails |
+| --- | --- | --- |
+| Approved Finance dashboard | Existing `/financial-summary` plus a five-row invoice preview; independent source reads; period/currency controls; current SVG cash-flow trend, receivables/expense breakdowns, cash observations and quick links | Structure retained; covered records only; amounts remain currency-scoped; no profit or bank-balance claim |
+| Financial operations overview | New separate compact source-panel view backed by summary, invoice, expense and confirmed payment-event APIs | Reached from Operations menu; optional Payments/Reconciliation are shown inactive when unavailable; source failures do not replace successful panels |
+| Invoices | `/records/invoices`, `/financial-summary`, canonical invoice detail, credit correction and protected document attachments | Server search, filters and pagination; create action writes a draft only; issue/payment/credit transitions remain in their existing services |
+| Customers | `/records/customers`, `/customers/:id/activity`, canonical customer form and document links | Customer register is paginated; server-backed customer search makes invoice filters/create selectors reachable beyond the first 100; history totals use canonical invoices/orders, while the activity timeline is capped at the latest 100 events |
+| Expenses and vendor bills | `MoneyTools` and `/expenses` for merchant-reported expenses; Procurement app for supplier bills | Expense search/category/currency/date filters and server pagination; corrected, archived and superseded records are handled through the existing source. A bill is not converted to an expense. No recorded expense implies payment |
+| Payments | `PaymentCentre` with `/payment-events`, `/payment-requests`, attempts and provider readiness | Server-side status/currency/date/search filters and pagination; sandbox actions remain simulations; provider credentials/configuration and current role are server-authoritative |
+| Reconciliation | `PaymentCentre` candidate lookup and explicit allocation/review endpoints | Optional service gate; currency, candidate and allocation invariants remain backend-checked; matching is evidence review and does not post Accounting journal entries |
+| Receivables | `/financial-summary` as of selected date; invoice rows with effective allocations and issued credits | Currency and date selector, aging buckets and invoice drill-down. Historical accuracy is limited to retained AfriCore allocations/credits; this is not an Accounting aging ledger |
+| Financial reports | Existing `FinancialOverview` report data, chart/table toggle and CSV export | Financial movement, confirmed collections, outflows and covered receivables only; no fabricated balance sheet, certified cash-flow statement, tax report, profit or FX conversion |
+
+### Existing functionality, missing surfaces and defects addressed
+
+- Before this change, the Finance catalog existed but selecting operational sections did not produce a coherent installed-app view for each destination. The previous screen set did not expose a source-panel overview or dedicated installed-app invoice/customer/receivables layouts.
+- Added eight catalog sections with distinct presentations: Dashboard, Invoices, Customers, Payments, Expenses, Reconciliation, Receivables and Financial Reports. Added a separate `Financial operations` view under the compact Operations dropdown to map the Odoo journal/source panels without replacing the approved Finance dashboard. Browser URL state stays in the installed Finance app and supports Back/Forward/refresh through existing app navigation.
+- The Operations menu is anchored to its trigger, uses native keyboard disclosure, closes on outside click/Escape/selection, and groups View, New and Reporting actions. Write actions are hidden/disabled according to the Finance UI role; API authorization remains authoritative.
+- The invoice register uses server-side search/filter/count/pagination for status, currency, customer and issue/due date. Literal search escapes SQL wildcard input and includes linked customer names while remaining scoped to organization/environment. The table right-aligns money and opens canonical invoice details. The customer selector searches the server instead of treating its first page as the full directory.
+- New invoice provides required customer, currency, dates, line, quantity, unit price, optional discount, terms and instructions. Money inputs are converted with the existing currency minor-unit helper. Save creates an idempotent draft and explicitly does not issue it or record payment. Customer details link to complete canonical invoice/order history and covered activity.
+- Expense lists now use server pagination, search, category/currency/date filters and total counts, exclude archived/superseded revisions by default and expose historical revisions as history. The compact create flow stays inside the existing Expenses component. Vendor bills navigate to Procurement only when that service is active.
+- Payment events now return a filtered distinct-event total and support server-side status/currency/date/literal-search filters. Payment and reconciliation panels use independently settled source loads so failure in optional provider/request data does not erase successfully loaded payment events. Explicit allocations still call the existing candidate and allocation APIs.
+- The receivables page uses the existing financial snapshot's selected `to` date, allocations and issued credits. Aging totals are separated by currency and the UI states the historical-evidence limit. Reports expose only supported movement and payment evidence, retain source definitions and export displayed activity to CSV.
+- The approved dashboard's parallel summary and invoice-preview reads remain independent, date calculations use the workspace timezone, money formatting respects zero-decimal currencies, and negative breakdown items are not rendered as positive composition.
+
+### Permission audit and form completeness
+
+| Actor/capability | UI behavior | Authority |
+| --- | --- | --- |
+| Owner/Admin | Finance write controls are available subject to active service and operation-specific UI rules | Existing routes re-check current membership, organization, environment and operation role |
+| Finance | Invoice, expense, payment and supported reconciliation controls are available subject to active service | Existing finance authorization and domain invariants remain server-enforced |
+| Operations | Read views remain available; invoice/payment/accounting mutations are not granted by Finance's writable flag | Customer and operations routes continue to enforce their own server permission rules |
+| Read-only/other | Can inspect authorized views; mutation controls are not exposed | Server still rejects unauthorized reads/writes regardless of UI state |
+| Optional service inactive | Screen gives an unavailable/inactive state and does not pretend provider/matching data exists | Existing service entitlement and route checks remain authoritative |
+
+Invoice create exposes the required canonical fields and preserves failed user input. Existing expense forms expose their schema-required amount/currency/category/date/description and source links. Payment allocation forms continue to select canonical candidate records rather than typed IDs and preserve server errors. No new backend permission rule or accounting workflow was introduced.
+
+### API/backend changes and changed files
+
+- `src/platform/routes.ts` — validated invoice filters, server search/count/pagination, escaped literal search and customer-name search within the current scope.
+- `src/operations/routes.ts` — expense filtering/search/category/currency/date pagination/count and default active-effective-record behavior.
+- `src/finance/routes.ts` — payment-event status/currency/date/search filtering, distinct count and pagination.
+- `website/src/apps/FinanceAppWorkspace.tsx` — installed-app routing, operations menu, invoice/customer registers, invoice creation and detail, expenses/payments/reconciliation/receivables/reports composition.
+- New `website/src/apps/FinanceOperationsOverview.tsx` and `website/src/apps/finance-app.css` — compact source panels and operational styling.
+- `website/src/apps/AppsWorkspace.tsx`, `website/src/apps/lazy-workspaces.tsx`, `website/src/workspace-navigation.ts` — Finance app dispatch, loading and deep-link navigation.
+- `website/src/apps/FinanceDashboard.tsx`, `website/src/finance/FinancialOverview.tsx`, `website/src/finance/PaymentCentre.tsx`, `website/src/marketplace/MoneyTools.tsx`, `website/src/BusinessApp.tsx`, `website/src/accounts/FocusedWorkspace.tsx` — direct Finance improvements, existing-component integration and workspace timezone propagation.
+- New `website/tests/finance-app.test.mjs`; added HTTP coverage for expense/payment register filters in `src/__tests__/financial-operations.test.ts`; updated app-navigation expectations in `website/tests/accounting-app.test.mjs`, `commerce-app.test.mjs`, `inventory-app.test.mjs`, `procurement-app.test.mjs` and `sales-app.test.mjs`.
+- This progress file and no other application, database, migration or dependency files.
+
+### Remaining limitations and unsupported functionality
+
+- A real bank statement import, bank-feed synchronization, bank balance, cash custody ledger, matching against an imported bank statement and automatic bank reconciliation are unsupported. The available workspace matches AfriCore payment evidence and allocations only.
+- Formal Accounting journals, a double-entry ledger, certified financial statements, tax/eTIMS filings, tax localization, FX conversion, provider settlement guarantees and vendor payments remain outside this Finance workspace. Use Accounting, Procurement or a qualified provider/service where supported.
+- Finance snapshots are limited to authorized canonical records and their recorded history. Payment activity can include sandbox simulations. Older customer invoices may use current contact information where no historical snapshot was captured. Customer domain activity is limited to the latest 100 events.
+- No live screenshot comparison or authenticated browser acceptance was completed. An attempt to start the local application failed when the configured Neon hostname did not resolve (`ENOTFOUND`); desktop computer-use became unavailable during the run. This is why the requested side-by-side comparisons are marked pending, not passed. The seven references were inspected, but no AfriCore capture was produced.
+- Official Odoo documentation URL fetches timed out; they are not represented as consulted sources. Existing local source-research notes and the actual supplied screenshots were used for implementation boundaries and visual structure.
+
+### Automated verification actually run
+
+| Check | Result |
+| --- | --- |
+| Backend TypeScript build/typecheck | Passed as part of root build and full test command |
+| Website TypeScript project build/typecheck | Passed as part of `npm --prefix website run build` |
+| Finance workspace static tests | Passed **9/9** |
+| Full website content/app suite | Passed **132/132** in the latest production build |
+| Full backend regression suite | Passed **458**, failed **0**, skipped **1** |
+| `npm run lint` | Passed; ESLint, architecture and fixture-order checks |
+| `npm run validate:openapi` | Passed; 59 mounted legacy operations match the API specification |
+| `npm run validate:platform` | Passed; 450 platform operations match Express registrations |
+| `npm --prefix website run build` | Passed; production assets and 82 prerendered pages |
+| `git diff --check` | Passed; only normal Windows LF-to-CRLF notices |
+
+No hosted finance provider, production record, live payment or user database was used. Test data used disposable local fixtures. No dependencies were installed, no migration was created, and no commit, push or deploy occurred.
+
+### Founder manual acceptance checklist
+
+Use sandbox records only.
+
+1. Open AfriCore Finance.
+2. Verify the approved dashboard layout remains intact.
+3. Check KPI values and currency formatting.
+4. Change reporting period.
+5. Change reporting currency.
+6. Verify values refresh correctly.
+7. Check the main Cash Flow chart.
+8. Check Receivables breakdown.
+9. Check Expense breakdown.
+10. Check Recent Invoices.
+11. Click every Quick Action.
+12. Open Invoices.
+13. Compare the invoice register with Odoo Image 3.
+14. Search invoices.
+15. Filter by status.
+16. Test pagination.
+17. Open an invoice.
+18. Verify invoice details and allocations.
+19. Create an eligible invoice.
+20. Open Customers.
+21. Open a customer's financial records.
+22. Open Expenses.
+23. Compare the Expenses layout with Image 4.
+24. Record a valid expense.
+25. Test invalid expense fields.
+26. Open Payments.
+27. Review payment requests and attempts.
+28. Inspect a confirmed event.
+29. Open Reconciliation.
+30. Compare Reconciliation with Image 6.
+31. Select an eligible payment.
+32. Inspect matching invoice candidates.
+33. Perform an authorized sandbox allocation.
+34. Verify the allocation cannot be duplicated.
+35. Open Receivables.
+36. Compare Receivables with Image 5.
+37. Verify aging amounts.
+38. Open a source invoice.
+39. Open Financial Reports.
+40. Compare the report with Image 7.
+41. Change report period and currency.
+42. Export the supported report.
+43. Verify the exported values.
+44. Test inactive Payments.
+45. Test inactive Reconciliation.
+46. Test a read-only role.
+47. Test an unauthorized mutation.
+48. Check browser Back/Forward.
+49. Refresh individual Finance sections.
+50. Test responsive layouts.
+51. Confirm Finance and Accounting remain separate.
+52. Confirm no amount is misrepresented as profit, settlement or bank balance.
+53. Compare all applicable Odoo screenshots and the approved AfriCore dashboard image.
+
+### Phase 2 status
+
+**Checkpoint 2.2 Finance: implemented and automatically verified; awaiting founder manual and visual acceptance.** Visual screenshot comparison is explicitly incomplete. The recorded Phase 2.14 Business ID implementation remains separate and unaccepted pending its own manual/visual review; CRM remains partial. The full Phase 2 sequence is not marked accepted. No operation remains running or incomplete in this checkpoint. No commit, push, deployment, migration or dependency installation occurred.

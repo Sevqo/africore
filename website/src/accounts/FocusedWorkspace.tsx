@@ -560,6 +560,7 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
             }
             services={market.catalog?.services || []}
             onServicesChanged={market.reload}
+            timezone={account?.profile?.timezone || 'Africa/Nairobi'}
           />
         ) : tab === 'Products' && !personal ? (
           <ServiceGate market={market} tab={tab} navigate={setTab}>

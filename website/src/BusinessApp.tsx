@@ -1332,6 +1332,7 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
               navigate={setTab}
               services={market.catalog?.services || []}
               onServicesChanged={market.reload}
+              timezone={account?.profile?.timezone || 'Africa/Nairobi'}
             />
           ) : marketTabs.includes(tab) ? (
             <Services

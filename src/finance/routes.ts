@@ -24,6 +24,7 @@ import {
 import { documentBalance } from './ledger';
 import { financialSnapshot } from '../operations/intelligence';
 import { safeCSV } from '../operations/store';
+import { currencySchema } from '../platform/domain';
 export const finance = Router();
 const key = (req: any) => z.string().min(8).max(200).parse(req.headers['idempotency-key']);
 finance.get(
@@ -301,15 +302,66 @@ finance.get(
           limit: z.coerce.number().int().min(1).max(100).default(50),
           offset: z.coerce.number().int().min(0).default(0),
           status: z.enum(['succeeded', 'failed', 'pending', 'reversed', 'refunded']).optional(),
+          currency: currencySchema.optional(),
+          from: z.string().date().optional(),
+          to: z.string().date().optional(),
+          q: z.string().trim().max(200).optional(),
+        })
+        .superRefine((query, ctx) => {
+          if (query.from && query.to && query.from > query.to)
+            ctx.addIssue({ code: 'custom', message: 'Payment date range is invalid' });
         })
         .parse(req.query);
+    const predicates = ['e.org_id=?', 'e.environment=?'];
+    const params: (string | number)[] = [a.org, a.environment];
+    if (q.status) {
+      predicates.push('e.status=?');
+      params.push(q.status);
+    }
+    if (q.currency) {
+      predicates.push('e.currency=?');
+      params.push(q.currency);
+    }
+    if (q.from) {
+      predicates.push('e.created_at>=?');
+      params.push(q.from + 'T00:00:00.000Z');
+    }
+    if (q.to) {
+      predicates.push('e.created_at<?');
+      params.push(new Date(Date.parse(q.to + 'T00:00:00.000Z') + 86400000).toISOString());
+    }
+    if (q.q) {
+      const needle = '%' + q.q.toLowerCase().replace(/[\\%_]/g, '\\$&') + '%';
+      predicates.push(
+        '(' +
+          [
+            'CAST(e.id AS TEXT)',
+            'e.status',
+            'e.currency',
+            'CAST(e.amount_minor AS TEXT)',
+            'e.provider_ref',
+            'd.provider_reference',
+          ]
+            .map((column) => `LOWER(COALESCE(${column},'')) LIKE ? ESCAPE '\\'`)
+            .join(' OR ') +
+          ')',
+      );
+      params.push(...Array(6).fill(needle));
+    }
+    const where = ' WHERE ' + predicates.join(' AND ');
+    const count = await dbGet<{ total: number }>(
+      'SELECT COUNT(DISTINCT e.id) AS total FROM ac_financial_events e LEFT JOIN ac_payment_event_details d ON d.event_id=e.id' +
+        where,
+      params,
+    );
     res.json({
       data: await dbAll(
-        'SELECT e.*,d.provider,d.provider_reference,d.related_event_id FROM ac_financial_events e LEFT JOIN ac_payment_event_details d ON d.event_id=e.id WHERE e.org_id=? AND e.environment=?' +
-          (q.status ? ' AND e.status=?' : '') +
+        'SELECT e.*,d.provider,d.provider_reference,d.related_event_id FROM ac_financial_events e LEFT JOIN ac_payment_event_details d ON d.event_id=e.id' +
+          where +
           ' ORDER BY e.created_at DESC,e.id DESC LIMIT ? OFFSET ?',
-        [a.org, a.environment, ...(q.status ? [q.status] : []), q.limit, q.offset],
+        [...params, q.limit, q.offset],
       ),
+      total: Number(count?.total || 0),
       ...q,
     });
   }),

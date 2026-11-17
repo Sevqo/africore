@@ -487,10 +487,27 @@ platform.get(
   route(async (req, res) => {
     const a = await access(req),
       kind = kindSchema.parse(req.params.kind),
-      limit = z.coerce.number().int().min(1).max(100).default(50).parse(req.query.limit),
-      offset = z.coerce.number().int().min(0).default(0).parse(req.query.offset);
-    const q = z.string().trim().max(200).optional().parse(req.query.q),
-      status = z.string().max(100).optional().parse(req.query.status);
+      query = z
+        .object({
+          limit: z.coerce.number().int().min(1).max(100).default(50),
+          offset: z.coerce.number().int().min(0).default(0),
+          q: z.string().trim().max(200).optional(),
+          status: z.string().max(100).optional(),
+          currency: kind === 'invoices' ? currencySchema.optional() : z.string().optional(),
+          customer_id: kind === 'invoices' ? z.string().uuid().optional() : z.string().optional(),
+          issue_from: kind === 'invoices' ? z.string().date().optional() : z.string().optional(),
+          issue_to: kind === 'invoices' ? z.string().date().optional() : z.string().optional(),
+          due_from: kind === 'invoices' ? z.string().date().optional() : z.string().optional(),
+          due_to: kind === 'invoices' ? z.string().date().optional() : z.string().optional(),
+        })
+        .superRefine((q, ctx) => {
+          if (q.issue_from && q.issue_to && q.issue_from > q.issue_to)
+            ctx.addIssue({ code: 'custom', message: 'Issue date range is invalid' });
+          if (q.due_from && q.due_to && q.due_from > q.due_to)
+            ctx.addIssue({ code: 'custom', message: 'Due date range is invalid' });
+        })
+        .parse(req.query),
+      { limit, offset, q, status } = query;
     const predicates = ['org_id=?', 'environment=?', 'kind=?'];
     const params: (string | number)[] = [a.org, a.environment, kind];
     if (q) {
@@ -504,7 +521,7 @@ platform.get(
         integrations: ['name', 'provider', 'status'],
       };
       const expressions = [
-        'id',
+        'CAST(id AS TEXT)',
         'created_at',
         ...(fields[kind] || []).map((field) =>
           isPostgres
@@ -512,21 +529,36 @@ platform.get(
             : `COALESCE(json_extract(data, '$.${field}'),'')`,
         ),
       ];
-      predicates.push(
-        '(' +
-          expressions.map((expression) => `LOWER(${expression}) LIKE ? ESCAPE '\\'`).join(' OR ') +
-          ')',
+      const searchTerms = expressions.map(
+        (expression) => `LOWER(${expression}) LIKE ? ESCAPE '\\'`,
       );
-      params.push(...expressions.map(() => '%' + q.toLowerCase().replace(/[\\%_]/g, '\\$&') + '%'));
+      const escapedQuery = '%' + q.toLowerCase().replace(/[\\%_]/g, '\\$&') + '%';
+      if (kind === 'invoices') {
+        const customerId = isPostgres
+          ? "ac_records.data::jsonb ->> 'customer_id'"
+          : "json_extract(ac_records.data,'$.customer_id')";
+        const customerName = isPostgres
+          ? "related.data::jsonb ->> 'name'"
+          : "json_extract(related.data,'$.name')";
+        searchTerms.push(
+          `EXISTS (SELECT 1 FROM ac_records related WHERE related.org_id=? AND related.environment=? AND related.kind='customers' AND related.id=${customerId} AND LOWER(COALESCE(${customerName},'')) LIKE ? ESCAPE '\\')`,
+        );
+        params.push(...expressions.map(() => escapedQuery), a.org, a.environment, escapedQuery);
+      } else params.push(...expressions.map(() => escapedQuery));
+      predicates.push('(' + searchTerms.join(' OR ') + ')');
     }
     if (kind === 'invoices' && ['outstanding', 'overdue'].includes(status || '')) {
       const statusExpr = isPostgres ? "data::jsonb ->> 'status'" : "json_extract(data,'$.status')";
       predicates.push(statusExpr + " IN ('issued','partially_paid')");
       if (status === 'overdue') {
+        const profile = await dbGet('SELECT timezone FROM ac_profiles WHERE user_id=?', [a.actor]);
+        const localDay = new Intl.DateTimeFormat('en-CA', {
+          timeZone: profile?.timezone || 'Africa/Nairobi',
+        }).format(new Date());
         predicates.push(
           (isPostgres ? "data::jsonb ->> 'due_date'" : "json_extract(data,'$.due_date')") + '<?',
         );
-        params.push(now().slice(0, 10));
+        params.push(localDay);
       }
     } else if (status) {
       predicates.push(
@@ -534,10 +566,36 @@ platform.get(
       );
       params.push(status);
     }
+    if (kind === 'invoices') {
+      const field = (name: string) =>
+        isPostgres ? `data::jsonb ->> '${name}'` : `json_extract(data,'$.${name}')`;
+      if (query.currency) {
+        predicates.push(field('currency') + '=?');
+        params.push(query.currency);
+      }
+      if (query.customer_id) {
+        predicates.push(field('customer_id') + '=?');
+        params.push(query.customer_id);
+      }
+      for (const [key, column, operator] of [
+        ['issue_from', 'issue_date', '>='],
+        ['issue_to', 'issue_date', '<='],
+        ['due_from', 'due_date', '>='],
+        ['due_to', 'due_date', '<='],
+      ] as const) {
+        if (query[key]) {
+          predicates.push(field(column) + operator + '?');
+          params.push(query[key]!);
+        }
+      }
+    }
+    const where = ' WHERE ' + predicates.join(' AND ');
+    const count = await dbGet<{ total: number }>(
+      'SELECT COUNT(*) AS total FROM ac_records' + where,
+      params,
+    );
     const rows = await dbAll(
-      'SELECT * FROM ac_records WHERE ' +
-        predicates.join(' AND ') +
-        ' ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?',
+      'SELECT * FROM ac_records' + where + ' ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?',
       [...params, limit, offset],
     );
     const data = rows.map((r) => ({
@@ -546,7 +604,7 @@ platform.get(
       kind: r.kind,
       created_at: r.created_at,
     }));
-    res.json({ data, limit, offset });
+    res.json({ data, limit, offset, total: Number(count?.total || 0) });
   }),
 );
 platform.get(

@@ -3,7 +3,9 @@ import { Field, money, type API } from '../operations/UI';
 import { isDemo } from '../demo/transport';
 import { parseMoney } from '../../../src/finance/money';
 import { Overlay } from '../components/Overlay';
+import { DataTable } from '../components/DataTable';
 import './finance.css';
+const currencies = ['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF'];
 export function PaymentCentre({
   api,
   scope,
@@ -22,6 +24,12 @@ export function PaymentCentre({
     [busy, setBusy] = useState(false),
     [version, setVersion] = useState(0),
     [status, setStatus] = useState('all'),
+    [currency, setCurrency] = useState(''),
+    [from, setFrom] = useState(''),
+    [to, setTo] = useState(''),
+    [query, setQuery] = useState(''),
+    [page, setPage] = useState(0),
+    [total, setTotal] = useState(0),
     [selected, setSelected] = useState<any>(null),
     [notice, setNotice] = useState('');
   const key = useRef(new Map<string, string>());
@@ -30,28 +38,56 @@ export function PaymentCentre({
     setData(null);
     setError('');
     if (isDemo()) return;
-    Promise.all([
-      api('/payment-events?limit=50' + (status === 'all' ? '' : '&status=' + status)),
+    setBusy(true);
+    const params = new URLSearchParams({ limit: '20', offset: String(page * 20) });
+    if (status !== 'all') params.set('status', status);
+    if (currency) params.set('currency', currency);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    if (query.trim()) params.set('q', query.trim());
+    Promise.allSettled([
+      api('/payment-events?' + params),
       reconcile ? Promise.resolve(null) : api('/payment-providers'),
       reconcile ? Promise.resolve({ data: [] }) : api('/payment-attempts'),
       reconcile ? Promise.resolve({ data: [] }) : api('/payment-requests?limit=50'),
     ])
-      .then(([events, providers, attempts, requests]) => {
-        if (live)
+      .then((results) => {
+        if (!live) return;
+        const events = results[0];
+        if (events.status === 'rejected') {
+          setData(null);
+          setError('Payment events: ' + events.reason.message);
+        } else {
+          const getValue = (index: number) =>
+            results[index].status === 'fulfilled' ? results[index].value : null;
+          setTotal(Number(events.value.total || 0));
           setData({
-            events: events.data,
-            providers,
-            attempts: attempts.data,
-            requests: requests.data,
+            events: events.value.data || [],
+            providers: getValue(1),
+            attempts: getValue(2)?.data || [],
+            requests: getValue(3)?.data || [],
           });
+          const failures = results
+            .slice(1)
+            .flatMap((result, index) =>
+              result.status === 'rejected'
+                ? [['Provider setup', 'Attempts', 'Requests'][index] + ': ' + result.reason.message]
+                : [],
+            );
+          if (failures.length) setError(failures.join(' · '));
+        }
+        setBusy(false);
       })
       .catch((e) => {
-        if (live) setError(e.message);
+        if (live) {
+          setError(e.message);
+          setBusy(false);
+        }
       });
     return () => {
       live = false;
     };
-  }, [scope, version, status, reconcile]);
+  }, [scope, version, status, currency, from, to, query, reconcile, page]);
   async function run(path: string, body: any) {
     setBusy(true);
     setError('');
@@ -92,11 +128,63 @@ export function PaymentCentre({
       )}
       <div className="finance-toolbar">
         <Field label="Payment outcome">
-          <select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <select
+            value={status}
+            onChange={(e) => {
+              setPage(0);
+              setStatus(e.target.value);
+            }}
+          >
             {['all', 'pending', 'succeeded', 'failed', 'refunded', 'reversed'].map((s) => (
               <option key={s}>{s}</option>
             ))}
           </select>
+        </Field>
+        <Field label="Currency">
+          <select
+            value={currency}
+            onChange={(e) => {
+              setPage(0);
+              setCurrency(e.target.value);
+            }}
+          >
+            <option value="">All currencies</option>
+            {currencies.map((value) => (
+              <option key={value}>{value}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="From date">
+          <input
+            type="date"
+            value={from}
+            max={to || undefined}
+            onChange={(e) => {
+              setPage(0);
+              setFrom(e.target.value);
+            }}
+          />
+        </Field>
+        <Field label="To date">
+          <input
+            type="date"
+            value={to}
+            min={from || undefined}
+            onChange={(e) => {
+              setPage(0);
+              setTo(e.target.value);
+            }}
+          />
+        </Field>
+        <Field label="Search">
+          <input
+            value={query}
+            onChange={(e) => {
+              setPage(0);
+              setQuery(e.target.value);
+            }}
+            placeholder="Reference, provider or amount"
+          />
         </Field>
         <button
           className="secondary-button"
@@ -243,58 +331,96 @@ export function PaymentCentre({
       )}
       {data && (
         <div className="finance-rows">
-          {data.events.map((event: any) => (
-            <article key={event.id}>
-              <h3>
-                {money(Number(event.amount_minor), event.currency)} · {event.status}
-              </h3>
-              <p>
-                {new Date(event.created_at).toLocaleString()} ·{' '}
-                {event.provider || 'retained provider record'}
-              </p>
-              <p>
-                <code>{event.provider_reference || event.provider_ref}</code>
-              </p>
-              {['reversed', 'refunded'].includes(event.status) && (
-                <p>
-                  {event.related_event_id
-                    ? 'Linked return applied to the original payment. Original confirmation and allocation adjustments are retained.'
-                    : 'Reversal evidence requires review. No allocation change was applied; this report alone does not undo an invoice settlement.'}
-                </p>
-              )}
-              {writable &&
-                event.status === 'succeeded' &&
-                (reconcile || !event.provider || event.provider === 'sandbox') && (
-                  <div className="finance-actions">
-                    {reconcile ? (
-                      <button
-                        className="secondary-button"
-                        disabled={busy}
-                        onClick={async () => {
-                          setBusy(true);
-                          try {
-                            setSelected(await api('/reconciliation/' + event.id + '/candidates'));
-                          } catch (e) {
-                            setError((e as Error).message);
-                          } finally {
-                            setBusy(false);
-                          }
-                        }}
-                      >
-                        Review allocation
-                      </button>
-                    ) : (
-                      <button
-                        className="secondary-button"
-                        onClick={() => setSelected({ event, return: true })}
-                      >
-                        Test refund or reversal
-                      </button>
+          <DataTable className="finance-wide-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Payment reference</th>
+                <th>Provider</th>
+                <th>Currency</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.events.map((event: any) => (
+                <tr key={event.id}>
+                  <td>{new Date(event.created_at).toLocaleString()}</td>
+                  <td>
+                    <code>{event.provider_reference || event.provider_ref || '—'}</code>
+                    {['reversed', 'refunded'].includes(event.status) && (
+                      <small className="finance-payment-return-note">
+                        {event.related_event_id
+                          ? 'Linked return'
+                          : 'Unlinked return evidence · review required'}
+                      </small>
                     )}
-                  </div>
-                )}
-            </article>
-          ))}
+                  </td>
+                  <td>{event.provider || 'retained provider record'}</td>
+                  <td>{event.currency}</td>
+                  <td>{money(Number(event.amount_minor), event.currency)}</td>
+                  <td>
+                    <span className="badge">{event.status}</span>
+                  </td>
+                  <td>
+                    {writable &&
+                    event.status === 'succeeded' &&
+                    (reconcile || !event.provider || event.provider === 'sandbox') ? (
+                      reconcile ? (
+                        <button
+                          className="secondary-button"
+                          disabled={busy}
+                          onClick={async () => {
+                            setBusy(true);
+                            try {
+                              setSelected(await api('/reconciliation/' + event.id + '/candidates'));
+                            } catch (e) {
+                              setError((e as Error).message);
+                            } finally {
+                              setBusy(false);
+                            }
+                          }}
+                        >
+                          Review allocation
+                        </button>
+                      ) : (
+                        <button
+                          className="secondary-button"
+                          onClick={() => setSelected({ event, return: true })}
+                        >
+                          Test return
+                        </button>
+                      )
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </DataTable>
+          <div className="finance-pager">
+            <span>
+              {total
+                ? `${page * 20 + 1}–${Math.min((page + 1) * 20, total)} of ${total}`
+                : '0 records'}
+            </span>
+            <button
+              className="secondary-button"
+              disabled={page === 0 || busy}
+              onClick={() => setPage((value) => Math.max(0, value - 1))}
+            >
+              Previous
+            </button>
+            <button
+              className="secondary-button"
+              disabled={(page + 1) * 20 >= total || busy}
+              onClick={() => setPage((value) => value + 1)}
+            >
+              Next
+            </button>
+          </div>
           {!data.events.length && (
             <p>
               No payment events match this outcome. Initiate a test checkout from an issued invoice

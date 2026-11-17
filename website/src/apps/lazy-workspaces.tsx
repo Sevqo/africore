@@ -112,3 +112,6 @@ export const InventoryAppWorkspace = workspace<
 export const FinanceDashboard = workspace<
   Parameters<(typeof import('./FinanceDashboard'))['FinanceDashboard']>[0]
 >(() => import('./FinanceDashboard').then((m) => ({ default: m.FinanceDashboard })));
+export const FinanceAppWorkspace = workspace<
+  Parameters<(typeof import('./FinanceAppWorkspace'))['FinanceAppWorkspace']>[0]
+>(() => import('./FinanceAppWorkspace').then((m) => ({ default: m.FinanceAppWorkspace })));

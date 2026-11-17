@@ -80,13 +80,13 @@ after(async () => {
   await new Promise<void>((r) => server.close(() => r()));
   await closeDb();
 });
-async function invoice(amount = 5000000) {
+async function invoice(amount = 5000000, currency = 'KES') {
   const r = await api(
     path('/records/invoices'),
     'POST',
     {
       customer_id: customer,
-      currency: 'KES',
+      currency,
       items: [{ description: 'Synthetic work', quantity: 1, unit_price_minor: amount }],
       issue_date: today(),
       due_date: today(),
@@ -648,6 +648,57 @@ test('expense retries/corrections and reports share effective records without do
     (await api(path('/financial-summary?currency=KES&from=2026-12-01&to=2026-01-01'))).status,
     400,
   );
+});
+test('Finance expense and payment registers apply date, currency, search and pagination filters on the server', async () => {
+  const expenseDate = today(),
+    expense = await api(path('/expenses'), 'POST', {
+      description: 'Finance filter marker amber',
+      amount_minor: 321,
+      currency: 'USD',
+      occurred_on: expenseDate,
+      category: 'other',
+    });
+  assert.equal(expense.status, 201);
+  const filteredExpenses = await api(
+    path(
+      '/expenses?currency=USD&from=' +
+        expenseDate +
+        '&to=' +
+        expenseDate +
+        '&q=AMBER&limit=1&offset=0',
+    ),
+  );
+  assert.equal(filteredExpenses.status, 200);
+  assert.equal(filteredExpenses.data.total, 1);
+  assert.equal(filteredExpenses.data.data[0].id, expense.data.id);
+  assert.equal((await api(path('/expenses?from=2026-12-01&to=2026-01-01'))).status, 400);
+
+  const invoiceId = await invoice(2500, 'USD'),
+    paymentRequest = await request(invoiceId),
+    reference = 'finance-filter-marker-' + randomUUID();
+  await processProviderResult(paymentRequest.id, {
+    reference,
+    status: 'failed',
+    amount_minor: 2500,
+    currency: 'USD',
+    occurred_at: expenseDate + 'T08:00:00.000Z',
+  });
+  const filteredPayments = await api(
+    path(
+      '/payment-events?currency=USD&from=' +
+        expenseDate +
+        '&to=' +
+        expenseDate +
+        '&q=' +
+        encodeURIComponent(reference.toUpperCase()) +
+        '&status=failed&limit=1&offset=0',
+    ),
+  );
+  assert.equal(filteredPayments.status, 200);
+  assert.equal(filteredPayments.data.total, 1);
+  assert.equal(filteredPayments.data.data.length, 1);
+  assert.equal(filteredPayments.data.data[0].currency, 'USD');
+  assert.equal((await api(path('/payment-events?from=2026-12-01&to=2026-01-01'))).status, 400);
 });
 test('provider occurrence dates drive history; out-of-order failures do not undo a confirmed invoice', async () => {
   const id = await invoice(1000),

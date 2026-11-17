@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { InteractiveChart } from '../charts/InteractiveChart';
 import { DataTable } from '../components/DataTable';
-import { Field, money, type API } from '../operations/UI';
+import { Field, money, factor, type API } from '../operations/UI';
 import { Icon } from '../components/Icon';
 import { SegmentedControl } from '../components/SegmentedControl';
 const palette = ['#26966a', '#a5dfc4', '#ffe075', '#bfa9f9', '#ef7d91', '#cdd5df'];
@@ -14,7 +14,8 @@ function Breakdown({
   rows: { label: string; amount: number }[];
   currency: string;
 }) {
-  const total = rows.reduce((n, r) => n + r.amount, 0);
+  const positiveRows = rows.filter((row) => row.amount > 0);
+  const total = positiveRows.reduce((n, r) => n + r.amount, 0);
   let offset = 0;
   return (
     <section
@@ -26,7 +27,7 @@ function Breakdown({
         <svg viewBox="0 0 180 180" role="img" aria-label={title + ': ' + money(total, currency)}>
           <circle cx="90" cy="90" r="68" fill="none" stroke="#edf1f5" strokeWidth="27" />
           {total > 0 &&
-            rows.map((r, i) => {
+            positiveRows.map((r, i) => {
               const segment = (r.amount / total) * 100,
                 start = offset;
               offset += segment;
@@ -58,12 +59,12 @@ function Breakdown({
             fill="currentColor"
           >
             {new Intl.NumberFormat('en-KE', { notation: 'compact' }).format(
-              total / (['UGX', 'RWF'].includes(currency) ? 1 : 100),
+              total / factor(currency),
             )}
           </text>
         </svg>
         <ul>
-          {rows.map((r, i) => (
+          {positiveRows.map((r, i) => (
             <li key={r.label}>
               <span className="chart-key" style={{ background: palette[i % palette.length] }} />
               <span>{r.label}</span>
@@ -83,6 +84,7 @@ export function FinanceDashboard({
   openRecord,
   section = 'dashboard',
   writable = false,
+  timezone = 'Africa/Nairobi',
 }: {
   openRecord?: (tab: string, id: string) => void;
   writable?: boolean;
@@ -90,6 +92,7 @@ export function FinanceDashboard({
   api: API;
   scope: string;
   navigate: (tab: string) => void;
+  timezone?: string;
 }) {
   const [data, setData] = useState<any>(null),
     [invoices, setInvoices] = useState<any[]>([]),
@@ -97,7 +100,7 @@ export function FinanceDashboard({
     [currency, setCurrency] = useState('KES'),
     [months, setMonths] = useState(12),
     [revision, setRevision] = useState(0);
-  const to = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Nairobi' }),
+  const to = new Date().toLocaleDateString('en-CA', { timeZone: timezone }),
     from = new Date(Date.UTC(Number(to.slice(0, 4)), Number(to.slice(5, 7)) - months, 1))
       .toISOString()
       .slice(0, 10);
@@ -106,23 +109,22 @@ export function FinanceDashboard({
     setData(null);
     setInvoices([]);
     setError('');
-    Promise.all([
+    Promise.allSettled([
       api('/financial-summary?' + new URLSearchParams({ currency, from, to })),
       api('/records/invoices?limit=5&currency=' + currency),
-    ])
-      .then(([r, i]) => {
-        if (current) {
-          setData(r);
-          setInvoices(i.data);
-        }
-      })
-      .catch((e) => {
-        if (current) setError(e.message);
-      });
+    ]).then(([summary, invoiceRows]) => {
+      if (!current) return;
+      const failures: string[] = [];
+      if (summary.status === 'fulfilled') setData(summary.value);
+      else failures.push('Financial summary: ' + summary.reason.message);
+      if (invoiceRows.status === 'fulfilled') setInvoices(invoiceRows.value.data || []);
+      else failures.push('Recent invoices: ' + invoiceRows.reason.message);
+      setError(failures.join(' · '));
+    });
     return () => {
       current = false;
     };
-  }, [scope, currency, months, revision, from, to]);
+  }, [scope, currency, months, revision, from, to, timezone]);
   useEffect(() => {
     if (section === 'receivables' && data)
       document.getElementById('finance-receivables')?.scrollIntoView({ block: 'start' });

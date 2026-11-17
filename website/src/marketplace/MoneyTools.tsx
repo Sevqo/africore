@@ -4,19 +4,23 @@ import { Field, today, money, type API } from '../operations/UI';
 import { parseMoney } from '../../../src/finance/money';
 import { Overlay } from '../components/Overlay';
 import { DocumentAttachments } from '../apps/DocumentAttachments';
+import { DataTable } from '../components/DataTable';
 const categories = ['stock', 'rent', 'utilities', 'payroll', 'delivery', 'other'];
+const currencies = ['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF'];
 export function MoneyTools({
   api,
   scope,
   cashFlow = false,
   writable,
   documentsEnabled = false,
+  compact = false,
 }: {
   api: API;
   scope: string;
   cashFlow?: boolean;
   writable: boolean;
   documentsEnabled?: boolean;
+  compact?: boolean;
 }) {
   const [expenses, setExpenses] = useState<any[]>([]),
     [obligations, setObligations] = useState<any[]>([]),
@@ -25,6 +29,12 @@ export function MoneyTools({
     [busy, setBusy] = useState(false),
     [version, setVersion] = useState(0),
     [range, setRange] = useState({ from: '', to: '' }),
+    [query, setQuery] = useState(''),
+    [category, setCategory] = useState(''),
+    [filterCurrency, setFilterCurrency] = useState(''),
+    [page, setPage] = useState(0),
+    [total, setTotal] = useState(0),
+    [historyRows, setHistoryRows] = useState<any[]>([]),
     [editing, setEditing] = useState<any>(null),
     [documentsFor, setDocumentsFor] = useState<any>(null);
   const formKeys = useRef(new WeakMap<HTMLFormElement, string>());
@@ -34,26 +44,31 @@ export function MoneyTools({
     setObligations([]);
     setError('');
     setBusy(true);
-    Promise.all([
-      api('/expenses?limit=100'),
+    const params = new URLSearchParams({ limit: '20', offset: String(page * 20) });
+    if (query.trim()) params.set('q', query.trim());
+    if (category) params.set('category', category);
+    if (filterCurrency) params.set('currency', filterCurrency);
+    if (range.from) params.set('from', range.from);
+    if (range.to) params.set('to', range.to);
+    Promise.allSettled([
+      api('/expenses?' + params),
       cashFlow ? api('/obligations?limit=100') : Promise.resolve({ data: [] }),
-    ])
-      .then(([e, o]) => {
-        if (live) {
-          setExpenses(e.data);
-          setObligations(o.data);
-        }
-      })
-      .catch((e) => {
-        if (live) setError(e.message);
-      })
-      .finally(() => {
-        if (live) setBusy(false);
-      });
+      api('/expenses?limit=100&include_history=true'),
+    ]).then(([e, o, h]) => {
+      if (!live) return;
+      if (e.status === 'fulfilled') {
+        setExpenses(e.value.data || []);
+        setTotal(Number(e.value.total || 0));
+      } else setError('Expense records: ' + e.reason.message);
+      if (o.status === 'fulfilled') setObligations(o.value.data || []);
+      else if (cashFlow) setError((current) => current || 'Obligations: ' + o.reason.message);
+      if (h.status === 'fulfilled') setHistoryRows(h.value.data || []);
+      setBusy(false);
+    });
     return () => {
       live = false;
     };
-  }, [scope, cashFlow, version]);
+  }, [scope, cashFlow, version, query, category, filterCurrency, range.from, range.to, page]);
   async function save(path: string, method: string, body: any, key: string = crypto.randomUUID()) {
     setBusy(true);
     setError('');
@@ -109,11 +124,8 @@ export function MoneyTools({
       setError((e as Error).message);
     }
   }
-  const replaced = new Set(expenses.map((e) => e.supersedes_id).filter(Boolean));
-  const current = expenses.filter((e) => !replaced.has(e.id) && e.status !== 'archived');
-  const visible = current.filter(
-    (e) => (!range.from || e.occurred_on >= range.from) && (!range.to || e.occurred_on <= range.to),
-  );
+  const replaced = new Set(historyRows.map((e) => e.supersedes_id).filter(Boolean));
+  const current = expenses;
   function expenseCorrection(row: any, changes: any) {
     const {
       description,
@@ -150,120 +162,212 @@ export function MoneyTools({
       {notice && <p role="status">{notice}</p>}
       {busy && <p role="status">Updating records…</p>}
       {writable && (
-        <div className="service-grid">
-          {(['expense', ...(cashFlow ? ['obligation'] : [])] as ('expense' | 'obligation')[]).map(
-            (kind) => (
-              <form
-                key={kind}
-                className="panel account-stack-form"
-                onSubmit={(e) => submit(e, kind)}
-              >
-                <h2>{kind === 'expense' ? 'Record an expense' : 'Plan an obligation'}</h2>
-                <Field label="Description">
-                  <input name="description" required maxLength={300} />
-                </Field>
-                <Field label="Currency">
-                  <select name="currency">
-                    {['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF'].map((c) => (
-                      <option key={c}>{c}</option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Amount">
-                  <input name="amount" type="text" inputMode="decimal" required />
-                </Field>
-                <Field label={kind === 'expense' ? 'Date paid' : 'Next due date'}>
-                  <input
-                    name="date"
-                    type="date"
-                    required
-                    defaultValue={kind === 'expense' ? today() : undefined}
-                    max={kind === 'expense' ? today() : undefined}
-                  />
-                </Field>
-                <Field label="Category">
-                  <select name="category">
-                    {categories.map((c) => (
-                      <option key={c}>{c}</option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Supplier (optional)">
-                  <input name="supplier" maxLength={200} />
-                </Field>
-                {kind === 'obligation' ? (
-                  <>
-                    <Field label="Reminder timezone">
-                      <input
-                        name="timezone"
-                        required
-                        defaultValue={Intl.DateTimeFormat().resolvedOptions().timeZone}
-                      />
-                    </Field>
-                    <Field label="Remind this many days before due">
-                      <input
-                        name="reminder_days"
-                        type="number"
-                        min="0"
-                        max="30"
-                        defaultValue="3"
-                        required
-                      />
-                    </Field>
-                    <Field label="Recurrence">
-                      <select name="recurrence">
-                        {['once', 'weekly', 'monthly', 'quarterly', 'yearly'].map((c) => (
-                          <option key={c}>{c}</option>
-                        ))}
-                      </select>
-                    </Field>
-                  </>
-                ) : (
-                  <Field label="Notes">
-                    <textarea name="notes" maxLength={3000} />
+        <details className={compact ? 'finance-expense-create' : ''} open={!compact}>
+          <summary>{compact ? 'Record an expense' : 'Expense entry'}</summary>
+          <div className="service-grid">
+            {(['expense', ...(cashFlow ? ['obligation'] : [])] as ('expense' | 'obligation')[]).map(
+              (kind) => (
+                <form
+                  key={kind}
+                  className="panel account-stack-form"
+                  onSubmit={(e) => submit(e, kind)}
+                >
+                  <h2>{kind === 'expense' ? 'Record an expense' : 'Plan an obligation'}</h2>
+                  <Field label="Description">
+                    <input name="description" required maxLength={300} />
                   </Field>
-                )}
-                <button className="button" disabled={busy}>
-                  {kind === 'expense' ? 'Record expense' : 'Save obligation'}
-                </button>
-                <p>
-                  {kind === 'expense'
-                    ? 'Manually recorded; this does not send money or independently confirm a transaction.'
-                    : 'A planned obligation is not a paid expense or automatic payment.'}
-                </p>
-              </form>
-            ),
-          )}
-        </div>
+                  <Field label="Currency">
+                    <select name="currency">
+                      {['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF'].map((c) => (
+                        <option key={c}>{c}</option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Amount">
+                    <input name="amount" type="text" inputMode="decimal" required />
+                  </Field>
+                  <Field label={kind === 'expense' ? 'Date paid' : 'Next due date'}>
+                    <input
+                      name="date"
+                      type="date"
+                      required
+                      defaultValue={kind === 'expense' ? today() : undefined}
+                      max={kind === 'expense' ? today() : undefined}
+                    />
+                  </Field>
+                  <Field label="Category">
+                    <select name="category">
+                      {categories.map((c) => (
+                        <option key={c}>{c}</option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Supplier (optional)">
+                    <input name="supplier" maxLength={200} />
+                  </Field>
+                  {kind === 'obligation' ? (
+                    <>
+                      <Field label="Reminder timezone">
+                        <input
+                          name="timezone"
+                          required
+                          defaultValue={Intl.DateTimeFormat().resolvedOptions().timeZone}
+                        />
+                      </Field>
+                      <Field label="Remind this many days before due">
+                        <input
+                          name="reminder_days"
+                          type="number"
+                          min="0"
+                          max="30"
+                          defaultValue="3"
+                          required
+                        />
+                      </Field>
+                      <Field label="Recurrence">
+                        <select name="recurrence">
+                          {['once', 'weekly', 'monthly', 'quarterly', 'yearly'].map((c) => (
+                            <option key={c}>{c}</option>
+                          ))}
+                        </select>
+                      </Field>
+                    </>
+                  ) : (
+                    <Field label="Notes">
+                      <textarea name="notes" maxLength={3000} />
+                    </Field>
+                  )}
+                  <button className="button" disabled={busy}>
+                    {kind === 'expense' ? 'Record expense' : 'Save obligation'}
+                  </button>
+                  <p>
+                    {kind === 'expense'
+                      ? 'Manually recorded; this does not send money or independently confirm a transaction.'
+                      : 'A planned obligation is not a paid expense or automatic payment.'}
+                  </p>
+                </form>
+              ),
+            )}
+          </div>
+        </details>
       )}
       <section className="panel">
         <h2>Recorded expenses</h2>
+        <div className="finance-toolbar">
+          <Field label="Search">
+            <input
+              value={query}
+              onChange={(e) => {
+                setPage(0);
+                setQuery(e.target.value);
+              }}
+              placeholder="Description or supplier"
+            />
+          </Field>
+          <Field label="Category">
+            <select
+              value={category}
+              onChange={(e) => {
+                setPage(0);
+                setCategory(e.target.value);
+              }}
+            >
+              <option value="">All categories</option>
+              {categories.map((value) => (
+                <option key={value}>{value}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Currency">
+            <select
+              value={filterCurrency}
+              onChange={(e) => {
+                setPage(0);
+                setFilterCurrency(e.target.value);
+              }}
+            >
+              <option value="">All currencies</option>
+              {currencies.map((value) => (
+                <option key={value}>{value}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
         <DateRange from={range.from} to={range.to} onApply={(from, to) => setRange({ from, to })} />
         <p>
-          Latest 100 entries. Reports uses all matching records and excludes superseded corrections.
+          {total} effective entries · Reports use covered records and exclude superseded
+          corrections.
         </p>
-        {visible.map((e) => (
-          <article className="list-row" key={e.id}>
-            <span>
-              {e.description} · {e.occurred_on} · {e.category}
-            </span>
-            <strong>{money(e.amount_minor, e.currency)}</strong>
-            {documentsEnabled && (
-              <button className="secondary-button" onClick={() => setDocumentsFor(e)}>
-                Documents
-              </button>
-            )}
-            {writable && (
-              <button className="secondary-button" disabled={busy} onClick={() => setEditing(e)}>
-                Correct / archive
-              </button>
-            )}
-          </article>
-        ))}
-        {!visible.length && !busy && <p>No recorded expenses in this loaded range.</p>}
+        <DataTable className="finance-wide-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Category</th>
+              <th>Supplier</th>
+              <th>Currency</th>
+              <th>Amount</th>
+              <th>Assurance</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {current.map((e) => (
+              <tr key={e.id}>
+                <td>{e.occurred_on}</td>
+                <td>{e.description}</td>
+                <td>{e.category}</td>
+                <td>{e.supplier || '—'}</td>
+                <td>{e.currency}</td>
+                <td>{money(e.amount_minor, e.currency)}</td>
+                <td>{String(e.assurance || 'merchant_recorded').replaceAll('_', ' ')}</td>
+                <td>
+                  <div className="finance-actions">
+                    {documentsEnabled && (
+                      <button className="secondary-button" onClick={() => setDocumentsFor(e)}>
+                        Documents
+                      </button>
+                    )}
+                    {writable && (
+                      <button
+                        className="secondary-button"
+                        disabled={busy}
+                        onClick={() => setEditing(e)}
+                      >
+                        Correct / archive
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </DataTable>
+        {!current.length && !busy && <p>No recorded expenses match these filters.</p>}
+        <div className="finance-pager">
+          <span>
+            {total
+              ? `${page * 20 + 1}–${Math.min((page + 1) * 20, total)} of ${total}`
+              : '0 records'}
+          </span>
+          <button
+            className="secondary-button"
+            disabled={page === 0 || busy}
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+          >
+            Previous
+          </button>
+          <button
+            className="secondary-button"
+            disabled={(page + 1) * 20 >= total || busy}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Next
+          </button>
+        </div>
         <details>
           <summary>Retained expense history</summary>
-          {expenses
+          {historyRows
             .filter((e) => replaced.has(e.id) || e.status === 'archived')
             .map((e) => (
               <p key={e.id}>

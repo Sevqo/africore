@@ -95,13 +95,13 @@ test('merchant sidebar sections stay inside the installed app', () => {
     'Commerce orders must not leave for the shared Orders tab',
   );
   assert.equal(
-    appSectionTarget({ id: 'finance' }, 'Orders', direct),
+    appSectionTarget({ id: 'crm' }, 'Orders', direct),
     'Orders',
     'other apps keep their existing shared-tab mapping',
   );
   assert.equal(appSectionActive(commerce, 'orders', 'Apps', 'orders', direct), true);
   assert.equal(appSectionActive(commerce, 'orders', 'Orders', 'orders', direct), false);
-  assert.equal(appSectionActive({ id: 'finance' }, 'Orders', 'Orders', 'Orders', direct), true);
+  assert.equal(appSectionActive({ id: 'crm' }, 'Orders', 'Orders', 'Orders', direct), true);
 });
 
 test('the Commerce app keeps its canonical service requirements and preview availability', () => {

@@ -63,7 +63,8 @@ test('accounting sidebar sections stay inside the installed app', () => {
   assert.equal(appSectionTarget(accounting, 'accounting', direct), 'Apps');
   assert.equal(appSectionActive(accounting, 'reporting', 'Apps', 'reporting', direct), true);
   assert.equal(appSectionActive(accounting, 'reporting', 'Reports', 'reporting', direct), false);
-  assert.equal(appSectionTarget({ id: 'finance' }, 'reporting', direct), 'Reports');
+  assert.equal(appSectionTarget({ id: 'finance' }, 'reporting', direct), 'Apps');
+  assert.equal(appSectionActive({ id: 'finance' }, 'reporting', 'Apps', 'reporting', direct), true);
 });
 
 test('the installed Accounting app renders the operational workspace, not the service screen', () => {

@@ -18,7 +18,7 @@ import { useEffect, useState } from 'react';
 import { Icon } from '../components/Icon';
 import { Overlay } from '../components/Overlay';
 import { money, type API } from '../operations/UI';
-import { FinanceDashboard } from './lazy-workspaces';
+import { FinanceAppWorkspace } from './lazy-workspaces';
 import { appIcons as icons } from './appIcons';
 import { appPortfolioPath } from './app-portfolio-path';
 import './apps.css';
@@ -31,6 +31,7 @@ type Props = {
   manager: boolean;
   navigate: (tab: string) => void;
   onServicesChanged: () => void;
+  timezone?: string;
 };
 export function AppsWorkspace({
   api: providedApi,
@@ -41,6 +42,7 @@ export function AppsWorkspace({
   services = [],
   role,
   openRecord,
+  timezone,
 }: Props) {
   const api = useIdempotentAPI(providedApi, scope),
     writable = ['owner', 'admin', 'finance', 'operations'].includes(role || ''),
@@ -398,17 +400,19 @@ export function AppsWorkspace({
                   openRecord={openRecord}
                 />
               ) : app.id === 'finance' ? (
-                <>
-                  <FinanceDashboard
-                    openRecord={openRecord}
-                    key={scope}
-                    api={api}
-                    scope={scope}
-                    navigate={navigate}
-                    section={activeSection}
-                    writable={financeWritable}
-                  />
-                </>
+                <FinanceAppWorkspace
+                  key={scope}
+                  api={api}
+                  scope={scope}
+                  navigate={navigate}
+                  section={activeSection}
+                  services={services}
+                  writable={financeWritable}
+                  role={role || 'viewer'}
+                  admin={manager}
+                  timezone={timezone}
+                  openRecord={openRecord}
+                />
               ) : app.id === 'crm' ? (
                 <CrmWorkspace
                   admin={manager}

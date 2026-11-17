@@ -6,6 +6,8 @@ import { z } from 'zod';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { dbAll, dbGet, dbRun } from '../db';
+import { isPostgres } from '../db/adapter';
+import { currencySchema } from '../platform/domain';
 import { access, Access, audit, fail, route, user } from '../platform/auth';
 import { now, unseal } from '../platform/crypto';
 import { all, atomic, change, create, get, list, safeCSV } from './store';
@@ -126,8 +128,88 @@ operations.get(
   '/organizations/:org/expenses',
   route(async (req, res) => {
     const a = await access(req),
-      p = pagination(req.query);
-    res.json({ data: await list(a, 'expenses', p.limit, p.offset), ...p });
+      q = z
+        .object({
+          limit: z.coerce.number().int().min(1).max(100).default(50),
+          offset: z.coerce.number().int().min(0).default(0),
+          q: z.string().trim().max(200).optional(),
+          category: z
+            .enum(['stock', 'rent', 'utilities', 'payroll', 'delivery', 'other'])
+            .optional(),
+          currency: currencySchema.optional(),
+          from: z.string().date().optional(),
+          to: z.string().date().optional(),
+          include_history: z
+            .enum(['true', 'false'])
+            .default('false')
+            .transform((value) => value === 'true'),
+        })
+        .superRefine((value, ctx) => {
+          if (value.from && value.to && value.from > value.to)
+            ctx.addIssue({ code: 'custom', message: 'Expense date range is invalid' });
+        })
+        .parse(req.query),
+      field = (name: string) =>
+        isPostgres ? `data::jsonb ->> '${name}'` : `json_extract(data,'$.${name}')`,
+      predicates = [
+        "org_id=? AND environment=? AND kind='expenses'",
+        `COALESCE(${field('status')},'') <> 'archived'`,
+        ...(q.include_history
+          ? []
+          : [
+              `NOT EXISTS (SELECT 1 FROM ac2_objects replacement WHERE replacement.org_id=ac2_objects.org_id AND replacement.environment=ac2_objects.environment AND replacement.kind='expenses' AND ${isPostgres ? "replacement.data::jsonb ->> 'supersedes_id'" : "json_extract(replacement.data,'$.supersedes_id')"}=ac2_objects.id)`,
+            ]),
+      ],
+      params: (string | number)[] = [a.org, a.environment];
+    if (q.include_history) predicates[1] = '1=1';
+    if (q.q) {
+      const needle = '%' + q.q.toLowerCase().replace(/[\\%_]/g, '\\$&') + '%';
+      predicates.push(
+        '(' +
+          ['description', 'supplier', 'category']
+            .map((name) => `LOWER(COALESCE(${field(name)},'')) LIKE ? ESCAPE '\\'`)
+            .join(' OR ') +
+          ')',
+      );
+      params.push(needle, needle, needle);
+    }
+    if (q.category) {
+      predicates.push(field('category') + '=?');
+      params.push(q.category);
+    }
+    if (q.currency) {
+      predicates.push(field('currency') + '=?');
+      params.push(q.currency);
+    }
+    if (q.from) {
+      predicates.push(field('occurred_on') + '>=?');
+      params.push(q.from);
+    }
+    if (q.to) {
+      predicates.push(field('occurred_on') + '<=?');
+      params.push(q.to);
+    }
+    const where = ' WHERE ' + predicates.join(' AND '),
+      total = await dbGet<{ total: number }>(
+        'SELECT COUNT(*) AS total FROM ac2_objects' + where,
+        params,
+      ),
+      rows = await dbAll(
+        'SELECT * FROM ac2_objects' + where + ' ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?',
+        [...params, q.limit, q.offset],
+      );
+    res.json({
+      data: rows.map((row) => ({
+        ...JSON.parse(row.data),
+        id: row.id,
+        version: row.version,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+      })),
+      limit: q.limit,
+      offset: q.offset,
+      total: Number(total?.total || 0),
+    });
   }),
 );
 operations.post(
@@ -198,7 +280,9 @@ operations.get(
         dbGet('SELECT currency,timezone FROM ac_profiles WHERE user_id=?', [a.actor]),
       ]),
       active = new Set(
-        entitlements.filter((item) => item.enabled && item.status === 'active').map((item) => item.service_id),
+        entitlements
+          .filter((item) => item.enabled && item.status === 'active')
+          .map((item) => item.service_id),
       ),
       templates = automationTemplates.map((template) => {
         const source_services = [...template.required_services],
@@ -211,8 +295,12 @@ operations.get(
           unavailable_services: required_services.filter((service) => !active.has(service)),
           available: required_services.every((service) => active.has(service)),
           default_action_required_services,
-          default_action_unavailable_services: default_action_required_services.filter((service) => !active.has(service)),
-          default_action_available: default_action_required_services.every((service) => active.has(service)),
+          default_action_unavailable_services: default_action_required_services.filter(
+            (service) => !active.has(service),
+          ),
+          default_action_available: default_action_required_services.every((service) =>
+            active.has(service),
+          ),
         };
       }),
       crm_stages = active.has('crm') ? (await crmConfiguration(a)).stages : [];
@@ -239,7 +327,8 @@ operations.get(
         worker_poll_seconds: 15,
         maximum_candidates_per_pass: 50,
         external_delivery: 'not_configured',
-        timing_notice: 'The existing worker may sleep on free hosting; scheduled delivery is not guaranteed.',
+        timing_notice:
+          'The existing worker may sleep on free hosting; scheduled delivery is not guaranteed.',
       },
       external_delivery: 'not_configured',
     });
@@ -249,18 +338,20 @@ operations.get(
   '/organizations/:org/automations',
   route(async (req, res) => {
     const a = await access(req, 'finance'),
-      q = z.object({
-        limit: z.coerce.number().int().min(1).max(100).default(50),
-        offset: z.coerce.number().int().min(0).default(0),
-        search: z.string().trim().max(120).optional(),
-        state: z.enum(['enabled', 'paused']).optional(),
-        template: z.string().max(80).optional(),
-        trigger: z.string().max(100).optional(),
-        source: z.string().max(80).optional(),
-        frequency: z.enum(['daily', 'weekly']).optional(),
-        owner: z.string().uuid().optional(),
-        sort: z.enum(['updated', 'name', 'runs']).default('updated'),
-      }).parse(req.query);
+      q = z
+        .object({
+          limit: z.coerce.number().int().min(1).max(100).default(50),
+          offset: z.coerce.number().int().min(0).default(0),
+          search: z.string().trim().max(120).optional(),
+          state: z.enum(['enabled', 'paused']).optional(),
+          template: z.string().max(80).optional(),
+          trigger: z.string().max(100).optional(),
+          source: z.string().max(80).optional(),
+          frequency: z.enum(['daily', 'weekly']).optional(),
+          owner: z.string().uuid().optional(),
+          sort: z.enum(['updated', 'name', 'runs']).default('updated'),
+        })
+        .parse(req.query);
     res.json(await automationDirectory(a, q));
   }),
 );
@@ -318,17 +409,23 @@ operations.get(
   '/organizations/:org/automation-runs',
   route(async (req, res) => {
     const a = await access(req, 'finance'),
-      q = z.object({
-        limit: z.coerce.number().int().min(1).max(100).default(50),
-        offset: z.coerce.number().int().min(0).default(0),
-        search: z.string().trim().max(120).optional(),
-        status: z.enum(['pending', 'succeeded', 'dead_letter', 'cancelled']).optional(),
-        workflow_id: z.string().uuid().optional(),
-        from: z.string().date().optional(),
-        to: z.string().date().optional(),
-      }).parse(req.query);
+      q = z
+        .object({
+          limit: z.coerce.number().int().min(1).max(100).default(50),
+          offset: z.coerce.number().int().min(0).default(0),
+          search: z.string().trim().max(120).optional(),
+          status: z.enum(['pending', 'succeeded', 'dead_letter', 'cancelled']).optional(),
+          workflow_id: z.string().uuid().optional(),
+          from: z.string().date().optional(),
+          to: z.string().date().optional(),
+        })
+        .parse(req.query);
     if (q.from && q.to && q.from > q.to) fail(400, 'From date must be before To date');
-    if (q.from && q.to && Date.parse(q.to + 'T00:00:00Z') - Date.parse(q.from + 'T00:00:00Z') > 366 * 86400000)
+    if (
+      q.from &&
+      q.to &&
+      Date.parse(q.to + 'T00:00:00Z') - Date.parse(q.from + 'T00:00:00Z') > 366 * 86400000
+    )
       fail(400, 'Execution history date range is limited to 366 days');
     res.json(await automationRunDirectory(a, q));
   }),
