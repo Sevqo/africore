@@ -1,6 +1,6 @@
 # Phase 2 — Applications Progress
 
-Current checkpoint: **2.2 Finance completion** — requested after the previously recorded 2.14 work; Finance implementation and automated checks are recorded at the end of this file; founder manual acceptance and live screenshot comparison remain pending.
+Current checkpoint: **2.6B Procurement functional expansion** — local implementation and automated verification are recorded at the end of this file; browser visual comparison and founder manual acceptance remain pending.
 
 Source checkpoint: Phase 1 committed by the founder; this work is uncommitted by design.
 Hard limits observed: no commits, pushes, deployments, production data or provider changes.
@@ -14,7 +14,7 @@ Hard limits observed: no commits, pushes, deployments, production data or provid
 | 2.3        | Sales       | Implemented (Odoo-style document workspace); build/tests green; browser click-through not executed                                                                |
 | 2.4        | Inventory   | Implemented (Odoo-style warehouse workspace); build/tests green; browser click-through not executed                                                               |
 | 2.5        | CRM         | Partial — pipeline increment recorded at the end of this file; browser acceptance not performed                                                                   |
-| 2.6        | Procurement | Implemented (Odoo-style purchasing workspace); build/tests green; browser click-through not executed                                                              |
+| 2.6        | Procurement | Expanded in 2.6B (prices, agreements/templates, comparison, reporting, server-paged approvals); automated checks recorded below; browser acceptance pending |
 | 2.7        | Accounting  | Implemented (Odoo-style ledger workspace); build/tests green; browser click-through not executed                                                                  |
 | 2.8        | POS         | Implemented (Odoo-style register, cashier, payment, receipt, closing, orders, reporting and configuration); build/tests green; browser click-through not executed |
 | 2.9        | Work        | Implemented; focused engineering/browser verification recorded below; founder acceptance pending                                                                  |
@@ -223,14 +223,13 @@ unverified observations and never claim bank settlement. No outbound email or su
 `website/src/workspace-navigation.ts`; `website/src/approved-platform.css`;
 `website/tests/procurement-app.test.mjs` (new).
 
-**Known limitations.** Vendor pricelists and purchase agreements have no backend model and are
-explicitly unsupported. Supplier comparison uses multiple offers under one request rather than a
-dedicated alternatives relation. Receipts are posted purchase-receipt inspections, not draft or
-backorder documents. There is no automatic email/PO transmission, supplier portal, bank payment,
-statutory filing or three-way matching beyond the backend's received-quantity bill validation.
-Reports and counters cover the latest loaded page (50 records per register); averages and on-time
-percentages appear only where derivable from loaded dates. Browser/visual acceptance was not
-performed.
+**Limitations at the original 2.6 checkpoint.** At that point vendor pricelists and agreements had
+no backend model; those records were added in the 2.6B continuation below. Supplier comparison uses
+multiple offers under one request rather than a dedicated alternatives relation. Receipts are posted
+purchase-receipt inspections, not draft or backorder documents. There is no automatic email/PO
+transmission, supplier portal, bank payment, statutory filing or three-way matching beyond the
+backend's received-quantity bill validation. Reports and counters covered only the latest loaded
+page. Browser/visual acceptance was not performed.
 
 ## Checkpoint 2.7 — Accounting app rebuild
 
@@ -1411,3 +1410,33 @@ This continuation adds customerless lead capture and CSV import, duplicate sugge
 The Odoo 20 source review for the 11 supplied Phase 2.5B images is recorded in [notes/crm.md](odoo-reference/notes/crm.md), [RESEARCH_LOG.md](odoo-reference/RESEARCH_LOG.md), [PATTERNS.md](odoo-reference/PATTERNS.md) and [DECISIONS.md](odoo-reference/DECISIONS.md). The image specifications were reviewed, but no Phase 2.5B running-app capture or side-by-side comparison was made. Visual matching and manual acceptance remain open; no pixel-parity claim is made.
 
 Verification after the final backend change: root TypeScript build and `npm run typecheck` passed; focused isolated SQLite CRM workflow suite passed **53/53**; generated workspace OpenAPI validated **464 operations** after removing a nondeterministic generated UUID default; and `git diff --check` passed. Website production build and content/app tests passed **133/133** immediately before this backend-only correction; it was not rerun because the final correction does not touch website source. No PostgreSQL suite, live/hosted data, app deployment, commit or push was run. No non-test database migration was applied.
+
+## Phase 2.6B Procurement functional expansion — local checkpoint, 18 November 2026
+
+This continuation expands the installed Procurement app and preserves the independent Procurement service. Odoo 20 purchase, stock, agreement, vendor-price and analysis behavior was reviewed against the six supplied Odoo 19 references. Source paths, findings and limits are recorded in [notes/purchase.md](odoo-reference/notes/purchase.md) and [RESEARCH_LOG.md](odoo-reference/RESEARCH_LOG.md). The screenshots guide the RFQ register/dashboard, purchase document, agreement, vendor price list, bill and analytics layouts. A running-app side-by-side comparison has not yet been made, so visual acceptance remains open.
+
+The continuation adds canonical vendor-price records, reusable purchase templates, and blanket agreements with date/currency/supplier/product/quantity/price/destination constraints. RFQs capture vendor references, order deadlines, expected delivery, payment terms and template/agreement snapshots. Awarding is separate from transmission and retains one auditable winner per approved requirement; orders remain unavailable from unapproved requests or unaccepted offers. Review queues are server-paged and exclude records authored by the reviewing actor. Finance-only documents remain behind finance authorization. Replenishment quantities and monetary fields now cross the UI/API boundary in exact thousandths/minor units. Procurement reports support server-side date, supplier and buyer selection.
+
+Purchase lists search, filter, sort, group, count and page across the complete scoped register. Reports aggregate all authorized matching records and retain each source currency separately, with supplier, buyer, date, currency and product-category filters; category-filtered purchase values use line subtotals because tax is held at document level. Financial aging and bill details are limited to finance-authorized members and remain at whole-bill level. The workspace exposes agreements, templates, pricelists, replenishment, offer comparison, review queues, vendor/product/approval/receipt reports and CSV export. Procurement continues to use shared Customers, Products, Inventory and Accounting records. Issued orders create planned incoming inventory; only accepted receipt quantities post stock. Payment observations remain unverified manual evidence, and RFQ/PO email is never claimed as sent.
+
+Known limits: outbound vendor email, a supplier portal, bank execution/confirmation and statutory filing are not configured. Receipts are posted inspection evidence rather than draft/backorder documents, and there is no standalone Odoo alternative-bid object; alternatives remain offers linked to one approved requirement. Mixed-currency offers are disclosed as incomparable because no conversion-rate policy is available. Reports do not yet provide saved-search persistence or a general-purpose pivot builder. Settings disclose unsupported approval-limit and department policies. No hosted DB migration, live/production data change, deploy, commit or push was performed.
+
+### Changed areas
+
+- `src/erp/procurement-schema.ts`, `src/db/index.ts`, and `src/deployment-database.ts` register additive migration `020-procurement-expansion` for the new procurement records and guards. No production migration was run.
+- `src/erp/procurement-contracts.ts`, `src/erp/procurement.ts`, `src/erp/routes.ts`, `src/erp/metadata.ts`, and `src/erp/store.ts` implement validated contracts, lifecycle transitions, scoped access, approval queues, paging, report aggregates and route registration.
+- `src/inventory/service.ts` and `src/operations/business-routes.ts` connect purchase orders and accepted receipts to canonical inventory records and expose replenishment data without maintaining a second stock balance.
+- `website/src/apps/ProcurementAppWorkspace.tsx`, `ProcurementEditor.tsx`, `ProcurementReports.tsx`, `procurement-app-model.ts`, and `approved-platform.css` provide the installed Odoo-style workspace, document editors, report controls and exact input/output conversion. Existing AfriCore navigation and independent service pages remain intact.
+- `src/__tests__/procurement.test.ts`, `src/__tests__/deployment-database.test.ts`, and `website/tests/procurement-app.test.mjs` cover purchasing state, approvals, tenancy/roles, inventory evidence, finance controls, pagination, report filters and UI boundaries. Odoo source notes and decisions are in `docs/odoo-reference/notes/purchase.md` and the related research files.
+
+### Automated verification
+
+| Check | Result |
+| --- | --- |
+| `npm run typecheck` | Passed |
+| `npm run lint` | Passed; ESLint, architecture and test-fixture checks |
+| `npm test` | Passed **465**, failed **0**, skipped **1** PostgreSQL-only test (466 total); includes root TypeScript build |
+| `npm --prefix website run build` | Passed; website TypeScript build, production assets, prerender and content/app suite **134/134**. Existing Zod/Rollup annotation warnings were non-fatal. |
+| `git diff --check` | Passed; only normal Windows LF-to-CRLF notices |
+
+The six supplied reference images were inspected at full resolution. A running AfriCore capture and side-by-side comparison could not be completed: browser access to the local app timed out at the origin approval gate on both attempts. Visual reproduction and founder manual acceptance therefore remain **unverified**; no pixel-parity or live-workflow acceptance is claimed.

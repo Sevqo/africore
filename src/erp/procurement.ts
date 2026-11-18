@@ -37,6 +37,9 @@ export const purchaseKinds = {
   bill: 'supplier_bill',
   payment: 'supplier_payment',
   credit: 'supplier_credit',
+  price: 'supplier_price',
+  agreement: 'purchase_agreement',
+  template: 'purchase_template',
 } as const;
 type PurchaseType = keyof typeof purchaseKinds;
 const financeTypes = new Set(['bill', 'payment', 'credit']);
@@ -54,12 +57,63 @@ async function objects(a: Access, type: PurchaseType, parent?: string) {
   const rows = await dbAll(
     'SELECT * FROM ac_erp_objects WHERE org_id=? AND environment=? AND kind=?' +
       (parent ? ' AND parent_id=?' : '') +
-      ' ORDER BY created_at DESC,id DESC LIMIT 5001',
+      ' ORDER BY created_at DESC,id DESC',
     [a.org, a.environment, purchaseKinds[type], ...(parent ? [parent] : [])],
   );
-  if (rows.length > 5000)
-    fail(409, 'Narrow the purchase source scope; more than 5,000 records require an export review');
   return rows.map((r) => decode(a, r));
+}
+const searchValue = (record: any) => {
+  const d = record.data || {};
+  return [
+    d.reference,
+    d.title,
+    d.vendor_reference,
+    d.supplier_snapshot?.name,
+    d.contact_snapshot?.name,
+    d.supplier_id,
+    d.product_id,
+    d.vendor_sku,
+    d.currency,
+    record.status,
+    d.prepared_by,
+    ...(d.lines || []).flatMap((line: any) => [
+      line.product_snapshot?.name,
+      line.product_snapshot?.sku,
+      line.product_id,
+    ]),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLocaleLowerCase();
+};
+function filterPurchaseRows(rows: any[], q: any) {
+  let result = rows.filter((row) => {
+    const d = row.data || {};
+    if (q.status && q.status !== 'all' && row.status !== q.status) return false;
+    if (q.search && !searchValue(row).includes(q.search.toLocaleLowerCase())) return false;
+    if (q.buyer && d.prepared_by !== q.buyer) return false;
+    if (q.currency && d.currency !== q.currency) return false;
+    if (q.supplier && d.supplier_id !== q.supplier) return false;
+    const date = d.deadline_on || d.delivery_on || d.needed_on || d.issued_on || d.valid_from || row.created_at?.slice(0, 10) || '';
+    if (q.date_from && date < q.date_from)
+      return false;
+    if (q.date_to && date > q.date_to)
+      return false;
+    if (q.warehouse && !(d.lines || []).some((line: any) => line.warehouse_id === q.warehouse))
+      return false;
+    return true;
+  });
+  const value = (row: any) => {
+    const d = row.data || {};
+    return q.sort === 'amount'
+      ? Number(d.total_minor || d.unit_price_minor || d.budget_minor || 0)
+      : String(d.delivery_on || d.needed_on || d.issued_on || row.created_at || '');
+  };
+  result.sort((a, b) => {
+    const comparison = value(a) < value(b) ? -1 : value(a) > value(b) ? 1 : 0;
+    return (q.direction === 'asc' ? 1 : -1) * comparison;
+  });
+  return result;
 }
 const fingerprint = (d: unknown) => hash(canonical(JSON.parse(JSON.stringify(d))));
 function refHash(value: string) {
@@ -122,6 +176,7 @@ async function checkedLines(a: Access, lines: any[], currency: string) {
         id: p.id,
         name: p.name,
         sku: p.sku,
+        category: p.category || '',
         unit: p.unit,
         track_inventory: p.track_inventory,
       },
@@ -200,21 +255,51 @@ export async function purchaseList(a: Access, input: unknown) {
   const q = z
       .object({
         type: z
-          .enum(['supplier', 'request', 'rfq', 'order', 'receipt', 'bill', 'payment', 'credit'])
+          .enum([
+            'supplier', 'request', 'rfq', 'order', 'receipt', 'bill', 'payment', 'credit',
+            'price', 'agreement', 'template',
+          ])
           .default('request'),
         offset: z.coerce.number().int().min(0).max(1000000).default(0),
+        limit: z.coerce.number().int().min(1).max(100).default(50),
         parent_id: z.string().uuid().optional(),
+        search: z.string().trim().max(200).default(''),
+        status: z.string().trim().max(40).default('all'),
+        buyer: z.string().uuid().optional(),
+        supplier: z.string().uuid().optional(),
+        warehouse: z.string().uuid().optional(),
+        currency: z.string().length(3).optional(),
+        date_from: z.string().date().optional(),
+        date_to: z.string().date().optional(),
+        sort: z.enum(['date', 'amount']).default('date'),
+        direction: z.enum(['asc', 'desc']).default('desc'),
+        group_by: z.enum(['supplier', 'buyer', 'status']).optional(),
       })
       .strict()
       .parse(input),
     role = await procurementAccess(a, false, financeTypes.has(q.type)),
-    data = await objects(a, q.type, q.parent_id),
+    all = await objects(a, q.type, q.parent_id),
+    filtered = filterPurchaseRows(all, q),
     active = (await entitlement(a, 'procurement'))?.status === 'active';
+  const status_counts: Record<string, number> = {};
+  for (const row of all) status_counts[row.status] = (status_counts[row.status] || 0) + 1;
+  const groups: Record<string, number> = {};
+  if (q.group_by)
+    for (const row of filtered) {
+      const d = row.data || {};
+      const key = q.group_by === 'supplier'
+        ? d.supplier_snapshot?.name || d.contact_snapshot?.name || d.supplier_id || 'Unassigned'
+        : q.group_by === 'buyer' ? d.prepared_by || 'Unassigned' : row.status;
+      groups[key] = (groups[key] || 0) + 1;
+    }
   return {
-    data: data.slice(q.offset, q.offset + 50),
-    total: data.length,
+    data: filtered.slice(q.offset, q.offset + q.limit),
+    total: filtered.length,
     offset: q.offset,
-    has_more: q.offset + 50 < data.length,
+    limit: q.limit,
+    has_more: q.offset + q.limit < filtered.length,
+    status_counts,
+    groups,
     permissions: {
       write: active && permitted(role, 'operations'),
       finance: active && permitted(role, 'finance'),
@@ -222,6 +307,48 @@ export async function purchaseList(a: Access, input: unknown) {
     },
     notice:
       'Recorded supplier offers and payments are manual business records. Receipts update accepted physical quantities only. No orders, emails, bank payments or statutory filings are sent automatically.',
+  };
+}
+export async function procurementApprovals(a: Access, input: unknown) {
+  const q = z
+    .object({
+      offset: z.coerce.number().int().min(0).max(1000000).default(0),
+      limit: z.coerce.number().int().min(1).max(100).default(50),
+      search: z.string().trim().max(200).default(''),
+      type: z.enum(['all', 'request', 'order', 'bill', 'credit', 'agreement']).default('all'),
+    })
+    .strict()
+    .parse(input);
+  const role = await procurementAccess(a, false);
+  if (!['owner', 'admin'].includes(role)) fail(403, 'Separate reviewer authority required');
+  const selected = q.type === 'all'
+    ? permitted(role, 'finance')
+      ? ['request', 'order', 'bill', 'credit', 'agreement'] as const
+      : ['request', 'order', 'agreement'] as const
+    : [q.type] as const;
+  if (selected.some((type) => financeTypes.has(type)) && !permitted(role, 'finance'))
+    fail(403, 'Separate financial authority required');
+  const pending: { type: string; record: ERPObject }[] = [];
+  for (const type of selected) {
+    const expectedStatus = type === 'request' ? 'submitted' : 'draft';
+    for (const record of await objects(a, type)) {
+      if (record.status !== expectedStatus || a.actor === (record.data.prepared_by || record.owner_id))
+        continue;
+      if (q.search && !searchValue(record).includes(q.search.toLocaleLowerCase())) continue;
+      pending.push({ type, record });
+    }
+  }
+  pending.sort((left, right) =>
+    String(right.record.created_at || '').localeCompare(String(left.record.created_at || '')) ||
+    left.record.id.localeCompare(right.record.id),
+  );
+  return {
+    data: pending.slice(q.offset, q.offset + q.limit),
+    total: pending.length,
+    offset: q.offset,
+    limit: q.limit,
+    has_more: q.offset + q.limit < pending.length,
+    permissions: { review: true },
   };
 }
 export async function purchaseDetails(a: Access, id: string, type: PurchaseType) {
@@ -244,12 +371,33 @@ export async function purchaseDetails(a: Access, id: string, type: PurchaseType)
   return {
     record: o,
     matching,
+    award:
+      type === 'rfq'
+        ? await dbGet(
+            'SELECT request_id,rfq_id,reason,actor,awarded_at FROM ac_purchase_awards WHERE org_id=? AND environment=? AND rfq_id=?',
+            [a.org, a.environment, o.id],
+          )
+        : type === 'request'
+          ? await dbGet(
+              'SELECT request_id,rfq_id,reason,actor,awarded_at FROM ac_purchase_awards WHERE org_id=? AND environment=? AND request_id=?',
+              [a.org, a.environment, o.id],
+            )
+          : null,
     can_review:
       ['owner', 'admin'].includes(await currentMember(a)) &&
       a.actor !== (o.data.prepared_by || o.owner_id) &&
       (await entitlement(a, 'procurement'))?.status === 'active',
     history: await history(a, o, 100),
-    offers: type === 'request' ? await objects(a, 'rfq', id) : [],
+    offers:
+      type === 'request'
+        ? await objects(a, 'rfq', id)
+        : type === 'agreement'
+          ? (await objects(a, 'rfq')).filter((r) => r.data.agreement_id === id)
+          : [],
+    linked_orders:
+      type === 'agreement'
+        ? (await objects(a, 'order')).filter((r) => r.data.agreement_id === id)
+        : [],
     receipts: type === 'order' ? await objects(a, 'receipt', id) : [],
     received: type === 'order' ? Object.fromEntries(await received(a, id)) : null,
   };
@@ -264,13 +412,15 @@ export async function savePurchase(a: Access, id: string | null, input: unknown,
     d,
     () => procurementAccess(a, true, financeTypes.has(type)),
     async () => {
-      const old = id ? await read(a, id, purchaseKinds[type]) : null;
+        const old = id ? await read(a, id, purchaseKinds[type]) : null;
+      const editableStatuses =
+        type === 'supplier' || type === 'price' || type === 'template'
+          ? ['draft', 'rejected', 'active', 'archived']
+          : ['draft', 'rejected'];
       if (
         old
           ? old.version !== d.expected_version ||
-            !['draft', 'rejected', ...(type === 'supplier' ? ['active', 'archived'] : [])].includes(
-              old.status,
-            ) ||
+            !editableStatuses.includes(old.status) ||
             type === 'order'
           : d.expected_version !== 0
       )
@@ -294,6 +444,33 @@ export async function savePurchase(a: Access, id: string | null, input: unknown,
         );
         if (duplicate) fail(409, 'This shared contact already has a supplier profile');
       }
+      if (type === 'price') {
+        const supplier = await read(a, d.record.supplier_id, 'supplier_profile');
+        const p = await product(a, d.record.product_id);
+        if (supplier.status !== 'active' || p.status !== 'active' || p.currency !== d.record.currency)
+          fail(409, 'Choose an active shared vendor and product with matching currency');
+        if (d.record.valid_from && d.record.valid_to && d.record.valid_to < d.record.valid_from)
+          fail(400, 'Vendor price end date precedes its start date');
+        data.supplier_snapshot = supplier.data.contact_snapshot;
+        data.product_snapshot = { id: p.id, name: p.name, sku: p.sku, unit: p.unit };
+        data.active = true;
+      }
+      if (type === 'template' || type === 'agreement') {
+        data.lines = await checkedLines(a, d.record.lines, d.record.currency);
+        if (type === 'template' && d.record.supplier_id) {
+          const supplier = await read(a, d.record.supplier_id, 'supplier_profile');
+          if (supplier.status !== 'active') fail(409, 'Choose an active shared vendor');
+          data.supplier_snapshot = supplier.data.contact_snapshot;
+        }
+        if (type === 'agreement') {
+          const supplier = await read(a, d.record.supplier_id, 'supplier_profile');
+          if (supplier.status !== 'active') fail(409, 'Choose an active shared vendor');
+          if (d.record.valid_to < d.record.valid_from)
+            fail(400, 'Agreement end date precedes its start date');
+          data.supplier_snapshot = supplier.data.contact_snapshot;
+          data.prepared_by = a.actor;
+        }
+      }
       if (type === 'request') {
         data.lines = await checkedLines(a, d.record.lines, d.record.currency);
         if (d.record.suggestion_id) {
@@ -315,6 +492,39 @@ export async function savePurchase(a: Access, id: string | null, input: unknown,
           fail(409, 'Approved request and active supplier in the same currency required');
         data.lines = await checkedLines(a, d.record.lines, d.record.currency);
         compareLines(data.lines, request.data.lines, true);
+        if (d.record.template_id) {
+          const template = await read(a, d.record.template_id, 'purchase_template');
+          if (
+            template.status !== 'active' ||
+            template.data.currency !== d.record.currency ||
+            (template.data.supplier_id && template.data.supplier_id !== supplier.id)
+          )
+            fail(409, 'Choose an active purchase template for this supplier and currency');
+          if (data.lines.some((line: any) => !template.data.lines.some((v: any) => v.product_id === line.product_id)))
+            fail(409, 'Offer products must match the selected purchase template');
+          data.template_snapshot = { id: template.id, title: template.data.title };
+        }
+        if (d.record.agreement_id) {
+          const agreement = await read(a, d.record.agreement_id, 'purchase_agreement');
+          const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(new Date());
+          if (
+            agreement.status !== 'confirmed' ||
+            agreement.data.supplier_id !== supplier.id ||
+            agreement.data.currency !== d.record.currency ||
+            today < agreement.data.valid_from || today > agreement.data.valid_to
+          ) fail(409, 'Choose a confirmed, current agreement for this supplier and currency');
+          for (const line of data.lines) {
+            const agreed = agreement.data.lines.find((v: any) => v.product_id === line.product_id);
+            if (
+              !agreed ||
+              line.warehouse_id !== agreed.warehouse_id ||
+              line.quantity_milli > agreed.quantity_milli ||
+              line.unit_price_minor !== agreed.unit_price_minor
+            )
+              fail(409, 'Offer must use the agreement product, price, destination and quantity limit');
+          }
+          data.agreement_snapshot = { id: agreement.id, title: agreement.data.title };
+        }
         data.request_version = request.version;
         data.supplier_snapshot = supplier.data.contact_snapshot;
         parent = request.id;
@@ -397,7 +607,12 @@ export async function savePurchase(a: Access, id: string | null, input: unknown,
           fail(409, 'Retain the supplier, parent and reference on a revised document');
       }
       data.prepared_by = a.actor;
-      const state = type === 'supplier' ? (data.active ? 'active' : 'archived') : 'draft';
+      const state =
+        ['supplier', 'price', 'template'].includes(type)
+          ? data.active === false
+            ? 'archived'
+            : 'active'
+          : 'draft';
       const result = old
         ? await update(a, old, data, { status: state, parent_id: parent }, 'revised')
         : await insert(a, purchaseKinds[type], data, { status: state, parent });
@@ -415,7 +630,7 @@ export async function purchaseDecision(
   key: string,
 ) {
   const d = purchaseAction.parse(input);
-  if (!['request', 'rfq', 'order', 'bill', 'credit'].includes(type))
+  if (!['request', 'rfq', 'order', 'bill', 'credit', 'agreement'].includes(type))
     fail(400, 'This record has no decision action');
   return operation(
     a,
@@ -436,13 +651,35 @@ export async function purchaseDecision(
       if (o.version !== d.expected_version) fail(409, 'Purchase changed; reload the exact version');
       const role = await currentMember(a);
       let status: string;
-      if (type === 'rfq' && d.action === 'reject') {
+      if (type === 'request' && d.action === 'submit') {
+        if (!['draft', 'rejected'].includes(o.status))
+          fail(409, 'Only a draft or rejected request can be submitted');
+        status = 'submitted';
+      } else if (type === 'agreement' && d.action === 'confirm') {
+        if (!['owner', 'admin'].includes(role) || a.actor === (o.data.prepared_by || o.owner_id))
+          fail(403, 'A different current owner or administrator must confirm this agreement');
+        if (o.status !== 'draft') fail(409, 'Only a draft agreement can be confirmed');
+        const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(new Date());
+        if (today > o.data.valid_to) fail(409, 'Expired agreement cannot be confirmed');
+        status = 'confirmed';
+      } else if (type === 'agreement' && d.action === 'close') {
+        if (!['owner', 'admin'].includes(role)) fail(403, 'Administrator authority required to close agreements');
+        if (o.status !== 'confirmed') fail(409, 'Only a confirmed agreement can be closed');
+        const agreementsOffers = (await objects(a, 'rfq')).filter((offer) => offer.data.agreement_id === id),
+          agreementOrders = (await objects(a, 'order')).filter((order) => order.data.agreement_id === id);
+        const unresolvedOffers = agreementsOffers.some((offer) => offer.status === 'draft' ||
+          (offer.status === 'accepted' && !agreementOrders.some((order) => order.data.rfq_id === offer.id && ['issued', 'confirmed', 'cancelled'].includes(order.status))));
+        const unissuedOrders = agreementOrders.some((order) => ['draft', 'approved'].includes(order.status));
+        if (unresolvedOffers || unissuedOrders)
+          fail(409, 'Resolve draft or awarded supplier quotations and unissued orders before closing this agreement');
+        status = 'closed';
+      } else if (type === 'rfq' && d.action === 'reject') {
         if (o.status !== 'draft') fail(409, 'Only a draft offer can be rejected');
         status = 'rejected';
       } else if (['approve', 'reject'].includes(d.action)) {
         if (!['owner', 'admin'].includes(role) || a.actor === (o.data.prepared_by || o.owner_id))
           fail(403, 'A different current owner or administrator must review this exact version');
-        if (!['draft'].includes(o.status) || type === 'rfq')
+        if (!(type === 'request' ? o.status === 'submitted' : o.status === 'draft') || type === 'rfq')
           fail(409, 'Only a submitted draft can be reviewed');
         status = d.action === 'reject' ? 'rejected' : 'approved';
         if (status === 'approved' && type === 'bill') await validateBill(a, o.data, id);
@@ -460,6 +697,15 @@ export async function purchaseDecision(
         const request = await read(a, o.data.request_id, 'purchase_request');
         if (request.status !== 'approved' || request.version !== o.data.request_version)
           fail(409, 'Request changed after the offer');
+        const awarded = await dbGet(
+          'SELECT rfq_id FROM ac_purchase_awards WHERE org_id=? AND environment=? AND request_id=?',
+          [a.org, a.environment, request.id],
+        );
+        if (awarded) fail(409, 'This request already has an awarded supplier offer');
+        await dbRun(
+          'INSERT INTO ac_purchase_awards(org_id,environment,request_id,rfq_id,reason,actor,awarded_at) VALUES (?,?,?,?,?,?,?)',
+          [a.org, a.environment, request.id, o.id, d.reason, a.actor, now()],
+        );
         status = 'accepted';
       } else if (d.action === 'issue') {
         if (type !== 'order' || o.status !== 'approved')
@@ -490,6 +736,22 @@ export async function purchaseDecision(
         }
         const supplier = await read(a, o.data.supplier_id, 'supplier_profile');
         if (supplier.status !== 'active') fail(409, 'Supplier is archived');
+        if (o.data.agreement_id) {
+          const agreement = await read(a, o.data.agreement_id, 'purchase_agreement');
+          if (agreement.status !== 'confirmed') fail(409, 'Purchase agreement is no longer open');
+          const linked = (await objects(a, 'order')).filter(
+            (v) => v.id !== id && v.data.agreement_id === agreement.id && ['issued', 'confirmed'].includes(v.status),
+          );
+          for (const line of o.data.lines) {
+            const cap = agreement.data.lines.find((l: any) => l.product_id === line.product_id);
+            const used = linked
+              .flatMap((v) => v.data.lines)
+              .filter((l: any) => l.product_id === line.product_id)
+              .reduce((n: number, l: any) => n + Number(l.quantity_milli || 0), 0);
+            if (!cap || used + line.quantity_milli > cap.quantity_milli)
+              fail(409, 'Agreement committed quantities would be exceeded');
+          }
+        }
         for (const line of o.data.lines) {
           if (!line.product_snapshot.track_inventory) continue;
           const incoming = await planIncoming(
@@ -519,7 +781,7 @@ export async function purchaseDecision(
             "UPDATE ac_stock_incoming SET status='cancelled',updated_at=? WHERE org_id=? AND environment=? AND status='planned' AND id IN (SELECT incoming_id FROM ac_purchase_incoming WHERE org_id=? AND environment=? AND order_id=?)",
             [now(), a.org, a.environment, a.org, a.environment, id],
           );
-        } else if (!['draft', 'approved', 'accepted', 'rejected'].includes(o.status))
+        } else if (!['draft', 'approved', 'accepted', 'rejected', 'submitted', 'confirmed'].includes(o.status))
           fail(409, 'This record cannot be cancelled');
         if (['bill', 'credit'].includes(type) && o.status === 'approved')
           fail(409, 'Use an append-only supplier credit to correct approved liabilities');
@@ -771,35 +1033,110 @@ export async function amendPurchaseOrder(a: Access, id: string, input: unknown, 
     },
   );
 }
-export async function procurementReport(a: Access) {
+export async function procurementReport(a: Access, input: unknown = {}) {
+  const q = z
+    .object({
+      date_from: z.string().date().optional(),
+      date_to: z.string().date().optional(),
+      supplier: z.string().uuid().optional(),
+      buyer: z.string().uuid().optional(),
+      currency: z.string().length(3).optional(),
+      category: z.string().max(100).optional(),
+      uncategorized: z.literal('true').optional(),
+    })
+    .strict()
+    .refine((query) => !(query.category && query.uncategorized), 'Choose one product category filter')
+    .parse(input);
   const role = await procurementAccess(a),
-    orders = await objects(a, 'order'),
-    requests = await objects(a, 'request'),
-    offers = await objects(a, 'rfq'),
+    matchesCategory = (line: any) =>
+      q.uncategorized === 'true'
+        ? !line.product_snapshot?.category
+        : !q.category || String(line.product_snapshot?.category || '') === q.category,
+    matchesPeriodAndDimensions = (record: any, includeCategory = true) => {
+      const date = String(record.created_at || '').slice(0, 10), d = record.data || {};
+      return (!q.date_from || date >= q.date_from) && (!q.date_to || date <= q.date_to) &&
+        (!q.supplier || d.supplier_id === q.supplier) &&
+        (!q.buyer || d.prepared_by === q.buyer) &&
+        (!q.currency || d.currency === q.currency) &&
+        (!includeCategory || (!q.category && !q.uncategorized) || (d.lines || []).some(matchesCategory));
+    },
+    allOrders = await objects(a, 'order'),
+    orders = allOrders.filter((record) => matchesPeriodAndDimensions(record)),
+    requests = (await objects(a, 'request')).filter((record) => matchesPeriodAndDimensions(record)),
+    offers = (await objects(a, 'rfq')).filter((record) => matchesPeriodAndDimensions(record)),
     currencies: any = {};
+  const by_vendor: Record<string, any> = {},
+    by_product: Record<string, any> = {},
+    by_month: Record<string, any> = {};
   for (const o of orders) {
+    const matchingLines = (o.data.lines || []).filter(matchesCategory),
+      matchingValue = q.category
+        ? sumMinor(matchingLines.map((line: any) => line.amount_minor || 0))
+        : Number(o.data.total_minor || 0);
     const totals = currencies[o.data.currency] || {
       issued_minor: 0,
       orders: 0,
+      cancelled_minor: 0,
+      cancelled_orders: 0,
       open_receipt_lines: 0,
     };
-    if (['issued', 'confirmed', 'cancelled'].includes(o.status)) {
-      totals.issued_minor = sumMinor([totals.issued_minor, o.data.total_minor]);
+    if (['issued', 'confirmed'].includes(o.status)) {
+      totals.issued_minor = sumMinor([totals.issued_minor, matchingValue]);
       totals.orders++;
-      if (o.status !== 'cancelled') {
-        const counts = await received(a, o.id);
-        totals.open_receipt_lines += o.data.lines.filter(
-          (l: any) =>
-            l.product_snapshot.track_inventory && (counts.get(l.id) || 0) < l.quantity_milli,
-        ).length;
-      }
+      const counts = await received(a, o.id);
+      totals.open_receipt_lines += matchingLines.filter(
+        (l: any) =>
+          l.product_snapshot.track_inventory && (counts.get(l.id) || 0) < l.quantity_milli,
+      ).length;
+    } else if (o.status === 'cancelled') {
+      totals.cancelled_minor = sumMinor([totals.cancelled_minor, matchingValue]);
+      totals.cancelled_orders++;
     }
     currencies[o.data.currency] = totals;
+    if (['issued', 'confirmed'].includes(o.status)) {
+      const vendor = o.data.supplier_snapshot?.name || 'Unknown vendor';
+      const vendorKey = vendor + '|' + o.data.currency;
+      by_vendor[vendorKey] ||= {
+        supplier_id: o.data.supplier_id,
+        vendor,
+        currency: o.data.currency,
+        order_count: 0,
+        value_minor: 0,
+        open_orders: 0,
+      };
+      by_vendor[vendorKey].order_count += 1;
+      by_vendor[vendorKey].value_minor = sumMinor([by_vendor[vendorKey].value_minor, matchingValue]);
+      if (o.status !== 'cancelled') by_vendor[vendorKey].open_orders += 1;
+      for (const line of matchingLines) {
+        const name = line.product_snapshot?.name || 'Unknown product';
+        const key = line.product_id + '|' + o.data.currency;
+        by_product[key] ||= {
+          product: name,
+          sku: line.product_snapshot?.sku || '',
+          category: line.product_snapshot?.category || 'Uncategorised',
+          unit: line.product_snapshot?.unit || 'unit',
+          currency: o.data.currency,
+          quantity_milli: 0,
+          value_minor: 0,
+          orders: 0,
+        };
+        by_product[key].quantity_milli += Number(line.quantity_milli || 0);
+        by_product[key].value_minor = sumMinor([by_product[key].value_minor, line.amount_minor || 0]);
+        by_product[key].orders += 1;
+      }
+      const month = String(o.created_at || '').slice(0, 7) || 'Unknown date';
+      const monthKey = month + '|' + o.data.currency;
+      by_month[monthKey] ||= { month, currency: o.data.currency, orders: 0, value_minor: 0 };
+      by_month[monthKey].orders++;
+      by_month[monthKey].value_minor = sumMinor([by_month[monthKey].value_minor, matchingValue]);
+    }
   }
   let payables: any[] = [],
     aging: any = {};
   if (permitted(role, 'finance')) {
-    const bills = (await objects(a, 'bill')).filter((b) => b.status === 'approved');
+    const bills = (await objects(a, 'bill')).filter((b) =>
+      b.status === 'approved' && matchesPeriodAndDimensions(b, false),
+    );
     for (const b of bills) {
       const s = await supplierBalance(a, b.id),
         days = Math.floor((Date.now() - Date.parse(b.data.due_on + 'T00:00:00Z')) / 86400000),
@@ -831,14 +1168,58 @@ export async function procurementReport(a: Access) {
       ]);
     }
   }
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(new Date());
+  const buyerIds = [...new Set(allOrders.map((order) => order.data.prepared_by || order.owner_id).filter(Boolean))];
+  const categoryOptions = [...new Set(allOrders.flatMap((order) => (order.data.lines || []).map((line: any) => String(line.product_snapshot?.category || ''))))]
+    .sort((left, right) => left.localeCompare(right))
+    .map((category) => ({ value: category ? 'category:' + category : 'uncategorized', label: category || 'Uncategorised' }));
+  const buyerRows = buyerIds.length
+    ? await dbAll(
+        `SELECT p.user_id,p.display_name FROM ac_profiles p JOIN ac_memberships m ON m.user_id=p.user_id WHERE m.org_id=? AND p.user_id IN (${buyerIds.map(() => '?').join(',')})`,
+        [a.org, ...buyerIds],
+      )
+    : [];
+  const buyerNames = new Map(buyerRows.map((row: any) => [row.user_id, row.display_name]));
+  const openOffers = offers.filter((r) => r.status === 'draft');
+  const relevantOrderIds = new Set(orders.map((order) => order.id));
+  const receipts = (await objects(a, 'receipt')).filter((receipt) =>
+    !!receipt.parent_id && relevantOrderIds.has(receipt.parent_id),
+  );
+  let late_receipts = 0;
+  for (const order of orders) {
+    if (!['issued', 'confirmed'].includes(order.status) || !order.data.delivery_on || order.data.delivery_on >= today) continue;
+    const counts = await received(a, order.id);
+    if (order.data.lines.some((line: any) => matchesCategory(line) && line.product_snapshot?.track_inventory && (counts.get(line.id) || 0) < line.quantity_milli)) late_receipts++;
+  }
+  const reportOfferIds = new Set(offers.map((offer) => offer.id));
+  const ordersByOffer = new Set(
+    orders
+      .filter((o) => ['issued', 'confirmed'].includes(o.status) && reportOfferIds.has(o.data.rfq_id))
+      .map((o) => o.data.rfq_id),
+  );
   return {
     request_count: requests.length,
-    pending_requests: requests.filter((r) => r.status === 'draft').length,
+    draft_requests: requests.filter((r) => r.status === 'draft').length,
+    pending_requests: requests.filter((r) => r.status === 'submitted').length,
     offer_count: offers.length,
+    awarded_rfqs: offers.filter((r) => r.status === 'accepted').length,
+    open_offers: openOffers.length,
+    late_rfqs: openOffers.filter((r) => r.data.deadline_on && r.data.deadline_on < today).length,
+    rfq_to_order: ordersByOffer.size,
+    late_receipts,
+    posted_receipts: receipts.length,
+    total_orders: orders.filter((o) => ['issued', 'confirmed'].includes(o.status)).length,
     currencies,
+    buyer_options: buyerIds.map((id) => ({ id, name: buyerNames.get(id) || 'Former member ' + id.slice(0, 8) })),
+    category_options: categoryOptions,
+    by_vendor: Object.values(by_vendor).sort((x: any, y: any) => y.value_minor - x.value_minor),
+    by_product: Object.values(by_product).sort((x: any, y: any) => y.value_minor - x.value_minor),
+    by_month: Object.values(by_month).sort((x: any, y: any) => x.month.localeCompare(y.month)),
     payables,
     aging,
     definitions:
-      'Committed amounts retain cancelled-order history; they are not cash outflow or on-hand valuation. Payables use approved supplier bills less approved credits and manual payment observations. Aging uses the recorded due date and UTC day; currencies remain separate.',
+      'Committed amounts retain cancelled-order history; they are not cash outflow or on-hand valuation.' +
+      (q.category ? ' Category-filtered purchase values use matching line subtotals; order-level tax is not allocated by product category.' : '') +
+      ' Payables use approved supplier bills less approved credits and manual payment observations; payable aging remains at whole-bill level. Aging uses the recorded due date and UTC day; currencies remain separate.',
   };
 }

@@ -19,6 +19,7 @@ import {
   stockCountSnapshot,
   postStockCount,
   products,
+  productCount,
   product,
   createProduct,
   editProduct,
@@ -279,6 +280,18 @@ business.get(
   route(async (req, res) => {
     const a = await access(req),
       q = z.string().max(100).default('').parse(req.query.q);
+    if (req.query.limit !== undefined || req.query.offset !== undefined) {
+      const limit = z.coerce.number().int().min(1).max(100).default(50).parse(req.query.limit),
+        pageOffset = offset(req),
+        total = await productCount(a, q);
+      return res.json({
+        data: await products(a, q, limit, pageOffset),
+        total,
+        offset: pageOffset,
+        limit,
+        has_more: pageOffset + limit < total,
+      });
+    }
     res.json({
       data: await products(a, q),
       limit: 200,

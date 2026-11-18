@@ -16,6 +16,8 @@ export const procurementViews = [
   'bills',
   'payments',
   'credits',
+  'agreements',
+  'templates',
   'vendors',
   'products',
   'pricelists',
@@ -50,10 +52,11 @@ export const viewsForSection: Record<string, ProcurementView[]> = {
     'payments',
     'credits',
     'vendors',
+    'agreements',
   ],
   products: ['products', 'pricelists', 'replenishment'],
   reporting: ['analysis', 'vendor-report', 'product-report', 'approval-report', 'receipt-report'],
-  configuration: ['settings'],
+  configuration: ['settings', 'templates'],
 };
 
 export function sectionForView(view: ProcurementView): string {
@@ -73,6 +76,8 @@ export const procurementViewTitles: Record<ProcurementView, string> = {
   bills: 'Vendor Bills',
   payments: 'Payment Observations',
   credits: 'Supplier Credits',
+  agreements: 'Purchase Agreements',
+  templates: 'Purchase Templates',
   vendors: 'Vendors',
   products: 'Products',
   pricelists: 'Vendor Pricelists',
@@ -87,6 +92,7 @@ export const procurementViewTitles: Record<ProcurementView, string> = {
 
 export const statusLabels: Record<string, string> = {
   draft: 'Draft',
+  submitted: 'Submitted for approval',
   rejected: 'Rejected',
   approved: 'Awaiting Issue',
   accepted: 'Accepted',
@@ -252,7 +258,11 @@ export function comparisonRows(offers: any[]) {
   }
   return Object.values(groups).map((group) => ({
     ...group,
-    offers: group.offers.sort((a, b) => a.unit_price_minor - b.unit_price_minor),
+    offers: group.offers.sort((a, b) =>
+      a.currency === b.currency
+        ? a.unit_price_minor - b.unit_price_minor
+        : String(a.currency).localeCompare(String(b.currency)),
+    ),
   }));
 }
 

@@ -12,6 +12,7 @@ import { prepareOnboardingProject } from './people-onboarding';
 import { organizationChart, peopleReport } from './people-reports';
 import {
   purchaseList,
+  procurementApprovals,
   purchaseDetails,
   savePurchase,
   purchaseDecision,
@@ -633,7 +634,10 @@ erp.post(
 
 const purchaseType = (value: unknown) =>
   z
-    .enum(['supplier', 'request', 'rfq', 'order', 'receipt', 'bill', 'payment', 'credit'])
+    .enum([
+      'supplier', 'request', 'rfq', 'order', 'receipt', 'bill', 'payment', 'credit',
+      'price', 'agreement', 'template',
+    ])
     .parse(value);
 erp.get(
   '/organizations/:org/procurement',
@@ -649,7 +653,11 @@ erp.post(
 );
 erp.get(
   '/organizations/:org/procurement-report',
-  route(async (req, res) => res.json(await procurementReport(await access(req)))),
+  route(async (req, res) => res.json(await procurementReport(await access(req), req.query))),
+);
+erp.get(
+  '/organizations/:org/procurement-approvals',
+  route(async (req, res) => res.json(await procurementApprovals(await access(req), req.query))),
 );
 erp.post(
   '/organizations/:org/procurement/orders/:id/amend',

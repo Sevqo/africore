@@ -6796,3 +6796,35 @@ html:has([data-platform-density]) {
 .work-app .work-task-sheet > .form-actions {
   justify-content: flex-start;
 }
+
+@media print {
+  .proc-app-nav,
+  .proc-doc-actions,
+  .proc-doc-tabs,
+  .proc-decisions,
+  .proc-sandbox-note,
+  .proc-back,
+  .proc-coverage {
+    display: none !important;
+  }
+  .proc-app,
+  .proc-doc,
+  .proc-doc-facts,
+  .proc-table-wrap {
+    width: 100% !important;
+    max-width: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+  }
+  .proc-doc {
+    border: 0 !important;
+  }
+  .proc-table {
+    font-size: 10pt !important;
+  }
+  .proc-table tr,
+  .proc-doc-facts,
+  .proc-doc-totals {
+    break-inside: avoid;
+  }
+}

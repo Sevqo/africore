@@ -28,7 +28,7 @@ the relevant source paths. Earlier focused HR findings remain in `notes/hr.md`.
 | `hr_holidays` | `odoo-reference/addons/hr_holidays` | deep-dive | [hr.md](notes/hr.md) | AfriCore People leave and approvals |
 | `point_of_sale` | `odoo-reference/addons/point_of_sale` | read | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | AfriCore POS |
 | `project` | `odoo-reference/addons/project` | read | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | AfriCore Work |
-| `purchase` | `odoo-reference/addons/purchase` | read | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | AfriCore Procurement |
+| `purchase` | `odoo-reference/addons/purchase` | deep-dive | [purchase.md](notes/purchase.md) | AfriCore Procurement; RFQs, orders, agreements, bills, vendor prices and analysis |
 | `sale` | `odoo-reference/addons/sale` | read | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | AfriCore Sales and Commerce |
 | `spreadsheet` | `odoo-reference/addons/spreadsheet` | skimmed | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | Analytics authoring comparison; not a standalone app in this manifest |
 | `spreadsheet_dashboard` | `odoo-reference/addons/spreadsheet_dashboard` | read | [spreadsheet_dashboard.md](notes/spreadsheet_dashboard.md) | Spreadsheet-backed dashboards, favorites and saved global filters |

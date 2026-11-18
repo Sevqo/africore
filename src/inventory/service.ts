@@ -41,18 +41,29 @@ export async function product(a: Access, id: string) {
   if (!row) fail(404, 'Product not found');
   return decode(row);
 }
-export async function products(a: Access, q = '') {
+const productQuery = (q: string) =>
+  '%' + q.toLowerCase().replace(/[!%_]/g, (c) => '!' + c) + '%';
+export async function products(a: Access, q = '', limit = 200, offset = 0) {
   return (
     await dbAll(
-      "SELECT * FROM ac_products WHERE org_id=? AND environment=? AND (LOWER(name) LIKE ? ESCAPE '!' OR LOWER(sku) LIKE ? ESCAPE '!') ORDER BY name,id LIMIT 200",
+      "SELECT * FROM ac_products WHERE org_id=? AND environment=? AND (LOWER(name) LIKE ? ESCAPE '!' OR LOWER(sku) LIKE ? ESCAPE '!') ORDER BY name,id LIMIT ? OFFSET ?",
       [
         a.org,
         a.environment,
-        '%' + q.toLowerCase().replace(/[!%_]/g, (c) => '!' + c) + '%',
-        '%' + q.toLowerCase().replace(/[!%_]/g, (c) => '!' + c) + '%',
+        productQuery(q),
+        productQuery(q),
+        limit,
+        offset,
       ],
     )
   ).map(decode);
+}
+export async function productCount(a: Access, q = '') {
+  const result = await dbGet(
+    "SELECT COUNT(*) AS n FROM ac_products WHERE org_id=? AND environment=? AND (LOWER(name) LIKE ? ESCAPE '!' OR LOWER(sku) LIKE ? ESCAPE '!')",
+    [a.org, a.environment, productQuery(q), productQuery(q)],
+  );
+  return Number(result.n);
 }
 async function productLinks(a: Access, d: z.infer<typeof productInput>, id?: string) {
   if (d.parent_id) {

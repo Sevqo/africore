@@ -31,6 +31,14 @@ decided, and why. An entry here is authoritative for future sessions; a note in
 
 ## Log
 
+### D-006 — Keep supplier awards, receipt evidence and currency semantics explicit
+- Date: 2026-11-18
+- Status: accepted
+- Evidence: `odoo-reference/addons/purchase_alternative/models/purchase.py`, `odoo-reference/addons/purchase/models/purchase_order.py`, `odoo-reference/addons/purchase_stock/models/purchase_order_line.py`, and `odoo-reference/addons/purchase/report/purchase_report.py` (+ `RESEARCH_LOG.md`, Procurement expansion entry)
+- Constraint: procurement must preserve independent review, canonical Inventory and Accounting ownership, immutable purchase evidence, and exact money without implying a supplier communication or currency conversion that did not occur.
+- Decision: link alternative offers to one approved requirement and persist one separately reviewed award; plan incoming quantities at order issue and increase stock only through accepted receipts; validate supplier bills against recorded purchasing/receipt evidence; and aggregate amounts by source currency until an authorized rate basis exists. Do not claim RFQ/PO email, bank payment or statutory filing without a real service result.
+- Consequences: test distinct-person review, award uniqueness/replay, partial receipts, quantity matching, currency-isolated reports, and external-action wording. A standalone Odoo alternative-bid model, Odoo accounting tables and source/assets are not copied.
+
 ### D-005 — Keep CRM activity plans bounded and retry-safe
 - Date: 2026-11-18
 - Status: accepted

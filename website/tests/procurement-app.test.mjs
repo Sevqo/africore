@@ -26,9 +26,37 @@ const appJs = ts.transpileModule(appSource, {
 const { appCatalog } = await import(
   'data:text/javascript;base64,' + Buffer.from(appJs).toString('base64')
 );
+const quantitySource = fs.readFileSync(
+  new URL('../../src/inventory/quantity.ts', import.meta.url),
+  'utf8',
+);
+const quantityJs = ts.transpileModule(quantitySource, {
+  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+}).outputText;
+const { displayQuantity, quantityMilli } = await import(
+  'data:text/javascript;base64,' + Buffer.from(quantityJs).toString('base64')
+);
+const moneySource = fs.readFileSync(
+  new URL('../../src/finance/money.ts', import.meta.url),
+  'utf8',
+);
+const moneyJs = ts.transpileModule(moneySource, {
+  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+}).outputText;
+const { parseMoney } = await import(
+  'data:text/javascript;base64,' + Buffer.from(moneyJs).toString('base64')
+);
 const procurement = appCatalog.find((app) => app.id === 'procurement');
 const workspaceSource = fs.readFileSync(
   new URL('../src/apps/ProcurementAppWorkspace.tsx', import.meta.url),
+  'utf8',
+);
+const reportsSource = fs.readFileSync(
+  new URL('../src/apps/ProcurementReports.tsx', import.meta.url),
+  'utf8',
+);
+const procurementSource = fs.readFileSync(
+  new URL('../../src/erp/procurement.ts', import.meta.url),
   'utf8',
 );
 const appsWorkspaceSource = fs.readFileSync(
@@ -113,7 +141,7 @@ test('the installed Procurement app renders the operational workspace, not the s
   assert.ok(workspaceSource.includes('403'));
 });
 
-test('procurement screens keep real purchasing and financial boundaries', () => {
+test('procurement screens expose expanded purchasing workflows with real data boundaries', () => {
   const workspaceText = workspaceSource.replace(/\s+/g, ' ');
   assert.ok(
     workspaceText.includes(
@@ -125,16 +153,26 @@ test('procurement screens keep real purchasing and financial boundaries', () => 
       'no live supplier connection, bank movement or statutory filing is performed',
     ),
   );
-  assert.ok(workspaceText.includes('Vendor pricelists are not available'));
-  assert.ok(
-    workspaceText.includes(
-      'The current procurement backend has no vendor-specific price-list record.',
-    ),
-  );
+  assert.ok(workspaceText.includes('Purchase Agreements'));
+  assert.ok(workspaceText.includes('Purchase Templates'));
+  assert.ok(workspaceText.includes('Vendor Pricelists'));
+  assert.ok(workspaceText.includes('Confirmed purchase value'));
+  assert.ok(reportsSource.includes('Filter by product category'));
+  assert.match(workspaceSource, /'price',[\s\S]*?'agreement',[\s\S]*?'template'/);
+  assert.ok(workspaceSource.includes('api(\'/procurement?type=\' + type'));
   assert.ok(!workspaceText.includes('email sent'));
   assert.ok(!workspaceText.includes('payment successful'));
   assert.ok(workspaceText.includes('Only accepted quantities increased stock.'));
-  assert.ok(workspaceText.includes('Confirmed purchase value'));
+  assert.ok(procurementSource.includes('No orders, emails, bank payments or statutory filings are sent automatically.'));
+});
+
+test('purchase form decimals convert to exact quantity and currency units', () => {
+  assert.equal(quantityMilli('2.375'), 2375);
+  assert.equal(displayQuantity(quantityMilli('2.375')), '2.375');
+  assert.equal(parseMoney('125.40', 'KES'), 12540);
+  assert.equal(parseMoney('125', 'UGX'), 125);
+  assert.throws(() => quantityMilli('1.0001'), /three decimal places/);
+  assert.throws(() => parseMoney('125.50', 'UGX'), /decimal places/);
 });
 
 test('procurement model projects real document relationships and exact money', () => {

@@ -83,3 +83,32 @@ export async function migrateProcurement(
     ]);
   });
 }
+
+/** Additive workflow evidence for supplier awards. No purchase facts are copied
+ * out of the existing encrypted ERP record store. */
+export async function migrateProcurementExpansion(
+  database = { dbGet, dbExec, dbRun, dbTransaction, isPostgres },
+) {
+  await database.dbTransaction(async () => {
+    if (
+      await database.dbGet('SELECT version FROM platform_migrations WHERE version=?', [
+        '020-procurement-expansion',
+      ])
+    )
+      return;
+    await database.dbExec(
+      'CREATE TABLE IF NOT EXISTS ac_purchase_awards (org_id TEXT NOT NULL,environment TEXT NOT NULL,request_id TEXT NOT NULL REFERENCES ac_erp_objects(id),rfq_id TEXT NOT NULL REFERENCES ac_erp_objects(id),reason TEXT NOT NULL,actor TEXT NOT NULL,awarded_at TEXT NOT NULL,PRIMARY KEY(org_id,environment,request_id),UNIQUE(org_id,environment,rfq_id))',
+    );
+    await database.dbExec(
+      'CREATE INDEX IF NOT EXISTS ac_purchase_awards_rfq ON ac_purchase_awards(org_id,environment,rfq_id)',
+    );
+    if (database.isPostgres) {
+      await database.dbExec('ALTER TABLE ac_purchase_awards ENABLE ROW LEVEL SECURITY');
+      await database.dbExec('REVOKE ALL ON ac_purchase_awards FROM PUBLIC');
+    }
+    await database.dbRun('INSERT INTO platform_migrations(version,applied_at) VALUES (?,?)', [
+      '020-procurement-expansion',
+      new Date().toISOString(),
+    ]);
+  });
+}

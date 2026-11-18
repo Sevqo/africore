@@ -49,8 +49,13 @@ export const purchaseRecord = z.discriminatedUnion('type', [
       request_id: id,
       supplier_id: id,
       reference: text,
+      vendor_reference: z.string().trim().max(200).default(''),
       currency: currencySchema,
       delivery_on: z.string().date(),
+      deadline_on: z.string().date().nullable().default(null),
+      payment_terms: z.string().max(1000).default(''),
+      agreement_id: id.nullable().default(null),
+      template_id: id.nullable().default(null),
       terms: z.string().max(2000).default(''),
       tax_minor: minor,
       lines: purchaseLines,
@@ -79,6 +84,47 @@ export const purchaseRecord = z.discriminatedUnion('type', [
       reason: z.string().trim().min(8).max(1000),
     })
     .strict(),
+  z
+    .object({
+      type: z.literal('price'),
+      supplier_id: id,
+      product_id: id,
+      vendor_sku: z.string().trim().max(120).default(''),
+      currency: currencySchema,
+      minimum_quantity_milli: z.number().int().positive().max(100000000).default(1000),
+      unit_price_minor: minor,
+      lead_days: z.number().int().min(0).max(3650).default(0),
+      valid_from: z.string().date().nullable().default(null),
+      valid_to: z.string().date().nullable().default(null),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('agreement'),
+      title: text,
+      supplier_id: id,
+      currency: currencySchema,
+      valid_from: z.string().date(),
+      valid_to: z.string().date(),
+      terms: z.string().max(2000).default(''),
+      lines: purchaseLines.refine(
+        (lines) => new Set(lines.map((line) => line.product_id)).size === lines.length,
+        'Agreement products must be unique so committed quantities remain unambiguous',
+      ),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('template'),
+      title: text,
+      supplier_id: id.nullable().default(null),
+      currency: currencySchema,
+      payment_terms: z.string().max(1000).default(''),
+      terms: z.string().max(2000).default(''),
+      lines: purchaseLines,
+      active: z.boolean().default(true),
+    })
+    .strict(),
 ]);
 export const purchaseSave = z
   .object({ expected_version: z.number().int().min(0), record: purchaseRecord })
@@ -86,7 +132,7 @@ export const purchaseSave = z
 export const purchaseAction = z
   .object({
     expected_version: z.number().int().positive(),
-    action: z.enum(['approve', 'reject', 'accept', 'issue', 'confirm', 'cancel']),
+    action: z.enum(['submit', 'approve', 'reject', 'accept', 'issue', 'confirm', 'close', 'cancel']),
     reason: z.string().trim().min(8).max(1000),
   })
   .strict();

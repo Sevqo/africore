@@ -57,6 +57,8 @@ async function save(record: any) {
   return r.data;
 }
 async function decide(o: any, type: string, action: string, session = reviewer.cookie) {
+  if (type === 'request' && ['approve', 'reject'].includes(action) && o.status === 'draft')
+    o = await decide(o, type, 'submit', session);
   const r = await api(
     root() + '/procurement/' + type + '/' + o.id + '/decision',
     'POST',
@@ -114,6 +116,7 @@ before(async () => {
   const p = await api(root() + '/products', 'POST', {
     sku: 'SYN-PUR-001',
     name: 'Synthetic purchase goods',
+    category: 'Equipment',
     sale_price_minor: 7000,
     track_inventory: true,
   });
@@ -145,6 +148,8 @@ test('requests require a different current administrator and preserve encrypted 
     ).status,
     403,
   );
+  request = await decide(request, 'request', 'submit', owner.cookie);
+  assert.equal(request.status, 'submitted');
   request = await decide(request, 'request', 'approve');
   assert.equal(
     (
@@ -507,6 +512,130 @@ test('amended orders close old incoming plans and require another exact separate
     [o.id],
   );
   assert.equal(Number(active.quantity_milli), 2000);
+});
+test('vendor prices, reusable templates and blanket agreements produce reviewed comparison-ready quotations', async () => {
+  let requirement = await save({
+    type: 'request', title: 'Synthetic agreement requirement',
+    reason: 'Synthetic agreement lifecycle requirement', currency: 'KES', budget_minor: 30000,
+    needed_on: '2026-11-30', lines: lines(5000),
+  });
+  requirement = await decide(requirement, 'request', 'submit', owner.cookie);
+  requirement = await decide(requirement, 'request', 'approve');
+  const price = await save({
+    type: 'price', supplier_id: supplier.id, product_id: product, vendor_sku: 'SYN-VENDOR-42',
+    currency: 'KES', minimum_quantity_milli: 1000, unit_price_minor: 4900,
+    lead_days: 4, valid_from: '2026-01-01', valid_to: '2027-12-31',
+  });
+  assert.equal(price.status, 'active');
+  assert.equal(price.data.product_snapshot.name, 'Synthetic purchase goods');
+  const template = await save({
+    type: 'template', title: 'Synthetic office replenishment', supplier_id: supplier.id,
+    currency: 'KES', payment_terms: 'Net 30', terms: 'Synthetic recurring purchase', active: true,
+    lines: [{ ...lines(5000)[0], unit_price_minor: 4900 }],
+  });
+  const agreement = await save({
+    type: 'agreement', title: 'Synthetic annual supply agreement', supplier_id: supplier.id,
+    currency: 'KES', valid_from: '2026-01-01', valid_to: '2027-12-31',
+    terms: 'Synthetic blanket purchase commitment',
+    lines: [{ ...lines(5000)[0], unit_price_minor: 4900 }],
+  });
+  const selfConfirm = await api(root() + '/procurement/agreement/' + agreement.id + '/decision', 'POST', {
+    expected_version: agreement.version, action: 'confirm', reason: 'Cannot confirm own agreement',
+  }, owner.cookie);
+  assert.equal(selfConfirm.status, 403);
+  const confirmedAgreement = await decide(agreement, 'agreement', 'confirm');
+  let offer = await save({
+    type: 'rfq', request_id: requirement.id, supplier_id: supplier.id, reference: 'SYN-AGREEMENT-OFFER',
+    vendor_reference: 'Vendor quotation 42', currency: 'KES', delivery_on: '2026-12-01',
+    deadline_on: '2026-11-25', payment_terms: 'Net 30', agreement_id: confirmedAgreement.id,
+    template_id: template.id, terms: 'Synthetic delivered quotation', tax_minor: 0,
+    lines: [{ ...lines(5000)[0], unit_price_minor: 4900 }],
+  });
+  assert.equal(offer.data.template_snapshot.title, template.data.title);
+  assert.equal(offer.data.agreement_snapshot.title, agreement.data.title);
+  const prematureClose = await api(root() + '/procurement/agreement/' + agreement.id + '/decision', 'POST', {
+    expected_version: confirmedAgreement.version, action: 'close', reason: 'Cannot close with an open offer',
+  });
+  assert.equal(prematureClose.status, 409);
+  offer = await decide(offer, 'rfq', 'accept', owner.cookie);
+  const purchaseOrder = await save({ type: 'order', rfq_id: offer.id, reference: 'SYN-AGREEMENT-PO' });
+  let reviewedOrder = await decide(purchaseOrder, 'order', 'approve');
+  reviewedOrder = await decide(reviewedOrder, 'order', 'issue', owner.cookie);
+  const agreementDetails = await api(root() + '/procurement/agreement/' + agreement.id);
+  assert.equal(agreementDetails.data.linked_orders.filter((row: any) => ['issued', 'confirmed'].includes(row.status)).length, 1);
+  const closed = await decide(confirmedAgreement, 'agreement', 'close');
+  assert.equal(closed.status, 'closed');
+});
+test('vendor-price search and pagination are server-side over records beyond the first page', async () => {
+  for (let index = 0; index < 55; index++)
+    await save({
+      type: 'price', supplier_id: supplier.id, product_id: product,
+      vendor_sku: 'SYN-PAGED-PRICE-' + String(index).padStart(2, '0'),
+      currency: 'KES', minimum_quantity_milli: 1000 + index, unit_price_minor: 5000 + index,
+      lead_days: 1,
+    });
+  const first = await api(root() + '/procurement?type=price&search=SYN-PAGED-PRICE-&limit=20&offset=0&status=active');
+  const second = await api(root() + '/procurement?type=price&search=SYN-PAGED-PRICE-&limit=20&offset=20&status=active');
+  assert.equal(first.status, 200);
+  assert.equal(first.data.total, 55);
+  assert.equal(first.data.data.length, 20);
+  assert.equal(second.data.data.length, 20);
+  assert.equal(new Set([...first.data.data, ...second.data.data].map((row: any) => row.id)).size, 40);
+  assert.equal(first.data.status_counts.active >= 55, true);
+});
+test('purchase analysis applies supplier and date filters before aggregating related documents', async () => {
+  const bySupplier = await api(root() + '/procurement-report?supplier=' + supplier.id);
+  assert.equal(bySupplier.status, 200, JSON.stringify(bySupplier.data));
+  assert.ok(bySupplier.data.total_orders > 0);
+  assert.ok(bySupplier.data.by_vendor.every((row: any) => row.supplier_id === supplier.id));
+  assert.equal(bySupplier.data.request_count, 0);
+  const byBuyer = await api(root() + '/procurement-report?buyer=' + owner.id);
+  assert.equal(byBuyer.status, 200, JSON.stringify(byBuyer.data));
+  assert.ok(byBuyer.data.total_orders > 0);
+  assert.ok(byBuyer.data.buyer_options.some((row: any) => row.id === owner.id));
+  const byCategory = await api(root() + '/procurement-report?category=Equipment');
+  assert.equal(byCategory.status, 200, JSON.stringify(byCategory.data));
+  assert.ok(byCategory.data.total_orders > 0);
+  assert.ok(byCategory.data.category_options.some((row: any) => row.value === 'category:Equipment'));
+  assert.ok(byCategory.data.by_product.every((row: any) => row.category === 'Equipment'));
+  assert.match(byCategory.data.definitions, /order-level tax is not allocated/);
+  const unmatchedCategory = await api(root() + '/procurement-report?category=Stationery');
+  assert.equal(unmatchedCategory.status, 200, JSON.stringify(unmatchedCategory.data));
+  assert.equal(unmatchedCategory.data.total_orders, 0);
+  assert.deepEqual(unmatchedCategory.data.by_vendor, []);
+  assert.deepEqual(unmatchedCategory.data.by_product, []);
+  const uncategorized = await api(root() + '/procurement-report?uncategorized=true');
+  assert.equal(uncategorized.status, 200, JSON.stringify(uncategorized.data));
+  assert.equal(uncategorized.data.total_orders, 0);
+  assert.equal((await api(root() + '/procurement-report?category=Equipment&uncategorized=true')).status, 400);
+  const future = await api(root() + '/procurement-report?date_from=2099-01-01');
+  assert.equal(future.status, 200, JSON.stringify(future.data));
+  assert.equal(future.data.total_orders, 0);
+  assert.deepEqual(future.data.by_vendor, []);
+  assert.deepEqual(future.data.by_product, []);
+});
+test('purchase approval queue pages only actionable current items for separate reviewers', async () => {
+  const title = 'Synthetic reviewer queue ' + randomUUID(),
+    created = await api(root() + '/procurement', 'POST', {
+      expected_version: 0,
+      record: {
+        type: 'request', title, reason: 'Synthetic separately reviewed queue item',
+        currency: 'KES', budget_minor: 15000, needed_on: '2026-12-15', lines: lines(1000),
+      },
+    }, ops.cookie);
+  assert.equal(created.status, 201, JSON.stringify(created.data));
+  const submitted = await api(root() + '/procurement/request/' + created.data.id + '/decision', 'POST', {
+    expected_version: created.data.version, action: 'submit', reason: 'Synthetic queue submission',
+  }, ops.cookie);
+  assert.equal(submitted.status, 200, JSON.stringify(submitted.data));
+  const denied = await api(root() + '/procurement-approvals?type=request&search=' + encodeURIComponent(title), 'GET', undefined, ops.cookie);
+  assert.equal(denied.status, 403);
+  const queue = await api(root() + '/procurement-approvals?type=request&search=' + encodeURIComponent(title), 'GET', undefined, reviewer.cookie);
+  assert.equal(queue.status, 200, JSON.stringify(queue.data));
+  assert.equal(queue.data.total, 1);
+  assert.equal(queue.data.data[0].type, 'request');
+  assert.equal(queue.data.data[0].record.status, 'submitted');
+  assert.equal(queue.data.data[0].record.id, created.data.id);
 });
 test('posted goods and payment evidence reject direct database mutation and extra matched bills', async () => {
   const receipt = (await api(root() + '/procurement?type=receipt')).data.data[0],

@@ -12,19 +12,15 @@ import {
   confirmedMetrics,
   dashboardCounts,
   defaultViewForSection,
-  filterRecords,
   labelForStatus,
   lateReceipt,
   lineTotal,
   orderBillingStatus,
   orderHasOpenReceipt,
   pageCount,
-  pageSlice,
   procurementViewTitles,
   procurementViews,
   purchaseHistoryForProduct,
-  reportByProduct,
-  reportByVendor,
   requestForRfq,
   sectionForView,
   viewsForSection,
@@ -40,6 +36,9 @@ const listTypes = [
   'payment',
   'credit',
   'supplier',
+  'price',
+  'agreement',
+  'template',
 ] as const;
 const labels: Record<string, string> = {
   request: 'purchase requests',
@@ -50,6 +49,9 @@ const labels: Record<string, string> = {
   payment: 'payment observations',
   credit: 'supplier credits',
   supplier: 'vendors',
+  price: 'vendor pricelists',
+  agreement: 'purchase agreements',
+  template: 'purchase templates',
 };
 const typeForView: Partial<Record<ProcurementView, string>> = {
   requests: 'request',
@@ -60,6 +62,9 @@ const typeForView: Partial<Record<ProcurementView, string>> = {
   payments: 'payment',
   credits: 'credit',
   vendors: 'supplier',
+  agreements: 'agreement',
+  pricelists: 'price',
+  templates: 'template',
 };
 
 export function ProcurementAppWorkspace({
@@ -89,8 +94,12 @@ export function ProcurementAppWorkspace({
     payment: [],
     credit: [],
     supplier: [],
+    price: [],
+    agreement: [],
+    template: [],
   });
   const [listMeta, setListMeta] = useState<Record<string, any>>({});
+  const [reportData, setReportData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -180,6 +189,46 @@ export function ProcurementAppWorkspace({
     return () => {
       live = false;
     };
+  }, [scope, revision, api]);
+
+  const activeListType = view === 'dashboard' ? 'rfq' : typeForView[view];
+  useEffect(() => {
+    if (!activeListType || !listTypes.includes(activeListType as any)) return;
+    let live = true;
+    setLoading(true);
+    const query = new URLSearchParams({
+      type: activeListType,
+      limit: '50',
+      offset: String(page * 50),
+      search,
+      status: filter,
+      sort: activeListType === 'rfq' || activeListType === 'order' ? 'amount' : 'date',
+      direction: 'desc',
+    });
+    api('/procurement?' + query.toString())
+      .then((result) => {
+        if (!live) return;
+        setLists((current) => ({ ...current, [activeListType]: result.data || [] }));
+        setListMeta((current) => ({ ...current, [activeListType]: result }));
+        setError('');
+        setLoading(false);
+      })
+      .catch((reason) => {
+        if (!live) return;
+        setError(reason?.message || 'Unable to search purchasing records.');
+        setLoading(false);
+      });
+    return () => { live = false; };
+  }, [scope, revision, activeListType, search, filter, page, api]);
+
+  useEffect(() => {
+    let live = true;
+    api('/procurement-report').then((report) => {
+      if (live) setReportData(report);
+    }).catch(() => {
+      if (live) setReportData(null);
+    });
+    return () => { live = false; };
   }, [scope, revision, api]);
 
   useEffect(() => {
@@ -296,6 +345,7 @@ export function ProcurementAppWorkspace({
             <button onClick={() => go('requests')}>Purchase Requests</button>
             <button onClick={() => go('rfqs')}>Requests for Quotation</button>
             <button onClick={() => go('orders')}>Purchase Orders</button>
+            <button onClick={() => go('agreements')}>Purchase Agreements</button>
             <button onClick={() => go('approvals')}>Orders Awaiting Approval</button>
             <button onClick={() => go('receipts')}>Receipts</button>
             <button onClick={() => go('bills')}>Vendor Bills</button>
@@ -335,6 +385,7 @@ export function ProcurementAppWorkspace({
           </summary>
           <div>
             <button onClick={() => go('settings')}>Purchasing Settings</button>
+            <button onClick={() => go('templates')}>Purchase Templates</button>
             <button onClick={() => go('approvals')}>Approval Rules</button>
           </div>
         </details>
@@ -398,29 +449,10 @@ export function ProcurementAppWorkspace({
     if (view === 'analysis') return <ProcurementReports api={api} scope={scope} />;
     if (view === 'settings')
       return <SettingsView writable={writable} finance={finance} review={review} go={go} />;
-    if (view === 'pricelists')
-      return (
-        <section className="panel proc-empty">
-          <h2>Vendor pricelists are not available</h2>
-          <p>
-            The current procurement backend has no vendor-specific price-list record. Purchase
-            prices are recorded on each RFQ or purchase order line and validated against canonical
-            products. No local-only price list has been invented.
-          </p>
-          <p>
-            Use canonical product reference prices in the Products service and record the negotiated
-            supplier price on the offer.
-          </p>
-          <button className="secondary-button" onClick={() => go('products')}>
-            Open purchasing products
-          </button>
-        </section>
-      );
     if (view === 'products')
       return (
         <ProductsView
-          products={lists.product || []}
-          orders={lists.order}
+          api={api}
           selected={selectedProduct}
           setSelected={setSelectedProduct}
         />
@@ -431,6 +463,12 @@ export function ProcurementAppWorkspace({
           suppliers={lists.supplier}
           orders={lists.order}
           rfqs={lists.rfq}
+          search={search}
+          setSearch={setSearch}
+          total={listMeta.supplier?.total || 0}
+          page={page}
+          setPage={setPage}
+          pages={pageCount(listMeta.supplier?.total || 0, 50)}
           writable={writable}
           onCreate={() => setEditor({ type: 'supplier' })}
           onOpen={openDoc}
@@ -440,6 +478,8 @@ export function ProcurementAppWorkspace({
       return (
         <DashboardView
           lists={lists}
+          listMeta={listMeta}
+          report={reportData}
           loading={loading}
           search={search}
           setSearch={setSearch}
@@ -455,19 +495,24 @@ export function ProcurementAppWorkspace({
           writable={writable}
         />
       );
-    if (view === 'vendor-report') return <VendorReport orders={lists.order} />;
-    if (view === 'product-report') return <ProductReport orders={lists.order} />;
+    if (view === 'vendor-report') return <VendorReport rows={reportData?.by_vendor || []} />;
+    if (view === 'product-report') return <ProductReport rows={reportData?.by_product || []} />;
     if (view === 'approval-report') return <ApprovalReport lists={lists} />;
     if (view === 'receipt-report')
       return <ReceiptReport orders={lists.order} rfqs={lists.rfq} receipts={lists.receipt} />;
     if (view === 'approvals')
       return (
         <ApprovalQueue
-          lists={lists}
+          api={api}
+          scope={scope}
+          canReview={review}
+          canReviewFinance={finance}
           filter={filter}
           setFilter={setFilter}
           search={search}
           setSearch={setSearch}
+          page={page}
+          setPage={setPage}
           onOpen={openDoc}
         />
       );
@@ -476,6 +521,8 @@ export function ProcurementAppWorkspace({
         view={view}
         type={typeForView[view] || 'rfq'}
         lists={lists}
+        listMeta={listMeta}
+        loading={loading}
         search={search}
         setSearch={setSearch}
         filter={filter}
@@ -494,6 +541,8 @@ export function ProcurementAppWorkspace({
 
 function DashboardView({
   lists,
+  listMeta,
+  report,
   loading,
   search,
   setSearch,
@@ -509,6 +558,8 @@ function DashboardView({
   writable,
 }: {
   lists: Record<string, any[]>;
+  listMeta: Record<string, any>;
+  report: any;
   loading: boolean;
   search: string;
   setSearch: (v: string) => void;
@@ -523,18 +574,28 @@ function DashboardView({
   onCreate: (type: string) => void;
   writable: boolean;
 }) {
-  const counts = dashboardCounts({
+  const localCounts = dashboardCounts({
     requests: lists.request,
     rfqs: lists.rfq,
     orders: lists.order,
     receipts: lists.receipt,
     bills: lists.bill,
   });
-  const metrics = confirmedMetrics(lists.order);
-  const rows = filterRecords(lists.rfq, search, filter);
-  const paged = pageSlice(rows, page);
-  const totalPages = pageCount(rows.length);
-  const statusOptions = ['all', 'draft', 'accepted', 'rejected', 'cancelled'];
+  const counts = {
+    newRfqs: listMeta.rfq?.status_counts?.draft || 0,
+    sentRfqs: listMeta.rfq?.status_counts?.accepted || 0,
+    awaitingApproval: (listMeta.request?.status_counts?.submitted || 0) +
+      (listMeta.order?.status_counts?.draft || 0) + (listMeta.bill?.status_counts?.draft || 0),
+    lateReceipts: report?.late_receipts ?? localCounts.lateReceipts,
+    confirmedOrders: report?.total_orders ?? localCounts.confirmedOrders,
+  };
+  const metrics = report?.currencies
+    ? Object.fromEntries(Object.entries(report.currencies).map(([currency, values]: any) => [currency, { value_minor: values.issued_minor, orders: values.orders }]))
+    : confirmedMetrics(lists.order);
+  const rows = lists.rfq || [];
+  const total = listMeta.rfq?.total ?? rows.length;
+  const totalPages = pageCount(total, 50);
+  const statusOptions = ['all', ...Object.keys(listMeta.rfq?.status_counts || {})];
   return (
     <>
       <header className="proc-page-heading">
@@ -562,8 +623,8 @@ function DashboardView({
           }}
         >
           <span>{counts.newRfqs}</span>
-          <strong>New RFQs</strong>
-          <small>Draft offers</small>
+          <strong>Draft quotations</strong>
+          <small>Not transmitted externally</small>
         </button>
         <button
           className="proc-activity"
@@ -573,8 +634,8 @@ function DashboardView({
           }}
         >
           <span>{counts.sentRfqs}</span>
-          <strong>Accepted offers</strong>
-          <small>Ready for order</small>
+          <strong>Awarded offers</strong>
+          <small>Ready for order draft</small>
         </button>
         <button className="proc-activity warn" onClick={() => go('approvals')}>
           <span>{counts.awaitingApproval}</span>
@@ -594,7 +655,7 @@ function DashboardView({
         <div className="proc-performance">
           <span>Confirmed purchase value</span>
           {Object.keys(metrics).length ? (
-            Object.entries(metrics).map(([currency, value]) => (
+            Object.entries(metrics as Record<string, { value_minor: number; orders: number }>).map(([currency, value]) => (
               <strong key={currency}>
                 {money(value.value_minor, currency)} <small>{value.orders} orders</small>
               </strong>
@@ -655,7 +716,7 @@ function DashboardView({
             </button>
           </div>
           <span className="proc-count">
-            {rows.length} of {lists.rfq.length} loaded
+            {rows.length} of {total} matching records
           </span>
         </div>
         {loading && <p role="status">Loading authorized purchasing records…</p>}
@@ -690,7 +751,7 @@ function DashboardView({
                   </tr>
                 </thead>
                 <tbody>
-                  {paged.map((row) => {
+                  {rows.map((row) => {
                     const request = requestForRfq(lists.request, row.data?.request_id);
                     const order = lists.order.find((o) => o.data?.rfq_id === row.id);
                     return (
@@ -741,7 +802,7 @@ function DashboardView({
             </div>
           ) : (
             <div className="proc-kanban">
-              {paged.map((row) => (
+              {rows.map((row) => (
                 <button
                   className="proc-kanban-card"
                   key={row.id}
@@ -760,8 +821,10 @@ function DashboardView({
               ))}
             </div>
           ))}
-        <Pager page={page} pages={totalPages} setPage={setPage} label={rows.length + ' offers'} />
-        <p className="proc-coverage">{listMetaNotice(lists.rfq)}</p>
+        <Pager page={page} pages={totalPages} setPage={setPage} label={total + ' offers'} />
+        <p className="proc-coverage">
+          Server searched and counted the full authorized register. Draft quotations are not emailed by this workspace.
+        </p>
       </section>
     </>
   );
@@ -771,6 +834,8 @@ function RecordsView({
   view,
   type,
   lists,
+  listMeta,
+  loading,
   search,
   setSearch,
   filter,
@@ -786,6 +851,8 @@ function RecordsView({
   view: ProcurementView;
   type: string;
   lists: Record<string, any[]>;
+  listMeta: Record<string, any>;
+  loading: boolean;
   search: string;
   setSearch: (v: string) => void;
   filter: string;
@@ -798,9 +865,10 @@ function RecordsView({
   writable: boolean;
   onCreate: (type: string) => void;
 }) {
-  const rows = filterRecords(lists[type] || [], search, filter);
-  const paged = pageSlice(rows, page);
-  const statuses = ['all', ...new Set((lists[type] || []).map((row: any) => row.status))];
+  const rows = lists[type] || [];
+  const meta = listMeta[type] || {};
+  const total = meta.total ?? rows.length;
+  const statuses = ['all', ...Object.keys(meta.status_counts || {})];
   return (
     <>
       <header className="proc-page-heading">
@@ -818,7 +886,7 @@ function RecordsView({
           </p>
         </div>
         {writable &&
-          ['requests', 'rfqs', 'orders', 'bills', 'credits', 'vendors'].includes(view) && (
+          ['requests', 'rfqs', 'orders', 'bills', 'credits', 'agreements', 'pricelists', 'templates'].includes(view) && (
             <button className="button" onClick={() => onCreate(type)}>
               New {labels[type]?.replace(/s$/, '') || 'record'}
             </button>
@@ -876,8 +944,10 @@ function RecordsView({
             </button>
           </div>
         )}
-        <span className="proc-count">{rows.length} loaded</span>
+        <span className="proc-count">{rows.length} of {total} matching</span>
       </div>
+      {loading && <p role="status">Searching authorized purchase records…</p>}
+      {!rows.length && loading && <p role="status">Loading matching records…</p>}
       {!rows.length && (
         <div className="proc-empty">
           <h2>No {labels[type]}</h2>
@@ -888,7 +958,7 @@ function RecordsView({
         <RecordsTable
           view={view}
           type={type}
-          rows={paged}
+          rows={rows}
           lists={lists}
           display={display}
           onOpen={onOpen}
@@ -896,13 +966,12 @@ function RecordsView({
       )}
       <Pager
         page={page}
-        pages={pageCount(rows.length)}
+        pages={pageCount(total, 50)}
         setPage={setPage}
-        label={rows.length + ' records'}
+        label={total + ' records'}
       />
       <p className="proc-coverage">
-        Each register loads the latest authorized page of up to 50 records. Counters and reports
-        describe loaded records, not an inferred company-wide total.
+        Search, status filtering, counts and paging are computed over the authorized server-side register.
       </p>
     </>
   );
@@ -1019,6 +1088,52 @@ function RecordsTable({
         ]}
       />
     );
+  if (type === 'price')
+    return (
+      <Table
+        rows={rows}
+        onOpen={(id) => onOpen('price', id)}
+        columns={[
+          ['Vendor', (row) => row.data?.supplier_snapshot?.name || '—'],
+          ['Product', (row) => row.data?.product_snapshot?.name || '—'],
+          ['Vendor SKU', (row) => row.data?.vendor_sku || '—'],
+          ['Minimum quantity', (row) => displayQuantity(row.data?.minimum_quantity_milli || 1000)],
+          ['Unit price', (row) => money(row.data?.unit_price_minor || 0, row.data?.currency || 'KES')],
+          ['Lead time', (row) => (row.data?.lead_days || 0) + ' days'],
+          ['Validity', (row) => (row.data?.valid_from || 'Any date') + ' – ' + (row.data?.valid_to || 'Open')],
+        ]}
+      />
+    );
+  if (type === 'agreement')
+    return (
+      <Table
+        rows={rows}
+        onOpen={(id) => onOpen('agreement', id)}
+        columns={[
+          ['Agreement', (row) => row.data?.title || '—'],
+          ['Vendor', (row) => row.data?.supplier_snapshot?.name || '—'],
+          ['Valid from', (row) => row.data?.valid_from],
+          ['Valid to', (row) => row.data?.valid_to],
+          ['Products', (row) => row.data?.lines?.length || 0],
+          ['Currency', (row) => row.data?.currency],
+          ['Status', (row) => <Pill status={row.status} />],
+        ]}
+      />
+    );
+  if (type === 'template')
+    return (
+      <Table
+        rows={rows}
+        onOpen={(id) => onOpen('template', id)}
+        columns={[
+          ['Template', (row) => row.data?.title || '—'],
+          ['Vendor', (row) => row.data?.supplier_snapshot?.name || 'Any vendor'],
+          ['Products', (row) => row.data?.lines?.length || 0],
+          ['Currency', (row) => row.data?.currency],
+          ['Status', (row) => <Pill status={row.status} />],
+        ]}
+      />
+    );
   if (type === 'bill')
     return (
       <Table
@@ -1123,42 +1238,70 @@ function Table({
 }
 
 function ApprovalQueue({
-  lists,
+  api,
+  scope,
+  canReview,
+  canReviewFinance,
   filter,
   setFilter,
   search,
   setSearch,
+  page,
+  setPage,
   onOpen,
 }: {
-  lists: Record<string, any[]>;
+  api: API;
+  scope: string;
+  canReview: boolean;
+  canReviewFinance: boolean;
   filter: string;
   setFilter: (v: string) => void;
   search: string;
   setSearch: (v: string) => void;
+  page: number;
+  setPage: (v: number) => void;
   onOpen: (type: string, id: string) => void;
 }) {
-  const queue = [
-    ...lists.request.map((row) => ({ row, type: 'request', kind: 'Purchase request' })),
-    ...lists.rfq.map((row) => ({ row, type: 'rfq', kind: 'Supplier offer' })),
-    ...lists.order.map((row) => ({ row, type: 'order', kind: 'Purchase order' })),
-    ...lists.bill.map((row) => ({ row, type: 'bill', kind: 'Vendor bill' })),
-    ...lists.credit.map((row) => ({ row, type: 'credit', kind: 'Supplier credit' })),
-  ].filter(
-    (item) =>
-      item.row.status === 'draft' &&
-      (!search || JSON.stringify(item.row.data).toLowerCase().includes(search.toLowerCase())),
-  );
-  const rows = filter === 'all' ? queue : queue.filter((item) => item.type === filter);
+  const [result, setResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    let live = true;
+    if (!canReview) {
+      setResult(null);
+      return;
+    }
+    setLoading(true);
+    setError('');
+    const query = new URLSearchParams({
+      type: filter === 'all' ? 'all' : filter,
+      search,
+      limit: '50',
+      offset: String(page * 50),
+    });
+    api('/procurement-approvals?' + query.toString())
+      .then((value) => { if (live) setResult(value); })
+      .catch((reason) => { if (live) { setError(reason?.message || 'Unable to load review queue.'); setResult(null); } })
+      .finally(() => { if (live) setLoading(false); });
+    return () => { live = false; };
+  }, [api, canReview, scope, filter, search, page]);
+  const rows = result?.data || [];
+  const total = result?.total || 0;
+  const pages = pageCount(total, 50);
+  const kindLabels: Record<string, string> = {
+    request: 'Purchase request',
+    order: 'Purchase order',
+    bill: 'Vendor bill',
+    credit: 'Supplier credit',
+    agreement: 'Purchase agreement',
+  };
   return (
     <>
       <header className="proc-page-heading">
         <div>
           <p className="proc-eyebrow">Orders</p>
           <h1>Awaiting Approval</h1>
-          <p>
-            Approval is recorded against an exact version by a different current owner or
-            administrator. These records do not advance themselves.
-          </p>
+          <p>Review actions bind the exact version and require a different current owner or administrator. Financial documents remain visible only to authorized finance reviewers.</p>
         </div>
       </header>
       <div className="proc-toolbar">
@@ -1166,31 +1309,31 @@ function ApprovalQueue({
           <Icon name="search" />
           <input
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+          onChange={(event) => { setSearch(event.target.value); setPage(0); }}
             placeholder="Search approval queue"
             aria-label="Search approval queue"
           />
         </label>
         <label className="proc-filter">
           <span>Record type</span>
-          <select value={filter} onChange={(event) => setFilter(event.target.value)}>
-            <option value="all">All drafts</option>
+          <select value={filter} onChange={(event) => { setFilter(event.target.value); setPage(0); }}>
+            <option value="all">All awaiting review</option>
             <option value="request">Purchase requests</option>
-            <option value="rfq">Supplier offers</option>
             <option value="order">Purchase orders</option>
-            <option value="bill">Vendor bills</option>
-            <option value="credit">Supplier credits</option>
+            {canReviewFinance && <option value="bill">Vendor bills</option>}
+            {canReviewFinance && <option value="credit">Supplier credits</option>}
+            <option value="agreement">Purchase agreements</option>
           </select>
         </label>
-        <span className="proc-count">{rows.length} drafts</span>
+        <span className="proc-count">{rows.length} of {total} pending review</span>
       </div>
+      {error && <p role="alert">{error}</p>}
+      {loading && <p role="status">Loading authorized review items…</p>}
+      {!canReview && <p role="status">A current owner or administrator is required to access this review queue.</p>}
       {!rows.length ? (
         <div className="proc-empty">
           <h2>Nothing awaiting approval</h2>
-          <p>
-            Draft requests, orders and bills will appear here until a separate reviewer records a
-            decision.
-          </p>
+          <p>{error ? 'The review queue could not be loaded.' : 'Submitted requests, agreements and reviewable order or financial drafts appear here.'}</p>
         </div>
       ) : (
         <div className="proc-table-wrap">
@@ -1206,13 +1349,13 @@ function ApprovalQueue({
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ row, type, kind }) => (
+              {rows.map(({ record: row, type }: any) => (
                 <tr key={type + row.id}>
                   <td>
                     <strong>{row.data?.reference || row.data?.title || 'Draft'}</strong>
                     <small>Version {row.version}</small>
                   </td>
-                  <td>{kind}</td>
+                  <td>{kindLabels[type] || type}</td>
                   <td>{row.data?.supplier_snapshot?.name || '—'}</td>
                   <td className="numeric">
                     {row.data?.currency
@@ -1240,9 +1383,9 @@ function ApprovalQueue({
         </div>
       )}
       <p className="proc-coverage">
-        Approval history and reviewer identity are shown inside each exact record and its retained
-        history. Draft counts include the latest loaded page only.
+        Approval history and reviewer identity are shown inside each exact record and its retained history. Requests must be submitted before review.
       </p>
+      <Pager page={page} pages={pages} setPage={setPage} label={total + ' pending items'} />
     </>
   );
 }
@@ -1308,9 +1451,11 @@ function DocumentPage({
   const currency = data.currency || 'KES';
   const pipeline =
     type === 'request'
-      ? ['draft', 'approved']
+      ? ['draft', 'submitted', 'approved']
       : type === 'rfq'
         ? ['draft', 'accepted']
+        : type === 'agreement'
+          ? ['draft', 'confirmed', 'closed']
         : type === 'order'
           ? ['draft', 'approved', 'issued', 'confirmed']
           : type === 'receipt'
@@ -1351,14 +1496,22 @@ function DocumentPage({
           </div>
         </div>
         <div className="proc-doc-actions">
+          {['rfq', 'order'].includes(type) && !['cancelled', 'rejected'].includes(record.status) && (
+            <button className="secondary-button" onClick={() => window.print()}>Print document</button>
+          )}
           {writable && ['request', 'rfq', 'order', 'bill', 'credit', 'supplier'].includes(type) && (
             <button className="secondary-button" onClick={() => onRevise(record)}>
               Revise draft
             </button>
           )}
-          {writable && type === 'request' && record.status === 'approved' && (
+      {writable && type === 'request' && record.status === 'approved' && (
             <button className="button" onClick={() => onCreate('rfq', record.id)}>
               Create supplier offer
+            </button>
+          )}
+          {writable && type === 'agreement' && record.status === 'confirmed' && (
+            <button className="button" onClick={() => onCreate('rfq', '')}>
+              New quotation from agreement
             </button>
           )}
           {writable && type === 'rfq' && record.status === 'accepted' && (
@@ -1459,6 +1612,16 @@ function DocumentPage({
             onClick={() => setDocTab('comparison')}
           >
             Alternatives
+          </button>
+        )}
+        {type === 'agreement' && (
+          <button
+            role="tab"
+            aria-selected={docTab === 'comparison'}
+            className={docTab === 'comparison' ? 'active' : ''}
+            onClick={() => setDocTab('comparison')}
+          >
+            Related quotations & orders
           </button>
         )}
         <button
@@ -1588,14 +1751,14 @@ function DocumentPage({
         </section>
       )}
       {docTab === 'comparison' && (
-        <section className="proc-comparison">
+        type === 'request' ? <section className="proc-comparison">
           <h3>Supplier comparison</h3>
           <p>
             Recorded offers linked to this request. Choosing an offer does not approve or issue a
             purchase order.
           </p>
           <ComparisonTable rows={comparisonRows(detail.offers || [])} onOpen={onOpen} />
-        </section>
+        </section> : type === 'agreement' ? <AgreementLinks detail={detail} onOpen={onOpen} /> : null
       )}
       <DecisionStrip
         type={type}
@@ -1914,6 +2077,7 @@ function OfferComparison({
   onOpen: (type: string, id: string) => void;
 }) {
   const offers = detail.offers || [];
+  const currencies = [...new Set(offers.map((offer: any) => offer.data?.currency).filter(Boolean))];
   return (
     <section className="proc-comparison">
       <h3>Recorded supplier offers · {offers.length}</h3>
@@ -1923,6 +2087,7 @@ function OfferComparison({
             Compare currency, delivery dates and quantities as well as price. Selection is an
             explicit supplier-offer decision inside that exact offer.
           </p>
+          {currencies.length > 1 && <p className="alert" role="note">These quotations use different currencies. Prices are shown in each offer's currency and are not converted into a common basis.</p>}
           <ComparisonTable rows={comparisonRows(offers)} onOpen={onOpen} />
           <div className="proc-offer-cards">
             {offers.map((offer: any) => (
@@ -1952,6 +2117,30 @@ function OfferComparison({
           recording an offer.
         </p>
       )}
+    </section>
+  );
+}
+
+function AgreementLinks({ detail, onOpen }: { detail: any; onOpen: (type: string, id: string) => void }) {
+  const agreement = detail.record;
+  const orders = (detail.linked_orders || []).filter((row: any) => ['issued', 'confirmed'].includes(row.status));
+  return (
+    <section className="proc-comparison">
+      <h3>Agreement commitments</h3>
+      <div className="proc-table-wrap">
+        <table className="proc-table">
+          <thead><tr><th>Product</th><th className="numeric">Agreed quantity</th><th className="numeric">Ordered</th><th className="numeric">Remaining</th><th className="numeric">Contract price</th></tr></thead>
+          <tbody>{(agreement.data.lines || []).map((line: any) => {
+            const used = orders.flatMap((order: any) => order.data.lines || []).filter((item: any) => item.product_id === line.product_id).reduce((sum: number, item: any) => sum + Number(item.quantity_milli || 0), 0);
+            return <tr key={line.id}><td>{line.product_snapshot?.name || 'Product'}</td><td className="numeric">{displayQuantity(line.quantity_milli)}</td><td className="numeric">{displayQuantity(used)}</td><td className="numeric">{displayQuantity(Math.max(0, line.quantity_milli - used))}</td><td className="numeric">{money(line.unit_price_minor, agreement.data.currency)}</td></tr>;
+          })}</tbody>
+        </table>
+      </div>
+      <h3>Linked quotations</h3>
+      <ComparisonTable rows={comparisonRows(detail.offers || [])} onOpen={onOpen} />
+      <h3>Issued orders</h3>
+      {orders.length ? <div className="proc-table-wrap"><table className="proc-table"><thead><tr><th>Reference</th><th>Delivery</th><th>Currency</th><th className="numeric">Total</th><th>Status</th><th></th></tr></thead><tbody>{orders.map((order: any) => <tr key={order.id}><td>{order.data.reference}</td><td>{order.data.delivery_on || '—'}</td><td>{order.data.currency}</td><td className="numeric">{money(order.data.total_minor, order.data.currency)}</td><td><Pill status={order.status} /></td><td><button className="secondary-button" onClick={() => onOpen('order', order.id)}>Open</button></td></tr>)}</tbody></table></div> : <p>No issued orders are linked to this agreement.</p>}
+      <p className="proc-coverage">Order quantities count only after issue. Draft and approved orders do not consume the contracted quantity.</p>
     </section>
   );
 }
@@ -2031,7 +2220,14 @@ function DecisionStrip({
   const approvalType = ['request', 'order', 'bill', 'credit'].includes(type);
   return (
     <section className="proc-decisions">
-      {writable && draft && approvalType && (
+      {writable && type === 'request' && draft && (
+        <div className="proc-decision-block">
+          <h3>Request approval</h3>
+          <p>Submit this draft so a separate owner or administrator can review its exact version.</p>
+          <ActionForm label="Submit for approval" action="submit" onSubmit={onAction} primary />
+        </div>
+      )}
+      {writable && approvalType && (type === 'request' ? record.status === 'submitted' : draft) && (
         <div className="proc-decision-block">
           <h3>Separate-person decision</h3>
           <p>
@@ -2054,10 +2250,24 @@ function DecisionStrip({
       )}
       {writable && type === 'rfq' && draft && (
         <div className="proc-decision-block">
-          <h3>Supplier offer decision</h3>
-          <p>Recording acceptance updates the offer only; it does not issue an order.</p>
-          <ActionForm label="Accept supplier offer" action="accept" onSubmit={onAction} primary />
+          <h3>Quotation award decision</h3>
+          <p>Compare alternatives, then record one winning offer for this request. This does not issue an order or send an email.</p>
+          <ActionForm label="Award this supplier offer" action="accept" onSubmit={onAction} primary />
           <ActionForm label="Reject supplier offer" action="reject" onSubmit={onAction} />
+        </div>
+      )}
+      {writable && type === 'agreement' && draft && (
+        <div className="proc-decision-block">
+          <h3>Agreement confirmation</h3>
+          <p>A different owner or administrator must activate the contracted quantities and prices.</p>
+          {canReview && <ActionForm label="Confirm agreement" action="confirm" onSubmit={onAction} primary />}
+        </div>
+      )}
+      {writable && type === 'agreement' && record.status === 'confirmed' && (
+        <div className="proc-decision-block">
+          <h3>Agreement closure</h3>
+          <p>Draft quotations linked to the agreement must be resolved before closure.</p>
+          <ActionForm label="Close agreement" action="close" onSubmit={onAction} />
         </div>
       )}
       {writable && type === 'order' && record.status === 'approved' && (
@@ -2161,16 +2371,10 @@ function SettingsView({
           </dl>
         </section>
         <section className="panel">
-          <h3>Deliberately unsupported</h3>
-          <p>
-            Vendor pricelists, purchase agreements, supplier portals, automatic RFQ email delivery,
-            payment execution and statutory filing have no authoritative backend record in this
-            workspace. They are not simulated.
-          </p>
-          <p>
-            Goods receiving remains owned by Inventory. Bills and payment evidence remain separate
-            from stock and are never inferred from a receipt.
-          </p>
+          <h3>Available purchasing records</h3>
+          <p>Supplier pricelists, purchase agreements and reusable templates are stored against the shared supplier and product records. Agreement confirmation needs a separate owner or administrator.</p>
+          <p>Approval limits, department-level policies, supplier portals and automated RFQ email delivery are not configured here. Draft quotations can be reviewed, printed or copied, but are never marked as sent.</p>
+          <p>Goods receiving remains owned by Inventory. Bills and payment evidence remain separate from stock and are never inferred from a receipt.</p>
         </section>
       </div>
       <div className="proc-settings-links">
@@ -2192,6 +2396,12 @@ function VendorsView({
   suppliers,
   orders,
   rfqs,
+  search,
+  setSearch,
+  total,
+  page,
+  setPage,
+  pages,
   writable,
   onCreate,
   onOpen,
@@ -2199,12 +2409,17 @@ function VendorsView({
   suppliers: any[];
   orders: any[];
   rfqs: any[];
+  search: string;
+  setSearch: (value: string) => void;
+  total: number;
+  page: number;
+  setPage: (value: number) => void;
+  pages: number;
   writable: boolean;
   onCreate: () => void;
   onOpen: (type: string, id: string) => void;
 }) {
-  const [query, setQuery] = useState('');
-  const rows = filterRecords(suppliers, query);
+  const rows = suppliers;
   return (
     <>
       <header className="proc-page-heading">
@@ -2226,13 +2441,13 @@ function VendorsView({
         <label className="proc-search">
           <Icon name="search" />
           <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            value={search}
+            onChange={(event) => { setSearch(event.target.value); setPage(0); }}
             placeholder="Search vendors"
             aria-label="Search vendors"
           />
         </label>
-        <span className="proc-count">{rows.length} profiles</span>
+        <span className="proc-count">{rows.length} of {total} profiles</span>
       </div>
       {!rows.length ? (
         <div className="proc-empty">
@@ -2294,28 +2509,43 @@ function VendorsView({
           </table>
         </div>
       )}
+      <Pager page={page} pages={pages} setPage={setPage} label={total + ' vendors'} />
     </>
   );
 }
 
 function ProductsView({
-  products,
-  orders,
+  api,
   selected,
   setSelected,
 }: {
-  products: any[];
-  orders: any[];
+  api: API;
   selected: any;
   setSelected: (v: any) => void;
 }) {
   const [query, setQuery] = useState('');
-  const rows = products.filter(
-    (product) =>
-      !query ||
-      (product.name + ' ' + (product.sku || '')).toLowerCase().includes(query.toLowerCase()),
-  );
-  const history = selected ? purchaseHistoryForProduct(orders, selected.id) : [];
+  const [rows, setRows] = useState<any[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [history, setHistory] = useState<any[]>([]);
+  useEffect(() => {
+    let live = true;
+    setLoading(true);
+    const search = new URLSearchParams({ q: query, limit: '50', offset: String(page * 50) });
+    api('/products?' + search.toString()).then((result) => {
+      if (live) { setRows(result.data || []); setTotal(result.total || 0); setLoading(false); }
+    }).catch(() => { if (live) { setRows([]); setTotal(0); setLoading(false); } });
+    return () => { live = false; };
+  }, [api, query, page]);
+  useEffect(() => {
+    let live = true;
+    if (!selected) { setHistory([]); return; }
+    api('/procurement?type=order&search=' + encodeURIComponent(selected.id) + '&limit=100')
+      .then((result) => { if (live) setHistory(purchaseHistoryForProduct(result.data || [], selected.id)); })
+      .catch(() => { if (live) setHistory([]); });
+    return () => { live = false; };
+  }, [api, selected?.id]);
   return (
     <>
       <header className="proc-page-heading">
@@ -2333,15 +2563,16 @@ function ProductsView({
           <Icon name="search" />
           <input
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => { setQuery(event.target.value); setPage(0); }}
             placeholder="Search products or SKU"
             aria-label="Search products"
           />
         </label>
-        <span className="proc-count">{rows.length} products</span>
+        <span className="proc-count">{rows.length} of {total} products</span>
       </div>
+      {loading && <p role="status">Searching shared products…</p>}
       <div className="proc-product-grid">
-        {rows.slice(0, 80).map((product) => (
+        {rows.map((product) => (
           <button
             key={product.id}
             className={'proc-product-card' + (selected?.id === product.id ? ' active' : '')}
@@ -2368,6 +2599,7 @@ function ProductsView({
           No canonical products are available. Add products in the shared Products service first.
         </p>
       )}
+      <Pager page={page} pages={pageCount(total, 50)} setPage={setPage} label={total + ' products'} />
       {selected && (
         <section className="panel proc-product-detail">
           <header>
@@ -2417,8 +2649,7 @@ function ProductsView({
   );
 }
 
-function VendorReport({ orders }: { orders: any[] }) {
-  const rows = reportByVendor(orders);
+function VendorReport({ rows }: { rows: any[] }) {
   return (
     <>
       <header className="proc-page-heading">
@@ -2452,7 +2683,7 @@ function VendorReport({ orders }: { orders: any[] }) {
               {rows.map((row) => (
                 <tr key={row.vendor + row.currency}>
                   <td>{row.vendor}</td>
-                  <td className="numeric">{row.orders}</td>
+                  <td className="numeric">{row.order_count}</td>
                   <td className="numeric">{money(row.value_minor, row.currency)}</td>
                   <td className="numeric">{row.open_orders}</td>
                   <td>{row.currency}</td>
@@ -2462,16 +2693,12 @@ function VendorReport({ orders }: { orders: any[] }) {
           </table>
         </div>
       )}
-      <p className="proc-coverage">
-        Committed purchase value is not cash paid. This report uses the latest loaded order page and
-        never combines currencies.
-      </p>
+      <p className="proc-coverage">Server aggregated the full authorized order set. Committed purchase value is not cash paid; each currency is shown separately.</p>
     </>
   );
 }
 
-function ProductReport({ orders }: { orders: any[] }) {
-  const rows = reportByProduct(orders);
+function ProductReport({ rows }: { rows: any[] }) {
   return (
     <>
       <header className="proc-page-heading">
@@ -2515,7 +2742,7 @@ function ProductReport({ orders }: { orders: any[] }) {
         </div>
       )}
       <p className="proc-coverage">
-        Received quantities remain in Inventory; this is ordered quantity, not accepted stock.
+        Server aggregated the full authorized order set. Received quantities remain in Inventory; this is ordered quantity, not accepted stock.
       </p>
     </>
   );
@@ -2874,11 +3101,4 @@ function labelForStage(stage: string, type: string) {
 
 function shortActor(id: string) {
   return id ? String(id).slice(0, 8) : 'System';
-}
-function listMetaNotice(rows: any[]) {
-  return rows.length
-    ? 'Latest ' +
-        rows.length +
-        ' authorized records are loaded. Totals and counters describe these records only.'
-    : 'No records are loaded for this register.';
 }

@@ -140,6 +140,7 @@ for (const key of [
 }
 
 for (const suffix of [
+  'GET /procurement-approvals',
   'GET /procurement-report',
   'POST /procurement/orders/:id/amend',
   'GET /procurement',

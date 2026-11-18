@@ -1,7 +1,7 @@
 import { migratePublicMedia } from '../publishing/schema';
 import { migratePOS } from '../pos/schema';
 import { migrateCommerce } from '../commerce/schema';
-import { migrateProcurement } from '../erp/procurement-schema';
+import { migrateProcurement, migrateProcurementExpansion } from '../erp/procurement-schema';
 import { migrateDocuments } from '../erp/documents-schema';
 import { migratePeople } from '../erp/people-schema';
 import { migrateAccounting } from '../erp/accounting-schema';
@@ -339,6 +339,7 @@ export async function migrate(): Promise<void> {
   await migratePeople();
   await migrateDocuments();
   await migrateProcurement();
+  await migrateProcurementExpansion();
   await migrateCommerce();
   await migratePublicMedia();
   await migratePOS();

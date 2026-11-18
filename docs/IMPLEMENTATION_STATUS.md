@@ -1,5 +1,11 @@
 # Implementation status — Stage 3 sandbox beta
 
+## Phase 2.6B Procurement — local implementation checkpoint, 18 November 2026
+
+The installed Procurement app now covers internal purchase requests and separate-person review, linked supplier offers with an explicit audited award, RFQ/PO transitions, blanket agreements, reusable purchase templates, vendor prices, planned incoming orders, accepted receipt evidence, controlled supplier bills/credits and server-backed procurement reports. Search/filter/count/page work against scoped records; buyer, supplier and date filters are applied before report aggregation. Exact quantity and monetary conversions remain at the UI/API boundary. Procurement uses the existing Customers, Products, Inventory and Accounting authorities; paid, sent and received states require their respective local evidence. Implementation and Odoo source findings are recorded in [PHASE2_APP_PROGRESS.md](PHASE2_APP_PROGRESS.md) and [purchase notes](odoo-reference/notes/purchase.md).
+
+Local automated verification: `npm run typecheck`, `npm run lint`, and `npm test` passed; the full backend suite reported **465 passed, 0 failed, 1 PostgreSQL-only test skipped**. `npm --prefix website run build` passed including the **134/134** website content/app suite. All six supplied Odoo screenshots were inspected at full resolution, but browser access to the local AfriCore origin timed out at the approval gate, so no running-app screenshot comparison or founder manual acceptance is claimed. Outbound vendor email, supplier portal, bank execution/confirmation, statutory filing, receipt backorders/returns, saved report searches and a general pivot builder remain unsupported or incomplete. No production migration, live data change, deployment, commit or push was performed.
+
 ## Approved-reference UI — 12 November 2026
 
 The founder's six-image design system is implemented locally across the existing platform, with native responsive sizing replacing root zoom, full-page Notifications, separate merchant/storefront presentations and an editorial homepage. Final local regression: frontend 68; SQLite 434 plus one skip; PostgreSQL 435; lint/types, contracts, gateway/dev and isolated chain passed. See APPROVED_UI_IMPLEMENTATION.md for representative browser evidence and exact external limits. These new reference-driven changes are not deployed.
