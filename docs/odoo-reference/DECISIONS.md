@@ -31,6 +31,30 @@ decided, and why. An entry here is authoritative for future sessions; a note in
 
 ## Log
 
+### D-005 — Keep CRM activity plans bounded and retry-safe
+- Date: 2026-11-18
+- Status: accepted
+- Evidence: `odoo-reference/addons/crm/views/mail_activity_plan_views.xml`, `odoo-reference/addons/mail/models/mail_activity_plan_template.py`, and `odoo-reference/addons/mail/views/mail_activity_plan_views.xml` (+ `RESEARCH_LOG.md`, CRM expansion entry)
+- Constraint: CRM follow-up workflows must use current operational members, safe local date semantics and retry-safe persistence; unsupported external communication must not be implied.
+- Decision: model plans as ordered, bounded activity steps with integer calendar-day offsets, current-member assignment validation, due times at 09:00 Africa/Nairobi, and an idempotent execution key. Generate missing step identifiers in the service and store them with the plan.
+- Consequences: plan edit/apply tests must cover version checks, assignment eligibility, local due dates and replay without duplicate activities. Plan steps do not send email/SMS or call external providers.
+
+### D-004 — Merge CRM records with a reviewable history
+- Date: 2026-11-18
+- Status: accepted
+- Evidence: `odoo-reference/addons/crm/wizard/crm_merge_opportunities.py`, `odoo-reference/addons/crm/models/crm_lead.py`, and `odoo-reference/addons/crm/tests/test_crm_lead_merge.py` (+ `RESEARCH_LOG.md`, CRM expansion entry)
+- Constraint: a duplicate merge must not erase the record of prior CRM work, reparent activities without authorization, merge terminal Won/Lost records, or create duplicate work when retried.
+- Decision: require an explicit primary/duplicate selection, preserve source snapshots in merge history, reparent linked CRM activities through the versioned service, archive merged duplicates, and bind retries to an idempotency key. Exclude terminal Won/Lost entries from automatic suggestions and merge candidates.
+- Consequences: future merge changes must test replay, authorization, history retention and activity parent references together. Odoo's field-resolution and physical unlink behavior is not copied.
+
+### D-003 — Keep CRM prospects independent from canonical customers
+- Date: 2026-11-18
+- Status: accepted
+- Evidence: `odoo-reference/addons/crm/models/crm_lead.py` (`CrmLead.type`, optional `partner_id`, `action_convert_to_opportunity`) (+ `RESEARCH_LOG.md`, CRM expansion entry)
+- Constraint: CRM intake must not create a canonical customer prematurely, while Sales and opportunity workflows must continue to use AfriCore's authoritative customer records.
+- Decision: allow leads to be captured and imported without a customer link; create or select the canonical Customer through the existing conversion workflow. Keep opportunity and Sales customer-link validation in their existing services.
+- Consequences: lead imports can preserve incomplete prospect data without weakening customer uniqueness or Sales permissions; conversion remains the explicit CRM-to-customer boundary.
+
 ### D-002 — Keep automations bounded and run scheduled actions through the existing worker
 - Date: 2026-11-17
 - Status: accepted

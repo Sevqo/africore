@@ -66,3 +66,28 @@ export async function migrateBusinessOperations(
     ]);
   });
 }
+
+/** Additive CRM expansion tables; kept separate from the original business migration. */
+export async function migrateCrmExpansion(
+  database = { dbAll, dbGet, dbExec, dbRun, dbTransaction, isPostgres },
+) {
+  await database.dbTransaction(async () => {
+    if (await database.dbGet('SELECT version FROM platform_migrations WHERE version=?', ['012-crm-expansion']))
+      return;
+    await database.dbExec('ALTER TABLE ac_crm_entries ADD COLUMN merged_into TEXT');
+    for (const statement of [
+      'CREATE TABLE IF NOT EXISTS ac_crm_activity_plans (id TEXT PRIMARY KEY,org_id TEXT NOT NULL,environment TEXT NOT NULL,name TEXT NOT NULL,owner TEXT NOT NULL,active INTEGER NOT NULL,data TEXT NOT NULL,version INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,UNIQUE(org_id,environment,id))',
+      'CREATE INDEX IF NOT EXISTS ac_crm_activity_plan_scope ON ac_crm_activity_plans(org_id,environment,active,name)',
+      'CREATE TABLE IF NOT EXISTS ac_crm_plan_executions (id TEXT PRIMARY KEY,org_id TEXT NOT NULL,environment TEXT NOT NULL,execution_key TEXT NOT NULL,plan_id TEXT NOT NULL,target_id TEXT NOT NULL,plan_version INTEGER NOT NULL,response TEXT NOT NULL,created_at TEXT NOT NULL,UNIQUE(org_id,environment,execution_key))',
+      'CREATE TABLE IF NOT EXISTS ac_crm_merges (id TEXT PRIMARY KEY,org_id TEXT NOT NULL,environment TEXT NOT NULL,operation_key TEXT NOT NULL,primary_id TEXT NOT NULL,losers TEXT NOT NULL,data TEXT NOT NULL,actor TEXT NOT NULL,created_at TEXT NOT NULL,UNIQUE(org_id,environment,operation_key))',
+      'CREATE INDEX IF NOT EXISTS ac_crm_merge_primary_scope ON ac_crm_merges(org_id,environment,primary_id,created_at)',
+    ]) await database.dbExec(statement);
+    if (database.isPostgres) {
+      for (const table of ['ac_crm_activity_plans', 'ac_crm_plan_executions', 'ac_crm_merges']) {
+        await database.dbExec('ALTER TABLE ' + table + ' ENABLE ROW LEVEL SECURITY');
+        await database.dbExec('REVOKE ALL ON ' + table + ' FROM PUBLIC');
+      }
+    }
+    await database.dbRun('INSERT INTO platform_migrations(version,applied_at) VALUES (?,?)', ['012-crm-expansion', new Date().toISOString()]);
+  });
+}

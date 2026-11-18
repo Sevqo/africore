@@ -70,6 +70,11 @@ for (const [name, schema] of Object.entries({
   crm_importInput: require('../dist/operations/crm').crmImportInput,
   crm_entryInput: require('../dist/operations/crm').crmEntryInput,
   crm_leadConversionInput: require('../dist/operations/crm').crmLeadConversionInput,
+  crm_activityPlanInput: require('../dist/operations/crm-expansion').crmActivityPlanInput,
+  crm_activityPlanUpdateInput: require('../dist/operations/crm-expansion').crmActivityPlanInput.extend({ expected_version: z.number().int().positive() }).strict(),
+  crm_activityPlanApplyInput: require('../dist/operations/crm-expansion').crmActivityPlanApplyInput,
+  crm_mergeInput: require('../dist/operations/crm-expansion').crmMergeInput,
+  crm_importPreviewInput: require('../dist/operations/crm-expansion').crmImportPreviewInput,
   analytics_savedReportInput: require('../dist/operations/business-analytics').savedReportInput,
   sales_documentInput: require('../dist/operations/sales').quotationInput,
   sales_quoteActionInput: require('../dist/operations/sales').quoteActionInput,
@@ -253,6 +258,8 @@ for (const op of operations) {
       ['/crm/import', '/crm/configuration'].some((s) => path.endsWith(s))) ||
     (method === 'post' &&
       (path.endsWith('/inventory/stock-counts') ||
+        /\/crm\/(?:merge|activity-plans(?:\/apply|\/\{id\}\/duplicate)?)$/.test(path) ||
+        /\/crm\/entries\/\{id\}\/qualify$/.test(path) ||
         /\/crm\/entries\/\{id\}\/convert$/.test(path) ||
         /\/business\/orders\/\{id\}\/draft$/.test(path) ||
         /\/inventory\/replenishment-suggestions\/\{id\}\/review$/.test(path))) ||
@@ -381,9 +388,19 @@ for (const op of operations) {
             ? 'sales_quoteActionInput'
             : method === 'put' && path.endsWith('/crm/configuration')
               ? 'crm_configurationInput'
+              : method === 'put' && /\/crm\/activity-plans\/\{id\}$/.test(path)
+                ? 'crm_activityPlanUpdateInput'
               : method === 'post'
                 ? path.endsWith('/crm/import')
                   ? 'crm_importInput'
+                  : path.endsWith('/crm/import/preview')
+                    ? 'crm_importPreviewInput'
+                    : path.endsWith('/crm/merge')
+                      ? 'crm_mergeInput'
+                      : path.endsWith('/crm/activity-plans/apply')
+                        ? 'crm_activityPlanApplyInput'
+                        : path.endsWith('/crm/activity-plans')
+                          ? 'crm_activityPlanInput'
                   : path.endsWith('/inventory/stock-counts')
                     ? 'inventory_stockCountInput'
                     : path.endsWith('/install')
@@ -414,6 +431,8 @@ for (const op of operations) {
     operation.requestBody.content['application/json'].schema = {
       $ref: '#/components/schemas/' + businessSchema,
     };
+  if (method === 'post' && /\/crm\/activity-plans\/\{id\}\/duplicate$/.test(path))
+    delete operation.requestBody;
   if (path.includes('/work/')) {
     operation.security = [{ session: [] }, { managedSession: [] }];
     if (method !== 'get') {

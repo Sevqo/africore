@@ -17,7 +17,9 @@ is not a pattern, it is a rumour.
 
 | # | Pattern | Odoo evidence | Status | AfriCore verdict / reason |
 | --- | --- | --- | --- | --- |
-| _none yet_ | | | | |
+| 1 | Keep a prospect distinct from a canonical contact until conversion | `odoo-reference/addons/crm/models/crm_lead.py`, `CrmLead.partner_id` and `action_convert_to_opportunity` | adapt | Capture AfriCore leads without a Customer, then use the existing conversion workflow to create or link the canonical Customer; opportunities retain AfriCore's customer-link requirements. See D-003. |
+| 2 | Merge related records through explicit review and preserve linked history | `odoo-reference/addons/crm/wizard/crm_merge_opportunities.py`, `odoo-reference/addons/crm/models/crm_lead.py` (`_merge_opportunity`, `_merge_dependences`) | adapt | Preserve AfriCore activity references and snapshots, archive merged records, and require scoped/idempotent service authorization instead of copying Odoo's persistence behavior. See D-004. |
+| 3 | Model an activity plan as ordered, reusable activity templates | `odoo-reference/addons/mail/models/mail_activity_plan_template.py`, `odoo-reference/addons/mail/views/mail_activity_plan_views.xml` | adapt | Keep AfriCore's plan types bounded and use integer calendar-day offsets, Africa/Nairobi due times, current-member checks and idempotent plan executions; do not claim email or other unsupported external effects. See D-005. |
 
 ## How to add a row
 

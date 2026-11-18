@@ -21,7 +21,7 @@ export async function executeBusinessWorkflow(a: Access, w: any, run: any, chose
   const action = chosenAction || workflowAction(w.template);
   if (action === 'create_crm_follow_up') {
     await requireServices(a, ['crm']);
-    let customerId = payload.id;
+    let customerId: string | null = payload.id, parentEntryId: string | null = null;
     if (event.event_type === 'crm.stage_changed') {
       const row = await dbGet(
         'SELECT data,status FROM ac_crm_entries WHERE id=? AND org_id=? AND environment=?',
@@ -33,7 +33,9 @@ export async function executeBusinessWorkflow(a: Access, w: any, run: any, chose
         JSON.parse(row.data).stage !== JSON.parse(event.payload).stage
       )
         return { action, skipped: true, reason: 'source_changed', completed_units: 0 };
-      customerId = JSON.parse(row.data).customer_id;
+      const source = JSON.parse(row.data);
+      customerId = source.customer_id || null;
+      parentEntryId = payload.id;
     } else if (event.event_type === 'invoice.issued') {
       await requireServices(a, ['invoicing']);
       const invoice = await record(a, payload.id, 'invoices');
@@ -41,15 +43,18 @@ export async function executeBusinessWorkflow(a: Access, w: any, run: any, chose
         return { action, skipped: true, reason: 'source_changed', completed_units: 0 };
       customerId = invoice.customer_id;
     } else if (event.event_type !== 'customer.created') fail(409, 'Unexpected workflow event');
-    const customer = await record(a, customerId, 'customers');
-    if (customer.status === 'archived')
-      return { action, skipped: true, reason: 'customer_archived', completed_units: 0 };
+    if (customerId) {
+      const customer = await record(a, customerId, 'customers');
+      if (customer.status === 'archived')
+        return { action, skipped: true, reason: 'customer_archived', completed_units: 0 };
+    }
     const entry = await createCrmEntry(
       a,
       {
         kind: 'follow_up',
-        customer_id: customer.id,
-        title: w.name + ' · customer onboarding',
+        customer_id: customerId,
+        parent_entry_id: parentEntryId,
+        title: w.name + (parentEntryId ? ' · CRM follow-up' : ' · customer onboarding'),
         notes: 'Created by a reviewed supported workflow. No customer message was sent.',
         assigned_to: a.actor,
         due_at: new Date(

@@ -4450,3 +4450,412 @@
     flex-direction: column;
   }
 }
+
+/* CRM expansion: compact Odoo-like documents, boards, dialogs and analysis. */
+.crm-section-nav {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-width: 0;
+  margin: -2px 0 14px;
+  border-bottom: 1px solid var(--line, #d9dadd);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.crm-section-nav button {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 9px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink, #24252b);
+  font-size: 14px;
+  font-weight: 600;
+}
+.crm-section-nav button:hover,
+.crm-section-nav button.is-active {
+  color: var(--brand, #76506d);
+  border-bottom-color: var(--brand, #76506d);
+  background: transparent;
+}
+.crm-import,
+.crm-forecast,
+.crm-plans,
+.crm-duplicates {
+  min-width: 0;
+  padding: 18px;
+}
+.crm-import > p,
+.crm-forecast > p,
+.crm-plans > p,
+.crm-duplicates > p {
+  max-width: 1100px;
+}
+.crm-import-mapping {
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 10px 14px;
+}
+.crm-import-preview,
+.crm-pivot-scroll,
+.crm-forecast-chart-scroll,
+.crm-report-chart-scroll {
+  min-width: 0;
+  overflow: auto;
+  border: 1px solid var(--line, #d9dadd);
+  background: var(--paper, #fff);
+}
+.crm-import-preview table,
+.crm-pivot-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.crm-import-preview th,
+.crm-import-preview td,
+.crm-pivot-table th,
+.crm-pivot-table td {
+  min-width: 96px;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--line, #d9dadd);
+  text-align: left;
+  vertical-align: top;
+}
+.crm-import-preview th,
+.crm-pivot-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface, #f7f8fa);
+  font-weight: 700;
+}
+.crm-import-preview td:last-child {
+  min-width: 220px;
+  color: var(--muted, #656a73);
+}
+.crm-toolbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.crm-toolbar h2,
+.crm-toolbar p {
+  margin: 0 0 5px;
+}
+.crm-toolbar p,
+.crm-plan-row p,
+.crm-plan-row small,
+.crm-forecast-card small {
+  color: var(--muted, #656a73);
+}
+.crm-toolbar > .field {
+  flex: 0 0 150px;
+}
+.crm-report-toolbar {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 10px 0 14px;
+}
+.crm-forecast-board {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(265px, 310px);
+  gap: 10px;
+  align-items: start;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 2px 2px 12px;
+}
+.crm-forecast-column {
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid var(--line, #d9dadd);
+  border-left: 2px solid #9a66cf;
+  background: var(--surface, #f8f9fb);
+}
+.crm-forecast-column > header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 5px 8px;
+  padding: 1px 2px 10px;
+}
+.crm-forecast-column > header h3 {
+  margin: 0;
+  color: var(--teal, #187b7b);
+  font-size: 15px;
+}
+.crm-forecast-column > header > strong,
+.crm-forecast-column > header > small,
+.crm-forecast-column > header > .crm-stage-volume {
+  grid-column: 1 / -1;
+}
+.crm-forecast-column > header > small {
+  color: var(--muted, #656a73);
+}
+.crm-forecast-card {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 10px;
+  border-radius: 2px;
+  background: var(--paper, #fff);
+}
+.crm-forecast-card p,
+.crm-forecast-card small {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.crm-forecast-title {
+  justify-self: start;
+  max-width: 100%;
+  text-align: left;
+  font-weight: 700;
+  white-space: normal;
+}
+.crm-stage-empty {
+  margin: 8px 0 0;
+  padding: 10px;
+  color: var(--muted, #656a73);
+  background: var(--paper, #fff);
+  font-size: 13px;
+}
+.crm-forecast-chart-scroll,
+.crm-report-chart-scroll {
+  margin: 12px 0;
+}
+.crm-forecast-chart {
+  display: block;
+  width: 100%;
+  min-width: 760px;
+  height: auto;
+  color: var(--muted, #60666e);
+  font-size: 12px;
+}
+.crm-report-chart-scroll svg {
+  display: block;
+  width: 100%;
+  min-width: 680px;
+  height: 360px;
+  color: var(--muted, #60666e);
+  font-size: 12px;
+}
+.crm-forecast-chart text {
+  fill: currentColor;
+}
+.crm-pivot-table {
+  width: max-content;
+  min-width: 100%;
+}
+.crm-pivot-table td {
+  min-width: 145px;
+  text-align: right;
+  white-space: nowrap;
+}
+.crm-pivot-table td small {
+  display: block;
+  color: var(--muted, #656a73);
+}
+.crm-plan-list,
+.crm-duplicate-list {
+  display: grid;
+  gap: 8px;
+}
+.crm-plan-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line, #d9dadd);
+  background: var(--paper, #fff);
+}
+.crm-plan-row h3,
+.crm-plan-row p {
+  margin: 0 0 4px;
+}
+.crm-plan-editor,
+.crm-plan-launch {
+  width: min(1040px, calc(100vw - 36px));
+  max-height: min(88dvh, 850px);
+  overflow: hidden;
+  padding: 0;
+  border-radius: 5px;
+}
+.crm-dialog-heading,
+.crm-dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--line, #d9dadd);
+}
+.crm-dialog-heading h2,
+.crm-dialog-heading p {
+  margin: 0;
+}
+.crm-dialog-heading small {
+  color: var(--teal, #187b7b);
+}
+.crm-plan-editor-body,
+.crm-merge-review {
+  max-height: calc(min(88dvh, 850px) - 126px);
+  overflow: auto;
+  padding: 16px 18px;
+}
+.crm-dialog-footer {
+  justify-content: flex-start;
+  border-top: 1px solid var(--line, #d9dadd);
+  border-bottom: 0;
+}
+.crm-plan-steps {
+  overflow-x: auto;
+  border: 1px solid var(--line, #d9dadd);
+}
+.crm-plan-step-head,
+.crm-plan-step {
+  display: grid;
+  grid-template-columns: minmax(110px, .8fr) minmax(240px, 2fr) minmax(170px, 1.2fr) minmax(160px, .9fr);
+  gap: 8px;
+  align-items: start;
+  min-width: 760px;
+  padding: 9px;
+  border-bottom: 1px solid var(--line, #d9dadd);
+}
+.crm-plan-step-head {
+  position: sticky;
+  top: 0;
+  background: var(--surface, #f7f8fa);
+  font-size: 12px;
+  font-weight: 700;
+}
+.crm-plan-step > div:not(.crm-plan-step-order) {
+  display: grid;
+  gap: 6px;
+}
+.crm-plan-step-order {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+.crm-plan-step-order input {
+  width: 70px;
+}
+.crm-plan-step-order small {
+  display: block;
+  color: var(--muted, #656a73);
+  font-size: 11px;
+}
+.crm-plan-preview {
+  padding-left: 20px;
+}
+.crm-plan-preview li {
+  padding: 4px 0;
+}
+.crm-duplicate-pair {
+  padding: 12px;
+  border: 1px solid var(--line, #d9dadd);
+  background: var(--paper, #fff);
+}
+.crm-duplicate-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.crm-duplicate-reasons span {
+  padding: 3px 8px;
+  border-radius: 14px;
+  background: #e7edf9;
+  color: #3b5074;
+  font-size: 12px;
+}
+.crm-duplicate-records {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.crm-duplicate-record {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line, #d9dadd);
+  overflow-wrap: anywhere;
+}
+.crm-duplicate-record small,
+.crm-duplicate-record > span {
+  color: var(--muted, #656a73);
+  font-size: 12px;
+}
+.crm-merge-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line, #d9dadd);
+}
+.crm-merge-choice span,
+.crm-merge-choice small {
+  display: block;
+}
+.crm-merge-choice small {
+  margin-top: 4px;
+  color: var(--muted, #656a73);
+}
+@media (max-width: 900px) {
+  .crm-import-mapping {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .crm-section-nav button {
+    min-height: 40px;
+    padding: 8px 11px;
+    font-size: 13px;
+  }
+  .crm-import,
+  .crm-forecast,
+  .crm-plans,
+  .crm-duplicates {
+    padding: 12px;
+  }
+  .crm-toolbar,
+  .crm-plan-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .crm-toolbar > .field {
+    flex-basis: auto;
+  }
+  .crm-import-mapping,
+  .crm-duplicate-records {
+    grid-template-columns: 1fr;
+  }
+  .crm-forecast-board {
+    grid-auto-columns: minmax(260px, 84vw);
+  }
+  .crm-plan-editor,
+  .crm-plan-launch {
+    width: calc(100vw - 16px);
+    max-height: 94dvh;
+  }
+  .crm-plan-editor-body,
+  .crm-merge-review {
+    max-height: calc(94dvh - 112px);
+    padding: 12px;
+  }
+  .crm-dialog-heading,
+  .crm-dialog-footer {
+    padding: 10px 12px;
+  }
+  .crm-report-toolbar > .field {
+    flex: 1 1 140px;
+  }
+}

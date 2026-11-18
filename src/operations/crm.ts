@@ -10,12 +10,23 @@ import { record, save as saveRecord } from '../platform/payments';
 import { financialOperation, customerActivity, canonical } from '../finance/service';
 import { requireServices, checkLimits, recordUsage } from '../marketplace/engine';
 import { emit } from './events';
+import { parseMoney } from '../finance/money';
 export const crmEntryInput = z
   .object({
     kind: z.enum(['lead', 'opportunity', 'follow_up', 'interaction']),
-    customer_id: z.string().uuid(),
+    customer_id: z.string().uuid().nullable().default(null),
     title: z.string().trim().min(2).max(200),
     notes: z.string().max(4000).default(''),
+    contact_name: z.string().trim().max(200).default(''),
+    company: z.string().trim().max(200).default(''),
+    email: z.string().trim().max(254).default('').refine((v) => !v || z.email().safeParse(v).success, 'Enter a valid email address'),
+    phone: z.string().trim().max(50).default(''),
+    website: z.string().trim().max(500).default(''),
+    country: z.string().trim().max(100).default(''),
+    source: z.enum(['manual', 'imported', 'website', 'referral', 'campaign', 'other']).default('manual'),
+    source_ref: z.string().trim().max(200).default(''),
+    business_need: z.string().max(2000).default(''),
+    qualification_notes: z.string().max(4000).default(''),
     stage: z
       .string()
       .regex(/^[a-z][a-z0-9_]{0,39}$/)
@@ -37,7 +48,13 @@ export const crmEntryInput = z
     parent_entry_id: z.string().uuid().nullable().default(null),
     priority: z.number().int().min(0).max(3).default(0),
   })
-  .strict();
+  .strict()
+  .superRefine((entry, context) => {
+    if (entry.kind === 'opportunity' && !entry.customer_id)
+      context.addIssue({ code: 'custom', path: ['customer_id'], message: 'Link a canonical customer before creating an opportunity' });
+    if (entry.kind === 'lead' && !entry.customer_id && !entry.contact_name && !entry.company)
+      context.addIssue({ code: 'custom', path: ['contact_name'], message: 'Add a contact name or company for this prospect' });
+  });
 function crmFingerprint(d: z.infer<typeof crmEntryInput>) {
   const {
     team_id,
@@ -49,6 +66,16 @@ function crmFingerprint(d: z.infer<typeof crmEntryInput>) {
     position,
     parent_entry_id,
     priority,
+    contact_name,
+    company,
+    email,
+    phone,
+    website,
+    country,
+    source,
+    source_ref,
+    business_need,
+    qualification_notes,
     ...legacy
   } = d;
   return !priority &&
@@ -59,13 +86,15 @@ function crmFingerprint(d: z.infer<typeof crmEntryInput>) {
     !tags.length &&
     !outcome_reason &&
     activity_type === 'note' &&
-    position === 0
+    position === 0 &&
+    !contact_name && !company && !email && !phone && !website && !country && source === 'manual' && !source_ref && !business_need && !qualification_notes
     ? legacy
     : priority
       ? d
       : parent_entry_id
         ? {
-            ...legacy,
+          ...legacy,
+          contact_name, company, email, phone, website, country, source, source_ref, business_need, qualification_notes,
             team_id,
             probability_bps,
             expected_close_on,
@@ -76,7 +105,8 @@ function crmFingerprint(d: z.infer<typeof crmEntryInput>) {
             parent_entry_id,
           }
         : {
-            ...legacy,
+          ...legacy,
+          contact_name, company, email, phone, website, country, source, source_ref, business_need, qualification_notes,
             team_id,
             probability_bps,
             expected_close_on,
@@ -99,13 +129,13 @@ async function assignedMember(a: Access, id: string | null) {
 async function links(a: Access, d: z.infer<typeof crmEntryInput>) {
   if (d.parent_entry_id) {
     if (!['follow_up', 'interaction'].includes(d.kind))
-      fail(400, 'Only activities and notes can link to an opportunity');
+      fail(400, 'Only activities and notes can link to a lead or opportunity');
     const parent = await dbGet(
-      'SELECT kind,customer_id FROM ac_crm_entries WHERE id=? AND org_id=? AND environment=?',
+      'SELECT kind,customer_id,status,merged_into FROM ac_crm_entries WHERE id=? AND org_id=? AND environment=?',
       [d.parent_entry_id, a.org, a.environment],
     );
-    if (!parent || parent.kind !== 'opportunity' || parent.customer_id !== d.customer_id)
-      fail(400, 'Choose an opportunity for the same customer');
+    if (!parent || !['lead', 'opportunity'].includes(parent.kind) || parent.status !== 'open' || parent.merged_into || parent.customer_id !== d.customer_id)
+      fail(400, 'Choose a lead or opportunity with the same customer link');
   }
   const settings = await crmConfiguration(a);
   if (!settings.stages.some((s) => s.id === d.stage)) fail(400, 'Choose a configured CRM stage');
@@ -114,8 +144,13 @@ async function links(a: Access, d: z.infer<typeof crmEntryInput>) {
     if (!team || !team.active || (d.assigned_to && !team.members.includes(d.assigned_to)))
       fail(400, 'Choose an active team and one of its current members');
   }
-  const customer = await record(a, d.customer_id, 'customers');
-  if (customer.status === 'archived') fail(409, 'Choose an active customer');
+  if (d.kind === 'opportunity' && !d.customer_id) fail(400, 'Opportunities must link to a canonical customer');
+  if (d.customer_id) {
+    const customer = await record(a, d.customer_id, 'customers');
+    if (customer.status === 'archived') fail(409, 'Choose an active customer');
+  } else if (d.kind === 'follow_up' && !d.parent_entry_id) {
+    fail(400, 'Link this follow-up to a prospect or customer');
+  }
   await assignedMember(a, d.assigned_to);
   if (d.order_id) {
     const order = await record(a, d.order_id, 'orders');
@@ -132,12 +167,17 @@ async function links(a: Access, d: z.infer<typeof crmEntryInput>) {
   if (d.kind === 'follow_up' && !d.due_at) fail(400, 'A follow-up needs a due date');
 }
 function decode(row: any) {
+  const value = crmEntryInput.parse(JSON.parse(row.data)),
+    contactFields = ['contact_name', 'email', 'phone', 'company'] as const,
+    missing = value.kind === 'lead' ? contactFields.filter((field) => !String(value[field] || '').trim()) : [];
   return {
-    ...crmEntryInput.parse(JSON.parse(row.data)),
+    ...value,
+    contact_completeness: value.kind === 'lead' ? { complete: missing.length === 0, missing_fields: missing } : null,
     id: row.id,
     kind: row.kind,
     status: row.status,
     customer_id: row.customer_id,
+    merged_into: row.merged_into || null,
     assigned_to: row.assigned_to,
     due_at: row.due_at,
     version: Number(row.version),
@@ -213,6 +253,7 @@ export async function crmEntryPage(
     customer_id?: string;
     parent_entry_id?: string;
     q?: string;
+    activity_window?: 'today' | 'overdue' | 'upcoming' | 'completed';
     outcome?: 'active' | 'won' | 'lost';
     sort?: 'recent' | 'title';
     limit: number;
@@ -261,9 +302,17 @@ export async function crmEntryPage(
     where.push(value('e', 'stage') + '=?');
     params.push(query.outcome);
   }
+  if (query.kind === 'follow_up' && query.activity_window) {
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()),
+      start = new Date(today + 'T00:00:00+03:00').toISOString(), tomorrow = new Date(new Date(start).getTime() + 86400000).toISOString();
+    if (query.activity_window === 'today') { where.push("e.status='open' AND e.due_at>=? AND e.due_at<?"); params.push(start, tomorrow); }
+    else if (query.activity_window === 'overdue') { where.push("e.status='open' AND e.due_at<?"); params.push(start); }
+    else if (query.activity_window === 'upcoming') { where.push("e.status='open' AND e.due_at>=?"); params.push(tomorrow); }
+    else where.push("e.status='completed'");
+  }
   if (query.q) {
     const pattern = '%' + query.q.toLowerCase().replace(/[\\%_]/g, '\\$&') + '%';
-    const textSearch = [value('e', 'title'), value('e', 'notes'), 'e.id'].map(
+    const textSearch = ['title', 'notes', 'contact_name', 'company', 'email', 'phone', 'source', 'source_ref'].map((field) => value('e', field)).concat('e.id').map(
       (expression) => `LOWER(COALESCE(${expression},'')) LIKE ? ESCAPE '\\'`,
     );
     const customerName = value('c', 'name');
@@ -378,7 +427,7 @@ export async function createCrmEntry(a: Access, input: unknown, key: string, res
     return entry;
   });
 }
-export async function editCrmEntry(a: Access, id: string, input: unknown, key: string) {
+export async function editCrmEntry(a: Access, id: string, input: unknown, key: string, options: { allowParentReassignment?: boolean } = {}) {
   const d = z
     .object({ expected_version: z.number().int().positive(), entry: crmEntryInput })
     .strict()
@@ -399,8 +448,8 @@ export async function editCrmEntry(a: Access, id: string, input: unknown, key: s
         fail(409, 'CRM entry changed; reload before editing');
       if (row.kind !== d.entry.kind || row.customer_id !== d.entry.customer_id)
         fail(400, 'Entry type and customer identity are retained');
-      if ((JSON.parse(row.data).parent_entry_id || null) !== d.entry.parent_entry_id)
-        fail(400, 'Activity opportunity linkage is retained');
+      if (!options.allowParentReassignment && (JSON.parse(row.data).parent_entry_id || null) !== d.entry.parent_entry_id)
+        fail(400, 'Activity lead or opportunity linkage is retained');
       await links(a, d.entry);
       await revision(a, decode(row), 'baseline');
       await dbRun(
@@ -547,6 +596,16 @@ export async function convertCrmLead(a: Access, id: string, input: unknown, key:
     await revision(a, entry, 'converted');
     return entry;
   });
+}
+export async function qualifyCrmLead(a: Access, id: string, input: unknown, key: string) {
+  const d = z.object({ expected_version: z.number().int().positive(), outcome: z.enum(['qualified', 'unqualified']), notes: z.string().max(4000).default(''), reason: z.string().max(1200).default('') }).strict().parse(input);
+  const row = await dbGet('SELECT * FROM ac_crm_entries WHERE id=? AND org_id=? AND environment=?', [id, a.org, a.environment]);
+  if (!row) fail(404, 'CRM lead not found');
+  if (row.kind !== 'lead') fail(409, 'Only leads can be qualified');
+  if (Number(row.version) !== d.expected_version) fail(409, 'Lead changed; reload before qualifying');
+  if (row.status !== 'open') fail(409, 'Only an active lead can be qualified');
+  const { id: _id, version: _version, created_at: _created, updated_at: _updated, merged_into: _merged, contact_completeness: _contactCompleteness, ...entry } = decode(row);
+  return editCrmEntry(a, id, { expected_version: d.expected_version, entry: { ...entry, stage: d.outcome === 'qualified' ? 'qualified' : 'lost', qualification_notes: d.notes || entry.qualification_notes, outcome_reason: d.outcome === 'unqualified' ? d.reason : '' } }, key);
 }
 export async function customerProfile(a: Access, id: string) {
   const customer = await record(a, id, 'customers'),
@@ -762,10 +821,16 @@ export async function crmOverview(a: Access) {
   };
 }
 
+export const crmImportLeadRow = z.object({
+  title: z.string().trim().min(2).max(200), contact_name: z.string().trim().max(200).default(''), company: z.string().trim().max(200).default(''),
+  email: z.string().trim().max(254).default('').refine((v) => !v || z.email().safeParse(v).success, 'Enter a valid email address'), phone: z.string().trim().max(50).default(''),
+  source: z.enum(['manual', 'imported', 'website', 'referral', 'campaign', 'other']).default('imported'), source_ref: z.string().trim().max(200).default(''), notes: z.string().max(4000).default(''),
+  assigned_to: z.string().trim().max(254).default(''), team: z.string().trim().max(100).default(''), amount: z.string().trim().regex(/^\d{1,12}(?:\.\d{1,4})?$/).default('0'), currency: currencySchema.default('KES'), expected_close_on: z.string().date().nullable().default(null), tags: z.string().max(1000).default(''),
+}).strict().refine((v) => !!v.contact_name || !!v.company, { message: 'Add a contact name or company' });
 export const crmImportInput = z
   .object({
     source_id: z.string().trim().min(3).max(100),
-    rows: z.array(crmEntryInput).min(1).max(100),
+    rows: z.array(z.union([crmEntryInput, crmImportLeadRow])).min(1).max(100),
   })
   .strict();
 export async function importCrmEntries(a: Access, input: unknown, key: string) {
@@ -779,8 +844,23 @@ export async function importCrmEntries(a: Access, input: unknown, key: string) {
       async () => {
         await requireServices(a, ['crm']);
         const entries = [];
-        for (const [index, row] of d.rows.entries())
+        for (const [index, raw] of d.rows.entries()) {
+          let row: z.infer<typeof crmEntryInput>;
+          if ('kind' in raw) row = raw;
+          else {
+            const memberText = raw.assigned_to.trim(); let assignedTo: string | null = null;
+            if (memberText) {
+              if (/^[0-9a-f-]{36}$/i.test(memberText)) assignedTo = memberText;
+              else assignedTo = (await dbGet<{ user_id: string }>('SELECT m.user_id FROM ac_memberships m JOIN ac_users u ON u.id=m.user_id WHERE m.org_id=? AND LOWER(u.email)=LOWER(?) AND m.role IN (\'owner\',\'admin\',\'operations\')', [a.org, memberText]))?.user_id || null;
+              if (!assignedTo) fail(400, `Row ${index + 2}: assigned salesperson was not found or is not eligible`);
+            }
+            const config = await crmConfiguration(a), teamName = raw.team.trim(), team = teamName ? config.teams.find((t) => t.id === teamName || t.name.toLowerCase() === teamName.toLowerCase()) : null;
+            if (teamName && !team) fail(400, `Row ${index + 2}: sales team was not found`);
+            const amountMinor = parseMoney(raw.amount, raw.currency);
+            row = crmEntryInput.parse({ kind: 'lead', customer_id: null, title: raw.title, notes: raw.notes, contact_name: raw.contact_name, company: raw.company, email: raw.email, phone: raw.phone, source: raw.source, source_ref: raw.source_ref, assigned_to: assignedTo, team_id: team?.id || null, amount_minor: amountMinor, currency: raw.currency, expected_close_on: raw.expected_close_on, tags: raw.tags.split(',').map((v) => v.trim()).filter(Boolean) });
+          }
           entries.push(await createCrmEntry(a, row, 'import:' + hash(d.source_id) + ':' + index));
+        }
         return { source_id: d.source_id, imported: entries.length, entries };
       },
     ),

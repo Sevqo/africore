@@ -22,7 +22,7 @@ the relevant source paths. Earlier focused HR findings remain in `notes/hr.md`.
 | `base_automation` | `odoo-reference/addons/base_automation` | read | [source comparison](notes/base_automation.md) | AfriCore Automations |
 | `contacts` | `odoo-reference/addons/contacts` | read | [contacts.md](notes/contacts.md) | Business ID profile layout; contact model is not a passport or credential system |
 | `account` | `odoo-reference/addons/account` | read | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | AfriCore Accounting and Finance concepts |
-| `crm` | `odoo-reference/addons/crm` | read | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | AfriCore CRM |
+| `crm` | `odoo-reference/addons/crm` | read | [crm.md](notes/crm.md) | AfriCore CRM |
 | `hr` | `odoo-reference/addons/hr` | deep-dive | [hr.md](notes/hr.md) | AfriCore People employees and departments |
 | `hr_attendance` | `odoo-reference/addons/hr_attendance` | deep-dive | [hr.md](notes/hr.md) | AfriCore People attendance |
 | `hr_holidays` | `odoo-reference/addons/hr_holidays` | deep-dive | [hr.md](notes/hr.md) | AfriCore People leave and approvals |

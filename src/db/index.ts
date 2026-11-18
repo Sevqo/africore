@@ -8,7 +8,7 @@ import { migrateAccounting } from '../erp/accounting-schema';
 import { migrateERP } from '../erp/schema';
 import { migrateConnected } from '../operations/connected-schema';
 import { migrateApps } from '../apps/schema';
-import { migrateBusinessOperations } from '../operations/business-schema';
+import { migrateBusinessOperations, migrateCrmExpansion } from '../operations/business-schema';
 import { migrateFinance } from '../finance/schema';
 import { migrateTrust } from '../trust/schema';
 import { migrateSecurity } from '../platform/security-schema';
@@ -333,6 +333,7 @@ export async function migrate(): Promise<void> {
   await migrateConnected();
   await migrateApps();
   await migrateBusinessOperations();
+  await migrateCrmExpansion();
   await migrateERP();
   await migrateAccounting();
   await migratePeople();

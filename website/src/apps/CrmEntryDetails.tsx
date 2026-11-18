@@ -12,6 +12,7 @@ export function CrmEntryDetails({
   writable,
   save,
   convert,
+  qualify,
   close,
   configuration,
   api,
@@ -28,6 +29,7 @@ export function CrmEntryDetails({
   writable: boolean;
   save: (entry: any) => Promise<any>;
   convert: (assignment: any) => Promise<any>;
+  qualify: (outcome: 'qualified'|'unqualified', notes: string, reason?: string) => Promise<any>;
   close: () => void;
   refresh: () => void;
   newQuotation: () => void;
@@ -38,7 +40,7 @@ export function CrmEntryDetails({
     [activityPage, setActivityPage] = useState<any>(null),
     [activityError, setActivityError] = useState(''),
     [historyError, setHistoryError] = useState(''),
-    [dialog, setDialog] = useState<'convert' | 'lost' | 'schedule' | null>(null),
+    [dialog, setDialog] = useState<'convert' | 'lost' | 'schedule' | 'plan' | null>(null),
     [tab, setTab] = useState<'notes' | 'activities' | 'history'>('notes'),
     [quotes, setQuotes] = useState<any[]>([]),
     [customerMode, setCustomerMode] = useState<'existing' | 'new'>('existing'),
@@ -62,7 +64,7 @@ export function CrmEntryDetails({
     let current = true;
     setActivityPage(null);
     setActivityError('');
-    if (entry.kind !== 'opportunity') return;
+    if (!['opportunity', 'lead'].includes(entry.kind)) return;
     api(
       '/crm/entries?' +
         new URLSearchParams({ parent_entry_id: entry.id, limit: '200', offset: '0' }),
@@ -99,11 +101,11 @@ export function CrmEntryDetails({
   const customer = customers.find((c) => c.id === entry.customer_id),
     activities: any[] = activityPage?.data || [];
   function payload(changes: any) {
-    const { id: _, version: __, created_at: ___, updated_at: ____, ...rest } = entry;
+    const { id: _, version: __, created_at: ___, updated_at: ____, merged_into: _____, contact_completeness: ______, ...rest } = entry;
     return { ...rest, ...changes };
   }
   async function updateActivity(item: any, changes: any) {
-    const { id, version, created_at, updated_at, ...rest } = item;
+    const { id, version, created_at, updated_at, merged_into: _, contact_completeness: __, ...rest } = item;
     const updated = await api(
       '/crm/entries/' + id,
       'PATCH',
@@ -191,14 +193,18 @@ export function CrmEntryDetails({
         {entry.kind === 'lead' &&
           entry.status === 'open' &&
           !['won', 'lost'].includes(entry.stage) && (
-            <button className="button" disabled={!writable} onClick={() => setDialog('convert')}>
-              Convert to opportunity
-            </button>
+            <>
+              <button className="button" disabled={!writable} onClick={() => setDialog('convert')}>Convert to opportunity</button>
+              <Form className="compact-form" disabled={!writable} submit={(d)=>qualify('qualified',d.qualification_notes||entry.qualification_notes||'')}>
+                <input type="hidden" name="qualification_notes" value={entry.qualification_notes||''}/><button className="secondary-button">Qualify lead</button>
+              </Form>
+              <button className="secondary-button" disabled={!writable} onClick={()=>setDialog('lost')}>Mark unqualified</button>
+            </>
           )}
         <details className="crm-record-actions">
           <summary className="secondary-button">Actions</summary>
           <div className="crm-record-actions-menu">
-            {entry.kind === 'opportunity' && (
+            {['opportunity', 'lead'].includes(entry.kind) && (
               <button type="button" onClick={() => setDialog('schedule')}>
                 Schedule activity
               </button>
@@ -237,6 +243,16 @@ export function CrmEntryDetails({
                 ...crmExtraValues(d, parseMoney),
                 title: d.title,
                 notes: d.notes,
+                contact_name: d.contact_name,
+                company: d.company,
+                email: d.email,
+                phone: d.phone,
+                website: d.website,
+                country: d.country,
+                source: d.source,
+                source_ref: d.source_ref,
+                business_need: d.business_need,
+                qualification_notes: d.qualification_notes,
                 status: d.status,
                 stage: d.stage,
                 assigned_to: d.assigned_to || null,
@@ -257,6 +273,16 @@ export function CrmEntryDetails({
                 defaultValue={entry.title}
               />
             </Field>
+            <Field label="Contact name"><input name="contact_name" maxLength={200} defaultValue={entry.contact_name||''}/></Field>
+            <Field label="Company"><input name="company" maxLength={200} defaultValue={entry.company||''}/></Field>
+            <Field label="Email"><input name="email" type="email" maxLength={254} defaultValue={entry.email||''}/></Field>
+            <Field label="Phone"><input name="phone" type="tel" maxLength={50} defaultValue={entry.phone||''}/></Field>
+            <Field label="Website"><input name="website" type="url" maxLength={500} defaultValue={entry.website||''}/></Field>
+            <Field label="Country"><input name="country" maxLength={100} defaultValue={entry.country||''}/></Field>
+            <Field label="Lead source"><select name="source" defaultValue={entry.source||'manual'}>{['manual','imported','website','referral','campaign','other'].map((source)=><option key={source}>{source}</option>)}</select></Field>
+            <Field label="Source reference"><input name="source_ref" maxLength={200} defaultValue={entry.source_ref||''}/></Field>
+            <Field label="Business need"><textarea name="business_need" maxLength={2000} defaultValue={entry.business_need||''}/></Field>
+            <Field label="Qualification notes"><textarea name="qualification_notes" maxLength={4000} defaultValue={entry.qualification_notes||''}/></Field>
             <Field label="Expected revenue">
               <input
                 name="amount"
@@ -319,11 +345,7 @@ export function CrmEntryDetails({
             </Field>
             <CrmExtraFields entry={entry} configuration={configuration} />
           </div>
-          <p>
-            Contact: {customer?.name || 'Not loaded'}
-            {customer?.email ? ' · ' + customer.email : ''}
-            {customer?.phone ? ' · ' + customer.phone : ''}
-          </p>
+          <p>Contact: {customer?.name || entry.contact_name || 'Prospect'}{(customer?.email || entry.email) ? ' · ' + (customer?.email || entry.email) : ''}{(customer?.phone || entry.phone) ? ' · ' + (customer?.phone || entry.phone) : ''}{entry.company ? ' · ' + entry.company : ''}</p>
           <Field label="Internal notes">
             <textarea name="notes" maxLength={4000} defaultValue={entry.notes} />
           </Field>
@@ -398,7 +420,7 @@ export function CrmEntryDetails({
           </button>
         ))}
       </div>
-      {tab === 'notes' && entry.kind === 'opportunity' && (
+      {tab === 'notes' && ['opportunity','lead'].includes(entry.kind) && (
         <Form disabled={!writable} submit={(d) => addActivity(d, 'interaction')}>
           <h3>Log an internal note</h3>
           <Field label="Summary">
@@ -414,7 +436,7 @@ export function CrmEntryDetails({
         <section className="panel">
           <h3>Activities and notes</h3>
           {activityError && <p role="alert">Activity history unavailable: {activityError}</p>}
-          {entry.kind === 'opportunity' && (
+          {['opportunity', 'lead'].includes(entry.kind) && (
             <button className="secondary-button" disabled={!writable} onClick={() => setDialog('schedule')}>
               Schedule activity
             </button>
@@ -529,7 +551,7 @@ export function CrmEntryDetails({
             aria-modal="true"
             aria-label={
               dialog === 'lost'
-                ? 'Mark opportunity lost'
+                ? entry.kind === 'lead' ? 'Mark lead unqualified' : 'Mark opportunity lost'
                 : dialog === 'schedule'
                   ? 'Schedule activity'
                   : 'Convert to opportunity'
@@ -538,7 +560,7 @@ export function CrmEntryDetails({
             <div className="crm-dialog-heading">
               <h3>
                 {dialog === 'lost'
-                  ? 'Mark opportunity lost'
+                  ? entry.kind === 'lead' ? 'Mark lead unqualified' : 'Mark opportunity lost'
                   : dialog === 'schedule'
                     ? 'Schedule activity'
                     : 'Convert to opportunity'}
@@ -653,7 +675,7 @@ export function CrmEntryDetails({
                 }}
               >
                 <p>
-                  Convert this lead in place. Notes, amount and record history are retained; choose
+                  Convert this lead in place. Contact details, notes, amount and record history are retained; choose
                   the customer below.
                 </p>
                 <fieldset>
@@ -689,19 +711,19 @@ export function CrmEntryDetails({
                 ) : (
                   <div className="form-grid">
                     <Field label="Customer name">
-                      <input name="customer_name" required maxLength={200} />
+                      <input name="customer_name" required maxLength={200} defaultValue={entry.company||entry.contact_name||entry.title} />
                     </Field>
                     <Field label="Customer type">
-                      <select name="customer_type">
+                      <select name="customer_type" defaultValue={entry.company?'business':'individual'}>
                         <option value="individual">Individual</option>
                         <option value="business">Business</option>
                       </select>
                     </Field>
                     <Field label="Email">
-                      <input name="customer_email" type="email" />
+                      <input name="customer_email" type="email" defaultValue={entry.email||''} />
                     </Field>
                     <Field label="Phone">
-                      <input name="customer_phone" maxLength={50} />
+                      <input name="customer_phone" maxLength={50} defaultValue={entry.phone||''} />
                     </Field>
                   </div>
                 )}
@@ -728,8 +750,7 @@ export function CrmEntryDetails({
                   </select>
                 </Field>
                 <p>
-                  Existing customers with the same email or phone must be reviewed and linked
-                  instead. Opportunity merging is not supported.
+                  Existing customers with the same email or phone must be reviewed and linked instead. This action creates or links one canonical customer; prospect history is retained.
                 </p>
                 <button className="button">Create opportunity</button>{' '}
                 <button type="button" className="secondary-button" onClick={() => setDialog(null)}>

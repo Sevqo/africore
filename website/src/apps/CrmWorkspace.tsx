@@ -5,6 +5,9 @@ import { CrmExtraFields, crmExtraValues } from './CrmExtraFields';
 import { CrmSettings } from './CrmSettings';
 import { CrmPipeline } from './CrmPipeline';
 import { CrmEntryDetails } from './CrmEntryDetails';
+import { CrmActivityPlans } from './CrmActivityPlans';
+import { CrmForecast } from './CrmForecast';
+import { CrmDuplicates } from './CrmDuplicates';
 import { CrmCustomerSelect } from './CrmCustomerSelect';
 import { useIdempotentAPI } from './useIdempotentAPI';
 import { useEffect, useRef, useState } from 'react';
@@ -68,6 +71,7 @@ export function CrmWorkspace({
     [teamFilter, setTeamFilter] = useState('all'),
     [currencyFilter, setCurrencyFilter] = useState('all'),
     [leadFilter, setLeadFilter] = useState('all'),
+    [activityWindow, setActivityWindow] = useState('all'),
     [sortOrder, setSortOrder] = useState('recent'),
     [page, setPage] = useState(1),
     [board, setBoard] = useState(initialSection === 'dashboard' || initialSection === 'pipeline'),
@@ -106,7 +110,7 @@ export function CrmWorkspace({
         params.set('assigned_to', leadFilter);
       if (leadFilter === 'unassigned') params.set('unassigned', 'true');
       if (leadFilter === 'open' || leadFilter === 'cancelled') params.set('status', leadFilter);
-    } else if (section === 'followups') params.set('kind', 'follow_up');
+    } else if (section === 'followups') { params.set('kind', 'follow_up'); if (activityWindow !== 'all') params.set('activity_window', activityWindow); if (ownerFilter === 'mine' && data?.current_actor) params.set('assigned_to', data.current_actor); else if (!['mine','all'].includes(ownerFilter)) params.set('assigned_to', ownerFilter); }
     if (stateFilter !== 'all') params.set('status', stateFilter);
     if (currencyFilter !== 'all') params.set('currency', currencyFilter);
     if (query.trim()) params.set('q', query.trim());
@@ -198,6 +202,7 @@ export function CrmWorkspace({
     teamFilter,
     currencyFilter,
     leadFilter,
+    activityWindow,
     sortOrder,
     data?.current_actor,
   ]);
@@ -267,7 +272,7 @@ export function CrmWorkspace({
     return () => removeEventListener('popstate', sync);
   }, [scope, !!data]);
   async function status(entry: any, value: string, stage = entry.stage) {
-    const { id: _, version, created_at: __, updated_at: ___, ...rest } = entry,
+    const { id: _, version, created_at: __, updated_at: ___, merged_into: ____, contact_completeness: _____, ...rest } = entry,
       prior = data;
     setMoving(true);
     setMoveNotice('');
@@ -331,6 +336,9 @@ export function CrmWorkspace({
       {!data && !error && <p role="status">Loading customer relationships…</p>}
       {data && (
         <>
+          <nav className="crm-section-nav" aria-label="CRM sections">{[
+            ['pipeline','Pipeline'],['leads','Leads'],['followups','Activities'],['forecast','Forecast'],['report','Reporting'],['plans','Activity Plans'],['duplicates','Duplicates'],['import','Import'],['customers','Customers'],['settings','Configuration'],
+          ].map(([id,label])=><button key={id} className={section===id?'is-active':''} aria-current={section===id?'page':undefined} onClick={()=>changeSection(id)}>{label}</button>)}</nav>
           {teamError && (
             <p className="alert warning" role="alert">
               Team assignments could not load. CRM records remain available; retry team data before assigning.
@@ -412,6 +420,7 @@ export function CrmWorkspace({
                   setExtraSelected(result);
                 })
               }
+              qualify={(outcome, notes, reason) => write('/crm/entries/' + selectedEntry.id + '/qualify', { expected_version: selectedEntry.version, outcome, notes, reason }, 'POST').then((result) => setExtraSelected(result))}
             />
           )}{' '}
           {!selectedEntry &&
@@ -422,6 +431,12 @@ export function CrmWorkspace({
                 members={members}
                 open={openRecord}
               />
+            ) : section === 'forecast' ? (
+              <CrmForecast api={api} open={openRecord} writable={writable} members={members} />
+            ) : section === 'plans' ? (
+              <CrmActivityPlans api={api} members={members} writable={writable} />
+            ) : section === 'duplicates' ? (
+              <CrmDuplicates api={api} writable={writable} open={openRecord} />
             ) : section === 'import' ? (
               <CrmImport
                 api={api}
@@ -678,7 +693,7 @@ export function CrmWorkspace({
                         type="search"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Title, notes or customer"
+                        placeholder="Title, contact, company, email, phone or source"
                       />
                     </Field>
                     {section === 'leads' && (
@@ -697,6 +712,8 @@ export function CrmWorkspace({
                         </select>
                       </Field>
                     )}
+                    {section === 'followups' && <Field label="Activity window"><select value={activityWindow} onChange={(e)=>setActivityWindow(e.target.value)}><option value="all">All activities</option><option value="today">Due today</option><option value="overdue">Overdue</option><option value="upcoming">Upcoming</option><option value="completed">Completed</option></select></Field>}
+                    {section === 'followups' && <Field label="Salesperson"><select value={ownerFilter} onChange={(e)=>setOwnerFilter(e.target.value)}><option value="mine">My activities</option><option value="all">All activities</option>{members.map((m)=><option key={m.id} value={m.id}>{m.display_name||m.email}</option>)}</select></Field>}
                     <Field label="Sort">
                       <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
                         <option value="recent">Newest first</option>
@@ -828,7 +845,7 @@ export function CrmWorkspace({
                       writable={writable && !moving}
                       open={openRecord}
                       setPriority={async (e, priority) => {
-                        const { id, version, created_at, updated_at, ...rest } = e;
+                        const { id, version, created_at, updated_at, merged_into: _, contact_completeness: __, ...rest } = e;
                         await write(
                           '/crm/entries/' + id,
                           { expected_version: version, entry: { ...rest, priority } },
@@ -869,11 +886,7 @@ export function CrmWorkspace({
                                 >
                                   {e.title}
                                 </button>
-                                <small>
-                                  {e.kind.replaceAll('_', ' ')} ·{' '}
-                                  {customers.find((c) => c.id === e.customer_id)?.name ||
-                                    'Shared customer'}
-                                </small>
+                                <small>{e.kind.replaceAll('_', ' ')} · {customers.find((c) => c.id === e.customer_id)?.name || e.company || e.contact_name || 'Prospect'}</small>
                                 {e.notes && <p>{e.notes}</p>}
                               </div>
                             </td>
@@ -962,13 +975,23 @@ export function CrmWorkspace({
                   <Form
                     disabled={!writable}
                     submit={(d) => {
-                      if (!d.customer) throw new Error('Choose a customer from the search results.');
+                      if (createKind !== 'lead' && !d.customer) throw new Error('Choose a customer from the search results.');
                       return write('/crm/entries', {
                         ...crmExtraValues(d, parseMoney),
-                        customer_id: d.customer,
+                        customer_id: d.customer || null,
                         kind: d.kind,
                         title: d.title,
                         notes: d.notes,
+                        contact_name: d.contact_name || '',
+                        company: d.company || '',
+                        email: d.email || '',
+                        phone: d.phone || '',
+                        website: d.website || '',
+                        country: d.country || '',
+                        source: d.source || 'manual',
+                        source_ref: d.source_ref || '',
+                        business_need: d.business_need || '',
+                        qualification_notes: d.qualification_notes || '',
                         stage: d.stage,
                         assigned_to: d.assigned_to || null,
                         due_at: d.due ? new Date(d.due).toISOString() : null,
@@ -978,8 +1001,8 @@ export function CrmWorkspace({
                     }}
                   >
                     <div className="form-grid">
-                      <Field label="Customer">
-                        <CrmCustomerSelect api={api} name="customer" required />
+                      <Field label={createKind === 'lead' ? 'Link existing Customer (optional for a prospect)' : 'Customer'}>
+                        <CrmCustomerSelect api={api} name="customer" required={createKind !== 'lead'} />
                       </Field>
                       <Field label="Type">
                         <select
@@ -1004,6 +1027,18 @@ export function CrmWorkspace({
                       <Field label="Title">
                         <input name="title" required minLength={2} maxLength={200} />
                       </Field>
+                      {createKind === 'lead' && <>
+                        <Field label="Contact name"><input name="contact_name" maxLength={200} placeholder="Person to contact" /></Field>
+                        <Field label="Company"><input name="company" maxLength={200} placeholder="Prospect organization" /></Field>
+                        <Field label="Email"><input name="email" type="email" maxLength={254} /></Field>
+                        <Field label="Phone"><input name="phone" type="tel" maxLength={50} /></Field>
+                        <Field label="Website"><input name="website" type="url" maxLength={500} /></Field>
+                        <Field label="Country"><input name="country" maxLength={100} /></Field>
+                        <Field label="Lead source"><select name="source" defaultValue="manual">{['manual', 'imported', 'website', 'referral', 'campaign', 'other'].map((source) => <option key={source}>{source}</option>)}</select></Field>
+                        <Field label="Source reference"><input name="source_ref" maxLength={200} /></Field>
+                        <Field label="Business need"><textarea name="business_need" maxLength={2000} /></Field>
+                        <Field label="Qualification notes"><textarea name="qualification_notes" maxLength={4000} /></Field>
+                      </>}
                       <Field label="Stage">
                         <select
                           key={createStage}
@@ -1030,7 +1065,7 @@ export function CrmWorkspace({
                           ))}
                         </select>
                       </Field>
-                      <Field label="Opportunity amount">
+                      <Field label={createKind === 'lead' ? 'Expected value' : 'Opportunity amount'}>
                         <input name="amount" defaultValue="0" inputMode="decimal" />
                       </Field>
                       <Field label="Currency">

@@ -26,6 +26,21 @@ that produced a conclusion does.
 
 ## Entries
 
+## 2026-11-18 — CRM prospect intake, duplicate merges, activity plans and forecasts
+
+- Question: how does the Odoo Community CRM reference model leads and opportunities, present pipeline/forecast views, merge related records, and reuse activity plans, and what behavior can AfriCore adapt without changing its canonical customer, authorization, history or currency contracts?
+- Odoo commit: `2b5a64e54f5d68f4a3263e75128d63423326ffef` (`20.0`).
+- Read (paths): `addons/crm/models/crm_lead.py`; `addons/crm/views/crm_lead_views.xml`; `addons/crm/wizard/crm_merge_opportunities.py`; `addons/crm/views/mail_activity_plan_views.xml`; `addons/mail/models/mail_activity_plan.py`; `addons/mail/models/mail_activity_plan_template.py`; `addons/mail/views/mail_activity_plan_views.xml`; `addons/crm/tests/test_crm_lead_merge.py`.
+- Findings:
+  - `crm.lead` represents either a lead or an opportunity through a `type` field. The canonical `partner_id` relationship is optional and the model describes it as usually created during conversion (`addons/crm/models/crm_lead.py`, `CrmLead`).
+  - The CRM pipeline uses Kanban and exposes list, graph, pivot, calendar, form and activity views. Forecast is a separate action with forecast search defaults and forecast Kanban, graph, pivot and list views (`addons/crm/views/crm_lead_views.xml`, pipeline and forecast actions).
+  - The merge wizard filters already-won records, lets the operator assign a salesperson and sales team, and invokes the model merge method (`addons/crm/wizard/crm_merge_opportunities.py`). The model merges selected values into a master and transfers dependent history, attachments and calendar events; the CRM merge test checks that attachments and activities move (`addons/crm/models/crm_lead.py`, `_merge_opportunity`, `_merge_dependences`; `addons/crm/tests/test_crm_lead_merge.py`, `test_merge_method_dependencies`).
+  - CRM activity plans are generic mail records scoped to `crm.lead`. Ordered templates define activity type, summary, responsibility and delay fields (`addons/crm/views/mail_activity_plan_views.xml`; `addons/mail/models/mail_activity_plan_template.py`; `addons/mail/views/mail_activity_plan_views.xml`).
+- Conclusions: adapt customerless prospect capture and explicit conversion, reviewed merge with dependent history transfer, and reusable activity plans. Preserve AfriCore's stronger service boundaries: canonical Customer creation/linking through CRM conversion, membership and role authorization, version checks, idempotency, snapshots, and integer minor-unit forecasts grouped by currency.
+- Decision: [D-003](DECISIONS.md#d-003-keep-crm-prospects-independent-from-canonical-customers), [D-004](DECISIONS.md#d-004-merge-crm-records-with-a-reviewable-history) and [D-005](DECISIONS.md#d-005-keep-crm-activity-plans-bounded-and-retry-safe).
+- Follow-ups: compare each populated running CRM screen with the supplied screenshots at a similar viewport; review permissions and financial currency semantics separately if required.
+- Limits: focused source review, not an exhaustive CRM security, transaction, money-rounding or runtime audit. No Odoo source/assets were copied or modified. No new Phase 2.5B runtime screenshot or side-by-side comparison was captured.
+
 ## 2026-11-17 — Business ID contact-record layout
 
 - Question: how does Odoo Community Contacts assemble the company profile, related-record button box, grouped fields, child contacts and horizontal tabs, and which of these are presentation-only patterns for Business ID?

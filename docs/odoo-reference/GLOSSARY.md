@@ -15,7 +15,8 @@ the rounding rule carries across.
 
 | Odoo term / model | AfriCore term | Verified at | Notes |
 | --- | --- | --- | --- |
-| _none yet_ | | | |
+| `crm.lead` | CRM lead / opportunity | `odoo-reference/addons/crm/models/crm_lead.py` | One Odoo model supports both kinds through a `type` field; `partner_id` is optional. This does not imply AfriCore can treat a lead as a canonical Customer. |
+| `mail.activity.plan` | CRM activity plan | `odoo-reference/addons/crm/views/mail_activity_plan_views.xml` | CRM scopes the generic plan model to `crm.lead`; AfriCore's plan schema and scheduling contract are its own. |
 
 ## Unverified candidates (do not rely on these)
 

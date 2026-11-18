@@ -3295,3 +3295,119 @@ test('due follow-up reminders deduplicate and do not notify for completed activi
     0,
   );
 });
+
+test('CRM expansion captures prospects, imports safely, reviews merges, executes plans once and reconciles currency forecasts', async () => {
+  const prospect = await api(path('/crm/entries'), 'POST', {
+    kind: 'lead', title: 'Synthetic customerless CRM prospect', contact_name: 'Casey Example',
+    company: 'Northstar Office', email: 'casey.northstar@example.test', source: 'referral',
+    source_ref: 'partner-2026-11', website: 'https://northstar.example.test',
+    country: 'Kenya', business_need: 'Furniture for a new office', qualification_notes: 'Met at a trade event',
+    assigned_to: actor, amount_minor: 425000, currency: 'KES', expected_close_on: '2030-06-15', tags: ['Office'],
+  });
+  assert.equal(prospect.status, 201, JSON.stringify(prospect.data));
+  assert.equal(prospect.data.customer_id, null);
+  const searchedProspect = await api(path('/crm/entries?kind=lead&q=casey.northstar%40example.test'));
+  assert.equal(searchedProspect.data.data.some((r: any) => r.id === prospect.data.id), true);
+  assert.deepEqual(searchedProspect.data.data.find((r: any) => r.id === prospect.data.id).contact_completeness, { complete: false, missing_fields: ['phone'] });
+  const qualified = await api(path('/crm/entries/' + prospect.data.id + '/qualify'), 'POST', {
+    expected_version: prospect.data.version, outcome: 'qualified', notes: 'Confirmed budget and timeline',
+  });
+  assert.equal(qualified.status, 200, JSON.stringify(qualified.data));
+  assert.equal(qualified.data.kind, 'lead');
+  assert.equal(qualified.data.stage, 'qualified');
+  assert.equal(qualified.data.customer_id, null);
+
+  const importRow = { title: 'Synthetic CSV prospect', contact_name: 'Jamie CSV', company: 'CSV Works', email: 'jamie.csv@example.test', source: 'imported', amount: '2500.00', currency: 'KES', expected_close_on: '2030-07-10', tags: 'CSV, Event' };
+  const preview = await api(path('/crm/import/preview'), 'POST', { rows: [importRow] });
+  assert.equal(preview.status, 200, JSON.stringify(preview.data));
+  assert.equal(preview.data.valid_rows, 1);
+  const importBody = { source_id: 'crm-expansion-' + randomUUID(), rows: [importRow] }, importKey = randomUUID();
+  const imported = await api(path('/crm/import'), 'POST', importBody, cookie, importKey);
+  assert.equal(imported.status, 200, JSON.stringify(imported.data));
+  assert.equal(imported.data.entries[0].customer_id, null);
+  assert.equal(imported.data.entries[0].amount_minor, 250000);
+  assert.deepEqual((await api(path('/crm/import'), 'POST', importBody, cookie, randomUUID())).data, imported.data);
+
+  const duplicate = await api(path('/crm/entries'), 'POST', {
+    kind: 'lead', title: 'Synthetic possible duplicate prospect', contact_name: 'Casey E.', company: 'Northstar Office',
+    email: ' CASEY.NORTHSTAR@example.test ', phone: '+254 700 123 456', source: 'campaign', assigned_to: actor,
+  });
+  assert.equal(duplicate.status, 201, JSON.stringify(duplicate.data));
+  const suggestions = await api(path('/crm/duplicates?limit=100'));
+  assert.equal(suggestions.status, 200);
+  const pair = suggestions.data.data.find((m: any) => [m.left.id, m.right.id].includes(prospect.data.id) && [m.left.id, m.right.id].includes(duplicate.data.id));
+  assert.ok(pair, 'deterministic duplicate should be suggested, never automatically merged');
+  assert.ok(pair.reasons.includes('Same normalized email'));
+
+  const followup = await api(path('/crm/entries'), 'POST', {
+    kind: 'follow_up', customer_id: null, parent_entry_id: duplicate.data.id, title: 'Synthetic merge follow-up',
+    assigned_to: actor, due_at: '2030-06-20T06:00:00.000Z', activity_type: 'call',
+  });
+  assert.equal(followup.status, 201, JSON.stringify(followup.data));
+  const planBody = { name: 'Synthetic prospect follow-up plan', description: 'Short review sequence', source: 'lead', active: true, steps: [
+    { id: randomUUID(), type: 'call', summary: 'Initial discovery call', instructions: 'Confirm needs', offset_days: 0, assignment: 'target_owner', assigned_to: null },
+    { id: randomUUID(), type: 'meeting', summary: 'Schedule a product meeting', instructions: '', offset_days: 3, assignment: 'plan_owner', assigned_to: null },
+  ] };
+  const plan = await api(path('/crm/activity-plans'), 'POST', planBody);
+  assert.equal(plan.status, 201, JSON.stringify(plan.data));
+  assert.equal(plan.data.steps.length, 2);
+  const executionKey = randomUUID(), applyBody = { plan_id: plan.data.id, expected_plan_version: plan.data.version, target_id: duplicate.data.id, plan_date: '2030-06-01', assigned_to: null, execution_key: executionKey };
+  const applyKey = randomUUID(), applied = await api(path('/crm/activity-plans/apply'), 'POST', applyBody, cookie, applyKey);
+  assert.equal(applied.status, 201, JSON.stringify(applied.data));
+  assert.equal(applied.data.activities.length, 2);
+  assert.equal(applied.data.activities[0].due_at, '2030-06-01T06:00:00.000Z');
+  assert.equal(applied.data.activities[1].due_at, '2030-06-04T06:00:00.000Z');
+  const replay = await api(path('/crm/activity-plans/apply'), 'POST', applyBody, cookie, applyKey);
+  assert.equal(replay.status, 201);
+  assert.deepEqual(replay.data, applied.data);
+  const activityCount = Number((await dbGet("SELECT COUNT(*) AS n FROM ac_crm_entries WHERE org_id=? AND json_extract(data,'$.parent_entry_id')=? AND kind='follow_up'", [org, duplicate.data.id])).n);
+  assert.equal(activityCount, 3);
+
+  const mergeBody = { primary_id: prospect.data.id, records: [{ id: prospect.data.id, expected_version: qualified.data.version }, { id: duplicate.data.id, expected_version: duplicate.data.version }] }, mergeKey = randomUUID();
+  const merged = await api(path('/crm/merge'), 'POST', mergeBody, cookie, mergeKey);
+  assert.equal(merged.status, 200, JSON.stringify(merged.data));
+  assert.deepEqual(merged.data.merged_ids, [duplicate.data.id]);
+  assert.equal(merged.data.remapped_activity_ids.length, 3);
+  const archive = await dbGet('SELECT status,merged_into FROM ac_crm_entries WHERE id=? AND org_id=? AND environment=?', [duplicate.data.id, org, 'sandbox']);
+  assert.equal(archive.status, 'archived');
+  assert.equal(archive.merged_into, prospect.data.id);
+  const retainedActivity = await dbGet('SELECT data FROM ac_crm_entries WHERE id=? AND org_id=? AND environment=?', [followup.data.id, org, 'sandbox']);
+  assert.equal(JSON.parse(retainedActivity.data).parent_entry_id, prospect.data.id);
+  assert.equal((await api(path('/crm/entries/' + duplicate.data.id + '/history'))).status, 200);
+  assert.deepEqual((await api(path('/crm/merge'), 'POST', mergeBody, cookie, mergeKey)).data, merged.data);
+
+  const convertedLead = await api(path('/crm/entries'), 'POST', { kind: 'lead', title: 'Synthetic conversion without customer', contact_name: 'Taylor New', company: 'Taylor New Ltd', email: 'taylor.convert@example.test', phone: '+254700765432', source: 'website' });
+  assert.equal(convertedLead.status, 201);
+  const converted = await api(path('/crm/entries/' + convertedLead.data.id + '/convert'), 'POST', {
+    expected_version: convertedLead.data.version,
+    new_customer: { name: 'Taylor New Ltd', type: 'business', email: 'taylor.convert@example.test', phone: '+254700765432', address: '', notes: 'Created from CRM prospect' },
+  });
+  assert.equal(converted.status, 200, JSON.stringify(converted.data));
+  assert.equal(converted.data.kind, 'opportunity');
+  assert.ok(converted.data.customer_id);
+  assert.equal(converted.data.email, 'taylor.convert@example.test');
+
+  const forecastOpportunity = await api(path('/crm/entries'), 'POST', { kind: 'opportunity', customer_id: customerId, title: 'Synthetic June forecast opportunity', stage: 'proposal', amount_minor: 100000, currency: 'KES', probability_bps: 5000, expected_close_on: '2030-06-21' });
+  const foreignOpportunity = await api(path('/crm/entries'), 'POST', { kind: 'opportunity', customer_id: customerId, title: 'Synthetic separate currency opportunity', stage: 'proposal', amount_minor: 99000000, currency: 'USD', probability_bps: 2500, expected_close_on: '2030-06-25' });
+  assert.equal(forecastOpportunity.status, 201);
+  assert.equal(foreignOpportunity.status, 201);
+  const board = await api(path('/crm/forecast?currency=KES'));
+  assert.equal(board.status, 200, JSON.stringify(board.data));
+  const june = board.data.groups.find((g: any) => g.bucket === '2030-06' && g.currency === 'KES');
+  assert.ok(june);
+  assert.ok(june.open_amount_minor >= 100000);
+  assert.ok(june.weighted_open_minor >= 50000);
+  const byCurrency = await api(path('/crm/forecast/report?group_by=close_month'));
+  assert.equal(byCurrency.status, 200, JSON.stringify(byCurrency.data));
+  assert.equal(byCurrency.data.totals, null, 'unfiltered multi-currency totals must not be combined');
+  assert.ok(byCurrency.data.totals_by_currency.some((t: any) => t.currency === 'KES'));
+  assert.ok(byCurrency.data.totals_by_currency.some((t: any) => t.currency === 'USD'));
+  assert.ok(byCurrency.data.groups.some((g: any) => g.bucket === '2030-06' && g.currency === 'USD'));
+  const pivot = await api(path('/crm/forecast/pivot?row_by=stage&column_by=close_month&currency=KES'));
+  assert.equal(pivot.status, 200, JSON.stringify(pivot.data));
+  const pivotTotal = pivot.data.grand_totals.find((t: any) => t.currency === 'KES');
+  assert.ok(pivotTotal);
+  assert.equal(pivotTotal.opportunity_count, pivot.data.cells.reduce((sum: number, c: any) => sum + c.opportunity_count, 0));
+  assert.equal(pivotTotal.open_amount_minor, pivot.data.cells.reduce((sum: number, c: any) => sum + c.open_amount_minor, 0));
+  assert.equal((await api(path('/crm/forecast/pivot?row_by=stage&column_by=stage'))).status, 400);
+});

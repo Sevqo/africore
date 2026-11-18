@@ -44,7 +44,9 @@ import {
   customerProfile,
   setCustomerProfile,
   crmCustomerActivity,
+  qualifyCrmLead,
 } from './crm';
+import { applyCrmActivityPlan, crmActivityPlans, crmDuplicateSuggestions, crmForecastBoard, crmForecastPivot, crmForecastReport, crmImportPreview, duplicateCrmActivityPlan, mergeCrmEntries, saveCrmActivityPlan } from './crm-expansion';
 import {
   quotationHistory,
   createQuote,
@@ -461,6 +463,18 @@ business.get(
   '/organizations/:org/crm/activity-report',
   route(async (req, res) => res.json(await crmActivityReport(await access(req), req.query))),
 );
+business.get('/organizations/:org/crm/duplicates', route(async (req, res) => res.json(await crmDuplicateSuggestions(await access(req), req.query))));
+business.post('/organizations/:org/crm/import/preview', route(async (req, res) => res.json(await crmImportPreview(await access(req), req.body))));
+business.post('/organizations/:org/crm/merge', route(async (req, res) => res.json(await mergeCrmEntries(await access(req, 'operations'), req.body, key(req)))));
+business.get('/organizations/:org/crm/activity-plans', route(async (req, res) => res.json(await crmActivityPlans(await access(req)))));
+business.post('/organizations/:org/crm/activity-plans', route(async (req, res) => res.status(201).json(await saveCrmActivityPlan(await access(req, 'operations'), null, req.body, key(req)))));
+business.put('/organizations/:org/crm/activity-plans/:id', route(async (req, res) => res.json(await saveCrmActivityPlan(await access(req, 'operations'), String(req.params.id), req.body, key(req)))));
+business.post('/organizations/:org/crm/activity-plans/:id/duplicate', route(async (req, res) => res.status(201).json(await duplicateCrmActivityPlan(await access(req, 'operations'), String(req.params.id), key(req)))));
+business.post('/organizations/:org/crm/activity-plans/apply', route(async (req, res) => res.status(201).json(await applyCrmActivityPlan(await access(req, 'operations'), req.body, key(req)))));
+business.get('/organizations/:org/crm/forecast', route(async (req, res) => res.json(await crmForecastBoard(await access(req), req.query))));
+business.get('/organizations/:org/crm/forecast/report', route(async (req, res) => res.json(await crmForecastReport(await access(req), req.query))));
+business.get('/organizations/:org/crm/forecast/pivot', route(async (req, res) => res.json(await crmForecastPivot(await access(req), req.query))));
+business.get('/organizations/:org/crm/pipeline-report', route(async (req, res) => res.json(await crmForecastReport(await access(req), req.query, 'pipeline'))));
 business.get(
   '/organizations/:org/crm/report',
   route(async (req, res) => res.json(await crmReport(await access(req), req.query))),
@@ -544,6 +558,7 @@ business.get(
           customer_id: z.string().uuid().optional(),
           parent_entry_id: z.string().uuid().optional(),
           q: z.string().trim().max(200).optional(),
+          activity_window: z.enum(['today','overdue','upcoming','completed']).optional(),
           outcome: z.enum(['active', 'won', 'lost']).optional(),
           sort: z.enum(['recent', 'title']).default('recent'),
           before_created_at: z.string().datetime({ offset: true }).optional(),
@@ -603,6 +618,7 @@ business.post(
     ),
   ),
 );
+business.post('/organizations/:org/crm/entries/:id/qualify', route(async (req, res) => res.json(await qualifyCrmLead(await access(req, 'operations'), String(req.params.id), req.body, key(req)))));
 business.get(
   '/organizations/:org/crm/companies',
   route(async (req, res) => {
