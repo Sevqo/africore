@@ -67,6 +67,42 @@ import {
   cancelLeave,
 } from './people-leave';
 import { checkIn, checkOut, attendanceRecords, correctAttendance } from './people-attendance';
+import {
+  peoplePositions,
+  savePeoplePosition,
+  peopleSkills,
+  savePeopleSkill,
+  employeePrivateProfile,
+  saveEmployeePrivateProfile,
+  employeeResumeEntries,
+  saveEmployeeResumeEntry,
+  employeeSkillRecords,
+  saveEmployeeSkillRecord,
+  employeeCertifications,
+  saveEmployeeCertification,
+  peopleLeaveCalendar,
+  peopleAttendanceAnalysis,
+  recruitmentOpenings,
+  saveRecruitmentOpening,
+  recruitmentCandidates,
+  saveRecruitmentCandidate,
+  recruitmentApplications,
+  saveRecruitmentApplication,
+  hireRecruitmentCandidate,
+  peopleGoals,
+  savePeopleGoal,
+  updateOwnGoalProgress,
+  peopleAppraisals,
+  savePeopleAppraisal,
+  submitAppraisalSelfAssessment,
+  peopleLifecyclePlans,
+  savePeopleLifecyclePlan,
+  peopleLifecycleCases,
+  startPeopleLifecycleCase,
+  updatePeopleLifecycleTask,
+  completePeopleLifecycleCase,
+  peopleExpansionReport,
+} from './people-expansion';
 import { Router } from 'express';
 import { prepareAccountingSource } from './accounting-sources';
 import { accountingSourceList } from './accounting-source-list';
@@ -665,6 +701,344 @@ erp.post(
   route(async (req, res) =>
     res.json(await correctAttendance(await access(req), String(req.params.id), req.body, key(req))),
   ),
+);
+erp.get(
+  '/organizations/:org/people/positions',
+  route(async (req, res) => res.json(await peoplePositions(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/people/positions',
+  route(async (req, res) =>
+    res.json(await savePeoplePosition(await access(req), null, req.body, key(req))),
+  ),
+);
+erp.put(
+  '/organizations/:org/people/positions/:id',
+  route(async (req, res) =>
+    res.json(
+      await savePeoplePosition(await access(req), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/people/skills',
+  route(async (req, res) => res.json(await peopleSkills(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/people/skills',
+  route(async (req, res) =>
+    res.json(await savePeopleSkill(await access(req), null, req.body, key(req))),
+  ),
+);
+erp.put(
+  '/organizations/:org/people/skills/:id',
+  route(async (req, res) =>
+    res.json(await savePeopleSkill(await access(req), String(req.params.id), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/people/employees/:id/private-profile',
+  route(async (req, res) =>
+    res.json(await employeePrivateProfile(await access(req), String(req.params.id))),
+  ),
+);
+erp.put(
+  '/organizations/:org/people/employees/:id/private-profile',
+  route(async (req, res) =>
+    res.json(
+      await saveEmployeePrivateProfile(
+        await access(req),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/people/employees/:id/resume',
+  route(async (req, res) =>
+    res.json(await employeeResumeEntries(await access(req), String(req.params.id))),
+  ),
+);
+erp.post(
+  '/organizations/:org/people/employees/:id/resume',
+  route(async (req, res) =>
+    res.json(
+      await saveEmployeeResumeEntry(
+        await access(req),
+        String(req.params.id),
+        null,
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.put(
+  '/organizations/:org/people/employees/:id/resume/:entry',
+  route(async (req, res) =>
+    res.json(
+      await saveEmployeeResumeEntry(
+        await access(req),
+        String(req.params.id),
+        String(req.params.entry),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/people/employees/:id/skills',
+  route(async (req, res) =>
+    res.json(await employeeSkillRecords(await access(req), String(req.params.id))),
+  ),
+);
+erp.post(
+  '/organizations/:org/people/employees/:id/skills',
+  route(async (req, res) =>
+    res.json(
+      await saveEmployeeSkillRecord(
+        await access(req),
+        String(req.params.id),
+        null,
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.put(
+  '/organizations/:org/people/employees/:id/skills/:skill',
+  route(async (req, res) =>
+    res.json(
+      await saveEmployeeSkillRecord(
+        await access(req),
+        String(req.params.id),
+        String(req.params.skill),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/people/employees/:id/certifications',
+  route(async (req, res) =>
+    res.json(await employeeCertifications(await access(req), String(req.params.id))),
+  ),
+);
+erp.post(
+  '/organizations/:org/people/employees/:id/certifications',
+  route(async (req, res) =>
+    res.json(
+      await saveEmployeeCertification(
+        await access(req),
+        String(req.params.id),
+        null,
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.put(
+  '/organizations/:org/people/employees/:id/certifications/:certification',
+  route(async (req, res) =>
+    res.json(
+      await saveEmployeeCertification(
+        await access(req),
+        String(req.params.id),
+        String(req.params.certification),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/people/leave-calendar',
+  route(async (req, res) => res.json(await peopleLeaveCalendar(await access(req), req.query))),
+);
+erp.get(
+  '/organizations/:org/people/attendance/analysis',
+  route(async (req, res) => res.json(await peopleAttendanceAnalysis(await access(req), req.query))),
+);
+erp.get(
+  '/organizations/:org/people/recruitment/openings',
+  route(async (req, res) => res.json(await recruitmentOpenings(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/people/recruitment/openings',
+  route(async (req, res) =>
+    res.json(await saveRecruitmentOpening(await access(req), null, req.body, key(req))),
+  ),
+);
+erp.put(
+  '/organizations/:org/people/recruitment/openings/:id',
+  route(async (req, res) =>
+    res.json(
+      await saveRecruitmentOpening(await access(req), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/people/recruitment/candidates',
+  route(async (req, res) => res.json(await recruitmentCandidates(await access(req), req.query))),
+);
+erp.post(
+  '/organizations/:org/people/recruitment/candidates',
+  route(async (req, res) =>
+    res.json(await saveRecruitmentCandidate(await access(req), null, req.body, key(req))),
+  ),
+);
+erp.put(
+  '/organizations/:org/people/recruitment/candidates/:id',
+  route(async (req, res) =>
+    res.json(
+      await saveRecruitmentCandidate(await access(req), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/people/recruitment/applications',
+  route(async (req, res) => res.json(await recruitmentApplications(await access(req), req.query))),
+);
+erp.post(
+  '/organizations/:org/people/recruitment/applications',
+  route(async (req, res) =>
+    res.json(await saveRecruitmentApplication(await access(req), null, req.body, key(req))),
+  ),
+);
+erp.put(
+  '/organizations/:org/people/recruitment/applications/:id',
+  route(async (req, res) =>
+    res.json(
+      await saveRecruitmentApplication(
+        await access(req),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.post(
+  '/organizations/:org/people/recruitment/applications/:id/hire',
+  route(async (req, res) =>
+    res.json(
+      await hireRecruitmentCandidate(await access(req), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/people/goals',
+  route(async (req, res) => res.json(await peopleGoals(await access(req), req.query))),
+);
+erp.post(
+  '/organizations/:org/people/goals',
+  route(async (req, res) =>
+    res.json(await savePeopleGoal(await access(req), null, req.body, key(req))),
+  ),
+);
+erp.put(
+  '/organizations/:org/people/goals/:id',
+  route(async (req, res) =>
+    res.json(await savePeopleGoal(await access(req), String(req.params.id), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/people/goals/:id/progress',
+  route(async (req, res) =>
+    res.json(
+      await updateOwnGoalProgress(await access(req), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/people/appraisals',
+  route(async (req, res) => res.json(await peopleAppraisals(await access(req), req.query))),
+);
+erp.post(
+  '/organizations/:org/people/appraisals',
+  route(async (req, res) =>
+    res.json(await savePeopleAppraisal(await access(req), null, req.body, key(req))),
+  ),
+);
+erp.put(
+  '/organizations/:org/people/appraisals/:id',
+  route(async (req, res) =>
+    res.json(
+      await savePeopleAppraisal(await access(req), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+erp.post(
+  '/organizations/:org/people/appraisals/:id/self-assessment',
+  route(async (req, res) =>
+    res.json(
+      await submitAppraisalSelfAssessment(
+        await access(req),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/people/lifecycle/plans',
+  route(async (req, res) => res.json(await peopleLifecyclePlans(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/people/lifecycle/plans',
+  route(async (req, res) =>
+    res.json(await savePeopleLifecyclePlan(await access(req), null, req.body, key(req))),
+  ),
+);
+erp.put(
+  '/organizations/:org/people/lifecycle/plans/:id',
+  route(async (req, res) =>
+    res.json(
+      await savePeopleLifecyclePlan(await access(req), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/people/lifecycle/cases',
+  route(async (req, res) => res.json(await peopleLifecycleCases(await access(req), req.query))),
+);
+erp.post(
+  '/organizations/:org/people/lifecycle/cases',
+  route(async (req, res) =>
+    res.json(await startPeopleLifecycleCase(await access(req), req.body, key(req))),
+  ),
+);
+erp.put(
+  '/organizations/:org/people/lifecycle/cases/:id/tasks',
+  route(async (req, res) =>
+    res.json(
+      await updatePeopleLifecycleTask(await access(req), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+erp.post(
+  '/organizations/:org/people/lifecycle/cases/:id/complete',
+  route(async (req, res) =>
+    res.json(
+      await completePeopleLifecycleCase(
+        await access(req),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/people/report/expansion',
+  route(async (req, res) => res.json(await peopleExpansionReport(await access(req), req.query))),
 );
 erp.get(
   '/organizations/:org/documents',

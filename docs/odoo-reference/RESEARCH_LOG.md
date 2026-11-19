@@ -26,6 +26,29 @@ that produced a conclusion does.
 
 ## Entries
 
+## 2026-11-19 — People expansion and supplied screen references
+
+- Question: which People behaviors from the pinned Odoo 20 Community sources and the supplied Odoo 19 screenshots can be added to AfriCore without copying Odoo's data model or weakening existing employee, compensation, approval and service boundaries?
+- Odoo commit: `bd181ee5eb1f200db3c062733d4f464c37ef9e25` (`20.0`, read-only local checkout).
+- Read (paths): `addons/hr/models/hr_employee.py`; `addons/hr/models/hr_department.py`; `addons/hr/views/hr_employee_views.xml`; `addons/hr/views/hr_department_views.xml`; `addons/hr_attendance/models/hr_attendance.py`; `addons/hr_attendance/tests/test_hr_attendance_constraints.py`; `addons/hr_holidays/models/hr_leave.py`; `addons/hr_holidays/models/hr_leave_allocation.py`; `addons/hr_recruitment/models/hr_applicant.py`; `addons/hr_recruitment/models/hr_recruitment_stage.py`; `addons/hr_recruitment/tests/test_recruitment.py`.
+- Findings: Employee screens and models distinguish work and private fields and provide card/list/hierarchy forms; Odoo 20 delegates effective employment facts to dated `hr.version` records. Department is a manager/parent hierarchy. Attendance validates ordered intervals, open sessions and overlaps, while policy-specific overtime must not be inferred from an older UI. Time Off models requests, allocations and distinct state transitions against configured work-time rules. Recruitment keeps applicant data separate and makes hiring an explicit action linked to a resulting employee. The pinned Community tree has no `addons/hr_appraisal`; this does not describe Enterprise Appraisals.
+- Visual references: the user supplied Odoo 19 screenshots for employee cards/private fields/resume, hierarchy, Time Off/calendar/allocations, attendance grouping and goals. These are comparison references; Odoo 20 source behavior wins if the screenshot differs.
+- Conclusions: reuse AfriCore's encrypted People service and canonical employee records; add only versioned People resource kinds and an additive index. Preserve privacy-scoped fields and separately delegated HR, compensation, recruiter and performance rights. Do not infer Enterprise appraisal implementation, payroll, overtime entitlement or employment-version history from Community or the screenshots.
+- Decision: [D-009](DECISIONS.md#d-009-keep-people-resources-private-and-transitions-explicit).
+- Follow-ups: complete a running-app side-by-side visual check and founder role acceptance when the local API is available; close remaining full-page employee profile, graphical calendar and schedule-history gaps.
+- Limits: focused source review, not a full Odoo runtime, Enterprise source or all-module audit. The AfriCore browser was not compared at matched sizes; no pixel-parity claim is made. No Odoo source/assets were copied or changed.
+
+## 2026-11-19 — People expansion: resume, recruitment, and approval boundaries
+
+- Question: for the AfriCore People expansion, what minimum Community HR source evidence defines employee resume/skill records, recruitment application stages, and the candidate-to-employee transition, so the existing encrypted People authority can add comparable workflows without inferring Enterprise features or weakening access boundaries?
+- Odoo commit: `bd181ee5eb1f200db3c062733d4f464c37ef9e25` (`20.0`).
+- Read (paths): `addons/hr/models/hr_employee.py`; `addons/hr_recruitment/models/hr_applicant.py`; `addons/hr_recruitment/models/hr_recruitment_stage.py`; `addons/hr_recruitment/tests/test_recruitment.py`.
+- Findings: `hr.employee` delegates effective employment fields to dated `hr.version` records and explicitly constrains private fields to HR groups (`addons/hr/models/hr_employee.py`, `_inherits`, `version_id`, private fields). Recruitment keeps `hr.applicant` separate from `hr.employee`, with an explicit optional employee link, job/stage/recruiter and application/hire dates (`addons/hr_recruitment/models/hr_applicant.py`). A stage has an explicit `hired_stage` marker (`addons/hr_recruitment/models/hr_recruitment_stage.py`); hiring is an explicit `create_employee_from_applicant` action, and focused recruitment tests exercise that transition (`addons/hr_recruitment/tests/test_recruitment.py`). The pinned Community checkout does not contain `addons/hr_appraisal`; this source pass does not establish Odoo Enterprise Appraisals behavior.
+- Conclusions: keep applicants separate from employee records, use a deliberate hiring transition, and apply field-level privacy to personal information. Do not infer a login account or external communication from recruitment state.
+- Decision: see [D-009](DECISIONS.md#d-009-keep-people-resources-private-and-transitions-explicit).
+- Follow-ups: implement against AfriCore's People service and verify tenant, field-privacy and transition controls.
+- Limits: focused source inspection only; no Odoo runtime, Enterprise source, full resume/skills addon review or browser-tour review.
+
 ## 2026-11-19 — Work timesheet, recurrence and history patterns
 
 - Question: how do the pinned Odoo 20 Community Project and Timesheets sources represent task/milestone links, recurrence generation, task-state history, timer ownership, and timesheet approval, and which patterns can AfriCore adapt without weakening its project grants, audit trail or financial boundaries?

@@ -44,7 +44,13 @@ export async function peopleConfiguration(a: Access) {
       'SELECT employee_id FROM ac_people_employees WHERE org_id=? AND environment=? AND linked_user_id=?',
       [a.org, a.environment, a.actor],
     ),
-    { hr_members: _, compensation_members: __, ...publicPolicy } = c.policy;
+    {
+      hr_members: _,
+      compensation_members: __,
+      recruitment_members: ___,
+      performance_members: ____,
+      ...publicPolicy
+    } = c.policy;
   return {
     actor_id: a.actor,
     employee_id: own?.employee_id || null,
@@ -59,6 +65,10 @@ export async function peopleConfiguration(a: Access) {
       hr_manage: c.hr_manage && c.service_active,
       comp_view: c.comp_view,
       comp_write: c.comp_write && c.service_active,
+      recruitment_view: c.recruitment_view,
+      recruitment_write: c.recruitment_write && c.service_active,
+      performance_view: c.performance_view,
+      performance_write: c.performance_write && c.service_active,
     },
     payroll: {
       status: 'not_implemented',
@@ -89,7 +99,12 @@ export async function savePeopleConfiguration(a: Access, input: unknown, key: st
         new Set(d.policy.holidays.map((h) => h.date)).size !== d.policy.holidays.length
       )
         fail(400, 'Calendar dates and weekdays must be unique');
-      for (const group of [d.policy.hr_members, d.policy.compensation_members]) {
+      for (const group of [
+        d.policy.hr_members,
+        d.policy.compensation_members,
+        d.policy.recruitment_members,
+        d.policy.performance_members,
+      ]) {
         if (new Set(group.map((m) => m.user_id)).size !== group.length)
           fail(400, 'Delegated members must be unique');
         for (const member of group) {
@@ -149,6 +164,19 @@ export async function saveDepartment(
       if ((old?.version || 0) !== d.expected_version) fail(409, 'Department changed; reload');
       if (d.manager_id && (await employeeRow(a, d.manager_id)).status !== 'active')
         fail(400, 'Choose an active manager record');
+      if (d.parent_id) {
+        let parent: string | null = d.parent_id;
+        const seen = new Set<string>();
+        while (parent) {
+          if (parent === departmentId || seen.has(parent))
+            fail(400, 'Department parent links cannot form a cycle');
+          seen.add(parent);
+          const parentRecord = await read(a, parent, 'department');
+          if (parentRecord.status !== 'active') fail(400, 'Choose an active parent department');
+          parent = parentRecord.data.parent_id || null;
+          if (seen.size > 200) fail(409, 'Department hierarchy exceeds the evaluation limit');
+        }
+      }
       if (
         old &&
         !d.active &&
@@ -185,6 +213,10 @@ export async function employeeDirectory(a: Access, input: unknown) {
         q: z.string().trim().max(100).default(''),
         status: z.enum(['active', 'onboarding', 'inactive']).optional(),
         department_id: z.string().uuid().optional(),
+        manager_id: z.string().uuid().optional(),
+        position_id: z.string().uuid().optional(),
+        start_from: z.string().date().optional(),
+        start_to: z.string().date().optional(),
         offset: z.coerce.number().int().min(0).max(1000000).default(0),
       })
       .strict()
@@ -210,17 +242,22 @@ export async function employeeDirectory(a: Access, input: unknown) {
       .map((r) => decodeERP(a, r))
       .filter(
         (e) =>
-          !needle ||
-          ['employee_number', 'name', 'job_title', 'work_email'].some((field) =>
-            String(e.data[field] || '')
-              .normalize('NFKC')
-              .toLowerCase()
-              .includes(needle),
-          ),
+          (!needle ||
+            ['employee_number', 'name', 'job_title', 'work_email'].some((field) =>
+              String(e.data[field] || '')
+                .normalize('NFKC')
+                .toLowerCase()
+                .includes(needle),
+            )) &&
+          (!q.manager_id || e.data.manager_id === q.manager_id) &&
+          (!q.position_id || e.data.position_id === q.position_id) &&
+          (!q.start_from || e.data.start_on >= q.start_from) &&
+          (!q.start_to || e.data.start_on <= q.start_to),
       )
       .map((e) => employeeProjection(e, c.hr_view));
   return {
     data: data.slice(q.offset, q.offset + 50),
+    total: data.length,
     matching_covered: data.length,
     has_more: q.offset + 50 < data.length,
     truncated: rows.length > 5000,
@@ -298,6 +335,16 @@ export async function saveEmployee(
         if (dep.status !== 'active' && dep.id !== old?.data.department_id)
           fail(400, 'Choose an active scoped department');
       }
+      const positionId =
+        d.position_id === undefined ? old?.data.position_id || null : d.position_id;
+      let jobTitle = d.job_title;
+      if (positionId) {
+        const position = await read(a, positionId, 'people_position');
+        if (position.status !== 'active') fail(400, 'Choose an active job position');
+        if ((position.data.department_id || null) !== d.department_id)
+          fail(400, 'Employee department must match the selected job position');
+        jobTitle = position.data.title;
+      }
       let manager = d.manager_id;
       const visited = new Set<string>();
       while (manager) {
@@ -330,14 +377,15 @@ export async function saveEmployee(
         ) >= 5000
       )
         fail(409, 'Employee evaluation limit reached');
+      const employeeData = { ...d, position_id: positionId, job_title: jobTitle };
       const result = old
         ? await update(
             a,
             old,
-            { ...d, onboarding_projects: old.data.onboarding_projects || [] },
+            { ...employeeData, onboarding_projects: old.data.onboarding_projects || [] },
             { status: d.status, owner_id: d.linked_user_id || old.owner_id },
           )
-        : await insert(a, 'employee', d, {
+        : await insert(a, 'employee', employeeData, {
             root: c.settings.id,
             owner: d.linked_user_id || a.actor,
             status: d.status,

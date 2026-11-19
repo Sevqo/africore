@@ -1,8 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Field, Form, today, type API } from '../operations/UI';
-export function OrganizationChart({ api, scope }: { api: API; scope: string }) {
+export function OrganizationChart({
+  api,
+  scope,
+  onSelect,
+}: {
+  api: API;
+  scope: string;
+  onSelect?: (id: string) => void;
+}) {
   const [data, setData] = useState<any>(null),
-    [error, setError] = useState('');
+    [error, setError] = useState(''),
+    [query, setQuery] = useState('');
   useEffect(() => {
     let live = true;
     api('/people/org-chart')
@@ -24,28 +33,81 @@ export function OrganizationChart({ api, scope }: { api: API; scope: string }) {
       {data && (
         <>
           <p>{data.notice}</p>
-          <div className="app-directory">
-            {data.data.map((e: any) => (
-              <article className="panel" key={e.id}>
-                <h3>{e.name}</h3>
-                <p>
-                  {e.job_title || 'Job title not recorded'} · {e.status}
-                </p>
-                <p>
-                  Reports to:{' '}
-                  {e.manager_id
-                    ? data.data.find((m: any) => m.id === e.manager_id)?.name
-                    : e.manager_outside_visible_directory
-                      ? 'Manager outside your visible directory'
-                      : 'No reporting manager recorded'}
-                </p>
-                <p>
-                  {data.data.filter((r: any) => r.manager_id === e.id).length} visible direct
-                  reports
-                </p>
-              </article>
-            ))}
-          </div>
+          <Field label="Find an employee in the visible reporting tree">
+            <input value={query} onChange={(e) => setQuery(e.target.value)} maxLength={100} />
+          </Field>
+          {(() => {
+            const rows: any[] = data.data,
+              byId = new Map(rows.map((e) => [e.id, e])),
+              children = new Map<string, any[]>(),
+              needle = query.normalize('NFKC').toLowerCase(),
+              included = new Set<string>();
+            for (const person of rows) {
+              const list = children.get(person.manager_id) || [];
+              list.push(person);
+              if (person.manager_id) children.set(person.manager_id, list);
+            }
+            if (needle) {
+              for (const person of rows) {
+                if (
+                  [person.name, person.job_title].some((v) =>
+                    String(v || '')
+                      .normalize('NFKC')
+                      .toLowerCase()
+                      .includes(needle),
+                  )
+                ) {
+                  let cursor: any = person;
+                  const visited = new Set<string>();
+                  while (cursor && !visited.has(cursor.id)) {
+                    visited.add(cursor.id);
+                    included.add(cursor.id);
+                    cursor = cursor.manager_id ? byId.get(cursor.manager_id) : null;
+                  }
+                }
+              }
+            }
+            const render = (person: any, depth: number, visited: Set<string>): any => {
+              if (visited.has(person.id) || (needle && !included.has(person.id))) return null;
+              const seen = new Set(visited);
+              seen.add(person.id);
+              const reports = (children.get(person.id) || []).filter(
+                (child) => !needle || included.has(child.id),
+              );
+              return (
+                <li key={person.id} className="org-chart-node">
+                  <details open={depth === 0 || !!needle}>
+                    <summary>
+                      <span className="org-chart-card">
+                        <strong>{person.name}</strong>
+                        <span>{person.job_title || 'Job title not recorded'}</span>
+                        <small>
+                          {person.status}
+                          {person.manager_outside_visible_directory
+                            ? ' · manager outside visible records'
+                            : ''}
+                        </small>
+                      </span>
+                    </summary>
+                    {onSelect && (
+                      <button className="quiet-button" onClick={() => onSelect(person.id)}>
+                        Open employee profile
+                      </button>
+                    )}
+                    {reports.length > 0 && (
+                      <ul>{reports.map((child) => render(child, depth + 1, seen))}</ul>
+                    )}
+                  </details>
+                </li>
+              );
+            };
+            const roots = rows.filter(
+              (person) => !person.manager_id || !byId.has(person.manager_id),
+            );
+            return (
+              <ul className="org-chart-tree">{roots.map((root) => render(root, 0, new Set()))}</ul>
+            );
+          })()}
           {!data.data.length && <p>No authorized reporting lines yet.</p>}
           {data.truncated && <p>Showing the first 5,000 currently authorized records.</p>}
         </>
@@ -56,14 +118,20 @@ export function OrganizationChart({ api, scope }: { api: API; scope: string }) {
 export function PeopleReports({ api, scope }: { api: API; scope: string }) {
   const [query, setQuery] = useState({ from: today().slice(0, 7) + '-01', to: today() }),
     [data, setData] = useState<any>(null),
+    [expansion, setExpansion] = useState<any>(null),
     [error, setError] = useState('');
   useEffect(() => {
     let live = true;
     setData(null);
+    setExpansion(null);
     setError('');
-    api('/people/report?' + new URLSearchParams(query))
-      .then((d) => {
-        if (live) setData(d);
+    const search = new URLSearchParams(query).toString();
+    Promise.all([api('/people/report?' + search), api('/people/report/expansion?' + search)])
+      .then(([people, additional]) => {
+        if (live) {
+          setData(people);
+          setExpansion(additional);
+        }
       })
       .catch((e) => {
         if (live) setError(e.message);
@@ -111,6 +179,27 @@ export function PeopleReports({ api, scope }: { api: API; scope: string }) {
             {(data.attendance.closed_seconds / 3600).toFixed(2)} recorded hours in closed sessions.
             No wages are calculated.
           </p>
+          {expansion && (
+            <>
+              <h3>Hiring, development and lifecycle</h3>
+              <div className="people-metric-row">
+                <strong>{expansion.positions.active} active positions</strong>
+                <strong>{expansion.recruitment.openings} open roles</strong>
+                <strong>{expansion.recruitment.applicants} active applications</strong>
+                <strong>{expansion.recruitment.hired_in_period} hires in period</strong>
+                <strong>{expansion.performance.pending_reviews} reviews in progress</strong>
+                <strong>{expansion.performance.completed_reviews} reviews completed</strong>
+                <strong>{expansion.performance.active_goals} active goals</strong>
+                <strong>{expansion.lifecycle.open_cases} open lifecycle cases</strong>
+                <strong>{expansion.lifecycle.completed_in_period} cases completed</strong>
+                <strong>
+                  {expansion.certifications.expiring_next_90_days} certifications expiring within 90
+                  days
+                </strong>
+              </div>
+              <p>{expansion.notice}</p>
+            </>
+          )}
         </>
       )}
     </section>

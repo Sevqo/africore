@@ -31,6 +31,14 @@ decided, and why. An entry here is authoritative for future sessions; a note in
 
 ## Log
 
+### D-009 — Keep People resources private and transitions explicit
+- Date: 2026-11-19
+- Status: accepted
+- Evidence: `odoo-reference/addons/hr/models/hr_employee.py`, `addons/hr_recruitment/models/hr_applicant.py`, `addons/hr_recruitment/models/hr_recruitment_stage.py`, and `addons/hr_recruitment/tests/test_recruitment.py` (+ `RESEARCH_LOG.md`, People expansion entry)
+- Constraint: People must preserve encrypted tenant-scoped employment records, field-level privacy, separate recruiter/reviewer authority, employee/login separation, and reviewable lifecycle transitions.
+- Decision: keep applicants, employees, private profile data, professional history, goals and appraisals as distinct encrypted People resources. Allow hiring only through an explicit idempotent transition that creates or links one canonical employee record after duplicate checks. Never create a workspace login, publish an opening, send an invitation, or revoke workspace access from a People status alone.
+- Consequences: test employee/applicant separation, duplicate detection, one-time hiring, recruiter and reviewer scopes, private profile redaction and historical review transitions. People references Work and Documents only through their existing authorized services. Do not copy Odoo source/assets or infer Enterprise Appraisals behavior from the Community checkout.
+
 ### D-008 — Keep Work effort in its own audited authority
 - Date: 2026-11-19
 - Status: accepted

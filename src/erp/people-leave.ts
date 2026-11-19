@@ -81,7 +81,12 @@ async function balance(a: Access, employee: any, type: any, year: number, c: any
       "SELECT COALESCE(SUM(units_milli),0) AS total,COALESCE(SUM(CASE WHEN event_type='grant' THEN units_milli ELSE 0 END),0) AS granted,COALESCE(SUM(CASE WHEN event_type='use' THEN -units_milli ELSE 0 END),0) AS used,COALESCE(SUM(CASE WHEN event_type='restore' THEN units_milli ELSE 0 END),0) AS restored,COALESCE(SUM(CASE WHEN event_type='manual' THEN units_milli ELSE 0 END),0) AS adjustments FROM ac_people_leave_ledger WHERE org_id=? AND environment=? AND employee_id=? AND leave_type_id=? AND year=?",
       [a.org, a.environment, employee.id, type.id, year],
     ),
-    earned = earnedLeave(type.data, employee.data.start_on, year),
+    earned = earnedLeave(
+      type.data,
+      employee.data.start_on,
+      year,
+      peopleDay(new Date(), c.policy.timezone),
+    ),
     granted = Number(sums.granted),
     total = Number(sums.total),
     available = total + Math.max(0, earned - granted);
@@ -146,12 +151,12 @@ async function accrue(a: Access, employee: any, type: any, year: number, c: any)
       year,
       delta,
       'grant',
-      'earned:' + peopleDay() + ':' + type.version,
+      'earned:' + peopleDay(new Date(), c.policy.timezone) + ':' + type.version,
       null,
       {
         policy_version: type.version,
         calendar_version: c.settings.version,
-        as_of: peopleDay(),
+        as_of: peopleDay(new Date(), c.policy.timezone),
         basis: 'configured_employer_policy',
       },
     );
@@ -172,7 +177,7 @@ export async function leaveBalances(a: Access, employeeId: string, input: unknow
           .int()
           .min(1900)
           .max(9999)
-          .default(Number(peopleDay().slice(0, 4))),
+          .default(Number(peopleDay(new Date(), c.policy.timezone).slice(0, 4))),
       })
       .strict()
       .parse(input),
@@ -614,7 +619,7 @@ export async function cancelLeave(a: Access, requestId: string, input: unknown, 
     if (record.version !== d.expected_version) fail(409, 'Leave request changed; reload');
     if (!['pending', 'approved'].includes(row.status)) fail(409, 'Leave request is already closed');
     if (row.status === 'approved') {
-      if (!c.hr_manage && row.from_on <= peopleDay())
+      if (!c.hr_manage && row.from_on <= peopleDay(new Date(), c.policy.timezone))
         fail(403, 'Past or current approved leave needs an HR correction');
       await ledger(
         a,

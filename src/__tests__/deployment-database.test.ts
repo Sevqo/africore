@@ -32,6 +32,7 @@ test('hosted schema verification reads existing versions and tables without runn
         '018-public-media',
         '019-point-of-sale',
         '020-procurement-expansion',
+        '021-people-expansion',
       ].map((version) => ({ version }));
     },
   };
@@ -44,7 +45,7 @@ test('hosted schema verification reads existing versions and tables without runn
     prepareDatabase('verify', {
       ...db,
       dbAll: async (sql) =>
-        (await db.dbAll(sql)).filter((row) => row.version !== '020-procurement-expansion'),
+        (await db.dbAll(sql)).filter((row) => row.version !== '021-people-expansion'),
     }),
     /incomplete/,
   );

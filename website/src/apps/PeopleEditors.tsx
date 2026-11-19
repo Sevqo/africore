@@ -7,6 +7,7 @@ export function EmployeeEditor({
   members,
   employees,
   departments,
+  positions,
   api,
   onSaved,
   onClose,
@@ -15,6 +16,7 @@ export function EmployeeEditor({
   members: any[];
   employees: any[];
   departments: any[];
+  positions: any[];
   api: API;
   onSaved: () => void;
   onClose: () => void;
@@ -39,6 +41,7 @@ export function EmployeeEditor({
               expected_version: e?.version || 0,
               linked_user_id: d.linked_user_id || null,
               department_id: d.department_id || null,
+              position_id: d.position_id || null,
               manager_id: d.manager_id || null,
               self_service: d.self_service === 'on',
             });
@@ -57,7 +60,22 @@ export function EmployeeEditor({
             <Field label="Name">
               <input name="name" required maxLength={160} defaultValue={e?.data.name} />
             </Field>
-            <Field label="Job title">
+            <Field label="Job position">
+              <select name="position_id" defaultValue={e?.data.position_id || ''}>
+                <option value="">No linked position</option>
+                {positions
+                  .filter(
+                    (position) =>
+                      position.status === 'active' || position.id === e?.data.position_id,
+                  )
+                  .map((position) => (
+                    <option key={position.id} value={position.id}>
+                      {position.data.title}
+                    </option>
+                  ))}
+              </select>
+            </Field>
+            <Field label="Job title when no position is linked">
               <input name="job_title" maxLength={160} defaultValue={e?.data.job_title} />
             </Field>
             <Field label="Start date">
@@ -200,6 +218,70 @@ export function PeoplePolicyEditor({
         )}
       </fieldset>
       <fieldset>
+        <legend>Work schedule and timezone</legend>
+        <Field label="Employer timezone (IANA name)">
+          <input
+            value={policy.timezone || 'Africa/Nairobi'}
+            maxLength={80}
+            placeholder="Africa/Nairobi"
+            onChange={(e) => change('timezone', e.target.value)}
+          />
+        </Field>
+        <label className="checkbox-field">
+          <input
+            type="checkbox"
+            checked={!!policy.working_hours}
+            onChange={(e) =>
+              change(
+                'working_hours',
+                e.target.checked ? { start: '09:00', end: '17:00', break_minutes: 60 } : null,
+              )
+            }
+          />
+          Record a standard daily schedule for reporting context
+        </label>
+        {policy.working_hours && (
+          <div className="form-grid">
+            <Field label="Start time">
+              <input
+                type="time"
+                value={policy.working_hours.start}
+                onChange={(e) =>
+                  change('working_hours', { ...policy.working_hours, start: e.target.value })
+                }
+              />
+            </Field>
+            <Field label="End time">
+              <input
+                type="time"
+                value={policy.working_hours.end}
+                onChange={(e) =>
+                  change('working_hours', { ...policy.working_hours, end: e.target.value })
+                }
+              />
+            </Field>
+            <Field label="Break minutes">
+              <input
+                type="number"
+                min="0"
+                max="360"
+                value={policy.working_hours.break_minutes}
+                onChange={(e) =>
+                  change('working_hours', {
+                    ...policy.working_hours,
+                    break_minutes: Number(e.target.value),
+                  })
+                }
+              />
+            </Field>
+          </div>
+        )}
+        <p>
+          Schedule values add context only; they do not calculate overtime, wages, or attendance
+          violations.
+        </p>
+      </fieldset>
+      <fieldset>
         <legend>Configured holidays</legend>
         {policy.holidays.map((h: any) => (
           <p key={h.date}>
@@ -270,6 +352,8 @@ export function PeoplePolicyEditor({
       {[
         ['hr_members', 'HR access'],
         ['compensation_members', 'Separate compensation access'],
+        ['recruitment_members', 'Recruitment access'],
+        ['performance_members', 'Performance access'],
       ].map(([key, label]) => (
         <fieldset key={key}>
           <legend>{label}</legend>

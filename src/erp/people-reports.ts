@@ -4,6 +4,7 @@ import { type Access, fail } from '../platform/auth';
 import { sumMinor } from '../finance/money';
 import { decode } from './store';
 import { peopleContext, requireHR, employeeVisibility } from './people-access';
+import { peopleDateBoundsUtc } from './people-calendar';
 export async function organizationChart(a: Access) {
   const c = await peopleContext(a),
     filter = employeeVisibility(a, c),
@@ -34,8 +35,8 @@ export const peopleReportQuery = z
   .strict()
   .refine((q) => q.from <= q.to, 'Use an ordered date range');
 export async function peopleReport(a: Access, input: unknown) {
-  await requireHR(a);
-  const q = peopleReportQuery.parse(input),
+  const c = await requireHR(a),
+    q = peopleReportQuery.parse(input),
     employees = await dbAll(
       'SELECT status,COUNT(*) AS n FROM ac_people_employees WHERE org_id=? AND environment=? GROUP BY status',
       [a.org, a.environment],
@@ -44,10 +45,9 @@ export async function peopleReport(a: Access, input: unknown) {
       'SELECT status,COUNT(*) AS n,SUM(units_milli) AS units FROM ac_people_leave_requests WHERE org_id=? AND environment=? AND from_on<=? AND to_on>=? GROUP BY status',
       [a.org, a.environment, q.to, q.from],
     ),
-    from = new Date(q.from + 'T00:00:00+03:00').toISOString(),
-    to = new Date(q.to + 'T23:59:59.999+03:00').toISOString(),
+    { from, to } = peopleDateBoundsUtc(q.from, q.to, c.policy.timezone),
     attendance = await dbAll(
-      'SELECT check_in,check_out,source FROM ac_people_attendance WHERE org_id=? AND environment=? AND superseded_by IS NULL AND check_in>=? AND check_in<=? ORDER BY check_in,id LIMIT 10001',
+      'SELECT check_in,check_out,source FROM ac_people_attendance WHERE org_id=? AND environment=? AND superseded_by IS NULL AND check_in>=? AND check_in<? ORDER BY check_in,id LIMIT 10001',
       [a.org, a.environment, from, to],
     );
   if (attendance.length > 10000)
@@ -75,7 +75,6 @@ export async function peopleReport(a: Access, input: unknown) {
       open_sessions: attendance.filter((r) => !r.check_out).length,
       manual_corrections: attendance.filter((r) => r.source === 'hr_correction').length,
     },
-    definitions:
-      'Employee and department counts are current. Leave counts retain each whole request overlapping the selected dates; they are not daily proration. Attendance includes current sessions starting in the selected Nairobi dates and excludes superseded originals. Durations are recorded activity, not payroll or proof of work. Compensation is excluded.',
+    definitions: `Employee and department counts are current. Leave counts retain each whole request overlapping the selected dates; they are not daily proration. Attendance includes current sessions starting in the selected ${c.policy.timezone} dates and excludes superseded originals. Durations are recorded activity, not payroll or proof of work. Compensation is excluded.`,
   };
 }

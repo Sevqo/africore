@@ -4,6 +4,7 @@ import { migrateCommerce } from '../commerce/schema';
 import { migrateProcurement, migrateProcurementExpansion } from '../erp/procurement-schema';
 import { migrateDocuments } from '../erp/documents-schema';
 import { migratePeople } from '../erp/people-schema';
+import { migratePeopleExpansion } from '../erp/people-expansion-schema';
 import { migrateAccounting } from '../erp/accounting-schema';
 import { migrateERP } from '../erp/schema';
 import { migrateConnected } from '../operations/connected-schema';
@@ -337,6 +338,7 @@ export async function migrate(): Promise<void> {
   await migrateERP();
   await migrateAccounting();
   await migratePeople();
+  await migratePeopleExpansion();
   await migrateDocuments();
   await migrateProcurement();
   await migrateProcurementExpansion();

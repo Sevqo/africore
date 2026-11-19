@@ -3,14 +3,26 @@ import { Field, Form, type API } from '../operations/UI';
 export function DepartmentManagement({
   record: r,
   employees,
+  departments,
   api,
   onSaved,
 }: {
   record: any;
   employees: any[];
+  departments: any[];
   api: API;
   onSaved: () => void;
 }) {
+  const descendantIds = new Set<string>();
+  const addDescendants = (id: string) => {
+    for (const department of departments) {
+      if (department.data.parent_id === id && !descendantIds.has(department.id)) {
+        descendantIds.add(department.id);
+        addDescendants(department.id);
+      }
+    }
+  };
+  addDescendants(r.id);
   return (
     <details>
       <summary>Edit department · {r.data.name}</summary>
@@ -20,6 +32,7 @@ export function DepartmentManagement({
             expected_version: r.version,
             name: d.name,
             manager_id: d.manager || null,
+            parent_id: d.parent || null,
             active: d.active === 'on',
           });
           onSaved();
@@ -27,6 +40,18 @@ export function DepartmentManagement({
       >
         <Field label="Revised department name">
           <input name="name" defaultValue={r.data.name} required maxLength={160} />
+        </Field>
+        <Field label="Parent department">
+          <select name="parent" defaultValue={r.data.parent_id || ''}>
+            <option value="">Top-level department</option>
+            {departments
+              .filter((department) => department.id !== r.id && !descendantIds.has(department.id))
+              .map((department) => (
+                <option key={department.id} value={department.id}>
+                  {department.data.name}
+                </option>
+              ))}
+          </select>
         </Field>
         <Field label="Department manager">
           <select name="manager" defaultValue={r.data.manager_id || ''}>

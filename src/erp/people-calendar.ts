@@ -1,11 +1,45 @@
 import { fail } from '../platform/auth';
-export const peopleDay = (at = new Date()) =>
+export const peopleDay = (at = new Date(), timezone = 'Africa/Nairobi') =>
   new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Africa/Nairobi',
+    timeZone: timezone,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
   }).format(at);
+const nextCalendarDay = (date: string) =>
+  new Date(Date.parse(date + 'T00:00:00Z') + 86400000).toISOString().slice(0, 10);
+function zonedMidnight(date: string, timezone: string) {
+  let instant = Date.parse(date + 'T00:00:00Z');
+  const format = new Intl.DateTimeFormat('en-GB', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  });
+  for (let i = 0; i < 3; i++) {
+    const parts = Object.fromEntries(
+      format.formatToParts(new Date(instant)).map((p) => [p.type, p.value]),
+    );
+    const wall = Date.UTC(
+      Number(parts.year),
+      Number(parts.month) - 1,
+      Number(parts.day),
+      Number(parts.hour),
+      Number(parts.minute),
+      Number(parts.second),
+    );
+    instant = Date.parse(date + 'T00:00:00Z') - (wall - instant);
+  }
+  return new Date(instant).toISOString();
+}
+/** UTC interval that covers whole calendar dates in the employer's selected IANA zone. */
+export function peopleDateBoundsUtc(from: string, to: string, timezone = 'Africa/Nairobi') {
+  return { from: zonedMidnight(from, timezone), to: zonedMidnight(nextCalendarDay(to), timezone) };
+}
 export function leaveUnits(
   policy: { working_week: number[]; holidays: { date: string }[] },
   from: string,

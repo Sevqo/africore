@@ -6478,6 +6478,38 @@
               "maximum": 6
             }
           },
+          "timezone": {
+            "default": "Africa/Nairobi",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "working_hours": {
+            "default": null,
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+              },
+              "end": {
+                "type": "string",
+                "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+              },
+              "break_minutes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 360
+              }
+            },
+            "required": [
+              "start",
+              "end",
+              "break_minutes"
+            ],
+            "additionalProperties": false
+          },
           "holidays": {
             "maxItems": 366,
             "type": "array",
@@ -6569,10 +6601,70 @@
               ],
               "additionalProperties": false
             }
+          },
+          "recruitment_members": {
+            "default": [],
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "user_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "permission": {
+                  "type": "string",
+                  "enum": [
+                    "view",
+                    "edit"
+                  ]
+                }
+              },
+              "required": [
+                "user_id",
+                "permission"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "performance_members": {
+            "default": [],
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "user_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "permission": {
+                  "type": "string",
+                  "enum": [
+                    "view",
+                    "edit"
+                  ]
+                }
+              },
+              "required": [
+                "user_id",
+                "permission"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "share_appraisal_feedback": {
+            "default": false,
+            "type": "boolean"
           }
         },
         "required": [
           "working_week",
+          "timezone",
+          "working_hours",
           "holidays",
           "allow_manager_profiles",
           "allow_manager_leave_approval",
@@ -6580,7 +6672,10 @@
           "share_self_personnel_files",
           "share_self_compensation",
           "hr_members",
-          "compensation_members"
+          "compensation_members",
+          "recruitment_members",
+          "performance_members",
+          "share_appraisal_feedback"
         ],
         "additionalProperties": false
       },
@@ -6604,6 +6699,38 @@
                   "minimum": 0,
                   "maximum": 6
                 }
+              },
+              "timezone": {
+                "default": "Africa/Nairobi",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "working_hours": {
+                "default": null,
+                "nullable": true,
+                "type": "object",
+                "properties": {
+                  "start": {
+                    "type": "string",
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                  },
+                  "end": {
+                    "type": "string",
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                  },
+                  "break_minutes": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 360
+                  }
+                },
+                "required": [
+                  "start",
+                  "end",
+                  "break_minutes"
+                ],
+                "additionalProperties": false
               },
               "holidays": {
                 "maxItems": 366,
@@ -6696,10 +6823,70 @@
                   ],
                   "additionalProperties": false
                 }
+              },
+              "recruitment_members": {
+                "default": [],
+                "maxItems": 100,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "user_id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "permission": {
+                      "type": "string",
+                      "enum": [
+                        "view",
+                        "edit"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "user_id",
+                    "permission"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "performance_members": {
+                "default": [],
+                "maxItems": 100,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "user_id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "permission": {
+                      "type": "string",
+                      "enum": [
+                        "view",
+                        "edit"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "user_id",
+                    "permission"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "share_appraisal_feedback": {
+                "default": false,
+                "type": "boolean"
               }
             },
             "required": [
               "working_week",
+              "timezone",
+              "working_hours",
               "holidays",
               "allow_manager_profiles",
               "allow_manager_leave_approval",
@@ -6707,7 +6894,10 @@
               "share_self_personnel_files",
               "share_self_compensation",
               "hr_members",
-              "compensation_members"
+              "compensation_members",
+              "recruitment_members",
+              "performance_members",
+              "share_appraisal_feedback"
             ],
             "additionalProperties": false
           }
@@ -6738,6 +6928,18 @@
             "format": "uuid",
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
+          "parent_id": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "description": {
+            "default": "",
+            "type": "string",
+            "maxLength": 2000
+          },
           "active": {
             "default": true,
             "type": "boolean"
@@ -6747,6 +6949,8 @@
           "expected_version",
           "name",
           "manager_id",
+          "parent_id",
+          "description",
           "active"
         ],
         "additionalProperties": false
@@ -6773,6 +6977,12 @@
             "default": "",
             "type": "string",
             "maxLength": 160
+          },
+          "position_id": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
           "department_id": {
             "default": null,
@@ -6855,6 +7065,986 @@
           "start_on",
           "status",
           "hr_notes"
+        ],
+        "additionalProperties": false
+      },
+      "people_peoplePositionInput": {
+        "type": "object",
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "department_id": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "hiring_manager_id": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "description": {
+            "default": "",
+            "type": "string",
+            "maxLength": 4000
+          },
+          "responsibilities": {
+            "default": [],
+            "maxItems": 30,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 240
+            }
+          },
+          "required_skill_ids": {
+            "default": [],
+            "maxItems": 40,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "employment_category": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "enum": [
+              "full_time",
+              "part_time",
+              "temporary",
+              "contractor"
+            ]
+          },
+          "planned_vacancies": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "active": {
+            "default": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "expected_version",
+          "title",
+          "department_id",
+          "hiring_manager_id",
+          "description",
+          "responsibilities",
+          "required_skill_ids",
+          "employment_category",
+          "planned_vacancies",
+          "active"
+        ],
+        "additionalProperties": false
+      },
+      "people_peopleSkillInput": {
+        "type": "object",
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "type": {
+            "default": "other",
+            "type": "string",
+            "enum": [
+              "technical",
+              "language",
+              "soft",
+              "other"
+            ]
+          },
+          "active": {
+            "default": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "expected_version",
+          "name",
+          "type",
+          "active"
+        ],
+        "additionalProperties": false
+      },
+      "people_employeePrivateInput": {
+        "type": "object",
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "legal_name": {
+            "default": "",
+            "type": "string",
+            "maxLength": 160
+          },
+          "private_email": {
+            "default": "",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "format": "email",
+                "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  ""
+                ]
+              }
+            ]
+          },
+          "private_phone": {
+            "default": "",
+            "type": "string",
+            "maxLength": 80
+          },
+          "birthday": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "place_of_birth": {
+            "default": "",
+            "type": "string",
+            "maxLength": 160
+          },
+          "gender": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "enum": [
+              "female",
+              "male",
+              "non_binary",
+              "undisclosed"
+            ]
+          },
+          "emergency_contact_name": {
+            "default": "",
+            "type": "string",
+            "maxLength": 160
+          },
+          "emergency_contact_phone": {
+            "default": "",
+            "type": "string",
+            "maxLength": 80
+          },
+          "visa_reference": {
+            "default": "",
+            "type": "string",
+            "maxLength": 120
+          },
+          "work_permit_reference": {
+            "default": "",
+            "type": "string",
+            "maxLength": 120
+          },
+          "work_permit_expiry": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "private_notes": {
+            "default": "",
+            "type": "string",
+            "maxLength": 3000
+          }
+        },
+        "required": [
+          "expected_version",
+          "legal_name",
+          "private_email",
+          "private_phone",
+          "birthday",
+          "place_of_birth",
+          "gender",
+          "emergency_contact_name",
+          "emergency_contact_phone",
+          "visa_reference",
+          "work_permit_reference",
+          "work_permit_expiry",
+          "private_notes"
+        ],
+        "additionalProperties": false
+      },
+      "people_employeeResumeInput": {
+        "type": "object",
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "organization": {
+            "default": "",
+            "type": "string",
+            "maxLength": 180
+          },
+          "description": {
+            "default": "",
+            "type": "string",
+            "maxLength": 3000
+          },
+          "from_on": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "to_on": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          }
+        },
+        "required": [
+          "expected_version",
+          "title",
+          "organization",
+          "description",
+          "from_on",
+          "to_on"
+        ],
+        "additionalProperties": false
+      },
+      "people_employeeSkillInput": {
+        "type": "object",
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "skill_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "proficiency": {
+            "type": "string",
+            "enum": [
+              "beginner",
+              "intermediate",
+              "advanced",
+              "expert"
+            ]
+          },
+          "years_experience": {
+            "default": 0,
+            "type": "number",
+            "minimum": 0,
+            "maximum": 80
+          },
+          "verified": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "expected_version",
+          "skill_id",
+          "proficiency",
+          "years_experience",
+          "verified"
+        ],
+        "additionalProperties": false
+      },
+      "people_employeeCertificationInput": {
+        "type": "object",
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "issuer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 180
+          },
+          "credential_reference": {
+            "default": "",
+            "type": "string",
+            "maxLength": 160
+          },
+          "issued_on": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "expires_on": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "reminder_days": {
+            "default": 30,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 365
+          }
+        },
+        "required": [
+          "expected_version",
+          "name",
+          "issuer",
+          "credential_reference",
+          "issued_on",
+          "expires_on",
+          "reminder_days"
+        ],
+        "additionalProperties": false
+      },
+      "people_openingInput": {
+        "type": "object",
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "position_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "recruiter_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "vacancies": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "description": {
+            "default": "",
+            "type": "string",
+            "maxLength": 4000
+          },
+          "opening_on": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "deadline": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "status": {
+            "default": "draft",
+            "type": "string",
+            "enum": [
+              "draft",
+              "open",
+              "closed"
+            ]
+          }
+        },
+        "required": [
+          "expected_version",
+          "position_id",
+          "recruiter_id",
+          "vacancies",
+          "description",
+          "opening_on",
+          "deadline",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "people_candidateInput": {
+        "type": "object",
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "email": {
+            "default": "",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "format": "email",
+                "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  ""
+                ]
+              }
+            ]
+          },
+          "phone": {
+            "default": "",
+            "type": "string",
+            "maxLength": 80
+          },
+          "source": {
+            "default": "",
+            "type": "string",
+            "maxLength": 160
+          },
+          "private_notes": {
+            "default": "",
+            "type": "string",
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "expected_version",
+          "name",
+          "email",
+          "phone",
+          "source",
+          "private_notes"
+        ],
+        "additionalProperties": false
+      },
+      "people_applicationInput": {
+        "type": "object",
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "opening_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "new",
+              "screening",
+              "interview",
+              "assessment",
+              "offer",
+              "hired",
+              "rejected"
+            ]
+          },
+          "recruiter_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "interview_on": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "assessment_notes": {
+            "default": "",
+            "type": "string",
+            "maxLength": 3000
+          },
+          "decision_reason": {
+            "default": "",
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "expected_version",
+          "candidate_id",
+          "opening_id",
+          "stage",
+          "recruiter_id",
+          "interview_on",
+          "assessment_notes",
+          "decision_reason"
+        ],
+        "additionalProperties": false
+      },
+      "people_hireCandidateInput": {
+        "type": "object",
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "maximum": 9007199254740991
+          },
+          "employee_number": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "start_on": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "manager_id": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "linked_user_id": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "expected_version",
+          "employee_number",
+          "start_on",
+          "manager_id",
+          "linked_user_id"
+        ],
+        "additionalProperties": false
+      },
+      "people_goalInput": {
+        "type": "object",
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "employee_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "description": {
+            "default": "",
+            "type": "string",
+            "maxLength": 3000
+          },
+          "start_on": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "deadline": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "progress": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "status": {
+            "default": "active",
+            "type": "string",
+            "enum": [
+              "active",
+              "completed",
+              "cancelled"
+            ]
+          },
+          "skill_ids": {
+            "default": [],
+            "maxItems": 30,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "work_task_id": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "expected_version",
+          "employee_id",
+          "title",
+          "description",
+          "start_on",
+          "deadline",
+          "progress",
+          "status",
+          "skill_ids",
+          "work_task_id"
+        ],
+        "additionalProperties": false
+      },
+      "people_appraisalInput": {
+        "type": "object",
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "employee_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "reviewer_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "period_start": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "review_on": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "scheduled",
+              "in_progress",
+              "pending_review",
+              "completed",
+              "cancelled"
+            ]
+          },
+          "self_assessment": {
+            "default": "",
+            "type": "string",
+            "maxLength": 4000
+          },
+          "manager_assessment": {
+            "default": "",
+            "type": "string",
+            "maxLength": 4000
+          },
+          "skills_development": {
+            "default": "",
+            "type": "string",
+            "maxLength": 3000
+          },
+          "feedback": {
+            "default": "",
+            "type": "string",
+            "maxLength": 3000
+          },
+          "private_manager_notes": {
+            "default": "",
+            "type": "string",
+            "maxLength": 4000
+          },
+          "goal_ids": {
+            "default": [],
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        },
+        "required": [
+          "expected_version",
+          "employee_id",
+          "reviewer_id",
+          "period_start",
+          "period_end",
+          "review_on",
+          "state",
+          "self_assessment",
+          "manager_assessment",
+          "skills_development",
+          "feedback",
+          "private_manager_notes",
+          "goal_ids"
+        ],
+        "additionalProperties": false
+      },
+      "people_lifecyclePlanInput": {
+        "type": "object",
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "onboarding",
+              "offboarding"
+            ]
+          },
+          "department_id": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "position_id": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "tasks": {
+            "minItems": 1,
+            "maxItems": 30,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 200
+                },
+                "due_offset_days": {
+                  "type": "integer",
+                  "minimum": -365,
+                  "maximum": 365
+                }
+              },
+              "required": [
+                "title",
+                "due_offset_days"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "active": {
+            "default": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "expected_version",
+          "name",
+          "direction",
+          "department_id",
+          "position_id",
+          "tasks",
+          "active"
+        ],
+        "additionalProperties": false
+      },
+      "people_lifecycleCaseInput": {
+        "type": "object",
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "employee_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "plan_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "effective_on": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "departure_reason": {
+            "default": "",
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "expected_version",
+          "employee_id",
+          "plan_id",
+          "effective_on",
+          "departure_reason"
+        ],
+        "additionalProperties": false
+      },
+      "people_lifecycleTaskInput": {
+        "type": "object",
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "task_index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 29
+          },
+          "done": {
+            "type": "boolean"
+          },
+          "note": {
+            "default": "",
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "expected_version",
+          "task_index",
+          "done",
+          "note"
+        ],
+        "additionalProperties": false
+      },
+      "people_lifecycleCompleteInput": {
+        "type": "object",
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "expected_version"
+        ],
+        "additionalProperties": false
+      },
+      "people_goalProgressInput": {
+        "type": "object",
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "progress": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "expected_version",
+          "progress"
+        ],
+        "additionalProperties": false
+      },
+      "people_appraisalSelfInput": {
+        "type": "object",
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "self_assessment": {
+            "type": "string",
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "expected_version",
+          "self_assessment"
         ],
         "additionalProperties": false
       },
@@ -21202,6 +22392,4106 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/organizations/{org}/people/positions": {
+      "get": {
+        "summary": "GET /organizations/:org/people/positions",
+        "operationId": "workspace_get__organizations__org_people_positions",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "POST /organizations/:org/people/positions",
+        "operationId": "workspace_post__organizations__org_people_positions",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/positions/{id}": {
+      "put": {
+        "summary": "PUT /organizations/:org/people/positions/:id",
+        "operationId": "workspace_put__organizations__org_people_positions__id",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/skills": {
+      "get": {
+        "summary": "GET /organizations/:org/people/skills",
+        "operationId": "workspace_get__organizations__org_people_skills",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "POST /organizations/:org/people/skills",
+        "operationId": "workspace_post__organizations__org_people_skills",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/skills/{id}": {
+      "put": {
+        "summary": "PUT /organizations/:org/people/skills/:id",
+        "operationId": "workspace_put__organizations__org_people_skills__id",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/employees/{id}/private-profile": {
+      "get": {
+        "summary": "GET /organizations/:org/people/employees/:id/private-profile",
+        "operationId": "workspace_get__organizations__org_people_employees__id_private_profile",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ]
+      },
+      "put": {
+        "summary": "PUT /organizations/:org/people/employees/:id/private-profile",
+        "operationId": "workspace_put__organizations__org_people_employees__id_private_profile",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/employees/{id}/resume": {
+      "get": {
+        "summary": "GET /organizations/:org/people/employees/:id/resume",
+        "operationId": "workspace_get__organizations__org_people_employees__id_resume",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "POST /organizations/:org/people/employees/:id/resume",
+        "operationId": "workspace_post__organizations__org_people_employees__id_resume",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/employees/{id}/resume/{entry}": {
+      "put": {
+        "summary": "PUT /organizations/:org/people/employees/:id/resume/:entry",
+        "operationId": "workspace_put__organizations__org_people_employees__id_resume__entry",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entry",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/employees/{id}/skills": {
+      "get": {
+        "summary": "GET /organizations/:org/people/employees/:id/skills",
+        "operationId": "workspace_get__organizations__org_people_employees__id_skills",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "POST /organizations/:org/people/employees/:id/skills",
+        "operationId": "workspace_post__organizations__org_people_employees__id_skills",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/employees/{id}/skills/{skill}": {
+      "put": {
+        "summary": "PUT /organizations/:org/people/employees/:id/skills/:skill",
+        "operationId": "workspace_put__organizations__org_people_employees__id_skills__skill",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "skill",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/employees/{id}/certifications": {
+      "get": {
+        "summary": "GET /organizations/:org/people/employees/:id/certifications",
+        "operationId": "workspace_get__organizations__org_people_employees__id_certifications",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "POST /organizations/:org/people/employees/:id/certifications",
+        "operationId": "workspace_post__organizations__org_people_employees__id_certifications",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/employees/{id}/certifications/{certification}": {
+      "put": {
+        "summary": "PUT /organizations/:org/people/employees/:id/certifications/:certification",
+        "operationId": "workspace_put__organizations__org_people_employees__id_certifications__certification",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "certification",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/leave-calendar": {
+      "get": {
+        "summary": "GET /organizations/:org/people/leave-calendar",
+        "operationId": "workspace_get__organizations__org_people_leave_calendar",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organizations/{org}/people/attendance/analysis": {
+      "get": {
+        "summary": "GET /organizations/:org/people/attendance/analysis",
+        "operationId": "workspace_get__organizations__org_people_attendance_analysis",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organizations/{org}/people/recruitment/openings": {
+      "get": {
+        "summary": "GET /organizations/:org/people/recruitment/openings",
+        "operationId": "workspace_get__organizations__org_people_recruitment_openings",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "POST /organizations/:org/people/recruitment/openings",
+        "operationId": "workspace_post__organizations__org_people_recruitment_openings",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/recruitment/openings/{id}": {
+      "put": {
+        "summary": "PUT /organizations/:org/people/recruitment/openings/:id",
+        "operationId": "workspace_put__organizations__org_people_recruitment_openings__id",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/recruitment/candidates": {
+      "get": {
+        "summary": "GET /organizations/:org/people/recruitment/candidates",
+        "operationId": "workspace_get__organizations__org_people_recruitment_candidates",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "POST /organizations/:org/people/recruitment/candidates",
+        "operationId": "workspace_post__organizations__org_people_recruitment_candidates",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/recruitment/candidates/{id}": {
+      "put": {
+        "summary": "PUT /organizations/:org/people/recruitment/candidates/:id",
+        "operationId": "workspace_put__organizations__org_people_recruitment_candidates__id",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/recruitment/applications": {
+      "get": {
+        "summary": "GET /organizations/:org/people/recruitment/applications",
+        "operationId": "workspace_get__organizations__org_people_recruitment_applications",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "POST /organizations/:org/people/recruitment/applications",
+        "operationId": "workspace_post__organizations__org_people_recruitment_applications",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/recruitment/applications/{id}": {
+      "put": {
+        "summary": "PUT /organizations/:org/people/recruitment/applications/:id",
+        "operationId": "workspace_put__organizations__org_people_recruitment_applications__id",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/recruitment/applications/{id}/hire": {
+      "post": {
+        "summary": "POST /organizations/:org/people/recruitment/applications/:id/hire",
+        "operationId": "workspace_post__organizations__org_people_recruitment_applications__id_hire",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/goals": {
+      "get": {
+        "summary": "GET /organizations/:org/people/goals",
+        "operationId": "workspace_get__organizations__org_people_goals",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "POST /organizations/:org/people/goals",
+        "operationId": "workspace_post__organizations__org_people_goals",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/goals/{id}": {
+      "put": {
+        "summary": "PUT /organizations/:org/people/goals/:id",
+        "operationId": "workspace_put__organizations__org_people_goals__id",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/goals/{id}/progress": {
+      "post": {
+        "summary": "POST /organizations/:org/people/goals/:id/progress",
+        "operationId": "workspace_post__organizations__org_people_goals__id_progress",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/appraisals": {
+      "get": {
+        "summary": "GET /organizations/:org/people/appraisals",
+        "operationId": "workspace_get__organizations__org_people_appraisals",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "POST /organizations/:org/people/appraisals",
+        "operationId": "workspace_post__organizations__org_people_appraisals",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/appraisals/{id}": {
+      "put": {
+        "summary": "PUT /organizations/:org/people/appraisals/:id",
+        "operationId": "workspace_put__organizations__org_people_appraisals__id",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/appraisals/{id}/self-assessment": {
+      "post": {
+        "summary": "POST /organizations/:org/people/appraisals/:id/self-assessment",
+        "operationId": "workspace_post__organizations__org_people_appraisals__id_self_assessment",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/lifecycle/plans": {
+      "get": {
+        "summary": "GET /organizations/:org/people/lifecycle/plans",
+        "operationId": "workspace_get__organizations__org_people_lifecycle_plans",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "POST /organizations/:org/people/lifecycle/plans",
+        "operationId": "workspace_post__organizations__org_people_lifecycle_plans",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/lifecycle/plans/{id}": {
+      "put": {
+        "summary": "PUT /organizations/:org/people/lifecycle/plans/:id",
+        "operationId": "workspace_put__organizations__org_people_lifecycle_plans__id",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/lifecycle/cases": {
+      "get": {
+        "summary": "GET /organizations/:org/people/lifecycle/cases",
+        "operationId": "workspace_get__organizations__org_people_lifecycle_cases",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "POST /organizations/:org/people/lifecycle/cases",
+        "operationId": "workspace_post__organizations__org_people_lifecycle_cases",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/lifecycle/cases/{id}/tasks": {
+      "put": {
+        "summary": "PUT /organizations/:org/people/lifecycle/cases/:id/tasks",
+        "operationId": "workspace_put__organizations__org_people_lifecycle_cases__id_tasks",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/lifecycle/cases/{id}/complete": {
+      "post": {
+        "summary": "POST /organizations/:org/people/lifecycle/cases/:id/complete",
+        "operationId": "workspace_post__organizations__org_people_lifecycle_cases__id_complete",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/people_employeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/people/report/expansion": {
+      "get": {
+        "summary": "GET /organizations/:org/people/report/expansion",
+        "operationId": "workspace_get__organizations__org_people_report_expansion",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ]
       }
     },
     "/api/v1/organizations/{org}/documents": {

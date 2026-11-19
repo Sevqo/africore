@@ -497,6 +497,321 @@ test('onboarding prepares private operational Work tasks without copying employe
   const updated = (await api(root() + '/people/employees/' + employee.id)).data;
   assert.ok(updated.onboarding_projects.includes(r.data.project_id));
 });
+test('Phase 2.10B hierarchy, profiles, recruitment, performance, lifecycle and reports persist with scoped access', async () => {
+  const parent = await api(root() + '/people/departments', 'POST', {
+      expected_version: 0,
+      name: 'Synthetic Leadership',
+    }),
+    child = await api(root() + '/people/departments', 'POST', {
+      expected_version: 0,
+      name: 'Synthetic Product',
+      parent_id: parent.data.id,
+    });
+  assert.equal(parent.status, 200, JSON.stringify(parent.data));
+  assert.equal(child.status, 200, JSON.stringify(child.data));
+  const cycle = await api(root() + '/people/departments/' + parent.data.id, 'PUT', {
+    expected_version: parent.data.version,
+    name: parent.data.data.name,
+    parent_id: child.data.id,
+    manager_id: null,
+    description: '',
+    active: true,
+  });
+  assert.equal(cycle.status, 400, JSON.stringify(cycle.data));
+
+  const skill = await api(root() + '/people/skills', 'POST', {
+      expected_version: 0,
+      name: 'Synthetic systems design',
+      type: 'technical',
+      active: true,
+    }),
+    position = await api(root() + '/people/positions', 'POST', {
+      expected_version: 0,
+      title: 'Synthetic Engineer',
+      department_id: child.data.id,
+      hiring_manager_id: supervisor.id,
+      description: 'Synthetic position for the expansion suite',
+      responsibilities: ['Review synthetic designs'],
+      required_skill_ids: [skill.data.id],
+      employment_category: 'full_time',
+      planned_vacancies: 1,
+      active: true,
+    });
+  assert.equal(skill.status, 200, JSON.stringify(skill.data));
+  assert.equal(position.status, 200, JSON.stringify(position.data));
+
+  const resume = await api(
+      root() + '/people/employees/' + employee.id + '/resume',
+      'POST',
+      {
+        expected_version: 0,
+        title: 'Synthetic engineer',
+        organization: 'Synthetic Labs',
+        description: 'Synthetic professional history',
+        from_on: '2024-01-01',
+        to_on: '2025-12-31',
+      },
+      staff.cookie,
+    ),
+    employeeSkill = await api(
+      root() + '/people/employees/' + employee.id + '/skills',
+      'POST',
+      {
+        expected_version: 0,
+        skill_id: skill.data.id,
+        proficiency: 'advanced',
+        years_experience: 4,
+        verified: false,
+      },
+      staff.cookie,
+    );
+  assert.equal(resume.status, 200, JSON.stringify(resume.data));
+  assert.equal(employeeSkill.status, 200, JSON.stringify(employeeSkill.data));
+  const privateProfile = await api(
+    root() + '/people/employees/' + employee.id + '/private-profile',
+    'PUT',
+    {
+      expected_version: 0,
+      legal_name: 'Synthetic Legal Name',
+      emergency_contact_name: 'Synthetic Contact',
+    },
+  );
+  assert.equal(privateProfile.status, 200, JSON.stringify(privateProfile.data));
+  assert.equal(
+    (
+      await api(
+        root() + '/people/employees/' + employee.id + '/private-profile',
+        'GET',
+        undefined,
+        outsider.cookie,
+      )
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await api(
+        root() + '/people/employees/' + employee.id + '/private-profile',
+        'GET',
+        undefined,
+        staff.cookie,
+      )
+    ).status,
+    403,
+  );
+
+  const candidateEmail = randomUUID() + '@example.test',
+    candidate = await api(root() + '/people/recruitment/candidates', 'POST', {
+      expected_version: 0,
+      name: 'Synthetic Candidate',
+      email: candidateEmail,
+      phone: '+254700000100',
+      source: 'Synthetic referral',
+      private_notes: 'Synthetic recruiter note',
+    });
+  assert.equal(candidate.status, 200, JSON.stringify(candidate.data));
+  assert.equal(
+    (
+      await api(root() + '/people/recruitment/candidates', 'POST', {
+        expected_version: 0,
+        name: 'Duplicate Synthetic Candidate',
+        email: candidateEmail,
+        phone: '+254700000101',
+      })
+    ).status,
+    409,
+  );
+  const opening = await api(root() + '/people/recruitment/openings', 'POST', {
+      expected_version: 0,
+      position_id: position.data.id,
+      recruiter_id: supervisor.id,
+      vacancies: 1,
+      description: 'Synthetic opening',
+      opening_on: '2026-01-01',
+      deadline: '2026-12-31',
+      status: 'open',
+    }),
+    application = await api(root() + '/people/recruitment/applications', 'POST', {
+      expected_version: 0,
+      candidate_id: candidate.data.id,
+      opening_id: opening.data.id,
+      stage: 'new',
+      recruiter_id: supervisor.id,
+      interview_on: null,
+      assessment_notes: '',
+      decision_reason: '',
+    });
+  assert.equal(opening.status, 200, JSON.stringify(opening.data));
+  assert.equal(application.status, 200, JSON.stringify(application.data));
+  let activeApplication = application.data;
+  for (const stage of ['screening', 'interview', 'assessment', 'offer']) {
+    const moved = await api(
+      root() + '/people/recruitment/applications/' + activeApplication.id,
+      'PUT',
+      {
+        expected_version: activeApplication.version,
+        candidate_id: candidate.data.id,
+        opening_id: opening.data.id,
+        recruiter_id: supervisor.id,
+        stage,
+        interview_on: stage === 'interview' ? '2026-11-20' : null,
+        assessment_notes: '',
+        decision_reason: '',
+      },
+    );
+    assert.equal(moved.status, 200, JSON.stringify(moved.data));
+    activeApplication = moved.data;
+  }
+  const hireKey = randomUUID(),
+    hireBody = {
+      expected_version: activeApplication.version,
+      employee_number: 'SYNTH-HIRE-1',
+      start_on: '2026-12-01',
+      manager_id: supervisor.id,
+      linked_user_id: null,
+    },
+    hired = await api(
+      root() + '/people/recruitment/applications/' + activeApplication.id + '/hire',
+      'POST',
+      hireBody,
+      owner.cookie,
+      hireKey,
+    ),
+    hiredAgain = await api(
+      root() + '/people/recruitment/applications/' + activeApplication.id + '/hire',
+      'POST',
+      hireBody,
+      owner.cookie,
+      hireKey,
+    );
+  assert.equal(hired.status, 200, JSON.stringify(hired.data));
+  assert.equal(hired.data.status, 'hired');
+  assert.equal(hired.data.employee.data.position_id, position.data.id);
+  assert.equal(hired.data.employee.data.linked_user_id, null);
+  assert.equal(hiredAgain.data.employee_id, hired.data.employee_id);
+
+  const goal = await api(root() + '/people/goals', 'POST', {
+      expected_version: 0,
+      employee_id: employee.id,
+      title: 'Synthetic development goal',
+      description: 'Reach the reviewed milestone.',
+      start_on: '2026-01-01',
+      deadline: '2026-12-31',
+      progress: 0,
+      status: 'active',
+      skill_ids: [skill.data.id],
+      work_task_id: null,
+    }),
+    appraisal = await api(root() + '/people/appraisals', 'POST', {
+      expected_version: 0,
+      employee_id: employee.id,
+      reviewer_id: supervisor.id,
+      period_start: '2026-01-01',
+      period_end: '2026-12-31',
+      review_on: '2026-11-20',
+      state: 'scheduled',
+      self_assessment: '',
+      manager_assessment: '',
+      skills_development: '',
+      feedback: '',
+      private_manager_notes: 'Synthetic confidential reviewer note',
+      goal_ids: [],
+    });
+  assert.equal(goal.status, 200, JSON.stringify(goal.data));
+  assert.equal(appraisal.status, 200, JSON.stringify(appraisal.data));
+  const selfSubmitted = await api(
+    root() + '/people/appraisals/' + appraisal.data.id + '/self-assessment',
+    'POST',
+    { expected_version: appraisal.data.version, self_assessment: 'Synthetic self reflection.' },
+    staff.cookie,
+  );
+  assert.equal(selfSubmitted.status, 200, JSON.stringify(selfSubmitted.data));
+  assert.equal(selfSubmitted.data.data.private_manager_notes, undefined);
+  const staffAppraisals = await api(root() + '/people/appraisals', 'GET', undefined, staff.cookie);
+  assert.ok(!JSON.stringify(staffAppraisals.data).includes('Synthetic confidential reviewer note'));
+
+  for (const direction of ['onboarding', 'offboarding']) {
+    const plan = await api(root() + '/people/lifecycle/plans', 'POST', {
+      expected_version: 0,
+      name: 'Synthetic ' + direction + ' plan',
+      direction,
+      department_id: child.data.id,
+      position_id: position.data.id,
+      tasks: [{ title: 'Complete synthetic checklist item', due_offset_days: 2 }],
+      active: true,
+    });
+    assert.equal(plan.status, 200, JSON.stringify(plan.data));
+    const lifecycle = await api(root() + '/people/lifecycle/cases', 'POST', {
+      expected_version: 0,
+      employee_id: hired.data.employee_id,
+      plan_id: plan.data.id,
+      effective_on: '2026-12-01',
+      departure_reason: direction === 'offboarding' ? 'Synthetic test completion' : '',
+    });
+    assert.equal(lifecycle.status, 200, JSON.stringify(lifecycle.data));
+    const task = await api(
+      root() + '/people/lifecycle/cases/' + lifecycle.data.id + '/tasks',
+      'PUT',
+      {
+        expected_version: lifecycle.data.version,
+        task_index: 0,
+        done: true,
+        note: 'Synthetic task complete',
+      },
+    );
+    assert.equal(task.status, 200, JSON.stringify(task.data));
+    const completed = await api(
+      root() + '/people/lifecycle/cases/' + lifecycle.data.id + '/complete',
+      'POST',
+      {
+        expected_version: task.data.version,
+      },
+    );
+    assert.equal(completed.status, 200, JSON.stringify(completed.data));
+    assert.equal(completed.data.status, 'completed');
+  }
+  const retainedEmployee = await api(root() + '/people/employees/' + hired.data.employee_id);
+  assert.equal(retainedEmployee.status, 200);
+  assert.equal(retainedEmployee.data.status, 'inactive');
+
+  const currentConfig = await api(root() + '/people/configuration');
+  const invalidTimezone = await api(root() + '/people/configuration', 'PUT', {
+    expected_version: currentConfig.data.version,
+    policy: { ...currentConfig.data.policy, timezone: 'Not/A_Real_Zone' },
+  });
+  assert.equal(invalidTimezone.status, 400);
+  const timezoneConfig = await api(root() + '/people/configuration', 'PUT', {
+    expected_version: currentConfig.data.version,
+    policy: {
+      ...currentConfig.data.policy,
+      timezone: 'America/New_York',
+      working_hours: { start: '09:00', end: '17:00', break_minutes: 60 },
+    },
+  });
+  assert.equal(timezoneConfig.status, 200, JSON.stringify(timezoneConfig.data));
+  const attendance = await api(
+    root() + '/people/attendance/analysis?from=2026-11-01&to=2026-11-30',
+  );
+  assert.equal(attendance.status, 200, JSON.stringify(attendance.data));
+  assert.equal(attendance.data.schedules.timezone, 'America/New_York');
+  const leaveCalendar = await api(
+    root() + '/people/leave-calendar?from=2026-11-01&to=2026-11-30',
+    'GET',
+    undefined,
+    staff.cookie,
+  );
+  assert.equal(leaveCalendar.status, 200, JSON.stringify(leaveCalendar.data));
+  assert.ok(leaveCalendar.data.data.every((item: any) => item.employee_id === employee.id));
+  const expandedReport = await api(
+    root() + '/people/report/expansion?from=2026-01-01&to=2026-12-31',
+  );
+  assert.equal(expandedReport.status, 200, JSON.stringify(expandedReport.data));
+  assert.ok(expandedReport.data.recruitment.hired_in_period >= 1);
+  assert.ok(expandedReport.data.workforce.total_employees >= 1);
+  assert.ok(Array.isArray(expandedReport.data.workforce.active_by_department));
+  assert.equal(typeof expandedReport.data.workforce.pending_leave_requests, 'number');
+  assert.equal(typeof expandedReport.data.workforce.open_attendance_sessions, 'number');
+});
 test('People deactivation retains private history and removes write affordances without changing identities', async () => {
   assert.equal(
     (await api(root() + '/services/people/deactivate', 'POST', { confirm: true })).status,

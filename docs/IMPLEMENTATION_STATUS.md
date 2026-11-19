@@ -1,5 +1,13 @@
 # Implementation status — Stage 3 sandbox beta
 
+## Phase 2.10B People — local functional expansion, 19 November 2026
+
+People now extends its existing encrypted employee authority with positions/skills, private profile and professional-history records, an expandable searchable manager hierarchy, a scoped leave/holiday register, attendance analysis, recruitment and explicit candidate-to-employee hiring, goals/appraisals, onboarding/offboarding checklists, and server-side workforce reports. New route, privacy and implementation details are in the [Phase 2.10B checkpoint](PHASE2_APP_PROGRESS.md#checkpoint-210b--people-functional-expansion), the [HR reference note](odoo-reference/notes/hr.md), and [API documentation](API.md).
+
+The scope keeps HR, compensation, recruiter and performance access distinct; private fields and reviewer notes are service-redacted; candidate hiring does not create a login; and existing leave, attendance, approvals, Documents, Work and employee records remain authoritative. Payroll/statutory calculations, biometric/location attendance, external recruitment messaging, effective-dated per-employee schedules, full-profile tabs, graphical leave calendar and allocation approval register remain unsupported or incomplete. Migration `021-people-expansion` is additive and local only.
+
+Local verification passed: **472 backend tests, 0 failures, 1 PostgreSQL-only skip**; TypeScript typecheck, lint, website production build (**135/135** website checks), and OpenAPI validation (**59 legacy and 528 workspace operations**) also passed. The supplied Odoo 19 screenshots were reviewed as references, but no matched-size AfriCore People browser comparison was completed because the local API was stopped during triage. Founder acceptance remains open. The previously observed Work Timesheets/Reporting “Resource not found” runtime error is a separate open issue. No hosted migration, production record change, deployment, commit or push was performed.
+
 ## Phase 2.9B Work — local functional expansion, 19 November 2026
 
 Work now includes encrypted author-bound timesheets, durable one-per-user timers, submit/review controls, explicit recurring-task generation, project-scoped milestone links and progress, finish-to-start schedule preview/apply, append-only project updates, and server-filtered task/time/history reports. Task stage and work status remain distinct. Migration 013 adds timer/occurrence uniqueness and task event history. The full isolated SQLite suite passes **471**, with **0 failures** and **1 PostgreSQL-only skip**; focused Work tests pass **19/19**. TypeScript, lint, builds and API checks are recorded in [Phase 2.9B](PHASE2_APP_PROGRESS.md#checkpoint-29b--work-functional-expansion).

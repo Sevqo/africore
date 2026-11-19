@@ -7,6 +7,15 @@ import {
 } from './PeopleManagement';
 import { DocumentAttachments } from './DocumentAttachments';
 import { PeopleRecordActions } from './PeopleRecordActions';
+import {
+  PeopleAttendanceAnalysis,
+  PeopleLifecycle,
+  PeopleOverview,
+  PeoplePerformance,
+  PeopleProfileExpansion,
+  PeopleRecruitment,
+  PeopleTimeOffCalendar,
+} from './PeopleExpansion';
 import { useEffect, useState } from 'react';
 import { Field, Form, money, type API } from '../operations/UI';
 import { ApprovalDetails } from '../operations/ApprovalDetails';
@@ -27,6 +36,7 @@ export function PeopleWorkspace({
     [directory, setDirectory] = useState<any>(null),
     [members, setMembers] = useState<any[]>([]),
     [departments, setDepartments] = useState<any[]>([]),
+    [positions, setPositions] = useState<any[]>([]),
     [types, setTypes] = useState<any[]>([]),
     [requests, setRequests] = useState<any>(null),
     [attendance, setAttendance] = useState<any>(null),
@@ -42,7 +52,9 @@ export function PeopleWorkspace({
     [notice, setNotice] = useState(''),
     [revision, setRevision] = useState(0),
     [query, setQuery] = useState(''),
-    [offset, setOffset] = useState(0);
+    [offset, setOffset] = useState(0),
+    [directoryView, setDirectoryView] = useState<'cards' | 'list'>('cards'),
+    [directoryFilters, setDirectoryFilters] = useState({ status: '', department_id: '' });
   const saved = (message = 'Saved.') => {
     setRevision((v) => v + 1);
     setNotice(message);
@@ -56,6 +68,7 @@ export function PeopleWorkspace({
     setEditing(null);
     setOffset(0);
     setQuery('');
+    setDirectoryFilters({ status: '', department_id: '' });
   }, [scope]);
   useEffect(() => {
     let active = true;
@@ -64,11 +77,20 @@ export function PeopleWorkspace({
       ['policy', '/people/configuration', (value) => setConfig(value)],
       [
         'employees',
-        '/people/employees?q=' + encodeURIComponent(query) + '&offset=' + offset,
+        '/people/employees?' +
+          new URLSearchParams({
+            q: query,
+            offset: String(offset),
+            ...(directoryFilters.status ? { status: directoryFilters.status } : {}),
+            ...(directoryFilters.department_id
+              ? { department_id: directoryFilters.department_id }
+              : {}),
+          }).toString(),
         (value) => setDirectory(value),
       ],
       ['team', '/team', (value: any) => setMembers(value.data)],
       ['departments', '/people/departments', (value: any) => setDepartments(value.data)],
+      ['job positions', '/people/positions', (value: any) => setPositions(value.data)],
       ['leave types', '/people/leave-types', (value: any) => setTypes(value.data)],
       ['leave requests', '/people/leave', (value) => setRequests(value)],
       ['attendance', '/people/attendance', (value) => setAttendance(value)],
@@ -92,7 +114,7 @@ export function PeopleWorkspace({
     return () => {
       active = false;
     };
-  }, [scope, revision, query, offset]);
+  }, [scope, revision, query, offset, directoryFilters]);
   useEffect(() => {
     let active = true;
     setDetail(null);
@@ -213,6 +235,29 @@ export function PeopleWorkspace({
           </button>
         )}
       </section>
+      {section === 'dashboard' && (
+        <PeopleOverview api={api} scope={scope + ':' + revision} configuration={config} />
+      )}
+      {section === 'recruitment' && (access.recruitment_view || access.hr_view) && (
+        <PeopleRecruitment
+          api={api}
+          scope={scope + ':' + revision}
+          configuration={config}
+          employees={directory?.data || []}
+          departments={departments}
+          onSaved={saved}
+        />
+      )}
+      {section === 'performance' && (access.performance_view || config.employee_id) && (
+        <PeoplePerformance
+          api={api}
+          scope={scope + ':' + revision}
+          configuration={config}
+          employees={directory?.data || []}
+          departments={departments}
+          onSaved={saved}
+        />
+      )}
       {section === 'settings' && access.can_configure && (
         <PeoplePolicyEditor
           key={scope + ':' + config.version}
@@ -246,18 +291,87 @@ export function PeopleWorkspace({
               }}
             />
           </Field>
+          <div className="form-grid">
+            <Field label="Employment status">
+              <select
+                value={directoryFilters.status}
+                onChange={(e) => {
+                  setDirectoryFilters((previous) => ({ ...previous, status: e.target.value }));
+                  setOffset(0);
+                }}
+              >
+                <option value="">All permitted statuses</option>
+                <option value="active">Active</option>
+                <option value="onboarding">Onboarding</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </Field>
+            <Field label="Department">
+              <select
+                value={directoryFilters.department_id}
+                onChange={(e) => {
+                  setDirectoryFilters((previous) => ({
+                    ...previous,
+                    department_id: e.target.value,
+                  }));
+                  setOffset(0);
+                }}
+              >
+                <option value="">All visible departments</option>
+                {departments.map((department) => (
+                  <option key={department.id} value={department.id}>
+                    {department.data.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
           <p>{directory?.coverage}</p>
-          {directory?.data.map((e: any) => (
-            <article className="app-price-review" key={e.id}>
-              <strong>{e.data.name}</strong>
-              <p>
-                {e.data.job_title || 'Role not recorded'} · {e.status}
-              </p>
-              <button className="secondary-button" onClick={() => setSelected(e.id)}>
-                Open employee
-              </button>
-            </article>
-          ))}
+          <div className="people-directory-toolbar" aria-label="Employee view">
+            <button
+              className="secondary-button"
+              type="button"
+              aria-pressed={directoryView === 'cards'}
+              onClick={() => setDirectoryView('cards')}
+            >
+              Cards
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              aria-pressed={directoryView === 'list'}
+              onClick={() => setDirectoryView('list')}
+            >
+              List
+            </button>
+            <span>
+              {directory?.total ?? 0} employees · page {Math.floor(offset / 50) + 1}
+            </span>
+          </div>
+          <div className={'people-employee-directory people-employee-directory-' + directoryView}>
+            {directory?.data.map((e: any) => (
+              <article className="people-employee-card" key={e.id}>
+                <span className="people-employee-avatar" aria-hidden="true">
+                  {String(e.data.name || '?')
+                    .trim()
+                    .slice(0, 1)
+                    .toLocaleUpperCase()}
+                </span>
+                <div className="people-employee-card-copy">
+                  <strong>{e.data.name}</strong>
+                  <span>{e.data.job_title || 'Role not recorded'}</span>
+                  <small>
+                    {departments.find((d) => d.id === e.data.department_id)?.data.name ||
+                      'No department'}{' '}
+                    · {e.status}
+                  </small>
+                </div>
+                <button className="secondary-button" onClick={() => setSelected(e.id)}>
+                  Open employee
+                </button>
+              </article>
+            ))}
+          </div>
           {directory?.data.length === 0 && <p>No authorized employee profiles match.</p>}
           <div className="form-actions">
             <button
@@ -280,7 +394,20 @@ export function PeopleWorkspace({
           )}
         </section>
       )}
-      {section === 'org-chart' && <OrganizationChart api={api} scope={scope} />}
+      {section === 'employees' && access.hr_view && (
+        <PeopleLifecycle
+          key={scope + ':' + revision}
+          api={api}
+          scope={scope + ':' + revision}
+          configuration={config}
+          employees={directory?.data || []}
+          departments={departments}
+          onSaved={saved}
+        />
+      )}
+      {section === 'org-chart' && (
+        <OrganizationChart api={api} scope={scope} onSelect={setSelected} />
+      )}
       {section === 'reports' && <PeopleReports api={api} scope={scope} />}
       {show('departments') && (
         <section className="panel">
@@ -294,6 +421,7 @@ export function PeopleWorkspace({
                 <DepartmentManagement
                   record={d}
                   employees={directory?.data || []}
+                  departments={departments}
                   api={api}
                   onSaved={() => saved('Department revision saved.')}
                 />
@@ -303,197 +431,223 @@ export function PeopleWorkspace({
           {access.hr_write && (
             <Form
               submit={async (d) => {
-                await api('/people/departments', 'POST', { expected_version: 0, name: d.name });
+                await api('/people/departments', 'POST', {
+                  expected_version: 0,
+                  name: d.name,
+                  parent_id: d.parent || null,
+                });
                 saved('Department created.');
               }}
             >
               <Field label="Department name">
                 <input name="name" required maxLength={160} />
               </Field>
+              <Field label="Parent department">
+                <select name="parent">
+                  <option value="">Top-level department</option>
+                  {departments
+                    .filter((d: any) => d.status === 'active')
+                    .map((d: any) => (
+                      <option value={d.id} key={d.id}>
+                        {d.data.name}
+                      </option>
+                    ))}
+                </select>
+              </Field>
               <button className="button">Create department</button>
             </Form>
           )}
         </section>
       )}
-      {detail && (show('employees') || show('leave') || show('attendance')) && (
-        <section className="panel">
-          <div className="section-heading">
-            <h2>{detail.data.name}</h2>
-            {access.hr_write && (
-              <button className="secondary-button" onClick={() => setEditing(detail)}>
-                Edit employee
-              </button>
-            )}
-          </div>
-          <p>
-            {detail.data.employee_number} · {detail.data.job_title} · {detail.status}
-          </p>
-          <p>
-            Started {detail.data.start_on} · {detail.data.work_email} · {detail.data.work_phone}
-          </p>
-          {detail.data.hr_notes && <p>Private HR notes: {detail.data.hr_notes}</p>}
-          {access.hr_write && detail.status !== 'inactive' && (
-            <PeopleOnboarding
-              employee={detail}
+      {detail &&
+        (show('employees') || show('leave') || show('attendance') || show('org-chart')) && (
+          <section className="panel">
+            <div className="section-heading">
+              <h2>{detail.data.name}</h2>
+              {access.hr_write && (
+                <button className="secondary-button" onClick={() => setEditing(detail)}>
+                  Edit employee
+                </button>
+              )}
+            </div>
+            <p>
+              {detail.data.employee_number} · {detail.data.job_title} · {detail.status}
+            </p>
+            <p>
+              Started {detail.data.start_on} · {detail.data.work_email} · {detail.data.work_phone}
+            </p>
+            <PeopleProfileExpansion
+              key={scope + ':' + detail.id + ':' + revision}
               api={api}
-              onSaved={() =>
-                saved('Private onboarding project prepared without copying personnel data.')
-              }
+              scope={scope + ':' + revision}
+              employee={detail}
+              access={access}
+              onSaved={saved}
             />
-          )}
-          {balances && (
-            <>
-              <h3>Configured leave balances</h3>
-              {balances.data.map((b: any) => (
-                <p key={b.leave_type_id}>
-                  {b.name}: {b.available_milli / 1000} days available · {b.used_milli / 1000} used
-                </p>
-              ))}
-              <p>{balances.notice}</p>
-            </>
-          )}
-          {(access.hr_write || detail.id === config.employee_id) &&
-            config.service_active &&
-            types.some((t) => t.status === 'active') && (
+            {detail.data.hr_notes && <p>Private HR notes: {detail.data.hr_notes}</p>}
+            {access.hr_write && detail.status !== 'inactive' && (
+              <PeopleOnboarding
+                employee={detail}
+                api={api}
+                onSaved={() =>
+                  saved('Private onboarding project prepared without copying personnel data.')
+                }
+              />
+            )}
+            {balances && (
               <>
-                <h3>Request leave</h3>
-                <Form
-                  key={detail.id + ':' + revision}
-                  submit={async (d) => {
-                    await api('/people/employees/' + detail.id + '/leave', 'POST', {
-                      ...d,
-                      half_day: d.half_day === 'on',
-                    });
-                    saved('Leave submitted for a separate review.');
-                  }}
-                >
-                  <Field label="Leave type">
-                    <select name="leave_type_id" required>
-                      {types
-                        .filter((t) => t.status === 'active')
-                        .map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.data.name}
-                          </option>
-                        ))}
-                    </select>
-                  </Field>
-                  <div className="form-grid">
-                    <Field label="From">
-                      <input name="from" type="date" required />
-                    </Field>
-                    <Field label="To">
-                      <input name="to" type="date" required />
-                    </Field>
-                  </div>
-                  <label className="checkbox-field">
-                    <input name="half_day" type="checkbox" />
-                    Single half day
-                  </label>
-                  <Field label="Private reason">
-                    <textarea name="reason" maxLength={3000} />
-                  </Field>
-                  <Field label="Separate reviewer">
-                    <select name="approver" required>
-                      <option value="">Choose an authorized current reviewer</option>
-                      {members
-                        .filter((m) => m.id !== config.actor_id)
-                        .map((m) => (
-                          <option value={m.id} key={m.id}>
-                            {m.display_name || m.email}
-                          </option>
-                        ))}
-                    </select>
-                  </Field>
-                  <p>
-                    Submission checks current HR or configured reporting-manager authority.
-                    Selecting a member does not grant them authority.
+                <h3>Configured leave balances</h3>
+                {balances.data.map((b: any) => (
+                  <p key={b.leave_type_id}>
+                    {b.name}: {b.available_milli / 1000} days available · {b.used_milli / 1000} used
                   </p>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={async (e) => {
-                      const form = e.currentTarget.closest('form')!;
-                      const d = Object.fromEntries(new FormData(form));
-                      try {
-                        setPreview(
-                          await api('/people/employees/' + detail.id + '/leave-preview', 'POST', {
-                            leave_type_id: d.leave_type_id,
-                            from: d.from,
-                            to: d.to,
-                            half_day: d.half_day === 'on',
-                          }),
-                        );
-                      } catch (error) {
-                        setError((error as Error).message);
-                      }
-                    }}
-                  >
-                    Preview working days
-                  </button>
-                  <button className="button">Submit leave for review</button>
-                  {preview && (
-                    <p role="status">
-                      {preview.units_milli / 1000} configured working days ·{' '}
-                      {preview.balance.available_milli / 1000} currently available. No decision or
-                      deduction was performed.
-                    </p>
-                  )}
-                </Form>
+                ))}
+                <p>{balances.notice}</p>
               </>
             )}
-          {config.service_active &&
-            detail.id === config.employee_id &&
-            detail.data.self_service && (
-              <Form
-                submit={async (d) => {
-                  await api('/people/employees/' + detail.id + '/' + d.action, 'POST', {
-                    confirm: true,
-                  });
-                  saved('Attendance timestamp recorded.');
-                }}
-              >
-                <Field label="Record my attendance">
-                  <select name="action">
-                    <option value="check-in">Check in now</option>
-                    <option value="check-out">Check out now</option>
-                  </select>
-                </Field>
-                <button className="button">Record current server time</button>
-              </Form>
+            {(access.hr_write || detail.id === config.employee_id) &&
+              config.service_active &&
+              types.some((t) => t.status === 'active') && (
+                <>
+                  <h3>Request leave</h3>
+                  <Form
+                    key={detail.id + ':' + revision}
+                    submit={async (d) => {
+                      await api('/people/employees/' + detail.id + '/leave', 'POST', {
+                        ...d,
+                        half_day: d.half_day === 'on',
+                      });
+                      saved('Leave submitted for a separate review.');
+                    }}
+                  >
+                    <Field label="Leave type">
+                      <select name="leave_type_id" required>
+                        {types
+                          .filter((t) => t.status === 'active')
+                          .map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.data.name}
+                            </option>
+                          ))}
+                      </select>
+                    </Field>
+                    <div className="form-grid">
+                      <Field label="From">
+                        <input name="from" type="date" required />
+                      </Field>
+                      <Field label="To">
+                        <input name="to" type="date" required />
+                      </Field>
+                    </div>
+                    <label className="checkbox-field">
+                      <input name="half_day" type="checkbox" />
+                      Single half day
+                    </label>
+                    <Field label="Private reason">
+                      <textarea name="reason" maxLength={3000} />
+                    </Field>
+                    <Field label="Separate reviewer">
+                      <select name="approver" required>
+                        <option value="">Choose an authorized current reviewer</option>
+                        {members
+                          .filter((m) => m.id !== config.actor_id)
+                          .map((m) => (
+                            <option value={m.id} key={m.id}>
+                              {m.display_name || m.email}
+                            </option>
+                          ))}
+                      </select>
+                    </Field>
+                    <p>
+                      Submission checks current HR or configured reporting-manager authority.
+                      Selecting a member does not grant them authority.
+                    </p>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={async (e) => {
+                        const form = e.currentTarget.closest('form')!;
+                        const d = Object.fromEntries(new FormData(form));
+                        try {
+                          setPreview(
+                            await api('/people/employees/' + detail.id + '/leave-preview', 'POST', {
+                              leave_type_id: d.leave_type_id,
+                              from: d.from,
+                              to: d.to,
+                              half_day: d.half_day === 'on',
+                            }),
+                          );
+                        } catch (error) {
+                          setError((error as Error).message);
+                        }
+                      }}
+                    >
+                      Preview working days
+                    </button>
+                    <button className="button">Submit leave for review</button>
+                    {preview && (
+                      <p role="status">
+                        {preview.units_milli / 1000} configured working days ·{' '}
+                        {preview.balance.available_milli / 1000} currently available. No decision or
+                        deduction was performed.
+                      </p>
+                    )}
+                  </Form>
+                </>
+              )}
+            {config.service_active &&
+              detail.id === config.employee_id &&
+              detail.data.self_service && (
+                <Form
+                  submit={async (d) => {
+                    await api('/people/employees/' + detail.id + '/' + d.action, 'POST', {
+                      confirm: true,
+                    });
+                    saved('Attendance timestamp recorded.');
+                  }}
+                >
+                  <Field label="Record my attendance">
+                    <select name="action">
+                      <option value="check-in">Check in now</option>
+                      <option value="check-out">Check out now</option>
+                    </select>
+                  </Field>
+                  <button className="button">Record current server time</button>
+                </Form>
+              )}
+            <DocumentAttachments
+              api={api}
+              sourceKind="employee"
+              sourceId={detail.id}
+              writable={access.hr_write || detail.id === config.employee_id}
+            />
+            <PeopleRecordActions
+              employee={detail}
+              configuration={config}
+              types={types}
+              api={api}
+              onSaved={() => saved('Retained employee record saved.')}
+            />
+            {compensation && (
+              <>
+                <h3>Restricted compensation terms</h3>
+                {compensation.data.map((c: any) => (
+                  <article key={c.id}>
+                    <p>
+                      {money(c.data.amount_minor, c.data.currency)} per {c.data.period} ·{' '}
+                      {c.data.effective_from} to {c.data.effective_to || 'open-ended'}
+                    </p>
+                    <p>{c.data.notes}</p>
+                  </article>
+                ))}
+                <p>{compensation.notice}</p>
+              </>
             )}
-          <DocumentAttachments
-            api={api}
-            sourceKind="employee"
-            sourceId={detail.id}
-            writable={access.hr_write || detail.id === config.employee_id}
-          />
-          <PeopleRecordActions
-            employee={detail}
-            configuration={config}
-            types={types}
-            api={api}
-            onSaved={() => saved('Retained employee record saved.')}
-          />
-          {compensation && (
-            <>
-              <h3>Restricted compensation terms</h3>
-              {compensation.data.map((c: any) => (
-                <article key={c.id}>
-                  <p>
-                    {money(c.data.amount_minor, c.data.currency)} per {c.data.period} ·{' '}
-                    {c.data.effective_from} to {c.data.effective_to || 'open-ended'}
-                  </p>
-                  <p>{c.data.notes}</p>
-                </article>
-              ))}
-              <p>{compensation.notice}</p>
-            </>
-          )}
-        </section>
-      )}
+          </section>
+        )}
       {show('leave') && (
         <section className="panel">
+          <PeopleTimeOffCalendar api={api} scope={scope + ':' + revision} />
           <h2>Leave requests</h2>
           {requests?.data.map((r: any) => (
             <article key={r.id} className="app-price-review">
@@ -553,6 +707,9 @@ export function PeopleWorkspace({
           ))}
         </section>
       )}
+      {show('attendance') && access.hr_view && (
+        <PeopleAttendanceAnalysis api={api} scope={scope + ':' + revision} />
+      )}
       {show('attendance') && (
         <section className="panel">
           <h2>Recorded attendance</h2>
@@ -580,7 +737,7 @@ export function PeopleWorkspace({
           {attendance?.has_more && <p>Showing the latest 50 visible records.</p>}
         </section>
       )}
-      {show('leave-types') && access.hr_manage && (
+      {(show('leave-types') || section === 'leave') && access.hr_manage && (
         <section className="panel">
           <h2>Employer leave types</h2>
           {types.map((t) => (
@@ -639,6 +796,7 @@ export function PeopleWorkspace({
           members={members}
           employees={directory?.data || []}
           departments={departments}
+          positions={positions}
           api={api}
           onSaved={() => saved('Employee saved.')}
           onClose={() => setEditing(null)}

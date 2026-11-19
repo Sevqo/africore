@@ -1,6 +1,6 @@
 # Phase 2 — Applications Progress
 
-Current checkpoint: **2.9B Work functional expansion** — implementation and automated verification are recorded below; live Timesheets and Reporting currently return “Resource not found”, so those screens need runtime verification before founder acceptance.
+Current checkpoint: **2.10B People functional expansion** — implementation and automated verification are recorded below; the earlier 2.9B Work Timesheets and Reporting runtime error (“Resource not found”) remains open for refresh/runtime verification and founder acceptance.
 
 Source checkpoint: Phase 1 committed by the founder; this work is uncommitted by design.
 Hard limits observed: no commits, pushes, deployments, production data or provider changes.
@@ -20,6 +20,7 @@ Hard limits observed: no commits, pushes, deployments, production data or provid
 | 2.9        | Work        | Base project/task implementation is recorded below; expanded in 2.9B                                                                                              |
 | 2.9B       | Work        | Time tracking, recurrence generation, milestone links, scheduling preview, updates and reports implemented; backend suite passes; runtime screens need route verification |
 | 2.10       | People      | Implemented — independent source loading/retry; backend People tests and production builds pass; founder browser acceptance pending                               |
+| 2.10B      | People      | Expanded employee, hierarchy, profile, leave/attendance, recruitment, lifecycle, goals/appraisals and reporting; current verification and runtime limits below |
 | 2.11       | Documents   | Source implementation and focused checks pass; live request-recipient route needs runtime verification; populated-file and founder acceptance pending             |
 | 2.12       | Analytics   | Implemented; prior focused checks recorded below; founder screenshot acceptance pending                                                                           |
 | 2.13       | Automations | Implemented; focused tests/checks recorded below; browser screenshot comparison not performed; founder acceptance pending                                         |
@@ -1608,3 +1609,59 @@ The supplied Odoo Project and Timesheets screenshots were reviewed as references
 8. Review task reports and project updates against known authorized records; confirm coverage labels and date filters, and ensure no historical transition is implied before migration 013.
 
 No production migration, live financial write, outbound notification, deployment, commit or push was performed. The migration exists locally but has not been applied to a hosted or production database.
+
+## Checkpoint 2.10B — People functional expansion, 19 November 2026
+
+### Baseline, architecture and Odoo 20 review
+
+The previous People checkpoint already had canonical employee/department records, leave policy/balances and approvals, attendance/correction, restricted compensation, onboarding-to-Work, reports and separate HR/compensation authorization. This increment keeps `src/erp/people-profiles.ts`, `people-access.ts`, `people-leave.ts`, `people-attendance.ts`, and `people-reports.ts` authoritative. New People resource kinds and services extend that store; they do not create a parallel employee identity system. The read-only Odoo 20 Community findings and decision are in [HR reference notes](odoo-reference/notes/hr.md), [research log](odoo-reference/RESEARCH_LOG.md) and [D-009](odoo-reference/DECISIONS.md#d-009-keep-people-resources-private-and-transitions-explicit). The user supplied Odoo 19 screenshots were treated as workflow/composition references; Odoo 20 source behavior takes precedence.
+
+Odoo 20 Community source demonstrates HR-group private fields, dated employment versions, an employee/department hierarchy, attendance interval and overlap validation, separate leave request/allocation transitions, and a candidate-to-employee action. The pinned Community checkout has no `hr_appraisal` addon. No Odoo source or asset was copied and no Odoo reference file was changed.
+
+### Implemented in this increment
+
+- **Employee and organization:** directory card/list switching and status/department filters; canonical position catalog with department, hiring manager, responsibilities, required skills, category and vacancies; department parent links with cycle prevention and active-employee archive protection; recursive searchable expand/collapse manager chart with profile navigation and hidden-manager identity redaction.
+- **Profile and qualifications:** encrypted private employee profile with HR-only access; dated resume entries; reusable skills, proficiency, HR verification, certifications and expiry metadata; employee position linkage; configuration for timezone, working weekdays/hours and separately delegated recruiting/performance roles. Profile sections are integrated in the existing employee detail panel.
+- **Time Off and attendance:** existing request, approval, adjustment and balance services remain canonical. Added a scoped one-year leave/holiday date-range register and HR attendance analysis with employer-local date bounds, pagination, recorded duration, open sessions, missing-checkout flags, and current-policy schedule review. Flags are informational and require human review.
+- **Recruitment and hiring:** encrypted candidate, opening and application records; stage validation, recruiter assignment, duplicate checks and idempotent hire transition to the canonical employee resource. Workspace login linkage is optional and admin-controlled.
+- **Performance and lifecycle:** goals with progress and optional task/skill links; appraisals with self-assessment, manager feedback and private reviewer notes; reusable onboarding/offboarding task lists and effective dates. Completion transitions the employee to active or inactive and keeps prior records.
+- **Reports and dashboard:** server-side counts now include employee status totals, active employees by department, hiring/review/lifecycle period counts, openings, applicants, pending leave requests, employees on approved leave today, open attendance sessions, missing-checkout review count and certificate metadata expiring within 90 days. Compensation is excluded.
+- **Operations:** route and capability registrations cover all new People APIs; `platform-openapi.json` was regenerated; migration `021-people-expansion` adds one scoped index and is wired into local and hosted migration inventories. No hosted or production migration was applied.
+
+### Deliberate scope limits and remaining gaps
+
+The new profile remains embedded rather than a full standalone tabbed employee document. Resume/certification attachments, full employment-version history, per-employee effective-dated schedules, a month/week/day leave grid and a separate allocation-approval register are not implemented. The organization chart lacks department grouping, direct-report counts, zoom/fit and lazy loading beyond its 5,000-record cap. Recruitment is list based and has no public job publishing, interview calendar integration or outbound candidate communications. Lifecycle checklists do not create preboarding, departing, leave-of-absence or archived employment states; offboarding only marks the employee inactive after checklist completion. Goal/appraisal behavior is AfriCore-native and is not claimed as Odoo Community parity. Certificate reminders are stored metadata; no notification is sent. Payroll, tax/statutory computations, biometric/location attendance, attendance overtime entitlement, and job publishing are not supported.
+
+### Automated verification
+
+Results below describe local synthetic tests and build checks only; they do not establish production acceptance, hosted migration readiness or browser visual parity.
+
+- `npm test`: **472 passed, 0 failed, 1 PostgreSQL-only skip** (473 total).
+- `npm run typecheck`: passed.
+- `npm run lint`: passed, including architecture and fixture-isolation checks.
+- `npm --prefix website run build`: passed, including **135/135** website checks.
+- `npm run validate:openapi`: passed (**59 legacy operations**); `npm run validate:platform`: passed (**528 workspace operations**).
+- `git diff --check`: passed; Git reported only the repository's normal LF/CRLF working-copy notices.
+- The new integration scenario covers hierarchy/cycle rejection, private profile redaction, skills/resume, recruiter/applicant access and duplicate checks, hiring/idempotency, self-assessment/reviewer-note redaction, lifecycle completion, timezone validation, leave visibility, attendance analysis and server-side reporting.
+- A prior full suite initially hit sandbox loopback `EACCES`; the same local API tests were run with approved ephemeral loopback access. The final suite completed successfully.
+
+### Browser comparison and founder acceptance
+
+The supplied screenshots were reviewed as visual references, but this checkpoint has no matched-size running People screenshots. The local API was not listening on port 5000 during runtime triage, so the People workspace could not be captured against those references. No visual parity is claimed. Separately, the authenticated Work Timesheets/Reporting screen from Phase 2.9B had returned “Resource not found”; there was no local API process to confirm a runtime refresh, and this People expansion does not resolve that unrelated Work issue.
+
+Founder acceptance checklist:
+
+1. Open the directory at desktop and mobile sizes; test card/list filters, search, pagination and that cards open the authorized employee record.
+2. Verify the hierarchy with nested departments and managers; search, expand/collapse, open profiles, and confirm hidden manager names and private HR fields stay hidden.
+3. Review an employee’s work fields, position, resume, skills, certificates and private profile as HR, employee, manager and unrelated member; confirm permission denials and retained history.
+4. Create/update a position and skills; test department mismatch, archived positions and stale versions.
+5. Test real leave requests, approval/refusal/cancellation, balances, adjustments and the date-range calendar under HR, manager, employee and unrelated roles; compare against the supplied Odoo 19 calendar/allocation references.
+6. Run attendance check-in/out and correction; test duplicate/open/overlap constraints, configured work hours, timezone boundaries and human-review flags. Do not treat flags as overtime or misconduct.
+7. Create an opening and candidate, progress an application, test duplicate detection and retry the hire with the same idempotency key; verify no workspace login is created implicitly.
+8. Create/update a goal and appraisal; compare employee self-assessment visibility with recruiter, HR, reviewer and unrelated roles, especially private manager notes.
+9. Create lifecycle templates/cases, complete each task, reject premature completion, then check onboarding activation and offboarding archival/history.
+10. Reconcile every dashboard/report metric against authorized canonical records and selected employer-local dates; verify compensation is absent.
+11. Compare the actual running People screens side by side with all supplied screenshots at equivalent sizes; check navigation, forms, density, responsive overflow, refresh and browser Back/Forward.
+12. Refresh the local API runtime and separately re-check Phase 2.9B Work Timesheets and Reporting; confirm the prior “Resource not found” error is resolved before accepting that checkpoint.
+
+No production or hosted migration, production data change, deployment, commit, push, external message, job publishing or account creation was performed. The People migration remains local; browser/role acceptance and the separate Work runtime error remain open.

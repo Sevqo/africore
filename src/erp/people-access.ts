@@ -6,6 +6,8 @@ import { currentMember, read, type ERPObject } from './store';
 import { peopleDay } from './people-calendar';
 export const defaultPeoplePolicy = {
   working_week: [1, 2, 3, 4, 5],
+  timezone: 'Africa/Nairobi',
+  working_hours: null,
   holidays: [],
   allow_manager_profiles: true,
   allow_manager_leave_approval: false,
@@ -14,6 +16,9 @@ export const defaultPeoplePolicy = {
   share_self_compensation: false,
   hr_members: [],
   compensation_members: [],
+  recruitment_members: [],
+  performance_members: [],
+  share_appraisal_feedback: false,
 };
 export async function peopleContext(a: Access, write = false) {
   const role = await currentMember(a);
@@ -23,10 +28,12 @@ export async function peopleContext(a: Access, write = false) {
       [a.org, a.environment],
     ),
     settings = row ? await read(a, row.id, 'people_settings') : null,
-    policy = settings?.data || defaultPeoplePolicy,
+    policy = { ...defaultPeoplePolicy, ...(settings?.data || {}) },
     admin = ['owner', 'admin'].includes(role),
     grant = policy.hr_members.find((m: any) => m.user_id === a.actor)?.permission,
-    comp = policy.compensation_members.find((m: any) => m.user_id === a.actor)?.permission;
+    comp = policy.compensation_members.find((m: any) => m.user_id === a.actor)?.permission,
+    recruiter = policy.recruitment_members.find((m: any) => m.user_id === a.actor)?.permission,
+    performance = policy.performance_members.find((m: any) => m.user_id === a.actor)?.permission;
   return {
     role,
     admin,
@@ -38,6 +45,16 @@ export async function peopleContext(a: Access, write = false) {
     hr_manage: admin || (permitted(role, 'operations') && grant === 'manage'),
     comp_view: admin || !!comp,
     comp_write: admin || (permitted(role, 'operations') && comp === 'edit'),
+    recruitment_view: admin || !!grant || !!recruiter,
+    recruitment_write:
+      admin ||
+      (permitted(role, 'operations') && ['edit', 'manage'].includes(grant)) ||
+      (permitted(role, 'operations') && recruiter === 'edit'),
+    performance_view: admin || !!grant || !!performance,
+    performance_write:
+      admin ||
+      (permitted(role, 'operations') && ['edit', 'manage'].includes(grant)) ||
+      (permitted(role, 'operations') && performance === 'edit'),
   };
 }
 export async function requireHR(a: Access, write = false, manage = false) {
@@ -80,7 +97,7 @@ export async function employeeAccess(
     return { ...c, row, self, manager };
   }
   if (purpose === 'self_write') {
-    if (!self || row.status !== 'active' || row.start_on > peopleDay())
+    if (!self || row.status !== 'active' || row.start_on > peopleDay(new Date(), c.policy.timezone))
       fail(403, 'Active linked employee self-service required');
     const e = await read(a, id, 'employee');
     if (!e.data.self_service) fail(403, 'Employee self-service is not enabled');
@@ -132,6 +149,7 @@ export function employeeProjection(value: ERPObject, privateHR: boolean) {
             'employee_number',
             'name',
             'job_title',
+            'position_id',
             'department_id',
             'manager_id',
             'linked_user_id',
@@ -197,4 +215,24 @@ export async function scopedEmployees(
       ' ORDER BY e.employee_id LIMIT 5001',
     [a.org, a.environment, ...filter.params],
   );
+}
+
+export async function requireRecruitment(a: Access, write = false) {
+  const c = await peopleContext(a, write);
+  if (!(write ? c.recruitment_write : c.recruitment_view))
+    fail(
+      403,
+      write ? 'Current recruitment write authority required' : 'Recruitment authority required',
+    );
+  return c;
+}
+
+export async function requirePerformance(a: Access, write = false) {
+  const c = await peopleContext(a, write);
+  if (!(write ? c.performance_write : c.performance_view))
+    fail(
+      403,
+      write ? 'Current performance write authority required' : 'Performance authority required',
+    );
+  return c;
 }
