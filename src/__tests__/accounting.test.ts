@@ -81,7 +81,16 @@ before(async () => {
     kind: 'business',
     name: 'Synthetic Accounting suite',
     display_name: 'Synthetic owner',
-    services: ['accounting', 'work', 'invoicing', 'payments', 'expenses'],
+    services: [
+      'accounting',
+      'work',
+      'invoicing',
+      'payments',
+      'expenses',
+      'procurement',
+      'customers',
+      'products',
+    ],
   });
   assert.equal(w.status, 201, JSON.stringify(w.data));
   org = w.data.id;
@@ -419,6 +428,12 @@ test('reports balance and retain currency separation; reversals append exact opp
   assert.equal(report.data.balanced, true);
   assert.equal(report.data.total_debit_minor, 126000);
   assert.equal(report.data.net_profit_minor, 126000);
+  const ledgerFilter = await api(
+    root() + '/accounting/report?from=2026-11-01&to=2026-11-30&currency=KES&search=1100',
+  );
+  assert.equal(ledgerFilter.status, 200, JSON.stringify(ledgerFilter.data));
+  assert.ok(ledgerFilter.data.total > 0);
+  assert.ok(ledgerFilter.data.general_ledger.every((line: any) => line.account_code === '1100'));
   const reversal = await api(root() + '/accounting/entries/' + postedId + '/reverse', 'POST', {
     entry_on: '2026-11-05',
     reason: 'Synthetic duplicate sale correction',
@@ -640,15 +655,56 @@ test('recorded expenses recognize a payable, not invented cash; a correction req
 test('source selectors filter the canonical date, currency and supersession state before pagination', async () => {
   for (const type of ['invoice', 'credit_note', 'allocation', 'expense']) {
     const r = await api(root() + '/accounting/sources?source_type=' + type + '&currency=KES');
-    assert.equal(r.status, 200, JSON.stringify(r.data));
+    assert.equal(r.status, 200, type + ': ' + JSON.stringify(r.data));
     assert.equal(r.data.data.length, 1, type);
+    assert.equal(r.data.total, 1, type);
     assert.equal(r.data.data[0].entry_status, 'posted');
     assert.equal(r.data.has_more, false);
   }
+  const items = await api(root() + '/accounting/items?account_id=' + account('1100'));
+  assert.equal(items.status, 200, JSON.stringify(items.data));
+  assert.ok(items.data.total >= 3);
+  assert.ok(items.data.data.length > 1, 'Journal Items returns separate ledger lines');
+  assert.ok(items.data.data.every((line: any) => line.account_code === '1100'));
+  assert.ok(items.data.data.every((line: any) => Number.isInteger(line.debit_minor)));
+  assert.ok(items.data.data.every((line: any) => line.journal_code && line.journal_name));
+  assert.ok(items.data.data.every((line: any) => line.source_type && line.source_id));
+  const matchingReference = items.data.data.find((line: any) => line.reference)?.reference;
+  assert.ok(matchingReference);
+  assert.ok(
+    (await api(root() + '/accounting/items?search=' + encodeURIComponent(matchingReference))).data
+      .data.some((line: any) => line.reference === matchingReference),
+  );
+  const filteredItems = await api(
+    root() +
+      '/accounting/items?journal_id=' +
+      config.journals[0].id +
+      '&from=2026-11-01&to=2026-11-30&partner=not-a-partner',
+  );
+  assert.equal(filteredItems.status, 200, JSON.stringify(filteredItems.data));
+  assert.equal(filteredItems.data.total, 0);
+  const filteredEntries = await api(
+    root() + '/accounting/entries?journal_id=' + config.journals[0].id + '&from=2026-11-01&to=2026-11-30',
+  );
+  assert.equal(filteredEntries.status, 200, JSON.stringify(filteredEntries.data));
+  assert.ok(filteredEntries.data.total > 0);
+  assert.ok(filteredEntries.data.data.every((row: any) => row.journal_id === config.journals[0].id));
+  const supplierPayments = await api(root() + '/accounting/sources?source_type=supplier_payment');
+  assert.equal(supplierPayments.status, 200, JSON.stringify(supplierPayments.data));
+  assert.equal(supplierPayments.data.source_type, 'supplier_payment');
+  assert.equal(supplierPayments.data.total, 0);
   assert.equal(
     (await api(root() + '/accounting/sources?source_type=invoice&currency=USD')).data.data.length,
     0,
   );
+  const invoiceReference = (
+    await api(root() + '/accounting/sources?source_type=invoice')
+  ).data.data[0].id;
+  const searchedInvoice = await api(
+    root() + '/accounting/sources?source_type=invoice&search=' + encodeURIComponent(invoiceReference),
+  );
+  assert.equal(searchedInvoice.status, 200, JSON.stringify(searchedInvoice.data));
+  assert.equal(searchedInvoice.data.total, 1);
   assert.equal(
     (await api(root() + '/accounting/sources?source_type=expense')).data.data[0].amount_minor,
     18000,

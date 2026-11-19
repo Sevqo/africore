@@ -1,13 +1,74 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { developmentConfig } = require('./development-config.cjs');
+const { developmentConfig, developmentDatabaseUrl } = require('./development-config.cjs');
 test('development uses fixed ports and exact origins', () => {
   const c = developmentConfig({}, ['192.0.2.10']);
   assert.equal(c.port, 5175);
   assert.equal(c.readyTimeoutMs, 120000);
   assert.equal(c.apiPort, 4005);
+  assert.equal(c.databaseProvider, 'sqlite');
   assert.deepEqual(c.origins, ['http://localhost:5175', 'http://192.0.2.10:5175']);
   assert.ok(!c.origins.includes('*'));
+});
+test('managed Neon authentication uses PostgreSQL and requires its database URL', () => {
+  assert.equal(
+    developmentConfig({
+      NEON_AUTH_BASE_URL: 'https://example.neonauth.us-east-1.aws.neon.tech',
+      DATABASE_URL: 'postgres://db',
+    }).databaseProvider,
+    'postgres',
+  );
+  assert.throws(
+    () =>
+      developmentConfig({ NEON_AUTH_BASE_URL: 'https://example.neonauth.us-east-1.aws.neon.tech' }),
+    /DATABASE_URL/,
+  );
+  assert.throws(
+    () =>
+      developmentConfig({
+        NEON_AUTH_BASE_URL: 'https://example.neonauth.us-east-1.aws.neon.tech',
+        DEV_DATABASE_PROVIDER: 'sqlite',
+      }),
+    /requires PostgreSQL/,
+  );
+});
+test('PostgreSQL can be selected explicitly without managed auth', () => {
+  assert.equal(
+    developmentConfig({ DEV_DATABASE_PROVIDER: 'postgres', DATABASE_URL: 'postgres://db' })
+      .databaseProvider,
+    'postgres',
+  );
+  assert.throws(() => developmentConfig({ DEV_DATABASE_PROVIDER: 'postgres' }), /DATABASE_URL/);
+  assert.throws(() => developmentConfig({ DEV_DATABASE_PROVIDER: 'mysql' }), /sqlite or postgres/);
+});
+test('local PostgreSQL uses the current direct host without changing URL credentials or options', () => {
+  const connection = new URL(
+    developmentDatabaseUrl(
+      {
+        DATABASE_URL: 'postgres://pooled:secret@stale-pooler.neon.tech/app?sslmode=require',
+        DIRECT_URL: 'postgres://direct:secret@stale-direct.neon.tech/app?sslmode=require',
+        NEON_DEVELOPMENT_DIRECT_HOST: 'current.neon.tech',
+      },
+      'postgres',
+    ),
+  );
+  assert.equal(connection.hostname, 'current.neon.tech');
+  assert.equal(connection.username, 'direct');
+  assert.equal(connection.password, 'secret');
+  assert.equal(connection.pathname, '/app');
+  assert.equal(connection.searchParams.get('sslmode'), 'require');
+  assert.equal(developmentDatabaseUrl({}, 'sqlite'), '');
+  assert.throws(
+    () =>
+      developmentDatabaseUrl(
+        {
+          DATABASE_URL: 'postgres://db/app',
+          NEON_DEVELOPMENT_DIRECT_HOST: 'not-a-host/path',
+        },
+        'postgres',
+      ),
+    /hostname only/,
+  );
 });
 test('invalid TLS, port and origin combinations fail before startup', () => {
   for (const env of [

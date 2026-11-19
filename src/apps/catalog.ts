@@ -209,7 +209,7 @@ export const appCatalog: AppDefinition[] = [
     version: 1,
     kinds: ['business'],
     required: { business: ['accounting'] },
-    optional: ['invoicing', 'payments', 'expenses', 'reconciliation'],
+    optional: ['invoicing', 'payments', 'expenses', 'reconciliation', 'procurement'],
     navigation: [
       { label: 'Dashboard', section: 'dashboard' },
       { label: 'Customers', section: 'customers' },

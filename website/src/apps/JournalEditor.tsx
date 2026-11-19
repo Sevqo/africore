@@ -29,25 +29,36 @@ export function JournalEditor({
           key: crypto.randomUUID(),
           account_id: '',
           contact_id: null,
-          debit: '0',
-          credit: '0',
+          debit: '',
+          credit: '',
           memo: '',
         },
         {
           key: crypto.randomUUID(),
           account_id: '',
           contact_id: null,
-          debit: '0',
-          credit: '0',
+          debit: '',
+          credit: '',
           memo: '',
         },
       ],
     );
+  function amount(value: string) {
+    return value.trim() ? parseMoney(value, currency) : 0;
+  }
+  const validLines = lines.length >= 2 && lines.every((line) => {
+    try {
+      const debit = amount(line.debit), credit = amount(line.credit);
+      return !!line.account_id && ((debit > 0) !== (credit > 0));
+    } catch {
+      return false;
+    }
+  });
   const totals = (() => {
     try {
       return {
-        debit: sumMinor(lines.map((l) => parseMoney(l.debit, currency))),
-        credit: sumMinor(lines.map((l) => parseMoney(l.credit, currency))),
+        debit: sumMinor(lines.map((l) => amount(l.debit))),
+        credit: sumMinor(lines.map((l) => amount(l.credit))),
       };
     } catch {
       return null;
@@ -72,6 +83,7 @@ export function JournalEditor({
         </p>
         <Form
           submit={async (d) => {
+            if (!validLines) throw new Error('Complete each journal line with an account and exactly one non-zero debit or credit.');
             const result = await api(
               '/accounting/entries' + (e ? '/' + e.id : ''),
               e ? 'PUT' : 'POST',
@@ -85,8 +97,8 @@ export function JournalEditor({
                 lines: lines.map((l) => ({
                   account_id: l.account_id,
                   contact_id: l.contact_id || null,
-                  debit_minor: parseMoney(l.debit, currency),
-                  credit_minor: parseMoney(l.credit, currency),
+                  debit_minor: amount(l.debit),
+                  credit_minor: amount(l.credit),
                   memo: l.memo,
                 })),
               },
@@ -119,8 +131,13 @@ export function JournalEditor({
               <select
                 value={currency}
                 onChange={(event) => {
-                  setCurrency(event.target.value);
-                  setLines((v) => v.map((l) => ({ ...l, debit: '0', credit: '0' })));
+                  const next = event.target.value;
+                  if (
+                    lines.some((line) => line.debit.trim() || line.credit.trim()) &&
+                    !window.confirm('Changing currency clears entered debit and credit amounts. Continue?')
+                  ) return;
+                  setCurrency(next);
+                  setLines((v) => v.map((l) => ({ ...l, debit: '', credit: '' })));
                 }}
               >
                 {['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF'].map((code) => (
@@ -144,62 +161,40 @@ export function JournalEditor({
               Reviewed opening entry on {c.settings.start_on}
             </label>
           )}
-          {lines.map((l, index) => (
-            <fieldset className="quote-line" key={l.key}>
-              <legend>Journal line {index + 1}</legend>
-              <Field label={'Account for line ' + (index + 1)}>
-                <select
-                  value={l.account_id}
-                  required
-                  onChange={(event) => change(l.key, 'account_id', event.target.value)}
-                >
-                  <option value="">Choose an account</option>
-                  {c.accounts
-                    .filter((a: any) => a.active || a.id === l.account_id)
-                    .map((a: any) => (
-                      <option key={a.id} value={a.id}>
-                        {a.code} · {a.name} · {a.type}
-                      </option>
-                    ))}
-                </select>
-              </Field>
-              <div className="form-grid">
-                <Field label={'Debit for line ' + (index + 1) + ' · ' + currency}>
-                  <input
-                    value={l.debit}
-                    required
-                    inputMode="decimal"
-                    onChange={(event) => change(l.key, 'debit', event.target.value)}
-                  />
-                </Field>
-                <Field label={'Credit for line ' + (index + 1) + ' · ' + currency}>
-                  <input
-                    value={l.credit}
-                    required
-                    inputMode="decimal"
-                    onChange={(event) => change(l.key, 'credit', event.target.value)}
-                  />
-                </Field>
-              </div>
-              <Field label={'Memo for line ' + (index + 1)}>
-                <input
-                  value={l.memo}
-                  maxLength={1000}
-                  onChange={(event) => change(l.key, 'memo', event.target.value)}
-                />
-              </Field>
-              {l.contact_id && <p>Retained shared contact reference: {l.contact_id}</p>}
-              {lines.length > 2 && (
-                <button
-                  className="quiet-button"
-                  type="button"
-                  onClick={() => setLines((v) => v.filter((n) => n.key !== l.key))}
-                >
-                  Remove line {index + 1}
-                </button>
-              )}
-            </fieldset>
-          ))}
+          <div className="acc-journal-table-scroll">
+            <table className="acc-journal-lines">
+              <thead>
+                <tr>
+                  <th>Account</th><th>Partner</th><th>Label</th><th>Analytic Distribution</th>
+                  <th className="num">Debit · {currency}</th><th className="num">Credit · {currency}</th><th />
+                </tr>
+              </thead>
+              <tbody>
+                {lines.map((l, index) => (
+                  <tr key={l.key}>
+                    <td>
+                      <select
+                        aria-label={'Account for line ' + (index + 1)}
+                        value={l.account_id}
+                        onChange={(event) => change(l.key, 'account_id', event.target.value)}
+                      >
+                        <option value="">Choose an account</option>
+                        {c.accounts.filter((a: any) => a.active || a.id === l.account_id).map((a: any) => (
+                          <option key={a.id} value={a.id}>{a.code} · {a.name}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>{l.contact_id ? 'Linked contact' : '—'}</td>
+                    <td><input aria-label={'Label for line ' + (index + 1)} value={l.memo} maxLength={1000} onChange={(event) => change(l.key, 'memo', event.target.value)} /></td>
+                    <td className="acc-not-configured">Not configured</td>
+                    <td><input aria-label={'Debit for line ' + (index + 1)} value={l.debit} inputMode="decimal" onChange={(event) => change(l.key, 'debit', event.target.value)} /></td>
+                    <td><input aria-label={'Credit for line ' + (index + 1)} value={l.credit} inputMode="decimal" onChange={(event) => change(l.key, 'credit', event.target.value)} /></td>
+                    <td>{lines.length > 2 && <button className="quiet-button" type="button" aria-label={'Remove line ' + (index + 1)} onClick={() => setLines((v) => v.filter((n) => n.key !== l.key))}>×</button>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           <button
             className="secondary-button"
             type="button"
@@ -211,8 +206,8 @@ export function JournalEditor({
                   key: crypto.randomUUID(),
                   account_id: '',
                   contact_id: null,
-                  debit: '0',
-                  credit: '0',
+                  debit: '',
+                  credit: '',
                   memo: '',
                 },
               ])
@@ -224,13 +219,13 @@ export function JournalEditor({
             <p role="status">
               Debits {money(totals.debit, currency)} · Credits {money(totals.credit, currency)} ·{' '}
               {totals.debit === totals.credit
-                ? 'Balanced draft'
-                : 'Unbalanced: posting will be refused'}
+                ? 'Balanced · posting still requires approval'
+                : 'Unbalanced draft · posting will be refused'}
             </p>
           ) : (
             <p>Enter valid currency amounts to check this draft.</p>
           )}
-          <button className="button">Save journal draft</button>
+          <button className="button" disabled={!validLines} title={!validLines ? 'Complete each line with an account and either a debit or credit.' : undefined}>Save journal draft</button>
         </Form>
         <button className="secondary-button" onClick={onClose}>
           Cancel draft editing

@@ -654,8 +654,11 @@ export async function accountingEntries(a: Access, input: unknown) {
     .object({
       status: z.enum(['draft', 'posted']).optional(),
       currency: currencySchema.optional(),
+      journal_id: id.optional(),
+      partner: z.string().trim().max(200).default(''),
       from: z.string().date().optional(),
       to: z.string().date().optional(),
+      search: z.string().trim().max(200).default(''),
       offset: z.coerce.number().int().min(0).max(1000000).default(0),
     })
     .strict()
@@ -665,16 +668,27 @@ export async function accountingEntries(a: Access, input: unknown) {
       'org_id=? AND environment=?' +
       (q.status ? ' AND status=?' : '') +
       (q.currency ? ' AND currency=?' : '') +
+      (q.journal_id ? ' AND journal_id=?' : '') +
+      (q.partner
+        ? ' AND EXISTS(SELECT 1 FROM ac_accounting_lines partner_line WHERE partner_line.entry_id=ac_accounting_entries.id AND partner_line.org_id=ac_accounting_entries.org_id AND partner_line.environment=ac_accounting_entries.environment AND LOWER(COALESCE(partner_line.contact_id,\'\')) LIKE ?)'
+        : '') +
       (q.from ? ' AND entry_on>=?' : '') +
-      (q.to ? ' AND entry_on<=?' : ''),
+      (q.to ? ' AND entry_on<=?' : '') +
+      (q.search
+        ? ' AND (LOWER(reference) LIKE ? OR LOWER(id) LIKE ? OR LOWER(source_type) LIKE ? OR LOWER(source_id) LIKE ?)'
+        : ''),
     args = [
       a.org,
       a.environment,
       ...(q.status ? [q.status] : []),
       ...(q.currency ? [q.currency] : []),
+      ...(q.journal_id ? [q.journal_id] : []),
+      ...(q.partner ? ['%' + q.partner.toLowerCase() + '%'] : []),
       ...(q.from ? [q.from] : []),
       ...(q.to ? [q.to] : []),
+      ...(q.search ? Array(4).fill('%' + q.search.toLowerCase() + '%') : []),
     ];
+  const total = await dbGet('SELECT COUNT(*) AS total FROM ac_accounting_entries WHERE ' + where, args);
   const rows = await dbAll(
     'SELECT id FROM ac_accounting_entries WHERE ' +
       where +
@@ -684,8 +698,92 @@ export async function accountingEntries(a: Access, input: unknown) {
   return {
     data: await Promise.all(rows.slice(0, 50).map((r) => entry(a, r.id))),
     has_more: rows.length > 50,
+    total: Number(total?.total || 0),
     limit: 50,
     offset: q.offset,
+  };
+}
+
+export async function accountingItems(a: Access, input: unknown) {
+  await accountingAccess(a);
+  const q = z
+    .object({
+      status: z.enum(['draft', 'posted']).optional(),
+      currency: currencySchema.optional(),
+      account_id: id.optional(),
+      journal_id: id.optional(),
+      partner: z.string().trim().max(200).default(''),
+      from: z.string().date().optional(),
+      to: z.string().date().optional(),
+      search: z.string().trim().max(200).default(''),
+      offset: z.coerce.number().int().min(0).max(1000000).default(0),
+    })
+    .strict()
+    .parse(input);
+  if (q.from && q.to && q.from > q.to) fail(400, 'Date range must be ordered');
+  const where =
+      'e.org_id=? AND e.environment=?' +
+      (q.status ? ' AND e.status=?' : '') +
+      (q.currency ? ' AND e.currency=?' : '') +
+      (q.account_id ? ' AND l.account_id=?' : '') +
+      (q.journal_id ? ' AND e.journal_id=?' : '') +
+      (q.partner ? ' AND LOWER(COALESCE(l.contact_id,\'\')) LIKE ?' : '') +
+      (q.from ? ' AND e.entry_on>=?' : '') +
+      (q.to ? ' AND e.entry_on<=?' : '') +
+      (q.search
+        ? ' AND (LOWER(e.reference) LIKE ? OR LOWER(e.id) LIKE ? OR LOWER(e.source_id) LIKE ? OR LOWER(a.code) LIKE ? OR LOWER(a.name) LIKE ? OR LOWER(COALESCE(l.contact_id,\'\')) LIKE ? OR LOWER(j.code) LIKE ? OR LOWER(j.name) LIKE ?)'
+        : ''),
+    args = [
+      a.org,
+      a.environment,
+      ...(q.status ? [q.status] : []),
+      ...(q.currency ? [q.currency] : []),
+      ...(q.account_id ? [q.account_id] : []),
+      ...(q.journal_id ? [q.journal_id] : []),
+      ...(q.partner ? ['%' + q.partner.toLowerCase() + '%'] : []),
+      ...(q.from ? [q.from] : []),
+      ...(q.to ? [q.to] : []),
+      ...(q.search ? Array(8).fill('%' + q.search.toLowerCase() + '%') : []),
+    ];
+  const total = await dbGet(
+    'SELECT COUNT(*) AS total FROM ac_accounting_lines l JOIN ac_accounting_entries e ON e.id=l.entry_id AND e.org_id=l.org_id AND e.environment=l.environment JOIN ac_accounting_accounts a ON a.id=l.account_id AND a.org_id=l.org_id AND a.environment=l.environment JOIN ac_accounting_journals j ON j.id=e.journal_id AND j.org_id=e.org_id AND j.environment=e.environment WHERE ' +
+      where,
+    args,
+  );
+  const rows = await dbAll(
+    'SELECT l.*,e.reference,e.entry_on,e.currency,e.status,e.source_type,e.source_id,e.journal_id,j.code AS journal_code,j.name AS journal_name,a.code AS account_code,a.name AS account_name FROM ac_accounting_lines l JOIN ac_accounting_entries e ON e.id=l.entry_id AND e.org_id=l.org_id AND e.environment=l.environment JOIN ac_accounting_accounts a ON a.id=l.account_id AND a.org_id=l.org_id AND a.environment=l.environment JOIN ac_accounting_journals j ON j.id=e.journal_id AND j.org_id=e.org_id AND j.environment=e.environment WHERE ' +
+      where +
+      ' ORDER BY e.entry_on DESC,e.created_at DESC,e.id DESC,l.id LIMIT 51 OFFSET ?',
+    [...args, q.offset],
+  );
+  return {
+    data: rows.slice(0, 50).map((row) => ({
+      id: row.id,
+      entry_id: row.entry_id,
+      reference: row.reference,
+      entry_on: row.entry_on,
+      journal_id: row.journal_id,
+      journal_code: row.journal_code,
+      journal_name: row.journal_name,
+      currency: row.currency,
+      status: row.status,
+      source_type: row.source_type,
+      source_id: row.source_id,
+      account_id: row.account_id,
+      account_code: row.account_code,
+      account_name: row.account_name,
+      contact_id: row.contact_id,
+      debit_minor: Number(row.debit_minor),
+      credit_minor: Number(row.credit_minor),
+      memo: JSON.parse(unseal(row.data, ctx(a, 'line', row.id))).memo,
+      reconciliation_state: 'not_tracked',
+    })),
+    has_more: rows.length > 50,
+    total: Number(total?.total || 0),
+    limit: 50,
+    offset: q.offset,
+    notice:
+      'Journal items are canonical ledger lines. AfriCore does not yet track bank-statement reconciliation against individual lines.',
   };
 }
 export async function requestJournalReview(
@@ -881,6 +979,7 @@ export const accountingQuery = z
     to: z.string().date(),
     currency: currencySchema,
     account_id: id.optional(),
+    search: z.string().trim().max(200).default(''),
     offset: z.coerce.number().int().min(0).max(1000000).default(0),
   })
   .strict()
@@ -918,8 +1017,11 @@ export async function accountingReport(a: Access, input: unknown) {
         .map((r) => sumMinor([r.credit_minor, (-BigInt(r.debit_minor)).toString()])),
     );
   const raw = await dbAll(
-    "SELECT l.*,e.reference,e.entry_on,e.currency FROM ac_accounting_lines l JOIN ac_accounting_entries e ON e.id=l.entry_id AND e.org_id=l.org_id AND e.environment=l.environment WHERE e.org_id=? AND e.environment=? AND e.status='posted' AND e.currency=? AND e.entry_on>=? AND e.entry_on<=?" +
+    "SELECT l.*,e.reference,e.entry_on,e.currency,a.code AS account_code,a.name AS account_name FROM ac_accounting_lines l JOIN ac_accounting_entries e ON e.id=l.entry_id AND e.org_id=l.org_id AND e.environment=l.environment JOIN ac_accounting_accounts a ON a.id=l.account_id AND a.org_id=l.org_id AND a.environment=l.environment WHERE e.org_id=? AND e.environment=? AND e.status='posted' AND e.currency=? AND e.entry_on>=? AND e.entry_on<=?" +
       (q.account_id ? ' AND l.account_id=?' : '') +
+      (q.search
+        ? ' AND (LOWER(e.reference) LIKE ? OR LOWER(l.account_id) LIKE ? OR LOWER(a.code) LIKE ? OR LOWER(a.name) LIKE ?)'
+        : '') +
       ' ORDER BY e.entry_on,e.id,l.id LIMIT 101 OFFSET ?',
     [
       a.org,
@@ -928,6 +1030,7 @@ export async function accountingReport(a: Access, input: unknown) {
       q.from,
       q.to,
       ...(q.account_id ? [q.account_id] : []),
+      ...(q.search ? Array(4).fill('%' + q.search.toLowerCase() + '%') : []),
       q.offset,
     ],
   );
@@ -953,6 +1056,26 @@ export async function accountingReport(a: Access, input: unknown) {
       data: JSON.parse(unseal(r.data, ctx(a, 'line', r.id))),
     })),
     has_more: raw.length > 100,
+    total: Number(
+      (
+        await dbGet(
+          "SELECT COUNT(*) AS total FROM ac_accounting_lines l JOIN ac_accounting_entries e ON e.id=l.entry_id AND e.org_id=l.org_id AND e.environment=l.environment JOIN ac_accounting_accounts a ON a.id=l.account_id AND a.org_id=l.org_id AND a.environment=l.environment WHERE e.org_id=? AND e.environment=? AND e.status='posted' AND e.currency=? AND e.entry_on>=? AND e.entry_on<=?" +
+            (q.account_id ? ' AND l.account_id=?' : '') +
+            (q.search
+              ? ' AND (LOWER(e.reference) LIKE ? OR LOWER(l.account_id) LIKE ? OR LOWER(a.code) LIKE ? OR LOWER(a.name) LIKE ?)'
+              : ''),
+          [
+            a.org,
+            a.environment,
+            q.currency,
+            q.from,
+            q.to,
+            ...(q.account_id ? [q.account_id] : []),
+            ...(q.search ? Array(4).fill('%' + q.search.toLowerCase() + '%') : []),
+          ],
+        )
+      )?.total || 0,
+    ),
     offset: q.offset,
     limit: 100,
     notice:

@@ -20,6 +20,7 @@ for (const suffix of [
   'POST /accounting/periods',
   'PUT /accounting/periods/:id/state',
   'GET /accounting/entries',
+  'GET /accounting/items',
   'GET /accounting/entries/:id',
   'POST /accounting/entries',
   'PUT /accounting/entries/:id',

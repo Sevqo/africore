@@ -6336,6 +6336,55 @@ html:has([data-platform-density]) {
   max-height: 92vh;
   overflow: auto;
 }
+.acc-journal-table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--acc-line);
+  margin: 10px 0;
+}
+.acc-journal-lines {
+  width: 100%;
+  min-width: 920px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.acc-journal-lines th,
+.acc-journal-lines td {
+  border-bottom: 1px solid var(--acc-line);
+  padding: 8px 9px;
+  text-align: left;
+  vertical-align: middle;
+}
+.acc-journal-lines th {
+  background: #f8fafc;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.acc-journal-lines input,
+.acc-journal-lines select {
+  width: 100%;
+  min-width: 90px;
+  min-height: 34px;
+  border: 1px solid #d7dce2;
+  border-radius: 3px;
+  padding: 5px 7px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+}
+.acc-journal-lines td:nth-child(1) { min-width: 235px; }
+.acc-journal-lines td:nth-child(3) { min-width: 170px; }
+.acc-journal-lines td:nth-child(4) { color: var(--acc-muted); white-space: nowrap; }
+.acc-journal-lines td:nth-child(5),
+.acc-journal-lines td:nth-child(6) { min-width: 125px; }
+.acc-register-pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 0 2px;
+  color: var(--acc-muted);
+  font-size: 12px;
+}
 @media (max-width: 760px) {
   .acc-journal-editor {
     width: 100vw;

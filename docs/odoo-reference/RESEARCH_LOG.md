@@ -26,6 +26,22 @@ that produced a conclusion does.
 
 ## Entries
 
+## 2026-11-18 — Accounting documents, ledger lines, reports and reconciliation
+
+- Question: how does Odoo 20 represent invoices and credit notes, enforce journal-line posting, expose account registers and financial reports, and propose bank-reconciliation counterparts; which screen/workflow structures can AfriCore adapt while preserving its single ledger, exact money, approvals, source ownership and tenant boundaries?
+- Odoo commit: `373b237cac51920a664a07c242c337e7b095b0c1` (`20.0`).
+- Read (paths): `addons/account/models/account_move.py`; `addons/account/models/account_move_line.py`; `addons/account/models/account_account.py`; `addons/account/models/account_bank_statement.py`; `addons/account/models/account_report.py`; `addons/account/models/account_journal.py`; `addons/account/views/account_move_views.xml`; `addons/account/views/account_account_views.xml`; `addons/account/views/account_reconcile_model_views.xml`; `addons/account/static/src/views/account_dashboard_kanban/account_dashboard_kanban_record.js`.
+- Findings:
+  - Odoo uses one `account.move` record for invoices and reversal documents, with explicit move types and a link to the reversed entry; posting validates journal balance (`addons/account/models/account_move.py`, `reversed_entry_id`, `_check_balanced`, `_reverse_moves`, `_post`).
+  - Journal lines are first-class records. Residuals and full/partial matches are computed from reconciliation relations, not inferred from a payment label (`addons/account/models/account_move_line.py`, `amount_residual`, `matched_debit_ids`, `matched_credit_ids`, `_reconcile_plan`).
+  - Accounts expose type, active state, reconciliation permission, company, currency and parent; account view presents those fields in a dense register (`addons/account/models/account_account.py`; `addons/account/views/account_account_views.xml`).
+  - Bank statement validity depends on opening/ending balances and the continuity of successive statement balances; statement lines provide the counterpart for reconciliation (`addons/account/models/account_bank_statement.py`).
+  - Financial reports are parameterized report definitions with lines, groups and options. The dashboard is implemented as a journal-card view (`addons/account/models/account_report.py`; `addons/account/models/account_journal.py`; `addons/account/static/src/views/account_dashboard_kanban/account_dashboard_kanban_record.js`).
+- Conclusions: preserve AfriCore's existing canonical ledger and source ownership. Present invoice reversals/payments as distinct source registers, journal lines from the canonical line table, and confirmed report parameters beside report data. Reconciliation status must remain explicitly unavailable until AfriCore has a bank statement and line-matching model. Adapt the dense registers, journal cards, grouped fields and report controls without copying Odoo assets or source.
+- Decision: none; focused implementation guidance only.
+- Follow-ups: compare supplied Accounting references with running AfriCore pages and record actual captures/differences.
+- Limits: focused source review for Phase 2.7B; no exhaustive audit of Odoo Community, Enterprise-only reporting, statutory localization or runtime acceptance.
+
 ## 2026-11-18 — CRM prospect intake, duplicate merges, activity plans and forecasts
 
 - Question: how does the Odoo Community CRM reference model leads and opportunities, present pipeline/forecast views, merge related records, and reuse activity plans, and what behavior can AfriCore adapt without changing its canonical customer, authorization, history or currency contracts?

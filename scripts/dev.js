@@ -2,7 +2,11 @@ const { spawn } = require('node:child_process');
 const fs = require('node:fs'),
   net = require('node:net'),
   os = require('node:os');
-const { developmentConfig, developmentEnvironmentFile } = require('./development-config.cjs');
+const {
+  developmentConfig,
+  developmentDatabaseUrl,
+  developmentEnvironmentFile,
+} = require('./development-config.cjs');
 const children = new Set();
 let stopping = false;
 function stop(code) {
@@ -53,6 +57,7 @@ async function main() {
     .filter((a) => a && !a.internal && a.family === 'IPv4')
     .map((a) => a.address);
   const config = developmentConfig(process.env, addresses);
+  const databaseUrl = developmentDatabaseUrl(process.env, config.databaseProvider);
   await available(config.port, config.host);
   await available(config.apiPort, '127.0.0.1');
   const env = {
@@ -64,6 +69,7 @@ async function main() {
     AFRICORE_PUBLIC_ORIGIN: config.publicOrigin,
     AFRICORE_DEV_ORIGINS: config.origins.join(','),
     DEV_PORT: String(config.port),
+    DATABASE_URL: databaseUrl,
   };
   console.log('AfriCore development: ' + config.publicOrigin + '/');
   console.log('Local: ' + config.scheme + '://localhost:' + config.port + '/');
@@ -76,6 +82,7 @@ async function main() {
         : 'local account store') +
       '. API stays on loopback.',
   );
+  console.log('Database: ' + config.databaseProvider + ' for local development.');
   if (env.NEON_AUTH_BASE_URL)
     console.log(
       'Phone sign-in requires trusted HTTPS and the exact origin registered in Neon. See docs/LOCAL_NETWORK_DEVELOPMENT.md.',

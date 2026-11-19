@@ -8,6 +8,11 @@ import { AccountingAging } from './AccountingAging';
 import { AccountingTax } from './AccountingTax';
 import { DocumentAttachments } from './DocumentAttachments';
 import {
+  AccountingSourceRegister,
+  JournalEntriesView,
+  JournalItemsView,
+} from './AccountingRegisters';
+import {
   accountingSections,
   balanceTotals,
   billCurrency,
@@ -357,6 +362,9 @@ export function AccountingAppWorkspace({
               writable={configuration.writable}
               onCreate={() => setEditor({ new: true })}
               onSelect={setSelected}
+              view={view}
+              api={api}
+              scope={scope}
             />
           )}
 
@@ -687,6 +695,17 @@ function CustomersView({
         </button>
       </section>
     );
+  if (view === 'credit-notes' || view === 'customer-payments')
+    return (
+      <AccountingSourceRegister
+        api={api}
+        scope={scope}
+        sourceType={view === 'credit-notes' ? 'credit_note' : 'allocation'}
+        title={view === 'credit-notes' ? 'Customer Credit Notes' : 'Customer Payments'}
+        counterparty="Customer / invoice"
+        navigate={navigate}
+      />
+    );
   const filtered = invoices.filter(
     (invoice: any) =>
       (!query || JSON.stringify(invoice).toLowerCase().includes(query.toLowerCase())) &&
@@ -807,6 +826,17 @@ function VendorsView({
         </button>
       </section>
     );
+  if (view === 'vendor-credits' || view === 'vendor-payments')
+    return (
+      <AccountingSourceRegister
+        api={api}
+        scope={scope}
+        sourceType={view === 'vendor-credits' ? 'supplier_credit' : 'supplier_payment'}
+        title={view === 'vendor-credits' ? 'Vendor Credits' : 'Vendor Payments'}
+        counterparty="Vendor"
+        navigate={navigate}
+      />
+    );
   const filtered = bills.filter(
     (bill: any) =>
       (!query || JSON.stringify(bill).toLowerCase().includes(query.toLowerCase())) &&
@@ -914,16 +944,40 @@ function EntriesView({
   writable,
   onCreate,
   onSelect,
+  view,
+  api,
+  scope,
 }: any) {
+  if (view === 'entries')
+    return (
+      <JournalEntriesView
+        api={api}
+        scope={scope}
+        journals={journals}
+        writable={writable}
+        onCreate={onCreate}
+        onSelect={onSelect}
+      />
+    );
+  if (view === 'items')
+    return (
+      <JournalItemsView
+        api={api}
+        scope={scope}
+        accounts={accounts}
+        journals={journals}
+        onSelect={onSelect}
+      />
+    );
   const filtered = entries.filter(
     (entry: any) =>
-      (!status || (status === 'items' ? true : entry.status === status)) &&
+      (!status || entry.status === status) &&
       (!query || JSON.stringify(entry).toLowerCase().includes(query.toLowerCase())),
   );
   return (
     <section className="acc-panel">
       <header>
-        <h2>{status === 'items' ? 'Journal items' : 'Journal entries'}</h2>
+        <h2>Journal Entries</h2>
         <button className="acc-primary" disabled={!writable} onClick={onCreate}>
           New
         </button>
@@ -2042,32 +2096,42 @@ function Reports({ view, api, scope, start, initialCurrency, revision, accounts 
   const [from, setFrom] = useState(start);
   const [to, setTo] = useState(today());
   const [currency, setCurrency] = useState(initialCurrency);
-  const [report, setReport] = useState<any>(null);
   const [accountId, setAccountId] = useState('');
-  const [error, setError] = useState('');
+  const [ledgerSearch, setLedgerSearch] = useState('');
+  const [ledgerOffset, setLedgerOffset] = useState(0);
+  const [attempt, setAttempt] = useState(0);
+  const [requestState, setRequestState] = useState<any>({ key: '', status: 'loading' });
+  const requested = new URLSearchParams({
+    from,
+    to,
+    currency,
+    ...(view === 'ledger' && accountId ? { account_id: accountId } : {}),
+    offset: String(view === 'ledger' ? ledgerOffset : 0),
+    ...(view === 'ledger' && ledgerSearch.trim() ? { search: ledgerSearch.trim() } : {}),
+  });
+  const requestKey = `${scope}:${revision}:${attempt}:${view}:${requested.toString()}`;
   useEffect(() => {
     let live = true;
-    setError('');
-    api(
-      '/accounting/report?' +
-        new URLSearchParams({
-          from,
-          to,
-          currency,
-          ...(accountId ? { account_id: accountId } : {}),
-          offset: '0',
-        }),
-    )
+    setRequestState({ key: requestKey, status: 'loading' });
+    api('/accounting/report?' + requested)
       .then((data: any) => {
-        if (live) setReport(data);
+        if (live) setRequestState({ key: requestKey, status: 'ready', data });
       })
       .catch((reason: any) => {
-        if (live) setError(reason.message);
+        if (live)
+          setRequestState({
+            key: requestKey,
+            status: 'error',
+            error: reason?.message || 'The requested financial report could not be loaded.',
+          });
       });
     return () => {
       live = false;
     };
-  }, [scope, from, to, currency, accountId, revision]);
+  }, [api, requestKey]);
+  const requestStatus = requestState.key === requestKey ? requestState.status : 'loading';
+  const report = requestStatus === 'ready' ? requestState.data : null;
+  const error = requestStatus === 'error' ? requestState.error : '';
   const pnl = profitLines(report);
   const balance = balanceTotals(report);
   return (
@@ -2078,18 +2142,18 @@ function Reports({ view, api, scope, start, initialCurrency, revision, accounts 
           <input
             type="date"
             value={from}
-            onChange={(event) => setFrom(event.target.value)}
+            onChange={(event) => { setFrom(event.target.value); setLedgerOffset(0); }}
             aria-label="From date"
           />
           <input
             type="date"
             value={to}
-            onChange={(event) => setTo(event.target.value)}
+            onChange={(event) => { setTo(event.target.value); setLedgerOffset(0); }}
             aria-label="To date"
           />
           <select
             value={currency}
-            onChange={(event) => setCurrency(event.target.value)}
+            onChange={(event) => { setCurrency(event.target.value); setLedgerOffset(0); }}
             aria-label="Report currency"
           >
             {['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF'].map((code) => (
@@ -2098,8 +2162,17 @@ function Reports({ view, api, scope, start, initialCurrency, revision, accounts 
           </select>
         </div>
       </header>
-      {error && <p className="alert error">{error}</p>}
-      {!report && !error && <p role="status">Loading posted ledger…</p>}
+      {error && (
+        <div className="alert error" role="alert">
+          <span>{error}</span>{' '}
+          <button className="acc-secondary" onClick={() => setAttempt((value) => value + 1)}>
+            Retry report
+          </button>
+        </div>
+      )}
+      {!report && !error && (
+        <p role="status">Loading report for {from} through {to} in {currency}…</p>
+      )}
       {report && (
         <>
           <p className="acc-hint">{report.notice}</p>
@@ -2108,7 +2181,7 @@ function Reports({ view, api, scope, start, initialCurrency, revision, accounts 
               <div className="acc-report-head">
                 <span>Profit and Loss</span>
                 <span>
-                  {from} → {to} · {currency}
+                  {report.period?.from} → {report.period?.to} · {report.currency}
                 </span>
               </div>
               <div className="acc-statement">
@@ -2145,7 +2218,7 @@ function Reports({ view, api, scope, start, initialCurrency, revision, accounts 
               <div className="acc-report-head">
                 <span>Balance Sheet</span>
                 <span>
-                  Cumulative through {to} · {currency}
+                  Cumulative through {report.period?.to} · {report.currency}
                 </span>
               </div>
               <div className="acc-statement">
@@ -2165,7 +2238,7 @@ function Reports({ view, api, scope, start, initialCurrency, revision, accounts 
                             <span>
                               {line.code} {line.name}
                             </span>
-                            <strong>{money(value, currency)}</strong>
+                        <strong>{money(value, report.currency)}</strong>
                           </div>
                         );
                       })}
@@ -2183,7 +2256,7 @@ function Reports({ view, api, scope, start, initialCurrency, revision, accounts 
               <div className="acc-report-head">
                 <span>Trial Balance</span>
                 <span>
-                  {report.period?.from} → {report.period?.to}
+                  {report.period?.from} → {report.period?.to} · {report.currency}
                 </span>
               </div>
               <DataTable>
@@ -2201,15 +2274,15 @@ function Reports({ view, api, scope, start, initialCurrency, revision, accounts 
                       <td>
                         {line.code} · {line.name}
                       </td>
-                      <td className="num">{money(line.debit_minor, currency)}</td>
-                      <td className="num">{money(line.credit_minor, currency)}</td>
-                      <td className="num">{money(line.net_debit_minor, currency)}</td>
+                      <td className="num">{money(line.debit_minor, report.currency)}</td>
+                      <td className="num">{money(line.credit_minor, report.currency)}</td>
+                      <td className="num">{money(line.net_debit_minor, report.currency)}</td>
                     </tr>
                   ))}
                   <tr className="acc-total-row">
                     <td>Total</td>
-                    <td className="num">{money(report.total_debit_minor, currency)}</td>
-                    <td className="num">{money(report.total_credit_minor, currency)}</td>
+                    <td className="num">{money(report.total_debit_minor, report.currency)}</td>
+                    <td className="num">{money(report.total_credit_minor, report.currency)}</td>
                     <td className="num">{report.balanced ? 'Balanced' : 'Review'}</td>
                   </tr>
                 </tbody>
@@ -2220,14 +2293,12 @@ function Reports({ view, api, scope, start, initialCurrency, revision, accounts 
             <>
               <div className="acc-report-head">
                 <span>General Ledger</span>
-                <span>
-                  {from} → {to}
-                </span>
+                <span>{report.period?.from} → {report.period?.to} · {report.currency}</span>
               </div>
               <div className="acc-toolbar">
                 <select
                   value={accountId}
-                  onChange={(event) => setAccountId(event.target.value)}
+                  onChange={(event) => { setAccountId(event.target.value); setLedgerOffset(0); }}
                   aria-label="Account filter"
                 >
                   <option value="">All accounts</option>
@@ -2237,6 +2308,12 @@ function Reports({ view, api, scope, start, initialCurrency, revision, accounts 
                     </option>
                   ))}
                 </select>
+                <input
+                  value={ledgerSearch}
+                  onChange={(event) => { setLedgerSearch(event.target.value); setLedgerOffset(0); }}
+                  placeholder="Search reference or account…"
+                  aria-label="Search general ledger"
+                />
               </div>
               <DataTable>
                 <thead>
@@ -2254,21 +2331,25 @@ function Reports({ view, api, scope, start, initialCurrency, revision, accounts 
                     <tr key={line.id}>
                       <td>{line.entry_on}</td>
                       <td>{line.reference}</td>
-                      <td>
-                        {accounts.find((account: any) => account.id === line.account_id)?.name ||
-                          line.account_id.slice(0, 8)}
-                      </td>
+                      <td>{line.account_code} · {line.account_name}</td>
                       <td>{line.data?.memo}</td>
-                      <td className="num">{money(line.debit_minor, line.currency)}</td>
-                      <td className="num">{money(line.credit_minor, line.currency)}</td>
+                      <td className="num">{money(line.debit_minor, report.currency)}</td>
+                      <td className="num">{money(line.credit_minor, report.currency)}</td>
                     </tr>
                   ))}
                 </tbody>
               </DataTable>
               {report.has_more && (
                 <p className="acc-hint">
-                  Showing the first 100 posted lines. Narrow the date range or filter by account.
+                  Showing {report.offset + 1}–{Math.min(report.offset + report.general_ledger.length, report.total)} of {report.total} posted lines.
                 </p>
+              )}
+              {report.total > report.limit && (
+                <footer className="acc-register-pager">
+                  <span>{report.total} posted lines</span>
+                  <button className="acc-secondary" disabled={report.offset === 0} onClick={() => setLedgerOffset(Math.max(0, ledgerOffset - report.limit))}>Previous</button>
+                  <button className="acc-secondary" disabled={!report.has_more} onClick={() => setLedgerOffset(ledgerOffset + report.limit)}>Next</button>
+                </footer>
               )}
             </>
           )}

@@ -1440,3 +1440,50 @@ Known limits: outbound vendor email, a supplier portal, bank execution/confirmat
 | `git diff --check` | Passed; only normal Windows LF-to-CRLF notices |
 
 The six supplied reference images were inspected at full resolution. A running AfriCore capture and side-by-side comparison could not be completed: browser access to the local app timed out at the origin approval gate on both attempts. Visual reproduction and founder manual acceptance therefore remain **unverified**; no pixel-parity or live-workflow acceptance is claimed.
+
+## Phase 2.7B Accounting functional expansion — local checkpoint, 19 November 2026
+
+This is a continuation of the Accounting workspace recorded in Checkpoint 2.7. The independent Accounting service, canonical `ac_accounting_*` ledger, approvals, posted-entry immutability, Procurement bill authority, Invoicing invoice authority, and Payments/Reconciliation authority remain intact. No new accounting schema or migration was needed for this increment.
+
+### Implemented in this continuation
+
+- **ACC-01, stale reports:** a report request clears the prior result, rejects out-of-date responses, exposes loading/error/retry, and displays the period and currency returned by the server so labels cannot describe a different query.
+- **ACC-02, draft journal defaults:** new line amounts start blank. Save remains disabled until at least two lines each have an account and exactly one non-zero debit or credit; posting retains the existing balanced-entry, open-period, separate-review and immutable-history checks.
+- **ACC-03, source registers:** Customer Credit Notes read `ac_credit_notes`; Customer Payments read successful canonical invoice allocations; Vendor Credits and Vendor Payments read Procurement's respective credit and manual payment records. The register identifies canonical source status and linked ledger posting instead of relabeling invoice/bill rows. Manual supplier payments remain explicitly manual evidence.
+- **ACC-04, Journal Items:** added tenant-scoped `GET /organizations/:org/accounting/items`, returning individual account lines with entry reference/date, journal and account, partner ID, source type/ID, currency, debit/credit and a truthful `not_tracked` reconciliation state. Search, account/journal/partner/date/status filters, count and 50-line paging run on the server. The UI has a dedicated line register; no reconciliation state is inferred.
+- **ACC-05, optional Procurement:** the installed Accounting app declares Procurement as an optional dependency. Accounting remains installable without Procurement; bill/payment source views still require the relevant services.
+- **ACC-06, data coverage:** the touched journal-entry, journal-item and canonical source registers search and filter before paging and return authoritative totals. The General Ledger report adds server search and pagination. This does not convert unrelated dashboard widgets into unbounded company-wide aggregations.
+- The journal editor uses a dense horizontal accounting-line table and preserves the existing integer-minor-unit, currency-separation and finance-authorization boundaries. A changed currency requires confirmation and clears unsaved line amounts; no exchange rate or FX conversion is invented.
+- Odoo source findings for the dashboard, move/line, account, journal, bank statement and report structures are documented in [Accounting notes](odoo-reference/notes/account.md) and [RESEARCH_LOG.md](odoo-reference/RESEARCH_LOG.md). The eight supplied reference screenshots were inspected at their supplied full resolution.
+
+### Automated verification
+
+| Check | Result |
+| --- | --- |
+| `npm run typecheck` | Passed |
+| `npm run lint` | Passed; architecture checked 208 frontend modules, no static import cycles |
+| `npm run build` | Passed |
+| `npm run validate:openapi` | Passed; 59 mounted operations documented |
+| `npm run validate:platform` | Passed; 466 workspace operations validated |
+| `node --test --test-concurrency=1 dist/__tests__/accounting.test.js` | Passed **17/17** on disposable local SQLite test data |
+| `node --test website/tests/accounting-app.test.mjs` | Passed **7/7** |
+| `npm --prefix website run build` | Passed; website build/prerender and content/app checks **134/134**. Existing upstream Zod/Rollup comment warnings were non-fatal. |
+| `git diff --check` | Passed; Git emitted normal Windows line-ending notices |
+
+### Remaining work and acceptance boundary
+
+This checkpoint is not full 2.7B completion. It does **not** implement statement CSV import or bank-statement-to-ledger matching, partial bank reconciliation, confirmed journal-item reconciliation state, statement balances or exception workflow. Those records and relationships are not present in the current Accounting authority. Payment allocations are canonical successful invoice allocations, not proof of bank settlement. Partner display/search is limited to existing contact IDs, not a new identity join. No fiscal localization/statutory filing, FX conversion, analytic distribution/analytic reports, fixed-asset depreciation, deferral schedules, partner ledger, classified cash-flow statement, retained-earnings close or opening-balance workflow was added by this continuation. Existing taxes, aging, fiscal periods and ledger reports retain their previously documented capabilities and limits; this patch does not make them a fully localized accounting package. The broad Phase 2.7B workflow/test matrix (especially reconciliation, statement import, tax/localization, analytics, assets, closing, full tenancy load and PostgreSQL acceptance) remains open.
+
+Visual acceptance is also **not complete**. Although the eight supplied Odoo images were inspected, the available browser had no authenticated local AfriCore session. No operational screen was captured and no side-by-side viewport comparison was performed. Sign-in was not automated. The Odoo dashboard and all seven operational reference screens therefore remain for local founder visual/manual acceptance; no pixel-parity claim is made.
+
+### Founder manual acceptance
+
+1. Compare the AfriCore dashboard and each of the seven operational pages against its supplied reference at a similar viewport; check navigation, toolbars, density, columns, tabs, status and spacing.
+2. Run the user's role-appropriate invoice/credit-note and bill/credit source flows; confirm each row is from the canonical service and no duplicate document/payment is created.
+3. Search and page Journal Entries and Journal Items; test journal, partner ID, date, account, currency and status filters, totals, source identity and detail drilldown.
+4. Create a journal draft with blank and invalid lines; verify it cannot be saved until valid. Then save, request separate review, post a balanced entry in an open period, inspect reports, and confirm posted history cannot be edited.
+5. Change a report period/currency while requests are in flight; verify loading/error/retry and confirmed query headings never show stale figures.
+6. Verify non-finance roles cannot read or mutate finance data, Procurement remains optional, and Finance remains operationally separate from Accounting.
+7. Verify the Reconciliation service remains the only live payment allocation authority; do not treat an allocation or manual payment note as a matched bank statement.
+
+No full `npm test` suite, PostgreSQL test run, authenticated visual comparison, founder manual acceptance, production migration, live financial write, deployment, commit or push was performed for this checkpoint.

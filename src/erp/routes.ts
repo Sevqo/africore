@@ -92,6 +92,7 @@ import {
   createPeriod,
   setPeriodState,
   accountingEntries,
+  accountingItems,
   accountingEntry,
   saveJournalEntry,
   requestJournalReview,
@@ -168,6 +169,10 @@ erp.put(
 erp.get(
   '/organizations/:org/accounting/entries',
   route(async (req, res) => res.json(await accountingEntries(await access(req), req.query))),
+);
+erp.get(
+  '/organizations/:org/accounting/items',
+  route(async (req, res) => res.json(await accountingItems(await access(req), req.query))),
 );
 erp.get(
   '/organizations/:org/accounting/entries/:id',

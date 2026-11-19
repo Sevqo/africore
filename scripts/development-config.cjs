@@ -7,6 +7,14 @@ function port(value, fallback) {
 function developmentConfig(env, addresses = []) {
   const websitePort = port(env.DEV_PORT, 5175),
     apiPort = port(env.DEV_API_PORT, 4005);
+  const databaseProvider =
+    env.DEV_DATABASE_PROVIDER || (env.NEON_AUTH_BASE_URL ? 'postgres' : 'sqlite');
+  if (!['sqlite', 'postgres'].includes(databaseProvider))
+    throw new Error('DEV_DATABASE_PROVIDER must be sqlite or postgres.');
+  if (env.NEON_AUTH_BASE_URL && databaseProvider !== 'postgres')
+    throw new Error('Managed Neon authentication requires PostgreSQL in local development.');
+  if (databaseProvider === 'postgres' && !env.DATABASE_URL && !env.DIRECT_URL)
+    throw new Error('DATABASE_URL or DIRECT_URL is required for PostgreSQL development.');
   const readyTimeoutMs = Number(env.DEV_API_READY_TIMEOUT_MS || 120000);
   if (!Number.isInteger(readyTimeoutMs) || readyTimeoutMs < 10000 || readyTimeoutMs > 300000)
     throw new Error('DEV_API_READY_TIMEOUT_MS must be between 10000 and 300000.');
@@ -29,11 +37,35 @@ function developmentConfig(env, addresses = []) {
     readyTimeoutMs,
     port: websitePort,
     apiPort,
+    databaseProvider,
     host: env.DEV_HOST || '0.0.0.0',
     scheme,
     publicOrigin,
     origins,
   };
+}
+function developmentDatabaseUrl(env, provider) {
+  if (provider !== 'postgres') return '';
+  const directHost = env.NEON_DEVELOPMENT_DIRECT_HOST?.trim();
+  const connectionString = directHost
+    ? env.DIRECT_URL || env.DATABASE_URL
+    : env.DATABASE_URL || env.DIRECT_URL;
+  if (!connectionString)
+    throw new Error('DATABASE_URL or DIRECT_URL is required for PostgreSQL development.');
+  let url;
+  try {
+    url = new URL(connectionString);
+  } catch {
+    throw new Error('The PostgreSQL connection URL is invalid.');
+  }
+  if (!['postgres:', 'postgresql:'].includes(url.protocol))
+    throw new Error('The PostgreSQL connection URL must use postgres:// or postgresql://.');
+  if (directHost) {
+    if (!/^[a-z0-9.-]+$/i.test(directHost) || directHost.includes('..'))
+      throw new Error('NEON_DEVELOPMENT_DIRECT_HOST must be a hostname only.');
+    url.hostname = directHost;
+  }
+  return url.toString();
 }
 function developmentEnvironmentFile(env, files) {
   if (env.DEV_ENV_FILE) return env.DEV_ENV_FILE;
@@ -51,4 +83,4 @@ function developmentEnvironmentFile(env, files) {
   }
   return '.env';
 }
-module.exports = { developmentConfig, developmentEnvironmentFile };
+module.exports = { developmentConfig, developmentDatabaseUrl, developmentEnvironmentFile };
