@@ -16,9 +16,11 @@ type Metric =
   | 'financial.collections'
   | 'financial.expenses'
   | 'financial.net_movement'
-  | 'financial.receivables';
+  | 'financial.receivables'
+  | 'automations.rules'
+  | 'automations.runs';
 type Group = 'day' | 'month' | 'status' | 'currency' | 'snapshot';
-type Source = 'orders' | 'customers' | 'crm' | 'sales' | 'inventory' | 'financial';
+type Source = 'orders' | 'customers' | 'crm' | 'sales' | 'inventory' | 'financial' | 'automations';
 type Widget = {
   id: string;
   metric: Metric;
@@ -48,6 +50,8 @@ const metricNames: Record<Metric, string> = {
   'financial.expenses': 'Recorded expenses',
   'financial.net_movement': 'Net movement',
   'financial.receivables': 'Outstanding receivables',
+  'automations.rules': 'Automation rules',
+  'automations.runs': 'Automation runs',
 };
 function financeCoverage(financial: any) {
   const quality = financial?.quality;
@@ -175,6 +179,7 @@ function templateWidgets(template: string, metrics: any[]): Widget[] {
       ],
       customers: ['customers.count', 'crm.leads'],
       inventory: ['inventory.low_stock', 'inventory.movements'],
+      automations: ['automations.rules', 'automations.runs'],
     };
   return (presets[template] || [])
     .filter((metric) => available.has(metric))
@@ -2741,6 +2746,7 @@ export function AnalyticsWorkspace({
                 ['finance', 'Finance summary'],
                 ['customers', 'Customer activity'],
                 ['inventory', 'Inventory movement'],
+                ['automations', 'Automation activity'],
               ].map(([key, label]) => (
                 <button
                   type="button"
@@ -3062,10 +3068,11 @@ function monthLastDay(month: string) {
   const [year, number] = month.split('-').map(Number), last = new Date(Date.UTC(year, number, 0));
   return `${last.getUTCFullYear()}-${String(last.getUTCMonth() + 1).padStart(2, '0')}-${String(last.getUTCDate()).padStart(2, '0')}`;
 }
-function legacyWidgetForSource(source: Source): 'financial' | 'sales' | 'customers' | 'inventory' {
+function legacyWidgetForSource(source: Source): 'financial' | 'sales' | 'customers' | 'inventory' | 'automations' {
   if (source === 'financial') return 'financial';
   if (source === 'customers') return 'customers';
   if (source === 'inventory') return 'inventory';
+  if (source === 'automations') return 'automations';
   return 'sales';
 }
 const palette = [

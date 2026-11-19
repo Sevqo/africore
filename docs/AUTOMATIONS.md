@@ -42,6 +42,8 @@ Templates use existing event sources in CRM, customer, invoicing, payment/reconc
 
 The current deployment should be treated as a single API/worker process. Distributed worker leases and cross-instance rate limits are not established. External delivery providers and credentials, consent/opt-out, public webhook verification, arbitrary code, exact cron `nextcall`, and financial execution are unsupported. PostgreSQL and hosted worker uptime require deployment-specific qualification.
 
+Analytics reads aggregate rule counts and run counts from the canonical `ac2_objects` and `ac2_runs` ledgers. Access requires the Automations service and finance-capable workspace role; report rows contain counts and statuses only. Rule reports group by enabled/paused state, while run reports group by persisted run status. Pending retries remain pending, run duration is not reported because the ledger does not store a reliable start time, and scheduled delivery is not inferred from configured schedules.
+
 ## Verification
 
-Phase 2.13 adds regression coverage for filtered directories, literal wildcard search, historical run versions, sanitized results, revoked-owner recovery, daylight-saving schedule evaluation, and selected-rule manual runs. The final verification results and founder visual acceptance limits are recorded in `docs/PHASE2_APP_PROGRESS.md` after checks complete.
+Phase 2.13 regression coverage includes filtered directories, literal wildcard search, historical run versions, sanitized results, revoked-owner recovery, daylight-saving schedule evaluation, and selected-rule manual runs. The combined 2.12B/2.13B increment additionally verifies Analytics registry visibility and persisted aggregate reports. The final local verification results and remaining visual/hosted acceptance limits are recorded in `docs/PHASE2_APP_PROGRESS.md`.

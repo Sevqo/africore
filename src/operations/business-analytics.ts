@@ -191,7 +191,7 @@ export const savedReportInput = z
       .object({
         query: analyticsQuery,
         widgets: z
-          .array(z.enum(['financial', 'sales', 'customers', 'inventory']))
+          .array(z.enum(['financial', 'sales', 'customers', 'inventory', 'automations']))
           .min(1)
           .max(4),
         exploration: z
@@ -207,11 +207,13 @@ export const savedReportInput = z
               'financial.expenses',
               'financial.net_movement',
               'financial.receivables',
+              'automations.rules',
+              'automations.runs',
             ]),
             group_by: z.enum(['day', 'month', 'status', 'currency', 'snapshot']),
             chart: z.enum(['kpi', 'line', 'bar', 'pie', 'table']),
             view: z.enum(['graph', 'pivot', 'table']),
-            source: z.enum(['orders', 'customers', 'crm', 'sales', 'inventory', 'financial']),
+            source: z.enum(['orders', 'customers', 'crm', 'sales', 'inventory', 'financial', 'automations']),
             row_by: z.enum(['day', 'month', 'status', 'currency', 'snapshot']).optional(),
             column_by: z.enum(['day', 'month', 'status', 'currency', 'snapshot']).optional(),
           })
@@ -241,6 +243,7 @@ export async function businessAnalytics(a: Access, input: unknown) {
     inventory: await readable(a, 'inventory'),
     crm: await readable(a, 'crm'),
     financial: !!financial,
+    automations: await readable(a, 'automations'),
   };
   const series = (await dailyActivity(a, from, to, timeZone, q.status)).filter((r) =>
     (r.kind === 'orders' ? sources.orders : sources.customers) && (!q.source || q.source === r.kind),
@@ -446,6 +449,8 @@ const reportMetric = z.enum([
     'financial.expenses',
     'financial.net_movement',
     'financial.receivables',
+    'automations.rules',
+    'automations.runs',
   ]),
   reportGroup = z.enum(['day', 'month', 'status', 'currency', 'snapshot']),
   reportInput = analyticsQuery.extend({
@@ -554,6 +559,30 @@ const definitions: Record<string, any> = {
     definition:
       'Outstanding receivables from the canonical financial snapshot, in the selected currency.',
   },
+  'automations.rules': {
+    label: 'Automation rules',
+    source: 'automations',
+    table: 'ac2_objects',
+    kind: 'automations',
+    status: true,
+    statusField: 'enabled',
+    filterStatus: false,
+    service: ['automations'],
+    role: 'finance',
+    definition:
+      'Count of canonical automation rules created in the selected period, grouped by enabled or paused state. This does not indicate that a scheduled run completed.',
+  },
+  'automations.runs': {
+    label: 'Automation runs',
+    source: 'automations',
+    table: 'ac2_runs',
+    status: true,
+    statusField: 'status',
+    service: ['automations'],
+    role: 'finance',
+    definition:
+      'Count of canonical workflow execution records created in the selected period, grouped by persisted run status. Pending includes runs waiting for retry; counts do not imply uninterrupted schedule delivery.',
+  },
 };
 const dashboardWidgetSchema = z
   .object({
@@ -579,7 +608,7 @@ const dashboardCreateSchema = z
   .object({
     name: z.string().trim().min(2).max(120),
     template: z
-      .enum(['blank', 'overview', 'sales', 'finance', 'customers', 'inventory'])
+      .enum(['blank', 'overview', 'sales', 'finance', 'customers', 'inventory', 'automations'])
       .default('blank'),
     configuration: dashboardConfigSchema,
   })
@@ -634,7 +663,7 @@ async function assertDashboardMetrics(
         : [
             'day',
             'month',
-            ...(definition.status ? ['status'] : []),
+            ...(definition.status && definition.filterStatus !== false ? ['status'] : []),
             ...(definition.currency ? ['currency'] : []),
           ];
     if ((definition.source === 'financial' || definition.snapshot) && widget.chart !== 'kpi')
@@ -654,6 +683,7 @@ export async function analyticsRegistry(a: Access) {
     ['sales', 'Sales', ['sales'], 'operations'],
     ['inventory', 'Inventory', ['inventory'], 'read'],
     ['financial', 'Finance', ['intelligence'], 'finance'],
+    ['automations', 'Automations', ['automations'], 'finance'],
   ] as [string, string, string[], string][]) {
     let serviceAccess = false;
     for (const service of services) if (await readable(a, service)) serviceAccess = true;
@@ -667,17 +697,22 @@ export async function analyticsRegistry(a: Access) {
               ? 'ac_sales_quotes'
               : id === 'inventory'
                 ? 'ac_stock_movements'
+                : id === 'automations'
+                  ? 'ac2_runs'
                 : null,
       kindCondition =
         id === 'orders' || id === 'customers'
           ? ' AND kind=?'
           : id === 'crm'
             ? " AND kind='lead'"
+            : id === 'automations'
+              ? " AND kind='automations'"
             : '',
+      coverageTable = id === 'automations' ? 'ac2_objects' : table,
       coverage =
-        roleAccess && serviceAccess && table
+        roleAccess && serviceAccess && coverageTable
           ? await dbGet(
-              `SELECT COUNT(*) AS n,MIN(created_at) AS first_record,MAX(created_at) AS last_record FROM ${table} WHERE org_id=? AND environment=?${kindCondition}`,
+              `SELECT COUNT(*) AS n,MIN(created_at) AS first_record,MAX(created_at) AS last_record FROM ${coverageTable} WHERE org_id=? AND environment=?${kindCondition}`,
               [a.org, a.environment, ...(kindCondition === ' AND kind=?' ? [id] : [])],
             )
           : null;
@@ -722,6 +757,7 @@ export async function analyticsRegistry(a: Access) {
     },
     crm: { table: 'ac_crm_entries', expression: 'status', where: " AND kind='lead'" },
     sales: { table: 'ac_sales_quotes', expression: 'status', where: '' },
+    automations: { table: 'ac2_runs', expression: 'status', where: '' },
   } as const;
   for (const [source, config] of Object.entries(statusSources))
     if (sources[source]?.readable) {
@@ -871,7 +907,15 @@ export async function analyticsReport(a: Access, input: unknown) {
   )
     fail(400, 'Choose a supported group for this metric');
   const statusRaw = isPostgres ? "r.data::jsonb->>'status'" : "json_extract(r.data,'$.status')",
-    statusExpr = d.metric === 'customers.count' ? `COALESCE(${statusRaw},'active')` : statusRaw,
+    statusExpr = definition.statusField === 'enabled'
+      ? isPostgres
+        ? "CASE WHEN r.data::jsonb->>'enabled'='true' THEN 'enabled' ELSE 'paused' END"
+        : "CASE WHEN json_extract(r.data,'$.enabled')=1 THEN 'enabled' ELSE 'paused' END"
+      : definition.table === 'ac2_runs' || definition.table === 'ac_crm_entries' || definition.table === 'ac_sales_quotes'
+        ? 'r.status'
+        : definition.table === 'ac_stock_movements'
+          ? 'r.kind'
+          : d.metric === 'customers.count' ? `COALESCE(${statusRaw},'active')` : statusRaw,
     bucketed = d.group_by === 'day' || d.group_by === 'month';
   if (bucketed && d.group_by === 'day' && d.range === 'all')
     fail(400, 'Choose a date window to group by day');
@@ -901,15 +945,16 @@ export async function analyticsReport(a: Access, input: unknown) {
     sourceConditions = '';
   if (definition.table === 'ac_records') sourceConditions = ' AND r.kind=?';
   if (definition.table === 'ac_crm_entries') sourceConditions = " AND r.kind='lead'";
+  if (definition.kind && definition.table !== 'ac_records') sourceConditions = ` AND r.kind='${definition.kind}'`;
   if (definition.currency && d.group_by !== 'currency')
     sourceConditions += ` AND ${currencyExpr}=?`;
   const statusCondition =
-    d.status && definition.status && d.group_by !== 'status'
+    d.status && definition.status && definition.filterStatus !== false && d.group_by !== 'status'
       ? definition.table === 'ac_records'
         ? d.status === '__unclassified__' && d.metric === 'orders.count'
           ? ` AND ${statusRaw} IS NULL`
           : ` AND ${statusExpr}=?`
-        : ' AND r.status=?'
+        : ` AND ${statusExpr}=?`
       : '';
   let rows: any[];
   const commonParams = [
@@ -972,6 +1017,7 @@ export async function analyticsReport(a: Access, input: unknown) {
     rows: detail.map((row) => ({ ...row, value: Number(row.value || 0) })),
     ignored_filters: [
       ...(d.status && !definition.status ? ['status'] : []),
+      ...(d.status && definition.filterStatus === false ? ['status'] : []),
       ...(d.currency && !definition.currency ? ['currency'] : []),
     ],
     definition: definition.definition,
@@ -1040,9 +1086,13 @@ export async function analyticsPivot(a: Access, input: unknown) {
     dimensionExpr = (dimension: string) => {
       if (dimension === 'day' || dimension === 'month') return 'b.label';
       if (dimension === 'currency') return currencyExpr;
-      if (definition.table === 'ac_crm_entries' || definition.table === 'ac_sales_quotes')
+      if (definition.table === 'ac_crm_entries' || definition.table === 'ac_sales_quotes' || definition.table === 'ac2_runs')
         return 'r.status';
       if (definition.table === 'ac_stock_movements') return 'r.kind';
+      if (definition.statusField === 'enabled')
+        return isPostgres
+          ? "CASE WHEN r.data::jsonb->>'enabled'='true' THEN 'enabled' ELSE 'paused' END"
+          : "CASE WHEN json_extract(r.data,'$.enabled')=1 THEN 'enabled' ELSE 'paused' END";
       return d.metric === 'customers.count' ? `COALESCE(${statusRaw},'active')` : statusRaw;
     },
     rowExpr = dimensionExpr(d.row_by),
@@ -1052,14 +1102,22 @@ export async function analyticsPivot(a: Access, input: unknown) {
         ? ' AND r.kind=?'
         : definition.table === 'ac_crm_entries'
           ? " AND r.kind='lead'"
+          : definition.kind
+            ? ` AND r.kind='${definition.kind}'`
           : '',
     statusCondition =
-      d.status && definition.status
+      d.status && definition.status && definition.filterStatus !== false
         ? definition.table === 'ac_records'
           ? d.status === '__unclassified__' && d.metric === 'orders.count'
             ? ` AND ${statusRaw} IS NULL`
             : ` AND ${d.metric === 'customers.count' ? `COALESCE(${statusRaw},'active')` : statusRaw}=?`
-          : ' AND r.status=?'
+          : ` AND ${definition.table === 'ac2_runs' || definition.table === 'ac_crm_entries' || definition.table === 'ac_sales_quotes'
+            ? 'r.status'
+            : definition.statusField === 'enabled'
+              ? isPostgres
+                ? "CASE WHEN r.data::jsonb->>'enabled'='true' THEN 'enabled' ELSE 'paused' END"
+                : "CASE WHEN json_extract(r.data,'$.enabled')=1 THEN 'enabled' ELSE 'paused' END"
+              : 'r.kind'}=?`
         : '',
     currencyCondition =
       definition.currency && ![d.row_by, d.column_by].includes('currency')
@@ -1114,6 +1172,7 @@ export async function analyticsPivot(a: Access, input: unknown) {
     currency: d.currency,
     ignored_filters: [
       ...(d.status && !definition.status ? ['status'] : []),
+      ...(d.status && definition.filterStatus === false ? ['status'] : []),
       ...(d.currency && !definition.currency ? ['currency'] : []),
     ],
     definition: definition.definition,

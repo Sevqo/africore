@@ -741,6 +741,9 @@ test('analytics registry, grouped reports, pivots, exports and versioned dashboa
   assert.equal(registry.status, 200, JSON.stringify(registry.data));
   assert.equal(registry.data.sources.orders.readable, true);
   assert.ok(registry.data.metrics.some((metric: any) => metric.id === 'orders.count'));
+  assert.equal(registry.data.sources.automations.readable, true);
+  assert.ok(registry.data.metrics.some((metric: any) => metric.id === 'automations.rules'));
+  assert.ok(registry.data.metrics.some((metric: any) => metric.id === 'automations.runs'));
   const lowStockMetric = registry.data.metrics.find((metric: any) => metric.id === 'inventory.low_stock');
   assert.equal(lowStockMetric.available, true);
   assert.deepEqual(lowStockMetric.allowed_charts, ['kpi']);
@@ -2544,6 +2547,14 @@ test('automation directories filter before pagination and run history uses its s
   assert.deepEqual(versions.data.data.map((item: any) => item.version), [2, 1]);
   assert.equal(versions.data.data[0].actor_name, 'Synthetic owner');
   assert.equal('actor' in versions.data.data[0], false);
+
+  const from = occurred.slice(0, 10),
+    runReport = await api(path(`/business/analytics/report?metric=automations.runs&group_by=status&from=${from}&to=${from}`)),
+    rulesReport = await api(path(`/business/analytics/report?metric=automations.rules&group_by=status&from=${from}&to=${from}`));
+  assert.equal(runReport.status, 200, JSON.stringify(runReport.data));
+  assert.ok(runReport.data.rows.find((row: any) => row.key === 'succeeded')?.value >= 1);
+  assert.equal(rulesReport.status, 200, JSON.stringify(rulesReport.data));
+  assert.ok(rulesReport.data.rows.some((row: any) => row.key === 'enabled' || row.key === 'paused'));
 });
 
 test('a finance member can recover a paused automation after its former owner loses authority', async () => {

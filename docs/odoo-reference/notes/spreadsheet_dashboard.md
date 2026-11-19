@@ -22,6 +22,10 @@ These are behavior observations, not a request to copy Odoo implementation or as
 
 The Odoo screenshot shell differs from AfriCore's global application shell, product identity and design tokens. The implementation uses the supplied composition as the target for its dashboard sidebar, toolbar, scorecards, chart/report panels and builder, while preserving AfriCore navigation and service boundaries. This source review did not launch Odoo or compare the running AfriCore screen against the screenshots.
 
+### 2026-11-19 implementation follow-up
+
+The Analytics registry now includes aggregate Automation rule and run measures over the canonical AfriCore automation records. As with the source observations above, measure and dimension choices remain explicit and server-owned; no dashboard spreadsheet runtime or arbitrary query surface was added. See `src/operations/business-analytics.ts` and the combined expansion note in `docs/PHASE2_APP_PROGRESS.md`.
+
 ## Limits
 
 This was a narrow read of dashboard persistence, global-filter state, graph and pivot models; it was not an exhaustive Odoo permission or spreadsheet-runtime audit. The Odoo repository remained read-only.

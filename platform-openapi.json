@@ -3454,7 +3454,8 @@
                       "crm",
                       "sales",
                       "inventory",
-                      "financial"
+                      "financial",
+                      "automations"
                     ]
                   }
                 },
@@ -3473,7 +3474,8 @@
                     "financial",
                     "sales",
                     "customers",
-                    "inventory"
+                    "inventory",
+                    "automations"
                   ]
                 }
               },
@@ -3492,7 +3494,9 @@
                       "financial.collections",
                       "financial.expenses",
                       "financial.net_movement",
-                      "financial.receivables"
+                      "financial.receivables",
+                      "automations.rules",
+                      "automations.runs"
                     ]
                   },
                   "group_by": {
@@ -3531,7 +3535,8 @@
                       "crm",
                       "sales",
                       "inventory",
-                      "financial"
+                      "financial",
+                      "automations"
                     ]
                   },
                   "row_by": {

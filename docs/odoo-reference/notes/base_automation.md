@@ -32,3 +32,7 @@ The selected schedule's **Run Manually** operation is `POST /organizations/:org/
 The implementation follows the seven references' recognizable structure: full-page rule record, compact grouped trigger choices, horizontal rule tabs, centered action dialog, dense scheduled-action table and full-width schedule detail. The schedule form uses `TECHNICAL SETTINGS` / `ACTION DETAILS` and `Execution Plan` / `Help`; it includes a real selected-rule manual execution control. AfriCore uses a light theme and its own shell. Some differences are deliberate: there is no Odoo free-form model/domain, no executable Code tab, no fake `nextcall`, and no unsupported mail/SMS/webhook action.
 
 No running AfriCore browser capture was made in this task, so none of the seven references is marked screenshot-compared or pixel-verified. The founder's visual acceptance is still required. See the Phase 2.13 visual matrix in `docs/PHASE2_APP_PROGRESS.md`.
+
+### 2026-11-19 Analytics connection
+
+Aggregate workflow reporting reads the same canonical `ac2_objects` and `ac2_runs` authority as this automation implementation. It counts rules and persisted run statuses only; it does not expose run payloads, infer successful scheduled delivery, or report duration without a stored start time. Automations service access and a finance-capable role are required. The verified implementation and tests are tracked in `docs/PHASE2_APP_PROGRESS.md`.

@@ -27,6 +27,25 @@ Hard limits observed: no commits, pushes, deployments, production data or provid
 | 2.13       | Automations | Implemented; focused tests/checks recorded below; browser screenshot comparison not performed; founder acceptance pending                                         |
 | 2.14       | Business ID | Implemented; build/tests green; founder manual and visual acceptance pending                                                                                      |
 
+## Combined Analytics 2.12B + Automations 2.13B — local integration, 19 November 2026
+
+The base Analytics and Automations applications were already present. This increment closes one concrete gap in the combined brief: Analytics now exposes aggregate reports and dashboard widgets for canonical automation rules and execution records. `automations.rules` counts rules created in the selected period and groups them by enabled/paused; `automations.runs` counts persisted runs and groups them by ledger status. The source is visible only when the caller has Automations read access and the finance-capable role. The service's canonical `ac2_objects` and `ac2_runs` remain authoritative; no parallel store, migration, or scheduler was added. The generated workspace OpenAPI and Analytics UI/template options include the new source and measures.
+
+Regression coverage confirms registry visibility and persisted run/rule aggregates. Local backend tests passed **472**, with **0 failures** and **1 PostgreSQL-only skip**. TypeScript, lint/architecture, both OpenAPI validators, backend and website production builds, website content checks (135/135), development configuration (6/6), Cloudflare worker tests (10/10), deployment-verifier tests (5/5), local-chain checks and `git diff --check` passed. These gates validate the checked-in implementation; they do not fulfill the entire wider metric/export/visual acceptance list. The full command matrix and infrastructure evidence are in [DEPLOYMENT_TEST_RESULTS.md](DEPLOYMENT_TEST_RESULTS.md).
+
+Priority-zero CI review found a newer main-branch run than the prior checkpoint cited: run 122 ([44587770893](https://github.com/Sevqo/africore/actions/runs/44587770893), commit `9a17f04d193b90b4923dfee9dff1901fa883f9ab`). Four jobs passed; the PostgreSQL job failed in CRM forecast aggregation because PostgreSQL rejected the query's grouped aliases. The CRM forecast board, report and pivot now use selected-column positions for grouping; the Business workflow suite passes 53/53 and the full SQLite backend suite passes 472/472 executable tests. The PostgreSQL-only failure cannot be qualified locally without a PostgreSQL service, and no hosted rerun is available for the unpushed fix.
+
+The current implementation preserves the existing broad Analytics and Automations baselines and adds this concrete cross-app connection, but the combined brief is **not fully complete**. Still outstanding: additional source-specific measures beyond Automation, scheduled Analytics snapshots and PDF/XLSX delivery, expanded report-builder and shared-filter workflows, matched-size running-app comparisons against A1–A4/B1–B4, and founder acceptance. The existing Automations engine remains bounded to its registered 18 recipes and four supported action classes; no arbitrary code, external messaging, or guaranteed schedule delivery is available. PostgreSQL qualification was skipped because no local PostgreSQL/Docker engine was available. GitHub CI has not run on these unpushed edits; Render and hosted migration state were inaccessible; no deployment or migration was attempted. No commit or push was made.
+
+### Founder acceptance checklist
+
+- In Analytics, open the dashboard, create a dashboard from a blank/template choice, edit/save a widget, change date/source/status filters, switch graph/table/pivot, expand a pivot, export CSV, and confirm unsupported data is disclosed rather than displayed as zero.
+- Check that Automation Activity requires current Automations access and the finance-capable role, and that rule-enabled state is distinct from persisted run status.
+- In Automations, create a rule from a supported template, preview it without side effects, save a new version, pause/resume it, inspect scheduled configuration and run history, and retry/cancel only when the UI and backend allow it.
+- Confirm no rule save sends messages or executes business actions; use a permitted synthetic event for any execution check.
+- Compare the running screens at matching desktop and mobile widths with supplied A1–A4/B1–B4 references. Review keyboard operation, focus, and narrow-screen overflow.
+- Confirm no dashboard or automation exposes data from another workspace, environment, role, or disabled source service.
+
 ## Checkpoint 2.1 — what was wrong
 
 `AppsWorkspace` dispatched `app.id === 'commerce'` to `<CommerceWorkspace embedded>`, the same
@@ -1178,6 +1197,14 @@ The supported Phase 2.12 implementation, source research and local automated gat
 | `git diff --check` | Passed; Git reported only working-tree LF-to-CRLF normalization notices |
 
 The three focused backend suites passed **84/84**. The full backend test suite and PostgreSQL integration were not run; a dedicated `TEST_DATABASE_URL` was not configured. All test API servers and databases were disposable local fixtures; no hosted service was contacted. No running AfriCore browser capture was made, so the seven screenshot comparisons and founder manual acceptance remain outstanding. No dependency was installed, no migration was created, and no commit, push or deploy occurred.
+
+## Combined Analytics + Automations functional expansion — 19 November 2026
+
+The existing 2.12 Analytics and 2.13 Automations implementations were expanded in place. Analytics now has two registry measures backed by the existing Automation authority: rule counts from `ac2_objects` and execution counts from `ac2_runs`. Rule counts can be grouped by enabled/paused state; run counts can be grouped by persisted run status. Both require the Automations service and a finance-capable workspace role, inherit the existing workspace/environment scope, and disclose that pending runs may include retries and that schedules do not guarantee delivery. No run-duration metric was added because the canonical run ledger does not store a reliable start time.
+
+The measures are available in graph/table/pivot reports, saved explorations and dashboards. The dashboard template chooser includes an Automation Activity template. Queries remain fixed to the canonical tables and server-owned dimension expressions. No schema migration, dependency, duplicate run store, public sharing path, scheduler or production mutation was introduced. The run ledger's exact status and rule enabled flag retain separate meanings; rule reports do not apply the run-status filter.
+
+The related local Odoo Community source findings remain in `docs/odoo-reference/notes/spreadsheet_dashboard.md` and `docs/odoo-reference/notes/base_automation.md`. Official Odoo documentation fetches timed out; no new documentation-backed claim is made. Current code changes were typechecked; the focused integration test and remaining requested checks are recorded after verification. GitHub hosted CI, Render logs/status, Docker image verification, runtime browser comparison and founder acceptance remain external/unverified gates. No commit, push or deployment was performed.
 
 ## Checkpoint 2.14 — Business ID and Business Passport
 
