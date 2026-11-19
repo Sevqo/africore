@@ -3360,7 +3360,13 @@ test('CRM expansion captures prospects, imports safely, reviews merges, executes
   const replay = await api(path('/crm/activity-plans/apply'), 'POST', applyBody, cookie, applyKey);
   assert.equal(replay.status, 201);
   assert.deepEqual(replay.data, applied.data);
-  const activityCount = Number((await dbGet("SELECT COUNT(*) AS n FROM ac_crm_entries WHERE org_id=? AND json_extract(data,'$.parent_entry_id')=? AND kind='follow_up'", [org, duplicate.data.id])).n);
+  const activityRows = await dbAll(
+    "SELECT data FROM ac_crm_entries WHERE org_id=? AND environment='sandbox' AND kind='follow_up'",
+    [org],
+  );
+  const activityCount = activityRows.filter(
+    (row) => JSON.parse(String(row.data)).parent_entry_id === duplicate.data.id,
+  ).length;
   assert.equal(activityCount, 3);
 
   const mergeBody = { primary_id: prospect.data.id, records: [{ id: prospect.data.id, expected_version: qualified.data.version }, { id: duplicate.data.id, expected_version: duplicate.data.version }] }, mergeKey = randomUUID();

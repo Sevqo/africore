@@ -26,6 +26,17 @@ that produced a conclusion does.
 
 ## Entries
 
+## 2026-11-19 — Documents workflow reference and supplied screens
+
+- Question: which user-visible Documents workflows in the supplied Odoo screenshots and current official Odoo documentation are useful comparison points for the AfriCore Documents expansion, and where should the implementation avoid suggesting feature parity?
+- Odoo version/source: official Odoo 20.0 user documentation and the supplied Odoo 19 screenshots; no Odoo source checkout inspected in this entry.
+- Read: [Documents](https://www.odoo.com/documentation/20.0/applications/productivity/documents.html); [Documents features](https://www.odoo.com/app/documents-features); [Finance Documents](https://www.odoo.com/documentation/20.0/applications/finance/documents.html); [Sign](https://www.odoo.com/documentation/20.0/applications/productivity/sign.html); [Spreadsheet](https://www.odoo.com/documentation/20.0/applications/finance/spreadsheet.html); [Spreadsheet sharing](https://www.odoo.com/documentation/20.0/applications/productivity/spreadsheet/get_started.html).
+- Findings: documentation describes All/Company/My Drive/Shared/Recent/Trash scopes, folders and file grids/lists, preview/details, versions, requests, tags, record links, external sharing roles/expiry, finance digitization, PDF splitting, spreadsheet creation, OCR/AI sorting and Sign workflows. The supplied screens illustrate navigation, New menu, private My Drive, file details and preview, planned activities, bulk selection, and folder actions. AfriCore's tested delta here is folder browsing and local PDF page rendering; its existing sharing/content permissions remain authoritative.
+- Conclusions: use the navigation and preview patterns as usability references, while explicitly distinguishing existing AfriCore permissions and version behavior from Odoo's external sharing, OCR, workflow automations, Sign, spreadsheet editor and PDF editing features.
+- Decision: none.
+- Follow-ups: founder review against the supplied screenshots at matched desktop/tablet/mobile widths; assess feature requests only against AfriCore's current authorization and storage design.
+- Limits: this was a documentation and screenshot comparison, not an Odoo runtime/source audit or complete same-size visual comparison. External Cybrosys screenshot URLs returned cache misses. No Odoo code or art was copied.
+
 ## 2026-11-19 — People expansion and supplied screen references
 
 - Question: which People behaviors from the pinned Odoo 20 Community sources and the supplied Odoo 19 screenshots can be added to AfriCore without copying Odoo's data model or weakening existing employee, compensation, approval and service boundaries?

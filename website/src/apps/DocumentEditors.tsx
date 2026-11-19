@@ -242,12 +242,12 @@ export function DocumentEditor({
         aria-labelledby="document-editor-title"
       >
         <h2 id="document-editor-title">
-          {d ? 'Edit file information' : 'Upload file or create folder'}
+          {d ? 'Edit file information' : kind === 'folder' ? 'Create private folder' : 'Upload private file'}
         </h2>
         <p>
-          New files and folders start private. Review recipients and folder inheritance separately.
-          Permitted files: PDF, PNG, JPEG and UTF-8 .txt, up to 2 MiB. Files are not
-          malware-scanned.
+          {kind === 'folder'
+            ? 'New folders start private. The server rechecks destination permissions and inherited access when you save.'
+            : 'New files start private. Review recipients and folder inheritance separately. Permitted files: PDF, PNG, JPEG and UTF-8 .txt, up to 2 MiB. Files are not malware-scanned.'}
         </p>
         <Form
           submit={async (data) => {
@@ -362,7 +362,7 @@ export function DocumentEditor({
           )}
           <div className="form-actions">
             <button className="button" disabled={!d && kind === 'file' && !file}>
-              {d ? 'Save file information' : 'Create private document'}
+              {d ? 'Save file information' : kind === 'folder' ? 'Create private folder' : 'Upload private file'}
             </button>
             <button className="secondary-button" type="button" onClick={onClose}>
               Cancel

@@ -2,11 +2,15 @@ import { DataTable } from '../components/DataTable';
 import { DocumentRequests, DocumentReviewQueue } from './DocumentRequests';
 import { DocumentReviews } from './DocumentReviews';
 import { appNavigationEvent } from './AppNavigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Field, Form, type API } from '../operations/UI';
 import { Overlay } from '../components/Overlay';
 import { DocumentEditor, DocumentPolicyEditor, readDocumentFile } from './DocumentEditors';
 import { useIdempotentAPI } from './useIdempotentAPI';
+
+const DocumentPdfPreview = lazy(() => import('./DocumentPdfPreview').then((module) => ({
+  default: module.DocumentPdfPreview,
+})));
 
 const views = [
   ['all', 'All documents', '▤'],
@@ -70,6 +74,8 @@ export function DocumentsWorkspace({
     [directoryError, setDirectoryError] = useState(''),
     [directoryRetry, setDirectoryRetry] = useState(0),
     [sidebarFolders, setSidebarFolders] = useState<any[]>([]),
+    [folderChildren, setFolderChildren] = useState<Record<string, any>>({}),
+    [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({}),
     [sidebarError, setSidebarError] = useState(''),
     [sidebarMore, setSidebarMore] = useState(false),
     [sidebarOffset, setSidebarOffset] = useState(0),
@@ -104,13 +110,15 @@ export function DocumentsWorkspace({
     [layout, setLayout] = useState<'grid' | 'list'>('grid'),
     [showFilters, setShowFilters] = useState(false),
     [showDetails, setShowDetails] = useState(false),
+    [mobileFoldersOpen, setMobileFoldersOpen] = useState(false),
     [error, setError] = useState(''),
     [notice, setNotice] = useState(''),
     [revision, setRevision] = useState(0),
     [chosen, setChosen] = useState<string[]>([]),
     [draggingFile, setDraggingFile] = useState(false);
   const requestGeneration = useRef(0),
-    contentGeneration = useRef(0);
+    contentGeneration = useRef(0),
+    folderTreeGeneration = useRef(0);
   const currentFolderId = folderPath.at(-1)?.id || 'root';
   const canCreateHere = !!listing?.can_create && view !== 'trash';
   const apiView = ['all', 'reviews', 'settings', 'requests'].includes(view) ? 'recent' : view;
@@ -234,6 +242,11 @@ export function DocumentsWorkspace({
     };
   }, [api, scope, sidebarView, sidebarOffset, revision]);
   useEffect(() => {
+    folderTreeGeneration.current++;
+    setFolderChildren({});
+    setExpandedFolders({});
+  }, [scope, sidebarView, revision]);
+  useEffect(() => {
     let current = true;
     setMemberError('');
     api('/team')
@@ -309,7 +322,7 @@ export function DocumentsWorkspace({
         });
       } else if (result.content_type === 'application/pdf') {
         setPreview({
-          url: URL.createObjectURL(bytes(result.content_base64, result.content_type)),
+          base64: result.content_base64,
           name: result.filename,
           type: result.content_type,
         });
@@ -420,6 +433,98 @@ export function DocumentsWorkspace({
     () => new Map(members.map((member) => [member.id, member.display_name || member.email])),
     [members],
   );
+  async function loadFolderChildren(folderId: string, offset = 0) {
+    const generation = folderTreeGeneration.current;
+    setFolderChildren((current) => ({
+      ...current,
+      [folderId]: { ...current[folderId], loading: true, error: '' },
+    }));
+    try {
+      const result = await api(
+        '/documents?view=' +
+          sidebarView +
+          '&kind=folder&folder_id=' +
+          encodeURIComponent(folderId) +
+          '&sort=name&offset=' +
+          offset,
+      );
+      if (generation === folderTreeGeneration.current) {
+        setFolderChildren((current) => ({
+          ...current,
+          [folderId]: {
+            data: offset ? [...(current[folderId]?.data || []), ...result.data] : result.data,
+            hasMore: result.has_more,
+            loading: false,
+            error: '',
+          },
+        }));
+      }
+    } catch (cause) {
+      if (generation === folderTreeGeneration.current) {
+        setFolderChildren((current) => ({
+          ...current,
+          [folderId]: {
+            ...current[folderId],
+            loading: false,
+            error: cause instanceof Error ? cause.message : 'Subfolders could not be loaded.',
+          },
+        }));
+      }
+    }
+  }
+  function toggleFolderBranch(folderId: string) {
+    const opening = !expandedFolders[folderId];
+    setExpandedFolders((current) => ({ ...current, [folderId]: opening }));
+    if (opening && (!folderChildren[folderId] || folderChildren[folderId].error))
+      void loadFolderChildren(folderId);
+  }
+  function renderFolderBranch(folder: any, depth = 0): any {
+    const children = folderChildren[folder.id],
+      expanded = !!expandedFolders[folder.id],
+      active = folderPath.at(-1)?.id === folder.id;
+    return (
+      <div className="documents-folder-tree-node" key={folder.id}>
+        <div className="documents-folder-tree-row" style={{ paddingLeft: depth * 12 }}>
+          <button
+            className="documents-folder-disclosure"
+            aria-label={`${expanded ? 'Collapse' : 'Expand'} folder ${folder.data.name}`}
+            aria-expanded={expanded}
+            onClick={() => toggleFolderBranch(folder.id)}
+          >
+            {expanded ? '▾' : '▸'}
+          </button>
+          <button
+            className={'documents-sidebar-folder' + (active ? ' is-active' : '')}
+            aria-current={active ? 'location' : undefined}
+            onClick={() => openFolder(folder)}
+          >
+            <span aria-hidden="true">▱</span>
+            <span className="documents-folder-tree-name">{folder.data.name}</span>
+          </button>
+        </div>
+        {expanded && children?.loading && <span className="documents-folder-tree-status">Loading subfolders…</span>}
+        {expanded && children?.error && (
+          <span className="documents-folder-tree-status" role="alert">
+            {children.error}{' '}
+            <button className="quiet-button" onClick={() => void loadFolderChildren(folder.id)}>
+              Retry
+            </button>
+          </span>
+        )}
+        {expanded && children?.data?.map((child: any) => renderFolderBranch(child, depth + 1))}
+        {expanded && children?.hasMore && (
+          <button
+            className="quiet-button documents-folder-tree-more"
+            style={{ marginLeft: (depth + 1) * 12 }}
+            disabled={children.loading}
+            onClick={() => void loadFolderChildren(folder.id, children.data.length)}
+          >
+            More subfolders
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="apps-workspace documents-workspace">
@@ -618,6 +723,13 @@ export function DocumentsWorkspace({
           <div className="documents-sidebar-heading">
             <strong>Folders</strong>
             <button
+              className="quiet-button documents-mobile-folder-toggle"
+              aria-expanded={mobileFoldersOpen}
+              onClick={() => setMobileFoldersOpen((open) => !open)}
+            >
+              {mobileFoldersOpen ? 'Hide folders' : 'Browse folders'}
+            </button>
+            <button
               className="quiet-button"
               disabled={!canCreateHere}
               onClick={() => {
@@ -628,49 +740,25 @@ export function DocumentsWorkspace({
               ＋
             </button>
           </div>
-          {folderPath.map((folder, index) => (
-            <button
-              className="documents-sidebar-folder"
-              key={folder.id}
-              style={{ paddingLeft: 12 + index * 12 }}
-              onClick={() => {
-                setFolderPath((path) => path.slice(0, index + 1));
-                setOffset(0);
-              }}
-            >
-              <span aria-hidden="true">▱</span>
-              {folder.name}
-            </button>
-          ))}
-          {sidebarError && (
+          <div className={'documents-folder-tree' + (mobileFoldersOpen ? ' is-open' : '')}>
+            {sidebarError && (
             <p role="alert" className="documents-sidebar-error">
               {sidebarError}
               <button className="quiet-button" onClick={() => setRevision((value) => value + 1)}>
                 Retry
               </button>
             </p>
-          )}
-          {!sidebarError &&
-            sidebarFolders
-              .filter((folder) => !folderPath.some((current) => current.id === folder.id))
-              .map((folder) => (
-                <button
-                  className="documents-sidebar-folder"
-                  key={folder.id}
-                  onClick={() => openFolder(folder)}
-                >
-                  <span aria-hidden="true">▱</span>
-                  {folder.data.name}
-                </button>
-              ))}
-          {sidebarMore && (
-            <button
-              className="quiet-button documents-sidebar-more"
-              onClick={() => setSidebarOffset((value) => value + 50)}
-            >
-              More folders
-            </button>
-          )}
+            )}
+            {!sidebarError && sidebarFolders.map((folder) => renderFolderBranch(folder))}
+            {sidebarMore && (
+              <button
+                className="quiet-button documents-sidebar-more"
+                onClick={() => setSidebarOffset((value) => value + 50)}
+              >
+                More folders
+              </button>
+            )}
+          </div>
           <div className="documents-sidebar-divider" />
           <nav className="documents-sidebar-nav">
             {views.slice(6).map(([id, label, icon]) => (
@@ -1655,12 +1743,14 @@ export function DocumentsWorkspace({
                   </div>
                 )}
                 {preview?.type === 'application/pdf' && (
-                  <iframe
-                    src={preview.url}
-                    title={'Preview ' + preview.name}
-                    sandbox=""
-                    referrerPolicy="no-referrer"
-                  />
+                  <Suspense fallback={<p role="status">Loading PDF viewer…</p>}>
+                    <DocumentPdfPreview
+                      base64={preview.base64}
+                      name={preview.name}
+                      scale={previewScale}
+                      onScaleChange={setPreviewScale}
+                    />
+                  </Suspense>
                 )}
                 {preview?.type?.startsWith('image/') && (
                   <img
@@ -1700,7 +1790,7 @@ export function DocumentsWorkspace({
                     <span key={value}>{value}</span>
                   ))}
                 </div>
-                {preview?.type !== 'application/pdf' && (
+                {!!preview && preview.type !== 'application/pdf' && (
                   <div className="documents-preview-zoom" aria-label="Preview zoom controls">
                     <button
                       className="secondary-button"

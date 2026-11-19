@@ -4172,6 +4172,54 @@
   font: inherit;
   font-size: 13px;
 }
+.documents-folder-tree-row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.documents-folder-disclosure {
+  flex: 0 0 20px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--documents-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+.documents-folder-disclosure:hover,
+.documents-folder-disclosure:focus-visible {
+  background: #ebedef;
+  color: var(--documents-accent);
+}
+.documents-folder-tree-row .documents-sidebar-folder {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  padding-left: 6px;
+}
+.documents-sidebar-folder.is-active {
+  background: #dcefeb;
+  color: #124d49;
+  font-weight: 700;
+}
+.documents-folder-tree-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.documents-folder-tree-status,
+.documents-folder-tree-more {
+  display: block;
+  margin: 4px 4px 4px 32px;
+  color: var(--documents-muted);
+  font-size: 11px;
+}
 .documents-sidebar-nav button > span,
 .documents-sidebar-folder > span {
   width: 18px;
@@ -4202,6 +4250,9 @@
   padding: 2px 9px 6px;
   color: #4d5967;
   font-size: 12px;
+}
+.documents-mobile-folder-toggle {
+  display: none;
 }
 .documents-sidebar-error {
   padding: 8px;
@@ -4649,13 +4700,39 @@
   padding: 16px;
   background: #eef0f2;
 }
-.documents-preview-content iframe {
-  width: 100%;
-  height: 100%;
-  min-height: 520px;
-  border: 0;
-  background: #fff;
-}
+.documents-pdf-viewer {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    align-self: stretch;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    gap: 12px;
+  }
+  .documents-pdf-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .documents-pdf-toolbar span {
+    min-width: 112px;
+    text-align: center;
+    font-size: 12px;
+  }
+  .documents-pdf-page {
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+    text-align: center;
+  }
+  .documents-pdf-page canvas {
+    display: inline-block;
+    max-width: none;
+    background: #fff;
+    box-shadow: 0 2px 9px #18242c30;
+  }
 .documents-preview-content img {
   display: block;
   max-width: 100%;
@@ -5079,8 +5156,9 @@
   }
   .documents-sidebar {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
-    align-items: center;
+    align-items: flex-start;
     overflow-x: auto;
     padding: 7px;
     border-right: 0;
@@ -5088,8 +5166,10 @@
   }
   .documents-sidebar-nav {
     display: flex;
-    flex: 0 0 auto;
+    flex: 1 0 100%;
     gap: 3px;
+    max-width: 100%;
+    overflow-x: auto;
   }
   .documents-sidebar-nav button {
     width: auto;
@@ -5099,12 +5179,41 @@
   .documents-sidebar-nav button > span {
     width: auto;
   }
-  .documents-sidebar-divider,
-  .documents-sidebar-heading,
-  .documents-sidebar-folder,
-  .documents-sidebar-more,
-  .documents-sidebar-error {
+  .documents-sidebar-divider {
     display: none;
+  }
+  .documents-sidebar-heading {
+    display: flex;
+    flex: 1 0 100%;
+    min-height: 34px;
+    padding: 0 8px;
+  }
+  .documents-sidebar-heading > strong {
+    display: none;
+  }
+  .documents-mobile-folder-toggle {
+    display: inline-flex;
+    min-height: 32px;
+  }
+  .documents-folder-tree {
+    display: none;
+    flex: 1 0 100%;
+    max-height: 190px;
+    overflow: auto;
+    padding: 4px 6px;
+    border: 1px solid var(--documents-line);
+    border-radius: 6px;
+  }
+  .documents-folder-tree.is-open {
+    display: block;
+  }
+  .documents-folder-tree .documents-sidebar-folder {
+    display: flex;
+    min-height: 34px;
+  }
+  .documents-folder-tree .documents-sidebar-more,
+  .documents-folder-tree .documents-sidebar-error {
+    display: block;
   }
   .documents-main {
     padding: 10px;
@@ -5131,9 +5240,6 @@
     max-height: 155px;
     border-left: 0;
     border-top: 1px solid var(--documents-line);
-  }
-  .documents-preview-content iframe {
-    min-height: 320px;
   }
   .documents-settings-grid {
     grid-template-columns: minmax(0, 1fr);

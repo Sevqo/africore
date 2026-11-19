@@ -1,6 +1,6 @@
 # Phase 2 — Applications Progress
 
-Current checkpoint: **2.10B People functional expansion** — implementation and automated verification are recorded below; the earlier 2.9B Work Timesheets and Reporting runtime error (“Resource not found”) remains open for refresh/runtime verification and founder acceptance.
+Current checkpoint: **2.11B Documents functional expansion and infrastructure repair** — local code, browser verification and automated checks are recorded below. Work Timesheets/Reporting and the Documents request-recipient flow now render in a refreshed authenticated sandbox; hosted runtime and founder acceptance remain separate gates.
 
 Source checkpoint: Phase 1 committed by the founder; this work is uncommitted by design.
 Hard limits observed: no commits, pushes, deployments, production data or provider changes.
@@ -21,7 +21,8 @@ Hard limits observed: no commits, pushes, deployments, production data or provid
 | 2.9B       | Work        | Time tracking, recurrence generation, milestone links, scheduling preview, updates and reports implemented; backend suite passes; runtime screens need route verification |
 | 2.10       | People      | Implemented — independent source loading/retry; backend People tests and production builds pass; founder browser acceptance pending                               |
 | 2.10B      | People      | Expanded employee, hierarchy, profile, leave/attendance, recruitment, lifecycle, goals/appraisals and reporting; current verification and runtime limits below |
-| 2.11       | Documents   | Source implementation and focused checks pass; live request-recipient route needs runtime verification; populated-file and founder acceptance pending             |
+| 2.11       | Documents   | Base implementation recorded below; expanded and runtime-checked in 2.11B; hosted status and founder acceptance pending                                        |
+| 2.11B      | Documents   | Lazy server-paged folder tree, responsive navigation, private-folder wording, PDF.js page preview, local route verification and deployment verifier implemented; hosted CI/Render and full visual acceptance pending |
 | 2.12       | Analytics   | Implemented; prior focused checks recorded below; founder screenshot acceptance pending                                                                           |
 | 2.13       | Automations | Implemented; focused tests/checks recorded below; browser screenshot comparison not performed; founder acceptance pending                                         |
 | 2.14       | Business ID | Implemented; build/tests green; founder manual and visual acceptance pending                                                                                      |
@@ -1665,3 +1666,51 @@ Founder acceptance checklist:
 12. Refresh the local API runtime and separately re-check Phase 2.9B Work Timesheets and Reporting; confirm the prior “Resource not found” error is resolved before accepting that checkpoint.
 
 No production or hosted migration, production data change, deployment, commit, push, external message, job publishing or account creation was performed. The People migration remains local; browser/role acceptance and the separate Work runtime error remain open.
+
+## Checkpoint 2.11B — Documents functional expansion and infrastructure repair, 19 November 2026
+
+### Scope and baseline
+
+The earlier 2.11 Documents checkpoint already supplies AfriCore's canonical encrypted file/version storage, quota and type checks, explicit grants and folder inheritance, source-record links, private previews/content route, per-file version-bound reviews, document requests, trash/restore, tags, stars, access policy editor, server paging, and People/Work/Sales/Procurement/Finance-related attachment adapters. This increment extends the existing authority; it adds no file table, storage provider, API route, or migration.
+
+### Implemented in this increment
+
+- `website/src/apps/DocumentsWorkspace.tsx` now lazily loads and pages nested folder branches from the current authorized Company/My Drive scope. Each branch has its own expand/collapse, loading/error/retry and More controls. Scope changes invalidate in-flight branch responses. A mobile Browse folders control collapses the tree until requested.
+- `website/src/apps/DocumentEditors.tsx` labels the folder form “Create private folder” and explains the actual server-side destination permission check.
+- New `website/src/apps/DocumentPdfPreview.tsx` uses pinned `pdfjs-dist` 6.5.438 and a locally bundled worker. It renders the authenticated base64 response to canvas, fits pages to the available width, caps rasterization at 12 million pixels, and offers page navigation and 50–200% zoom. The renderer is lazy loaded, and no external PDF viewer or unsandboxed iframe is used. Image and plain-text previews continue through the existing paths.
+- The demo harness accepts an optional isolated database only under ignored `.tmp`, clears inherited managed-auth base configuration and can skip unrelated fixture seeding. The local browser verification used a fresh synthetic database and synthetic user.
+- `.github/workflows/deploy.yml` still runs only by manual dispatch on main. It now records the checked-out full commit, requires Render API key/service identifier availability, and only after Cloudflare succeeds triggers the existing Render hook and polls Render for a deploy-hook deployment with the exact SHA until Render reports `live` or a terminal failure/timeout. `scripts/verify-render-deploy.mjs` keeps API credentials out of output; five focused tests cover live/SHA match, mismatch, failure, timeout and redaction. This verifier was not run against a real Render deployment.
+- The PostgreSQL-only test in `src/__tests__/business-app-workflows.test.ts` now selects sandbox JSON text and parses it in JavaScript instead of calling SQLite-only `json_extract` on PostgreSQL.
+
+### CI and hosting incident evidence
+
+The latest inspected GitHub run before these unpushed edits was [run 44538505195](https://github.com/Sevqo/africore/actions/runs/44538505195). Its `Tests (PostgreSQL)` job failed at the CRM workflow test with PostgreSQL error `42883` (`json_extract(text, unknown)` does not exist); run 44509527314 showed the same failure. This was a test portability defect, not a Node deprecation notice. The repository test now avoids the dialect-specific JSON function. No post-change hosted Actions run is available because nothing was pushed; GitHub CI is therefore **not verified green**.
+
+No authenticated Render logs or deploy-status access were available in this run. The suspected missing migration ledger entry `021-people-expansion` remains a hypothesis, not the established cause. Hosted migration state, actual build/startup/health failure phase, and the latest deployment's SHA/status remain unverified. The deployment workflow is not triggered, `AFRICORE_MIGRATIONS_MODE=verify` is retained, and no hosted migration or data change was made. Docker CLI was present, but `docker info` could not connect to the Linux engine, so image build/startup were not verified here. The refreshed isolated demo returned `/v1/health` = `ok` and `/v1/readiness` = `ok`; these local results do not establish Render health.
+
+### Route verification
+
+- **Work:** after opening the sandbox Work app in the refreshed local runtime, Timesheets rendered “My Timesheets” with its week table and an explicit empty-state, and Reporting rendered “Work reporting” with the project selector. Neither displayed “Resource not found”; the browser console contained no error-level entries. No time record was created. This demonstrates the current local frontend/API path, not the hosted service.
+- **Documents requests:** the authenticated request form loaded eligible submitters and authorized folders, then reported “No other current member can submit to the selected source and folder” in the synthetic owner-only tenant. That is the expected no-recipient state, not a 404. No request was submitted and no notification was sent.
+
+### Odoo reference and observed differences
+
+The supplied Documents screenshots were reviewed for the section tree, breadcrumb, New menu, file preview/details split, folder action menu and selected-file cards. The live renderer was checked at a 564-pixel browser width with a synthetic PDF: the text appeared, page count was shown, the canvas fit within the preview, and Download completed. The folder branch was expanded and the nested file was opened. The narrow tree is collapsed by default on mobile. This is a functional spot comparison, not a desktop same-size comparison across every referenced Odoo screen; the seven external Cybrosys PNG URLs were not retrievable by the research browser (cache misses). No Odoo code or artwork was copied.
+
+Odoo 20 documents the same left tree sections, folder action menus, dense list/grid, right-side preview/details, version controls, selection actions, requests, record links and independent share roles. It also advertises PDF splitting, public/external portal sharing, AI sort/OCR, spreadsheet creation and Sign integration. AfriCore does not enable those unimplemented/external capabilities. See [the Documents note](odoo-reference/notes/documents.md) and [the 20.0 Documents reference](https://www.odoo.com/documentation/20.0/applications/productivity/documents.html).
+
+### Data model, security and integrations
+
+No backend schema/API contract changed. Existing file content remains encrypted and addressed only through authorized endpoints; file access continues to re-check current workspace membership, file grants, inherited folder policy, expiry, download rights and personnel/financial source policy. Rendering is local to the browser from the authorized content response. The details continue to disclose that malware scanning is unavailable. The viewer does not make a file public or share a linked business record. Cross-application links remain on canonical source records and do not grant source or file permissions to one another.
+
+Existing focused integration coverage continues to exercise Work project and task attachment authorization, Sales quotations/orders, financial attachments, People privacy and exact-version review/request transitions. This increment did not add broad new cross-app browser scenarios. Full automation coverage and remaining gaps are listed in the Documents note.
+
+### Remaining limitations and manual acceptance
+
+The existing 2 MiB per-file bound and single-file drop flow remain. This phase adds no batch upload, ZIP folder download, shortcut, public link, Outlook/email gateway, OCR, auto-sort, spreadsheet editor, Sign workflow, file locking, PDF merge/split/rotate, or malware scanning. Video/Office document preview and external notifications are not enabled. Folder search and file matching remain server-authorized and safety-capped; the UI discloses its 5,000-record coverage cap where applicable. No claim is made that every Odoo action is implemented or that visual parity is complete.
+
+For founder acceptance, compare desktop folder cards/list and selection toolbar, then verify nested folder paging, move/cycle rejection, share/viewer/download restrictions, grant expiry/revocation, version upload/review invalidation, request submit/review, recoverable trash, source permissions and cross-company isolation. At 550px and tablet width, verify the folder toggle, search, file actions and PDF navigation/zoom without document-wide horizontal scrolling. Repeat Work/recipient route checks against the intended hosted runtime only after the authorized application release; hosted access was not available here.
+
+### Automated and runtime verification
+
+Detailed final command results, skips and limitations are recorded in [DEPLOYMENT_TEST_RESULTS.md](DEPLOYMENT_TEST_RESULTS.md). The hosted GitHub CI, local Docker daemon/image, Render deployment, hosted migration ledger and founder acceptance remain separate statuses and are not inferred from local results.

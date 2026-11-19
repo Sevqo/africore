@@ -21,6 +21,35 @@ Public homepage/login/app/personal/product direct routes returned200HTML/no-stor
 
 No paid resources activated. Render Free sleeps while idle; scheduled/background execution pauses and in-memory legacy Orbit work is not restart durable. One verified local AfriCore API process was stopped to prevent competing polling. Existing unrelated services unchanged. GitHub deployment workflow is prepared as a manual main-only evaluation pipeline; scoped Cloudflare token/account variable and Render deploy-hook secrets are not configured, so automatic deployment is not claimed. Existing CI for4452a29passed all five checks; later commit CI must be checked separately.
 
+## Local verification — 2026-11-19, Documents / CI / Render diagnostic
+
+GitHub Actions run [44538505195](https://github.com/Sevqo/africore/actions/runs/44538505195), run 121, was the latest run on main when inspected. It tested `ee3e0c60fa7a5c2694c1fbe8893a5c9b1e16406f`. `npm ci` and the other four CI jobs succeeded; the only failed step was `Tests (PostgreSQL)`, which ran `npm run test:pg`. The CRM workflow test used SQLite-specific `json_extract(text, unknown)`; PostgreSQL returned `42883` (“function ... does not exist”). The PostgreSQL log names the failing statement and test. The same defect was seen in run 120. `src/__tests__/business-app-workflows.test.ts` now selects sandbox JSON text and parses it in JavaScript. No post-change hosted Actions run is available; do not count this local fix as a green hosted run.
+
+`npm run test:render-deploy` passed 5/5 tests for live exact-SHA verification, SHA mismatch, terminal failure, timeout and credential redaction. The deploy workflow retains manual main-only dispatch, Cloudflare-before-Render sequencing, Render hook SHA polling and required secret/variable checks. No real Render status/logs or migration ledger were accessible, no deployment was triggered, and migration `021-people-expansion` remains unconfirmed as a cause. `docker info` could not connect to the Docker Linux engine; image build and container startup remain unverified.
+
+The refreshed isolated loopback runtime returned `ok` from `/v1/health` and `/v1/readiness`. Authenticated local browser checks showed Work Timesheets and Reporting loading without “Resource not found”; Documents Requests showed “No other current member can submit to the selected source and folder” for the owner-only tenant. The Documents preview rendered a synthetic one-page PDF at desktop and 550px width; authorized download completed. No work entry, document request, notification or production record was created. These observations are local only.
+
+Final command matrix for this code change:
+
+| Command | Result |
+| --- | --- |
+| `npm run typecheck` | Passed |
+| `npm run lint` | Passed: ESLint, architecture (215 frontend modules), and test isolation |
+| `npm run validate:openapi` | Passed: 59/59 mounted route operations documented |
+| `npm run validate:platform` | Passed: 528 workspace operations validated against Express registrations |
+| `npm test` | Passed: 472 passed, 0 failed, 1 PostgreSQL-only skip; 473 tests total |
+| `npm run build` | Passed |
+| `npm --prefix website run build` | Passed: production bundle, 82 prerendered pages, website content 135/135 |
+| `npm run test:dev` | Passed 6/6 |
+| `node --test deploy/cloudflare/worker.test.mjs` | Passed 10/10 |
+| `npm run test:render-deploy` | Passed 5/5 |
+| `npm run check:chain` | Passed: contract 1/1, trust integration 21/21, independent credential verification confirmed |
+| `git diff --check` | Passed |
+
+The first sandboxed `npm test` attempt failed because the runner denied temporary loopback listeners (`EACCES`); it was rerun successfully with local loopback test permission. The single PostgreSQL-only test was skipped because this environment had no working Docker Linux engine / PostgreSQL service, so this run did not validate the SQL fix against Postgres. The website bundler printed two removable upstream Zod pure-annotation warnings; the build completed successfully. `npm run check:chain` used only the local ephemeral chain (chain ID 31337) and ignored `.tmp` artifacts. An isolated `npm ci --omit=dev` check also could not finish: registry DNS returned `ENOTFOUND registry.npmjs.org`, and the offline retry hit Windows `EPERM` while creating `node_modules`; production-only dependency installation is therefore unverified.
+
+Hosted GitHub CI, Docker build, Render deployment, hosted migration verification, founder acceptance and production readiness remain unverified.
+
 
 ## Authenticated refinement deployment — 2026-10-27
 

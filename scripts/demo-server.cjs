@@ -5,7 +5,20 @@ process.env.OPENAI_API_KEY = '';
 process.env.NODE_ENV = 'development';
 process.env.AFRICORE_DEMO_SESSION = 'true';
 process.env.DATABASE_URL = '';
-process.env.DB_PATH = path.resolve(__dirname, '../.tmp/connected-demo.db');
+// Keep this disposable local-account demo independent of a developer's .env identity provider.
+process.env.NEON_AUTH_BASE_URL = '';
+const demoDirectory = path.resolve(__dirname, '../.tmp');
+const requestedDbPath = process.env.AFRICORE_DEMO_DB_PATH || 'connected-demo.db';
+const demoDbPath = path.resolve(demoDirectory, requestedDbPath);
+const relativeDemoDbPath = path.relative(demoDirectory, demoDbPath);
+if (
+  path.isAbsolute(relativeDemoDbPath) ||
+  relativeDemoDbPath === '..' ||
+  relativeDemoDbPath.startsWith('..' + path.sep)
+) {
+  throw new Error('AFRICORE_DEMO_DB_PATH must stay within the ignored .tmp directory.');
+}
+process.env.DB_PATH = demoDbPath;
 process.env.PORT = '4001';
 process.env.AFRICORE_PUBLIC_ORIGIN = 'http://127.0.0.1:4001';
 process.env.AFRICORE_TRUST_OPERATOR_EMAILS = 'issuer@africore.localdemo';
@@ -76,7 +89,10 @@ async function account(email, name) {
     partner = await account('partner@africore.localdemo', 'Demo Commercial Partner');
   cookie = owner.cookie;
   const p = '/api/v1/organizations/' + owner.org;
-  if (!(await api(p + '/trust/passport')).passport) {
+  if (
+    process.env.AFRICORE_DEMO_MINIMAL !== 'true' &&
+    !(await api(p + '/trust/passport')).passport
+  ) {
     const customer = await api(p + '/records/customers', 'POST', {
       name: 'Synthetic demo customer',
     });
@@ -196,25 +212,27 @@ async function account(email, name) {
       consent: true,
     });
   }
-  for (const [account, name] of [
-    [issuer, 'AfriCore Sandbox Issuer · Demo'],
-    [partner, 'Demo Commercial Partner'],
-  ]) {
-    cookie = account.cookie;
-    const prefix = '/api/v1/organizations/' + account.org;
-    if (!(await api(prefix + '/trust/passport')).passport) {
-      await api(prefix + '/trust/passport', 'POST', {
-        display_name: name,
-        category: 'Demo participant',
-        industry: 'Trade',
-        country: 'KE',
-      });
-      await api(prefix + '/trust/evidence', 'POST', {
-        source_kind: 'profile',
-        source_id: account.org,
-        lawful_basis: 'consent',
-        purpose: 'Create a private synthetic participant passport for demo workflows.',
-      });
+  if (process.env.AFRICORE_DEMO_MINIMAL !== 'true') {
+    for (const [account, name] of [
+      [issuer, 'AfriCore Sandbox Issuer · Demo'],
+      [partner, 'Demo Commercial Partner'],
+    ]) {
+      cookie = account.cookie;
+      const prefix = '/api/v1/organizations/' + account.org;
+      if (!(await api(prefix + '/trust/passport')).passport) {
+        await api(prefix + '/trust/passport', 'POST', {
+          display_name: name,
+          category: 'Demo participant',
+          industry: 'Trade',
+          country: 'KE',
+        });
+        await api(prefix + '/trust/evidence', 'POST', {
+          source_kind: 'profile',
+          source_id: account.org,
+          lawful_basis: 'consent',
+          purpose: 'Create a private synthetic participant passport for demo workflows.',
+        });
+      }
     }
   }
   console.log(
@@ -232,7 +250,10 @@ async function account(email, name) {
           issuer: issuer.org,
           partner: partner.org,
         },
-        database: 'Disposable .tmp/connected-demo.db; no normal application database touched.',
+        database:
+          'Disposable .tmp/' +
+          path.relative(demoDirectory, demoDbPath) +
+          '; no normal application database touched.',
       },
       null,
       2,

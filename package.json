@@ -28,6 +28,7 @@
     "check:chain": "npm run build && node chain/scripts/check-local.mjs",
     "lint": "eslint . && node scripts/check-architecture.cjs && node scripts/check-test-isolation.cjs",
     "test:dev": "node --test scripts/development-config.test.cjs",
+    "test:render-deploy": "node --test scripts/verify-render-deploy.test.mjs",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,mjs,cjs,css,html,json,jsonc,yml,yaml,sol}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mjs,cjs,css,html,json,jsonc,yml,yaml,sol}\""
   },

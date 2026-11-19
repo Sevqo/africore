@@ -16,13 +16,20 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
         run: |
           test -n "$CLOUDFLARE_API_TOKEN" || { echo '::error::Set evaluation secret CLOUDFLARE_API_TOKEN.'; exit 1; }
           test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo '::error::Set evaluation variable CLOUDFLARE_ACCOUNT_ID.'; exit 1; }
           test -n "$RENDER_DEPLOY_HOOK" || { echo '::error::Set evaluation secret RENDER_DEPLOY_HOOK.'; exit 1; }
+          test -n "$RENDER_API_KEY" || { echo '::error::Set evaluation secret RENDER_API_KEY for deploy verification.'; exit 1; }
+          test -n "$RENDER_SERVICE_ID" || { echo '::error::Set evaluation variable RENDER_SERVICE_ID for deploy verification.'; exit 1; }
       - uses: actions/checkout@v4
         with:
           ref: main
+      - name: Record checked-out main commit
+        id: source
+        run: echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -44,10 +51,24 @@ jobs:
         run: |
           test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Configure a scoped evaluation Cloudflare API token.'; exit 1; }
           npm run deploy
+      - name: Record Render deploy start time
+        id: render_start
+        if: ${{ success() }}
+        run: echo "started_at=$(date -u +'%Y-%m-%dT%H:%M:%S.%3NZ')" >> "$GITHUB_OUTPUT"
       - name: Trigger existing Render backend deployment
-        if: ${{ success() || steps.cloudflare_deploy.outcome == 'failure' }}
+        if: ${{ success() }}
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
-          test -n "$RENDER_DEPLOY_HOOK" || { echo 'Configure the existing backend deploy hook.'; exit 1; }
-          curl --fail --silent --show-error --request POST "$RENDER_DEPLOY_HOOK" > /dev/null
+          if ! curl --fail --silent --request POST "$RENDER_DEPLOY_HOOK" > /dev/null 2>&1; then
+            echo '::error::Render deploy hook request failed.'
+            exit 1
+          fi
+      - name: Verify the exact Render backend deployment
+        if: ${{ success() }}
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
+          RENDER_EXPECTED_COMMIT: ${{ steps.source.outputs.commit_sha }}
+          RENDER_DEPLOY_TRIGGERED_AT: ${{ steps.render_start.outputs.started_at }}
+        run: node scripts/verify-render-deploy.mjs
