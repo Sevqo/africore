@@ -1,6 +1,6 @@
 # Phase 2 — Applications Progress
 
-Current checkpoint: **2.6B Procurement functional expansion** — local implementation and automated verification are recorded at the end of this file; browser visual comparison and founder manual acceptance remain pending.
+Current checkpoint: **2.8B POS functional expansion** — local implementation and automated verification are recorded below; browser visual comparison and founder manual acceptance remain pending.
 
 Source checkpoint: Phase 1 committed by the founder; this work is uncommitted by design.
 Hard limits observed: no commits, pushes, deployments, production data or provider changes.
@@ -16,7 +16,7 @@ Hard limits observed: no commits, pushes, deployments, production data or provid
 | 2.5        | CRM         | Partial — pipeline increment recorded at the end of this file; browser acceptance not performed                                                                   |
 | 2.6        | Procurement | Expanded in 2.6B (prices, agreements/templates, comparison, reporting, server-paged approvals); automated checks recorded below; browser acceptance pending |
 | 2.7        | Accounting  | Implemented (Odoo-style ledger workspace); build/tests green; browser click-through not executed                                                                  |
-| 2.8        | POS         | Implemented (Odoo-style register, cashier, payment, receipt, closing, orders, reporting and configuration); build/tests green; browser click-through not executed |
+| 2.8        | POS         | Expanded in 2.8B (Customers dependency, bounded multi-register analysis and line-aware grouping); local checks recorded below; browser acceptance pending |
 | 2.9        | Work        | Implemented; focused engineering/browser verification recorded below; founder acceptance pending                                                                  |
 | 2.10       | People      | Implemented — independent source loading/retry; backend People tests and production builds pass; founder browser acceptance pending                               |
 | 2.11       | Documents   | Source implementation and focused checks pass; live request-recipient route needs runtime verification; populated-file and founder acceptance pending             |
@@ -495,6 +495,67 @@ posting. Closing and receipt actions surface backend errors rather than generic 
 Implemented and automatically verified. Manual browser, screenshot comparison, PostgreSQL and
 physical-device acceptance were **not executed**. The next application has not been started.
 
+## Checkpoint 2.8B — POS functional expansion
+
+This continuation supersedes the earlier POS section's listed Customers-dependency and single-register/single-day reporting gaps. It extends the existing POS implementation; it does not create a second order, invoice, payment, inventory or accounting authority.
+
+### Implemented
+
+- **Customers dependency:** POS app and service metadata now declare Customers as a required dependency. POS register writes and register policy reauthorization check that dependency. Setup readiness and configuration provide a direct Customers activation path; they do not create a customer record or activate the service. An additive, version-guarded platform migration updates only the stored POS service definition/version for existing workspaces.
+- **Confirmed-sale payment intent:** newly confirmed POS sales persist the configured tender intent on the sale. This makes payment-method grouping reliable without reclassifying sandbox requests as provider settlement; historical sales retain the existing inference fallback.
+- **Bounded multi-register analysis:** `GET /api/v1/organizations/:org/pos/report` accepts at most 100 selected authorized registers, a date window up to 366 calendar days, cashier, payment intent, invoice status, product, category, currency and session filters, group-by dimension and bounded page controls. Cashiers see only their own assigned-register sessions; register managers see only assigned registers. Date windows use each register's timezone. The service rejects more than 100,000 matching sales rather than returning partial totals.
+- **Canonical measures and drilldown:** sales are read through confirmed POS sale links and current canonical invoice balances/credits/allocations. Totals include transaction count, invoice total, paid/outstanding/credited amounts, recorded cash, simulated electronic allocations, returns, discounts, tax and product quantities/subtotals. Register, cashier, date, hour, tender, invoice status, session, product and category are groupable. Money remains integer minor units; totals are kept by currency with no FX or profitability inference.
+- **Separate drawer evidence:** cash movements, drawer adjustments and closed-session counts/variances are queried from their source records and shown by currency, with date windows scoped to the event's own local date. Those event totals are deliberately not filtered by product/payment/invoice status; the report labels that boundary. Detailed closure records are bounded at 1,000 and expose a `has_more` flag.
+- **Reporting UI:** date/register/cashier/tender/status/product/category/currency/session filters, grouping and measure selection are connected to the backend. The view includes currency-faceted charts, summary cards, grouped tables, sale drilldown, paginated detail records, session cash reports, print and a CSV export that checks complete transaction coverage. Product/category groups expose only transaction count, line quantity and line subtotal; invoice-level measures are not allocated to those groups. The older single-day stock warning is retained as a separately labeled view.
+- POS links to canonical Customers, Products, Orders, Invoicing, Cash Flow, Inventory and Payments through their existing service workflows. The stored service-definition migration does not provision entitlements or records.
+
+### Backend and data integrity
+
+- Changed: `src/pos/report.ts`, `routes.ts`, `metadata.ts`, `registers.ts`, `sales.ts`, `schema.ts`, app and marketplace catalog metadata, POS reporting/configuration/dashboard UI and tests.
+- Added one `GET /organizations/:org/pos/report` service route. The report reads authorized sources and creates no analytical tables or new transaction state machine.
+- `020-pos-customer-dependency` is additive and updates an existing POS service definition/version only when older. It does not create Customers capability, rows, or historical POS links. It is local source behavior only; no hosted/production migration was executed.
+- Authentication, tenant/environment scope, manager/cashier assignment, quote versions/hashes, idempotency, canonical invoice balances, cash observation semantics and stock return evidence remain enforced by the existing authorities.
+
+### Odoo evidence and reference coverage
+
+Odoo 20 source review and AfriCore decisions are in [POS notes](odoo-reference/notes/point_of_sale.md), [research log](odoo-reference/RESEARCH_LOG.md) and [D-007](odoo-reference/DECISIONS.md#d-007-keep-pos-dependencies-and-reporting-on-explicit-canonical-scopes). The supplied POS images were inspected in the conversation. They cover dashboard, cashier, payment, orders, receipt, closing/discrepancy, search/grouping and reporting. This source review and code work do not establish running-browser visual parity.
+
+### Automated verification
+
+| Check | Result |
+| --- | --- |
+| `npm run typecheck` | Pass |
+| `npm run lint` | Pass; 208 frontend modules, no static import cycles |
+| `npm run validate:openapi` | Pass; 59 operations |
+| `npm run validate:platform` | Pass; 467 operations match Express registrations |
+| `npm test` | Pass; 466 passed, 0 failed, 1 PostgreSQL-only test skipped (467 total) |
+| Focused POS backend suite | Pass; 22/22, including the HTTP report-route assertion |
+| Website typecheck and POS UI tests | Pass; typecheck clean, 7/7 tests |
+| POS website production build | Pass; 521 Vite modules, 82 prerendered pages, content/app tests 135/135 |
+| `git diff --check` | Pass |
+
+### Limitations and founder acceptance
+
+- Restaurant floor/table/seating, table transfers/split bills/tips and kitchen preparation are not implemented because the current POS order authority has no corresponding state. Retail remains the supported mode.
+- Checkout confirmation is online-only. There is no durable offline sale queue, physical drawer/printer/camera/terminal adapter, live M-Pesa/Daraja collection, receipt email/SMS delivery, or external provider refund confirmation. Browser printing is not hardware qualification. Sandbox electronic intents do not establish money received.
+- Product images and location-specific availability remain limited by existing canonical POS projections; tracked inventory continues to use Inventory and register warehouse configuration. POS does not post a second Accounting ledger entry.
+- Browser capture/side-by-side screenshot correction, tablet/device checks, founder manual acceptance, PostgreSQL-backed tests and deployed environment checks remain separate gates. These are not implied by source changes or automated tests.
+
+### Founder manual acceptance
+
+1. Install POS with Customers inactive; confirm the app/configuration offers Customers setup and does not create an entitlement or customer. Activate Customers and create/revise a register with real canonical customer and current authorized cashier/manager.
+2. Open a counted shift, sell an untracked item with cash and valid change, confirm once, then use the receipt's print/reprint and New Order actions. Check canonical order, invoice and cash records.
+3. Attempt an underpaid sale, stale quote and duplicate confirmation; verify each remains blocked or idempotent without duplicate invoice/cash/stock records.
+4. Sell a tracked product in an authorized warehouse; verify Inventory remains the only stock authority and a retry does not double-dispatch.
+5. Review order filters and pages across multiple registers and historical sessions; verify cashier cannot see another cashier's session data and manager cannot read an unassigned register.
+6. Record a drawer adjustment and close with a variance; verify expected/count/difference and reason, then confirm the closed session rejects further sales/drawer edits.
+7. Compare reporting across multiple registers, days, cashiers and currencies. Confirm matching-set totals, pagination/drilldown, CSV and print; ensure USD/KES/etc. remain separate and the report states the current invoice/cash/event-date definitions.
+8. Compare the 8 supplied references at matching desktop and tablet viewports, checking behavior and layout; separately test available physical scanners/printers only on actual devices.
+
+### Status
+
+Code changes and local automated checks are complete. Browser screenshots, Odoo side-by-side visual acceptance, founder acceptance and production readiness are **not claimed**.
+
 ## Verification
 
 | Check                                                                                                         | Result                                                              |
@@ -549,7 +610,7 @@ Do not present screenshots or live-flow evidence as completed.
 | CRM         | customers, crm                                                                 | `CrmWorkspace`                                                                                                           | Medium: pipeline exists; Customers duplicates service                                  | Pipeline-first composition, shared customer detail                                                                          |
 | Procurement | customers, products, procurement (+ inventory, accounting, documents)          | Dedicated Odoo-style purchasing workspace (new)                                                                          | Service register remains independent; vendor pricing/agreements unsupported by backend | Verify RFQ → approval → order → receipt → bill flow with an installed app                                                   |
 | Accounting  | accounting                                                                     | Dedicated Odoo-style ledger workspace (new)                                                                              | Service journals screen remains independent; no second ledger                          | Verify forms and reports in an installed browser session                                                                    |
-| POS         | products, orders, invoicing, cash_flow, pos (+ customers, inventory, payments) | Dedicated Odoo-style POS workspace (new): dashboard, orders, products, reporting, configuration, cashier/payment/receipt | Service register remains independent; cashier flow is shared                           | Verify register setup, counted shift, sale, receipt, return, close and nine-screen fidelity in an installed browser session |
+| POS         | products, customers, orders, invoicing, cash_flow, pos (+ inventory, payments) | Dedicated POS workspace: dashboard, orders, products, reporting, configuration, cashier/payment/receipt | Service register remains independent; cashier flow is shared                           | Verify register setup, counted shift, sale, receipt, return, close and supplied-screen fidelity in an installed browser session |
 | Work        | work                                                                           | `WorkWorkspace`                                                                                                          | High                                                                                   | Portfolio/board composition distinct from project service                                                                   |
 | People      | people                                                                         | `PeopleWorkspace`                                                                                                        | High                                                                                   | HR overview; preserve private access rules                                                                                  |
 | Documents   | documents                                                                      | `DocumentsWorkspace`                                                                                                     | High                                                                                   | File manager is legitimate app workspace; distinguish service access                                                        |

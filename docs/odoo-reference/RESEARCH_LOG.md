@@ -26,6 +26,23 @@ that produced a conclusion does.
 
 ## Entries
 
+## 2026-11-19 — Point of Sale workflows and supplied Odoo reference screens
+
+- Question: how does the pinned Odoo 20 Community POS manage register configuration, cashier sessions, product selection, basket/payment/receipt, order history/filters, cash closing, and order analysis, and which interaction/data rules can inform the AfriCore Phase 2.8B expansion?
+- Odoo commit: `373b237cac51920a664a07c242c337e7b095b0c1` (`20.0`), clean at inspection.
+- Read (paths): `addons/point_of_sale/__manifest__.py`; `addons/point_of_sale/models/pos_config.py`; `addons/point_of_sale/models/pos_order.py`; `addons/point_of_sale/models/pos_session.py`; `addons/point_of_sale/models/pos_payment.py`; `addons/point_of_sale/views/pos_config_view.xml`; `addons/point_of_sale/static/src/app/screens/product_screen/product_screen.js`; `addons/point_of_sale/static/src/app/screens/product_screen/order_summary/order_summary.js`; `addons/point_of_sale/static/src/app/screens/payment_screen/payment_screen.js`; `addons/point_of_sale/static/src/app/screens/payment_screen/payment_lines/payment_lines.js`; `addons/point_of_sale/static/src/app/components/product_card/product_card.js`; `addons/point_of_sale/static/src/app/components/numpad/numpad.js`; `addons/point_of_sale/report/pos_order_report.py`; `addons/point_of_sale/tests/test_point_of_sale_flow.py`; `addons/point_of_sale/tests/test_report_pos_order.py`; `addons/point_of_sale/tests/test_report_session.py`.
+- Findings:
+  - `pos.config` owns the register's payment methods, session/cash settings, product and partner load limits, currency/pricelist, warehouse and cashier policy. Open-session controls protect configuration changes that would make the active session inconsistent (`addons/point_of_sale/models/pos_config.py`, `addons/point_of_sale/views/pos_config_view.xml`).
+  - `pos.session` exposes opening, opened, closing-control and closed states and links session cash controls and differences to the session; closing validates pending state before finalization (`addons/point_of_sale/models/pos_session.py`).
+  - `pos.order` links the session/configuration, customer, lines, payments, invoice and refund origin. POS tests exercise duplicate sync, refunds, invoice links and cash rounding (`addons/point_of_sale/models/pos_order.py`, `addons/point_of_sale/tests/test_point_of_sale_flow.py`, `test_frontend.py`).
+  - Payment amounts are separate `pos.payment` records associated with order and configured payment methods; a request and a settled payment are distinct facts (`addons/point_of_sale/models/pos_payment.py`).
+  - Product, order-summary, payment and receipt interactions are implemented as separate client components. `pos.order.report` provides a line-based analytical projection and session reports separately cover cash/session results (`addons/point_of_sale/report/pos_order_report.py`, `addons/point_of_sale/tests/test_report_pos_order.py`, `test_report_session.py`).
+  - The supplied screenshots show dashboard, cashier, payment, orders, receipt, closing, search/grouping and analysis patterns. They are visual references, not evidence of AfriCore runtime behavior.
+- Conclusions: keep POS configuration and shifts explicit, preserve separate payment evidence and retry-safe order/refund links, and use a dedicated analytical source with measures/grouping rather than deriving totals from visible pages. AfriCore must keep its existing service authorities and extend reporting only within current register/cashier access and currency/timezone boundaries.
+- Decision: [D-007](DECISIONS.md#d-007-keep-pos-dependencies-and-reporting-on-explicit-canonical-scopes).
+- Follow-ups: browser captures and side-by-side comparison at matching desktop/tablet sizes, then founder manual acceptance. Qualify any restaurant/offline/device behavior only when authoritative state or the physical integration exists.
+- Limits: focused Odoo 20 source review; no Odoo runtime or test suite was launched, no source or assets were copied, and no source changes were made. Official Payment Methods and Reporting pages were consulted; direct fetches of Multi-cashier, Reprint receipts, Restaurant, and Floors/Tables pages timed out. No running AfriCore screenshot or Odoo comparison was captured in this checkpoint.
+
 ## 2026-11-18 — Accounting documents, ledger lines, reports and reconciliation
 
 - Question: how does Odoo 20 represent invoices and credit notes, enforce journal-line posting, expose account registers and financial reports, and propose bank-reconciliation counterparts; which screen/workflow structures can AfriCore adapt while preserving its single ledger, exact money, approvals, source ownership and tenant boundaries?
@@ -154,3 +171,8 @@ that produced a conclusion does.
 - Decision: [D-006](DECISIONS.md#d-006-keep-supplier-awards-receipt-evidence-and-currency-semantics-explicit).
 - Follow-ups: compare the actual running AfriCore Procurement screenshots against the six references at a similar viewport; founder to verify the local workflow and role-sensitive screens.
 - Limits: focused source review, not an exhaustive purchase/account security audit; no Odoo server was launched. The official Odoo documentation lookup timed out in the prior browser attempt, so this entry relies on pinned source and supplied images. The existing Odoo checkout had no working-tree changes after review and no source/assets were copied.
+## 2026-11-19 — Point of Sale workflows and supplied Odoo reference screens
+
+- Question: how does the pinned Odoo 20 Community POS manage register configuration, cashier sessions, product selection, basket/payment/receipt, order history/filters, cash closing, and order analysis, and which interaction/data rules can inform the AfriCore Phase 2.8B expansion?
+- Planned read-only paths: `addons/point_of_sale/__manifest__.py`; POS models for configuration, orders, sessions and payments; frontend product and payment screens; order/report views and tests where needed. Confirm exact paths and pinned commit before reading.
+- Status: question recorded before source inspection. Findings and AfriCore decisions will be appended after the focused source review; supplied screenshots remain design references, not proof of AfriCore behavior.

@@ -15,6 +15,36 @@ export const posAppViews: POSAppView[] = [
   'reporting',
   'configuration',
 ];
+export const posReportMeasures = [
+  ['invoice_total_minor', 'Invoice total'],
+  ['transaction_count', 'Transactions'],
+  ['paid_minor', 'Paid allocations'],
+  ['outstanding_minor', 'Outstanding'],
+  ['credited_minor', 'Credits'],
+  ['recorded_cash_minor', 'Recorded cash'],
+  ['simulated_electronic_minor', 'Electronic allocations'],
+  ['cash_returned_minor', 'Cash returned'],
+  ['discount_minor', 'Discounts'],
+  ['tax_minor', 'Tax'],
+  ['product_quantity_milli', 'Product quantity'],
+  ['product_subtotal_minor', 'Product line subtotal'],
+] as const;
+export type POSReportMeasureKey = (typeof posReportMeasures)[number][0];
+const posLineBreakdownMeasureKeys: POSReportMeasureKey[] = [
+  'transaction_count',
+  'product_quantity_milli',
+  'product_subtotal_minor',
+];
+export function posReportMeasuresForGroup(groupBy: string) {
+  return groupBy === 'product' || groupBy === 'category'
+    ? posReportMeasures.filter(([key]) => posLineBreakdownMeasureKeys.includes(key))
+    : posReportMeasures;
+}
+export function posReportMeasureForGroup(groupBy: string, measure: POSReportMeasureKey) {
+  return posReportMeasuresForGroup(groupBy).some(([key]) => key === measure)
+    ? measure
+    : 'product_subtotal_minor';
+}
 export const posSectionForView = (view: POSAppView): POSAppSection =>
   view === 'cashier' ? 'dashboard' : view;
 export function posRegisterState(register: any, overview: any) {

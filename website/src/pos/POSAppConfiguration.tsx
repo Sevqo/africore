@@ -31,6 +31,7 @@ export function POSAppConfiguration({
     const row = services.find((item: any) => item.id === id);
     return row?.status || row?.entitlement?.status || 'unavailable';
   };
+  const customersReady = status('customers') === 'active';
   if (!manager)
     return (
       <div className="pos-app-config">
@@ -57,7 +58,12 @@ export function POSAppConfiguration({
             separately rather than shown as working controls.
           </p>
         </div>
-        <button type="button" className="button" onClick={() => setCreating(true)}>
+        <button
+          type="button"
+          className="button"
+          disabled={!customersReady}
+          onClick={() => setCreating(true)}
+        >
           New register
         </button>
       </header>
@@ -112,7 +118,19 @@ export function POSAppConfiguration({
           </div>
         </aside>
         <section className="pos-app-config-main">
-          {creating ? (
+          {!customersReady ? (
+            <div className="alert" role="alert">
+              <h3>Customers service required</h3>
+              <p>
+                Register setup and every POS write use an existing canonical customer. Activate
+                Customers before configuring a register; POS will not create a customer or service
+                entitlement for you.
+              </p>
+              <button type="button" className="button" onClick={() => navigate('Explore Services')}>
+                Activate Customers
+              </button>
+            </div>
+          ) : creating ? (
             <>
               <h3>Create a register policy</h3>
               <p>

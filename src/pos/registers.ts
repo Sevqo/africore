@@ -7,6 +7,8 @@ import { registerInput, reauthorizeRegisterInput } from './contracts';
 import { now } from '../platform/crypto';
 import { businessPolicyFor } from '../operations/business-policy';
 
+const requiredPOSServices = ['products', 'orders', 'invoicing', 'cash_flow', 'customers'];
+
 export async function posManager(a: Access, write = false) {
   const role = await currentMember(a);
   await requireServices(a, ['pos'], !write);
@@ -44,11 +46,9 @@ export async function registerAccess(
     fail(409, 'This register requires current owner policy authorization');
   if (options.write && a.environment !== 'sandbox')
     fail(409, 'POS operations are currently qualified for sandbox evaluation only');
-  if (options.write)
-    for (const service of ['products', 'orders', 'invoicing', 'cash_flow'])
-      await requireServices(a, [service]);
+  if (options.write) for (const service of requiredPOSServices) await requireServices(a, [service]);
   const dependencies = await dbGet(
-    "SELECT COUNT(*) AS n FROM ac_service_entitlements e JOIN ac_services s ON s.id=e.service_id WHERE e.org_id=? AND e.environment=? AND e.service_id IN ('pos','products','orders','invoicing','cash_flow') AND e.status='active' AND s.enabled=1",
+    "SELECT COUNT(*) AS n FROM ac_service_entitlements e JOIN ac_services s ON s.id=e.service_id WHERE e.org_id=? AND e.environment=? AND e.service_id IN ('pos','products','orders','invoicing','cash_flow','customers') AND e.status='active' AND s.enabled=1",
     [a.org, a.environment],
   );
   const write_allowed =
@@ -56,7 +56,7 @@ export async function registerAccess(
     !!register.data.active &&
     !!configuring &&
     ['owner', 'admin'].includes(configuring.role) &&
-    Number(dependencies.n) === 5;
+    Number(dependencies.n) === 6;
   return { register, manager: workspaceManager || assignedManager, role, write_allowed };
 }
 export async function registers(a: Access) {
@@ -109,10 +109,9 @@ export async function saveRegister(a: Access, id: string | null, input: unknown,
         if (Number(count.n) >= 100)
           fail(409, 'A workspace environment supports up to 100 registers');
       }
+      for (const service of requiredPOSServices) await requireServices(a, [service]);
       const customer = await record(a, d.default_customer_id, 'customers');
       if (customer.status === 'archived') fail(409, 'Choose a current canonical customer');
-      for (const service of ['products', 'orders', 'invoicing', 'cash_flow'])
-        await requireServices(a, [service]);
       const policy = await businessPolicyFor(a);
       if (d.manager_discount_bps > policy.configuration.discount_approval_bps)
         fail(409, 'Register discounts cannot exceed the current reviewed Sales policy');
@@ -192,8 +191,7 @@ export async function reauthorizeRegister(a: Access, id: string, input: unknown,
       const register = await read(a, id, 'pos_register');
       if (register.version !== d.expected_version)
         fail(409, 'Review the current register policy before authorizing it');
-      for (const service of ['products', 'orders', 'invoicing', 'cash_flow'])
-        await requireServices(a, [service]);
+      for (const service of requiredPOSServices) await requireServices(a, [service]);
       return update(
         a,
         register,

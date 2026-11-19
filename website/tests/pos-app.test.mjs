@@ -6,6 +6,8 @@ import {
   posAppSections,
   posAppViews,
   posPaymentState,
+  posReportMeasureForGroup,
+  posReportMeasuresForGroup,
   posReference,
   posRegisterState,
   posSectionForView,
@@ -38,6 +40,10 @@ const dashboardSource = fs.readFileSync(
   new URL('../src/pos/POSAppDashboard.tsx', import.meta.url),
   'utf8',
 );
+const reportingSource = fs.readFileSync(
+  new URL('../src/pos/POSAppReporting.tsx', import.meta.url),
+  'utf8',
+);
 const appsWorkspaceSource = fs.readFileSync(
   new URL('../src/apps/AppsWorkspace.tsx', import.meta.url),
   'utf8',
@@ -51,7 +57,7 @@ test('POS app has management navigation while the independent service keeps the 
     ['dashboard', 'orders', 'products', 'reporting', 'configuration'],
   );
   assert.deepEqual(pos.required, {
-    business: ['products', 'orders', 'invoicing', 'cash_flow', 'pos'],
+    business: ['products', 'orders', 'invoicing', 'cash_flow', 'customers', 'pos'],
   });
   assert.equal(
     serviceOpenDestination({ id: 'pos', tabs: ['Point of Sale'] }, 'business').tab,
@@ -72,7 +78,10 @@ test('POS sidebar sections stay inside the installed app', () => {
   assert.equal(appSectionActive(pos, 'reporting', 'Apps', 'reporting', direct), true);
   assert.equal(appSectionActive(pos, 'reporting', 'Reports', 'reporting', direct), false);
   assert.equal(appSectionTarget({ id: 'analytics' }, 'reporting', direct), 'Apps');
-  assert.equal(appSectionActive({ id: 'analytics' }, 'reporting', 'Apps', 'reporting', direct), true);
+  assert.equal(
+    appSectionActive({ id: 'analytics' }, 'reporting', 'Apps', 'reporting', direct),
+    true,
+  );
 });
 
 test('the installed POS app renders the operational workspace, not the service screen', () => {
@@ -102,6 +111,19 @@ test('POS read projections expose real categories, customer identity and payment
   );
 });
 
+test('product and category reports expose only measures supported by line-level groups', () => {
+  for (const groupBy of ['product', 'category']) {
+    assert.deepEqual(
+      posReportMeasuresForGroup(groupBy).map(([key]) => key),
+      ['transaction_count', 'product_quantity_milli', 'product_subtotal_minor'],
+    );
+    assert.equal(posReportMeasureForGroup(groupBy, 'invoice_total_minor'), 'product_subtotal_minor');
+  }
+  assert.equal(posReportMeasureForGroup('register', 'invoice_total_minor'), 'invoice_total_minor');
+  assert.match(reportingSource, /Line subtotal\s+excludes invoice-level discount and tax/);
+  assert.match(reportingSource, /lineGroup\s*\?\s*\(/);
+});
+
 test('cashier and payment use authoritative quote, confirmation and acknowledgement fields', () => {
   assert.ok(cashierSource.includes("'/quote'"));
   assert.ok(cashierSource.includes("'/confirm'"));
@@ -117,6 +139,8 @@ test('cashier and payment use authoritative quote, confirmation and acknowledgem
 
 test('manageable configuration and unsupported capabilities are stated honestly', () => {
   assert.ok(configurationSource.includes('POSRegisterEditor'));
+  assert.ok(configurationSource.includes('Customers service required'));
+  assert.ok(configurationSource.includes("navigate('Explore Services')"));
   assert.ok(configurationSource.includes('Tracked products cannot be sold until Inventory'));
   assert.ok(
     configurationSource.includes(

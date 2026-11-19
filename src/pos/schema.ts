@@ -123,4 +123,31 @@ export async function migratePOS(database = { dbGet, dbExec, dbRun, dbTransactio
       at,
     ]);
   });
+  // POS service dependencies are persisted in the marketplace catalog. Keep
+  // existing workspaces in step with the current POS contract without
+  // provisioning a Customers entitlement or changing any customer records.
+  await database.dbTransaction(async () => {
+    if (
+      await database.dbGet('SELECT version FROM platform_migrations WHERE version=?', [
+        '020-pos-customer-dependency',
+      ])
+    )
+      return;
+    const definition = serviceCatalog.find((service) => service.id === 'pos');
+    if (!definition) throw new Error('POS service metadata required');
+    await database.dbRun(
+      'UPDATE ac_services SET version=?,definition=?,updated_at=? WHERE id=? AND version<?',
+      [
+        definition.version,
+        JSON.stringify(definition),
+        new Date().toISOString(),
+        'pos',
+        definition.version,
+      ],
+    );
+    await database.dbRun('INSERT INTO platform_migrations(version,applied_at) VALUES (?,?)', [
+      '020-pos-customer-dependency',
+      new Date().toISOString(),
+    ]);
+  });
 }

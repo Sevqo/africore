@@ -8,7 +8,7 @@ import { posSale, savePOSDraft, currentSaleQuote } from './quotes';
 import { confirmPOSSale, handoverPOSSale } from './sales';
 import { returnPOSCash } from './returns';
 import { returnPOSStock } from './stock';
-import { posDailyReport } from './report';
+import { posAnalysisReport, posDailyReport } from './report';
 
 export const pos = Router();
 pos.use('/organizations/:org/pos', (_req, res, next) => {
@@ -58,6 +58,10 @@ pos.get(
 pos.get(
   '/organizations/:org/pos/registers/:id/report',
   route(async (req, res) => res.json(await posDailyReport(await access(req), id(req), req.query))),
+);
+pos.get(
+  '/organizations/:org/pos/report',
+  route(async (req, res) => res.json(await posAnalysisReport(await access(req), req.query))),
 );
 pos.post(
   '/organizations/:org/pos/registers/:id/sessions',

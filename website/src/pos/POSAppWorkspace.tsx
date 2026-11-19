@@ -318,12 +318,18 @@ export function POSAppWorkspace({
     ['orders', 'Orders'],
     ['invoicing', 'Invoicing'],
     ['cash_flow', 'Cash Flow'],
+    ['customers', 'Customers'],
   ].map(([id, label]) => {
     const value = status(id);
     return {
       id,
       label: label as string,
-      detail: value === 'active' ? 'Active' : value.replaceAll('_', ' '),
+      detail:
+        id === 'customers' && value !== 'active'
+          ? 'Required for canonical customer records'
+          : value === 'active'
+            ? 'Active'
+            : value.replaceAll('_', ' '),
       state: value === 'active' ? ('ready' as const) : ('blocked' as const),
     };
   });
@@ -333,15 +339,6 @@ export function POSAppWorkspace({
     detail: string;
     state: 'ready' | 'attention' | 'blocked';
   }[] = [
-    {
-      id: 'customers',
-      label: 'Customers',
-      detail:
-        status('customers') === 'active'
-          ? 'Canonical customers available'
-          : 'Walk-in customer requires the Customers service',
-      state: status('customers') === 'active' ? 'ready' : 'attention',
-    },
     {
       id: 'inventory',
       label: 'Inventory & warehouse',
@@ -475,6 +472,7 @@ export function POSAppWorkspace({
           manager={!!directory?.permissions?.configure}
           online={online}
           busy={busy}
+          onSetupCustomers={() => navigate('Explore Services')}
         />
       )}
       {view === 'orders' && !receipt && (
@@ -494,9 +492,11 @@ export function POSAppWorkspace({
         <POSAppReporting
           api={api}
           registers={registers}
+          team={team}
           online={online}
           revision={revision}
           identity={scope}
+          onOpen={openSale}
         />
       )}
       {view === 'configuration' && !receipt && (

@@ -37,7 +37,7 @@ import {
 import { accountingSourceList } from '../erp/accounting-source-list';
 import { financialSnapshot } from '../operations/intelligence';
 import { returnPOSStock, stockReturnChoices } from '../pos/stock';
-import { posDailyReport } from '../pos/report';
+import { posAnalysisReport, posDailyReport } from '../pos/report';
 
 let server: any,
   base: string,
@@ -119,6 +119,12 @@ after(async () => {
 });
 
 test('register configuration validates current canonical scope, assignments and Sales discount policy', async () => {
+  const persistedPOS = await dbGet('SELECT version,definition FROM ac_services WHERE id=?', [
+      'pos',
+    ]),
+    posDefinition = JSON.parse(persistedPOS.definition);
+  assert.equal(Number(persistedPOS.version), 2);
+  assert.ok(posDefinition.dependencies.includes('customers'));
   const a = access();
   await assert.rejects(
     saveRegister(a, null, { ...configuration(), manager_discount_bps: 2001 }, key()),
@@ -159,6 +165,43 @@ test('register configuration validates current canonical scope, assignments and 
     /Activate|not found/,
   );
   await assert.rejects(registerAccess({ ...a, api: true }, r.id), /human/);
+});
+
+test('canonical Customers activation is required for POS register writes and session operations', async () => {
+  const a = access();
+  await dbRun(
+    "UPDATE ac_service_entitlements SET status='disabled' WHERE org_id=? AND environment='sandbox' AND service_id='customers'",
+    [org],
+  );
+  try {
+    assert.equal((await registerAccess(a, registerId)).write_allowed, false);
+    await assert.rejects(
+      registerAccess(a, registerId, { write: true }),
+      /Activate the required service.*customers/,
+    );
+    await assert.rejects(
+      saveRegister(a, registerId, { ...configuration(), expected_version: 1 }, key()),
+      /Activate the required service.*customers/,
+    );
+    await assert.rejects(
+      openSession(
+        cashierAccess(),
+        registerId,
+        {
+          expected_register_version: 1,
+          opening_cash_minor: 0,
+          acknowledge_count: true,
+        },
+        key(),
+      ),
+      /Activate the required service.*customers/,
+    );
+  } finally {
+    await dbRun(
+      "UPDATE ac_service_entitlements SET status='active' WHERE org_id=? AND environment='sandbox' AND service_id='customers'",
+      [org],
+    );
+  }
 });
 
 test('register policy and cashier grants are checked fresh before writes and idempotent replay', async () => {
@@ -819,6 +862,26 @@ test('POS competing sales reserve and dispatch the last exact-location unit once
     ),
     1,
   );
+  const analysis = await posAnalysisReport(cashierAccess(), {
+    register_ids: sales.map((item: any) => item.sale.root_id).join(','),
+    group_by: 'register',
+    payment_method: 'cash',
+  });
+  assert.equal(analysis.coverage?.complete, true);
+  assert.equal(analysis.total_count, 1);
+  assert.equal(analysis.currencies[0].currency, 'KES');
+  assert.equal(analysis.currencies[0].totals.invoice_total_minor, 5000);
+  assert.equal(analysis.currencies[0].totals.product_quantity_milli, 1000);
+  assert.equal(
+    analysis.cash_activity?.find((item: any) => item.currency === 'KES')?.received_minor,
+    5000,
+  );
+  assert.equal(analysis.groups.length, 1);
+  assert.equal(analysis.groups[0].totals.transaction_count, 1);
+  await assert.rejects(
+    posAnalysisReport(cashierAccess(), { register_ids: randomUUID() }),
+    /Register not found/,
+  );
 });
 
 test('a recorded-cash service cap rolls back the complete canonical POS conversion', async () => {
@@ -1238,6 +1301,16 @@ test('cashier HTTP routes enforce register authority and literal product search 
   );
   assert.equal(sales.status, 200);
   assert.ok(sales.data.data.every((s: any) => s.checkout === undefined));
+  const report = await api(
+    root + '/report?register_ids=' + encodeURIComponent(registerId) + '&group_by=register',
+    undefined,
+    cashierCookie,
+    'GET',
+  );
+  assert.equal(report.status, 200, JSON.stringify(report.data));
+  assert.equal(report.data.coverage.complete, true);
+  assert.ok(report.data.total_count >= report.data.records.length);
+  assert.deepEqual(report.data.filters.register_ids, [registerId]);
 });
 
 test('a different current administrator can reauthorize unchanged policy so a revoked-owner shift can close', async () => {

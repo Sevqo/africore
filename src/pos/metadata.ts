@@ -9,6 +9,7 @@ for (const suffix of [
   'GET /registers/:id/products',
   'GET /registers/:id/sales',
   'GET /registers/:id/report',
+  'GET /report',
   'POST /registers/:id/sessions',
   'GET /sessions/:id',
   'POST /sessions/:id/adjustments',

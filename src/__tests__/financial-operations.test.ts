@@ -651,6 +651,8 @@ test('expense retries/corrections and reports share effective records without do
 });
 test('Finance expense and payment registers apply date, currency, search and pagination filters on the server', async () => {
   const expenseDate = today(),
+    paymentAt = new Date(Date.now() - 5 * 60_000),
+    paymentDate = paymentAt.toISOString().slice(0, 10),
     expense = await api(path('/expenses'), 'POST', {
       description: 'Finance filter marker amber',
       amount_minor: 321,
@@ -681,14 +683,14 @@ test('Finance expense and payment registers apply date, currency, search and pag
     status: 'failed',
     amount_minor: 2500,
     currency: 'USD',
-    occurred_at: expenseDate + 'T08:00:00.000Z',
+    occurred_at: paymentAt.toISOString(),
   });
   const filteredPayments = await api(
     path(
       '/payment-events?currency=USD&from=' +
-        expenseDate +
+        paymentDate +
         '&to=' +
-        expenseDate +
+        paymentDate +
         '&q=' +
         encodeURIComponent(reference.toUpperCase()) +
         '&status=failed&limit=1&offset=0',

@@ -31,6 +31,14 @@ decided, and why. An entry here is authoritative for future sessions; a note in
 
 ## Log
 
+### D-007 — Keep POS dependencies and reporting on explicit canonical scopes
+- Date: 2026-11-19
+- Status: accepted
+- Evidence: `odoo-reference/addons/point_of_sale/models/pos_config.py`, `pos_session.py`, `pos_order.py`, `pos_payment.py`, and `report/pos_order_report.py` (+ `RESEARCH_LOG.md` and `notes/point_of_sale.md`, POS expansion entry)
+- Constraint: POS operations must keep canonical customer/order/invoice/payment/stock ownership, current register authorization, exact currency boundaries and honest cash/payment evidence.
+- Decision: declare Customers as a required POS dependency wherever register writes are enabled; do not auto-provision its entitlement or records. Build cross-register reports only from the full bounded set of currently authorized register sales, retain register-local date boundaries and separate currency totals, and label sales, allocations, cash observations and session closures by their actual source and date scope.
+- Consequences: test installation metadata and register rejection when Customers is inactive, cashier/manager/register authorization on report reads, complete aggregates and pagination, currency separation, and independent event-date coverage. Unsupported offline confirmation, restaurant state and physical hardware remain unavailable until their own authoritative state/integration is implemented and verified.
+
 ### D-006 — Keep supplier awards, receipt evidence and currency semantics explicit
 - Date: 2026-11-18
 - Status: accepted

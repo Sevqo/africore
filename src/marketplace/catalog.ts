@@ -73,7 +73,8 @@ export const serviceCatalog: ServiceDefinition[] = [
     ],
     {
       availability: 'evaluation',
-      dependencies: ['products', 'orders', 'invoicing', 'cash_flow'],
+      version: 2,
+      dependencies: ['products', 'orders', 'invoicing', 'cash_flow', 'customers'],
       documentation: '/docs',
     },
   ),

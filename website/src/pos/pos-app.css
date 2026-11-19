@@ -540,6 +540,246 @@
 .pos-app-report-register {
   margin-left: auto;
 }
+.pos-report-heading {
+  align-items: center;
+}
+.pos-report-actions,
+.pos-report-toolbar,
+.pos-report-view-toggle,
+.pos-report-pagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pos-report-filters {
+  margin: 0 24px 14px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(130px, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+.pos-report-filters label,
+.pos-report-toolbar label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  color: #68737e;
+}
+.pos-report-filters input,
+.pos-report-filters select,
+.pos-report-toolbar select {
+  min-width: 0;
+  height: 36px;
+  padding: 0 9px;
+  border: 1px solid #d5dce2;
+  border-radius: 6px;
+  background: #fff;
+  color: #28323b;
+  font: inherit;
+}
+.pos-report-filters .pos-report-registers {
+  grid-row: span 2;
+}
+.pos-report-filters .pos-report-registers select {
+  height: 88px;
+}
+.pos-report-filters small {
+  color: #7b858e;
+  line-height: 1.4;
+}
+.pos-report-toolbar {
+  margin: 0 24px 14px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid #dfe4e8;
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+.pos-report-toolbar label {
+  min-width: 180px;
+}
+.pos-report-definition {
+  margin: -4px 24px 14px;
+  padding: 10px 12px;
+  border-left: 3px solid #176f6b;
+  background: #f1f8f7;
+  color: #52606a;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.pos-report-view-toggle {
+  margin-left: auto;
+  border: 1px solid #d5dce2;
+  border-radius: 6px;
+  padding: 3px;
+}
+.pos-report-view-toggle button {
+  border: 0;
+  background: transparent;
+  color: #4d5963;
+  border-radius: 4px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font: inherit;
+}
+.pos-report-view-toggle button.active {
+  background: #e5f3f1;
+  color: #176f6b;
+}
+.pos-report-metrics {
+  padding: 0 24px 14px;
+}
+.pos-report-metrics article {
+  min-height: 108px;
+  align-content: start;
+}
+.pos-report-metrics small {
+  color: #68737e;
+  font-size: 11px;
+}
+.pos-report-chart,
+.pos-report-groups,
+.pos-report-records {
+  margin: 0 24px 14px;
+  padding: 16px 0;
+  background: #fff;
+}
+.pos-report-chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 18px 12px;
+  color: #75808a;
+  font-size: 12px;
+}
+.pos-report-chart-head h3 {
+  color: #26323b;
+  margin: 0;
+  font-size: 16px;
+}
+.pos-report-chart-head p {
+  margin: 3px 0 0;
+}
+.pos-report-chart-grid {
+  min-height: 260px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  align-items: end;
+  gap: 10px;
+  padding: 14px 18px 4px;
+  border-top: 1px solid #edf0f2;
+}
+.pos-report-chart-currency + .pos-report-chart-currency {
+  border-top: 1px solid #edf0f2;
+}
+.pos-report-chart-currency > h4 {
+  margin: 12px 18px 0;
+  color: #176f6b;
+  font-size: 12px;
+}
+.pos-report-chart-column {
+  min-width: 0;
+  height: 250px;
+  display: grid;
+  grid-template-rows: 24px minmax(40px, 1fr) 36px 16px;
+  justify-items: center;
+  align-items: end;
+  gap: 4px;
+  text-align: center;
+}
+.pos-report-chart-column strong,
+.pos-report-chart-column em {
+  font-size: 10px;
+  font-style: normal;
+  color: #52606a;
+  font-variant-numeric: tabular-nums;
+}
+.pos-report-chart-column small {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #52606a;
+}
+.pos-report-chart-track {
+  width: min(58px, 76%);
+  height: 100%;
+  display: flex;
+  align-items: end;
+  background: linear-gradient(to top, #edf0f2 1px, transparent 1px);
+  border-bottom: 1px solid #dfe4e8;
+}
+.pos-report-chart-track i {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  background: #54a7e8;
+  border-radius: 4px 4px 0 0;
+}
+.pos-report-chart .pos-app-table-wrap,
+.pos-report-records .pos-app-table-wrap {
+  margin: 0;
+  border-left: 0;
+  border-right: 0;
+  border-radius: 0;
+}
+.pos-report-groups .pos-app-table,
+.pos-report-records .pos-app-table {
+  min-width: 1080px;
+}
+.pos-report-pagination {
+  justify-content: center;
+  padding: 14px 18px 0;
+  color: #68737e;
+  font-size: 12px;
+}
+.pos-report-daily-details {
+  margin: 0 24px 20px;
+  border: 1px solid #dfe4e8;
+  border-radius: 8px;
+  background: #f9fbfc;
+  padding: 12px;
+}
+.pos-report-daily-details > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #34414b;
+}
+@media print {
+  .pos-report-actions,
+  .pos-report-filters,
+  .pos-report-toolbar,
+  .pos-report-records,
+  .pos-report-daily-details,
+  .pos-app-sidebar,
+  .pos-app-shell-header,
+  .pos-app-nav {
+    display: none !important;
+  }
+  .pos-app-reporting,
+  .pos-report-chart,
+  .pos-report-groups {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+  .pos-report-chart-grid {
+    break-inside: avoid;
+  }
+  .pos-report-groups {
+    break-before: page;
+  }
+  .pos-report-groups .pos-app-table-wrap {
+    overflow: visible;
+  }
+  .pos-report-groups .pos-app-table {
+    min-width: 0;
+    font-size: 8px;
+  }
+}
 .pos-app-config-layout {
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
@@ -1344,6 +1584,22 @@
   .pos-app-config-layout {
     grid-template-columns: 200px minmax(0, 1fr);
   }
+  .pos-report-filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+  .pos-report-chart,
+  .pos-report-groups,
+  .pos-report-records,
+  .pos-report-daily-details {
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+  .pos-report-metrics {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
 }
 @media (max-width: 820px) {
   .pos-app-module {
@@ -1418,6 +1674,22 @@
   .pos-app-config-layout {
     padding-left: 12px;
     padding-right: 12px;
+  }
+  .pos-report-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pos-report-heading {
+    align-items: flex-start;
+  }
+  .pos-report-actions {
+    flex-wrap: wrap;
+  }
+  .pos-report-chart-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .pos-report-chart-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .pos-app-alert {
     margin-left: 12px;

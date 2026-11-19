@@ -17,6 +17,7 @@ export function POSAppDashboard({
   manager,
   online,
   busy,
+  onSetupCustomers,
 }: {
   directory: any;
   overviews: Record<string, any>;
@@ -39,6 +40,7 @@ export function POSAppDashboard({
   manager: boolean;
   online: boolean;
   busy: boolean;
+  onSetupCustomers: () => void;
 }) {
   const [search, setSearch] = useState(''),
     [opening, setOpening] = useState<any>(null);
@@ -94,6 +96,15 @@ export function POSAppDashboard({
           </article>
         ))}
       </section>
+      {readiness.some((item) => item.id === 'customers' && item.state === 'blocked') && (
+        <p role="alert" className="alert">
+          POS requires the Customers service for canonical walk-in and named customer records. No
+          customer or entitlement is created automatically.{' '}
+          <button type="button" className="quiet-button" onClick={onSetupCustomers}>
+            Activate Customers
+          </button>
+        </p>
+      )}
       <div className="pos-app-toolbar">
         <div className="pos-app-search">
           <span aria-hidden="true">⌕</span>

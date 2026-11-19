@@ -23,9 +23,9 @@ export const appCatalog: AppDefinition[] = [
     icon: 'payment',
     description:
       'Run counted counter shifts and connect reviewed cash or sandbox electronic sales to shared products, inventory and invoices.',
-    version: 1,
+    version: 2,
     kinds: ['business'],
-    required: { business: ['products', 'orders', 'invoicing', 'cash_flow', 'pos'] },
+    required: { business: ['products', 'orders', 'invoicing', 'cash_flow', 'customers', 'pos'] },
     optional: ['inventory', 'payments', 'fulfillment', 'accounting'],
     navigation: [
       { label: 'Dashboard', section: 'dashboard' },

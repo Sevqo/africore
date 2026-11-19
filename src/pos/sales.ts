@@ -134,7 +134,7 @@ export async function confirmPOSSale(a: Access, id: string, input: unknown, key:
           confirmed_by: a.actor,
           confirmed_by_label: profile?.display_name || profile?.email || a.actor,
           ...canonical,
-          tender,
+          tender: { ...tender, payment_intent: d.payment_intent },
           cash_receipt_id: cash?.receipt_id || null,
           checkout,
           handover: d.handover_now ? 'recorded' : 'not_recorded',
