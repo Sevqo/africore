@@ -31,6 +31,14 @@ decided, and why. An entry here is authoritative for future sessions; a note in
 
 ## Log
 
+### D-008 — Keep Work effort in its own audited authority
+- Date: 2026-11-19
+- Status: accepted
+- Evidence: `odoo-reference/addons/project/models/project_task.py`, `project_task_recurrence.py`, `report/project_task_burndown_chart_report.py`, and `addons/hr_timesheet/models/account_analytic_line.py` (+ `RESEARCH_LOG.md`, Work expansion entry)
+- Constraint: Work must preserve project privacy, current human identity, exact time-entry provenance, and Finance/People separation while supporting durable timers and truthful history.
+- Decision: bind each time entry to its author and project/task, keep manager review separate, make approved entries immutable, and exclude rejected entries from recorded-effort totals. Timer state is server-owned and one active timer is allowed per user/environment. Recurring generation uses a unique rule/date key and explicit clone policy. Historical charts start at a captured cutover baseline; earlier periods are labeled unavailable. Work never creates payroll or invoices from time, milestone completion, or estimates.
+- Consequences: test tenant/environment/project isolation, author/reviewer permissions, idempotent timers and recurrence, exact elapsed seconds, immutable approvals, and report coverage. Unattended recurrence is not promised unless the existing worker can be shown to run reliably in the deployment.
+
 ### D-007 — Keep POS dependencies and reporting on explicit canonical scopes
 - Date: 2026-11-19
 - Status: accepted

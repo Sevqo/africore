@@ -55,6 +55,9 @@ export function ProjectEditor({
               members: participants,
               stages,
               deadline: d.deadline || null,
+              starts_on: d.starts_on || null,
+              priority: d.priority,
+              planned_minutes: Number(d.planned_minutes),
               status: d.status,
               customer_id: d.customer || null,
               order_id: d.order || null,
@@ -114,6 +117,25 @@ export function ProjectEditor({
             </Field>
             <Field label="Project deadline">
               <input name="deadline" type="date" defaultValue={p?.data.deadline || ''} />
+            </Field>
+            <Field label="Project start date">
+              <input name="starts_on" type="date" defaultValue={p?.data.starts_on || ''} />
+            </Field>
+            <Field label="Priority">
+              <select name="priority" defaultValue={p?.data.priority || 'normal'}>
+                {['low', 'normal', 'high', 'urgent'].map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Planned effort (minutes)">
+              <input
+                name="planned_minutes"
+                type="number"
+                min={0}
+                max={525600}
+                defaultValue={p?.data.planned_minutes || 0}
+              />
             </Field>
             <Field label="Project status">
               <select name="status" defaultValue={p?.status || 'active'}>
@@ -256,6 +278,42 @@ export function ProjectEditor({
                     }
                   />
                 </Field>
+                <Field label="Completion criteria">
+                  <input
+                    value={m.criteria || ''}
+                    maxLength={2000}
+                    onChange={(e) =>
+                      setMilestones((v) =>
+                        v.map((n) => (n.id === m.id ? { ...n, criteria: e.target.value } : n)),
+                      )
+                    }
+                  />
+                </Field>
+                <Field label="Milestone owner">
+                  <select
+                    value={m.owner_id || ''}
+                    onChange={(e) =>
+                      setMilestones((v) =>
+                        v.map((n) =>
+                          n.id === m.id ? { ...n, owner_id: e.target.value || null } : n,
+                        ),
+                      )
+                    }
+                  >
+                    <option value="">No owner</option>
+                    {members
+                      .filter((member) =>
+                        p?.data.members.some(
+                          (item: any) => item.user_id === member.id && item.permission !== 'view',
+                        ),
+                      )
+                      .map((member) => (
+                        <option key={member.id} value={member.id}>
+                          {member.display_name || member.email}
+                        </option>
+                      ))}
+                  </select>
+                </Field>
                 <label className="checkbox-field">
                   <input
                     type="checkbox"
@@ -283,7 +341,14 @@ export function ProjectEditor({
               onClick={() =>
                 setMilestones((v) => [
                   ...v,
-                  { id: crypto.randomUUID(), name: '', due_on: '', completed: false },
+                  {
+                    id: crypto.randomUUID(),
+                    name: '',
+                    due_on: '',
+                    completed: false,
+                    owner_id: null,
+                    criteria: '',
+                  },
                 ])
               }
             >
@@ -333,7 +398,8 @@ export function TaskEditor({
     [followers, setFollowers] = useState<string[]>(t?.data.followers || []),
     [parentId, setParentId] = useState(t?.parent_id || initialParent || '');
   const [memberSearch, setMemberSearch] = useState(''),
-    [assignee, setAssignee] = useState(t?.data.assignee_id || '');
+    [assignee, setAssignee] = useState(t?.data.assignee_id || ''),
+    [recurrenceEnabled, setRecurrenceEnabled] = useState(!!t?.data.recurrence?.active);
   const matchesMember = (m: any) =>
     !memberSearch ||
     (m.display_name || m.email || '').toLowerCase().includes(memberSearch.toLowerCase());
@@ -371,6 +437,19 @@ export function TaskEditor({
                   dependencies,
                   checklist,
                   estimate_minutes: Number(d.estimate),
+                  milestone_id: d.milestone_id || null,
+                  task_status: d.task_status,
+                  recurrence: recurrenceEnabled
+                    ? {
+                        rule_id: t?.data.recurrence?.rule_id || null,
+                        unit: d.recurrence_unit,
+                        interval: Number(d.recurrence_interval),
+                        ends_on: d.recurrence_end || null,
+                        next_on: t?.data.recurrence?.next_on || d.recurrence_start || undefined,
+                        active: true,
+                      }
+                    : null,
+                  recurrence_occurrence: t?.data.recurrence_occurrence || null,
                 },
               },
             );
@@ -393,6 +472,36 @@ export function TaskEditor({
                 {p.data.stages.map((s: any) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Task status">
+              <select
+                name="task_status"
+                defaultValue={
+                  t?.data.task_status || (t?.status === 'completed' ? 'completed' : 'in_progress')
+                }
+              >
+                {[
+                  ['in_progress', 'In progress'],
+                  ['changes_requested', 'Changes requested'],
+                  ['approved', 'Approved'],
+                  ['completed', 'Completed'],
+                  ['cancelled', 'Cancelled'],
+                ].map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Milestone">
+              <select name="milestone_id" defaultValue={t?.data.milestone_id || ''}>
+                <option value="">No milestone</option>
+                {p.data.milestones.map((milestone: any) => (
+                  <option key={milestone.id} value={milestone.id}>
+                    {milestone.name}
                   </option>
                 ))}
               </select>
@@ -475,6 +584,62 @@ export function TaskEditor({
             value={dependencies}
             onChange={setDependencies}
           />
+          <fieldset>
+            <legend>Recurring task</legend>
+            <label className="checkbox-field">
+              <input
+                type="checkbox"
+                checked={recurrenceEnabled}
+                onChange={(e) => setRecurrenceEnabled(e.target.checked)}
+              />
+              Enable recurrence
+            </label>
+            {recurrenceEnabled && (
+              <div className="form-grid">
+                <Field label="Repeat interval">
+                  <input
+                    name="recurrence_interval"
+                    type="number"
+                    min={1}
+                    max={365}
+                    defaultValue={t?.data.recurrence?.interval || 1}
+                  />
+                </Field>
+                <Field label="Repeat unit">
+                  <select name="recurrence_unit" defaultValue={t?.data.recurrence?.unit || 'week'}>
+                    {[
+                      ['day', 'Days'],
+                      ['week', 'Weeks'],
+                      ['month', 'Months'],
+                      ['year', 'Years'],
+                    ].map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Next occurrence date">
+                  <input
+                    name="recurrence_start"
+                    type="date"
+                    defaultValue={t?.data.recurrence?.next_on || ''}
+                  />
+                </Field>
+                <Field label="Repeat until (optional)">
+                  <input
+                    name="recurrence_end"
+                    type="date"
+                    defaultValue={t?.data.recurrence?.ends_on || ''}
+                  />
+                </Field>
+              </div>
+            )}
+            <p>
+              Occurrences are generated through an authorized action; opening this form does not
+              create tasks.
+            </p>
+          </fieldset>
           <fieldset>
             <legend>Checklist</legend>
             {checklist.map((c) => (

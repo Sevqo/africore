@@ -1,5 +1,5 @@
 import { workBlocked, workQuickFilter, loadWorkDirectory } from './work-app-model';
-import { WorkTaskTable, WorkAnalysis } from './WorkTaskTable';
+import { WorkTaskTable } from './WorkTaskTable';
 import { WorkAutomation } from './WorkAutomation';
 import { WorkTemplates } from './WorkTemplates';
 import { WorkReviews } from './WorkReviews';
@@ -11,6 +11,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Field, Form, today, type API } from '../operations/UI';
 import { useIdempotentAPI } from './useIdempotentAPI';
 import { ProjectEditor, TaskEditor } from './WorkEditors';
+import { WorkTimesheets } from './WorkTimesheets';
+import { WorkProjectUpdates } from './WorkProjectUpdates';
+import { WorkReports } from './WorkReports';
+import { WorkSchedulePlanner } from './WorkSchedulePlanner';
 
 export function WorkWorkspace({
   api: provided,
@@ -76,6 +80,10 @@ export function WorkWorkspace({
                     'workload',
                     'report',
                     'discussions',
+                    'timesheets',
+                    'planning',
+                    'reporting',
+                    'configuration',
                   ].includes(requested)
                   ? requested
                   : 'board',
@@ -160,7 +168,18 @@ export function WorkWorkspace({
   }, [scope, selected, revision]);
   useEffect(() => {
     if (
-      ['calendar', 'timeline', 'workload', 'my-work', 'discussions', 'workflows'].includes(section)
+      [
+        'calendar',
+        'timeline',
+        'workload',
+        'my-work',
+        'discussions',
+        'workflows',
+        'timesheets',
+        'planning',
+        'reporting',
+        'configuration',
+      ].includes(section)
     )
       setView(section);
     else if (section === 'dashboard' || section === 'board') setView('board');
@@ -229,6 +248,12 @@ export function WorkWorkspace({
         projectGroup === 'owner' ? name(v.owner_id) : projectGroup === 'status' ? v.status : '';
       return key(a).localeCompare(key(b)) || a.data.name.localeCompare(b.data.name);
     });
+  useEffect(() => {
+    if (view === 'configuration' && board?.project) {
+      if (board.permissions.manage) setEditingProject(board.project);
+      else setError('Project configuration requires project management access.');
+    }
+  }, [view, board?.project?.id, board?.permissions?.manage]);
   async function move(task: any, stage: string, before: string | null) {
     if (!board || busy || !board.permissions.write) return;
     const previous = board;
@@ -407,6 +432,31 @@ export function WorkWorkspace({
         }}
       />
     );
+  if (view === 'timesheets')
+    return (
+      <div className="apps-workspace work-app">
+        <nav className="work-module-nav" aria-label="Work modules">
+          <button onClick={() => changeView('board')}>Projects</button>
+          <button
+            onClick={() => {
+              setSelected('');
+              changeView('my-work');
+            }}
+          >
+            My Tasks
+          </button>
+          <button onClick={() => changeView('planning')}>Planning</button>
+          <button aria-current="page" onClick={() => changeView('timesheets')}>
+            Timesheets
+          </button>
+          <button onClick={() => changeView(selected ? 'report' : 'reporting')}>Reporting</button>
+          <button disabled={!board?.permissions.manage} onClick={() => setEditingProject(p)}>
+            Configuration
+          </button>
+        </nav>
+        <WorkTimesheets api={api} revision={revision} members={members} />
+      </div>
+    );
   return (
     <div className="apps-workspace work-app">
       <nav className="work-module-nav" aria-label="Work modules">
@@ -415,6 +465,7 @@ export function WorkWorkspace({
             setSelected('');
             setViewing(null);
             setQuery('');
+            setView('board');
             const url = new URL(location.href);
             url.searchParams.delete('work_target');
             history.pushState(null, '', url.pathname + url.search + url.hash);
@@ -422,13 +473,21 @@ export function WorkWorkspace({
         >
           Projects
         </button>
-        <button disabled={!selected} onClick={() => changeView('list')}>
-          Tasks
+        <button
+          onClick={() => {
+            setSelected('');
+            changeView('my-work');
+          }}
+        >
+          My Tasks
         </button>
-        <button disabled={!selected} onClick={() => changeView('report')}>
-          Reporting
-        </button>
-        <button disabled={!board?.permissions.manage} onClick={() => setEditingProject(p)}>
+        <button onClick={() => changeView(selected ? 'timeline' : 'planning')}>Planning</button>
+        <button onClick={() => changeView('timesheets')}>Timesheets</button>
+        <button onClick={() => changeView(selected ? 'report' : 'reporting')}>Reporting</button>
+        <button
+          disabled={!selected || !board?.permissions.manage}
+          onClick={() => setEditingProject(p)}
+        >
           Configuration
         </button>
       </nav>
@@ -449,7 +508,7 @@ export function WorkWorkspace({
       {!directory && !error && <p role="status">Loading authorized projects…</p>}
       {directory && !viewing && !selected && !editingProject && !editingTask && (
         <>
-          {section === 'my-work' && (
+          {view === 'my-work' && (
             <MyWork
               api={api}
               scope={scope}
@@ -460,193 +519,253 @@ export function WorkWorkspace({
               }}
             />
           )}
-          <section className="panel">
-            <div className="section-heading">
-              <h2>Projects</h2>
-              <button
-                className="button"
-                disabled={!directory.can_create || !members.length}
-                onClick={() => setEditingProject({ new: true })}
-              >
-                Create project
-              </button>
-            </div>
-            <p>
-              Projects are private to their participants and workspace administrators. Task counts
-              cover the selected project.
-            </p>
-            {directory.truncated && (
-              <p role="status">Showing the first {directory.limit} authorized projects.</p>
-            )}
-            {!selected && (
-              <div className="work-toolbar">
-                <Field label="Search projects">
-                  <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
-                </Field>
-                <Field label="Project filter">
-                  <select value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)}>
-                    {['all', 'mine', 'active', 'on_hold', 'completed', 'archived'].map((v) => (
-                      <option key={v} value={v}>
-                        {v === 'mine'
-                          ? 'My projects'
-                          : v === 'all'
-                            ? 'All authorized projects'
-                            : v.replaceAll('_', ' ')}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Group projects by">
-                  <select value={projectGroup} onChange={(e) => setProjectGroup(e.target.value)}>
-                    <option value="none">None</option>
-                    <option value="owner">Owner</option>
-                    <option value="status">Status</option>
-                  </select>
-                </Field>
-                <button
-                  className="secondary-button"
-                  aria-pressed={projectMode === 'cards'}
-                  onClick={() => setProjectMode('cards')}
+          {view === 'planning' && (
+            <section className="panel">
+              <h2>Planning</h2>
+              <p>Choose an authorized project to open its scheduled task timeline.</p>
+              <Field label="Project">
+                <select
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      setSelected(e.target.value);
+                      setView('timeline');
+                      recordUrl(e.target.value, 'timeline');
+                    }
+                  }}
                 >
-                  Cards
-                </button>
-                <button
-                  className="secondary-button"
-                  aria-pressed={projectMode === 'list'}
-                  onClick={() => setProjectMode('list')}
-                >
-                  List
-                </button>
-              </div>
-            )}
-            {!selected && projectMode === 'cards' && (
-              <div className="project-directory">
-                {projects.map((project: any, index: number) => (
-                  <div className="work-project-card-wrap" key={project.id}>
-                    {projectGroup !== 'none' &&
-                      (index === 0 ||
-                        (projectGroup === 'owner'
-                          ? project.owner_id !== projects[index - 1].owner_id
-                          : project.status !== projects[index - 1].status)) && (
-                        <h3>
-                          {projectGroup === 'owner' ? name(project.owner_id) : project.status}
-                        </h3>
-                      )}
-                    <button
-                      className="project-directory-card"
-                      key={project.id}
-                      onClick={() => {
-                        setViewing(null);
-                        setView('board');
-                        recordUrl(project.id, 'board');
-                        setSelected(project.id);
-                        setQuery('');
-                      }}
-                    >
-                      <span className="project-directory-icon" aria-hidden="true">
-                        {project.data.name.slice(0, 1).toUpperCase()}
-                      </span>
-                      <strong>{project.data.name}</strong>
-                      <p>{project.data.description || 'Private project workspace'}</p>
-                      <p>
-                        {name(project.owner_id)}
-                        {project.due_on ? ' · Due ' + project.due_on : ''}
-                      </p>
-                      <small>
-                        <strong>{project.task_summary?.total ?? '—'} Tasks</strong> ·{' '}
-                        {project.task_summary?.completed ?? '—'} completed ·{' '}
-                        {project.task_summary?.overdue ?? '—'} overdue · {project.status} ·{' '}
-                        {project.data.milestones.filter((m: any) => m.completed).length}/
-                        {project.data.milestones.length} milestones
-                      </small>
-                      <span className="work-card-members" aria-label="Project participants">
-                        {project.data.members.slice(0, 5).map((m: any) => (
-                          <span
-                            className="work-assignee-avatar"
-                            key={m.user_id}
-                            title={name(m.user_id)}
-                          >
-                            {name(m.user_id)
-                              .split(' ')
-                              .map((v: string) => v[0])
-                              .slice(0, 2)
-                              .join('')}
-                          </span>
-                        ))}
-                      </span>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            {!selected && projectMode === 'list' && (
-              <div className="table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Project</th>
-                      <th>Owner</th>
-                      <th>Deadline</th>
-                      <th>Status</th>
-                      <th>Tasks</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {projects.map((item: any) => (
-                      <tr key={item.id}>
-                        <td>
-                          <button
-                            className="quiet-button"
-                            onClick={() => {
-                              recordUrl(item.id, 'board');
-                              setSelected(item.id);
-                              setQuery('');
-                            }}
-                          >
-                            {item.data.name}
-                          </button>
-                        </td>
-                        <td>{name(item.owner_id)}</td>
-                        <td>{item.due_on || 'Unscheduled'}</td>
-                        <td>{item.status}</td>
-                        <td>{item.task_summary?.total ?? '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            {!projects.length && <p>No projects match the current search and filters.</p>}
-            <Field label="Open project">
-              <select
-                value={selected}
-                onChange={(e) => {
-                  setBoard(null);
-                  setViewing(null);
-                  setSelected(e.target.value);
-                  setQuery('');
-                  if (e.target.value) recordUrl(e.target.value, 'board');
-                }}
-              >
-                <option value="">Choose a project</option>
-                {directory.data.map((n: any) => (
-                  <option key={n.id} value={n.id}>
-                    {n.data.name} · {n.status}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            {!directory.data.length && (
+                  <option value="">Choose a project</option>
+                  {directory.data.map((item: any) => (
+                    <option key={item.id} value={item.id}>
+                      {item.data.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </section>
+          )}
+          {view === 'configuration' && (
+            <section className="panel">
+              <h2>Project configuration</h2>
               <p>
-                No projects are visible to you yet.{' '}
-                {!directory.can_create
-                  ? 'A workspace owner, administrator or operational member can create a project and invite you.'
-                  : !members.length
-                    ? 'Load current Team members before choosing a project owner.'
-                    : 'Create a project to start your task board.'}
+                Choose a project you manage to edit its dates, stages, milestones, participants and
+                planning settings.
               </p>
-            )}
-          </section>
+              <Field label="Project">
+                <select
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      setSelected(e.target.value);
+                      recordUrl(e.target.value, 'configuration');
+                    }
+                  }}
+                >
+                  <option value="">Choose a project</option>
+                  {directory.data.map((item: any) => (
+                    <option key={item.id} value={item.id}>
+                      {item.data.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </section>
+          )}
+          {view === 'reporting' && (
+            <WorkReports api={api} projects={directory.data} members={members} />
+          )}
+          {view !== 'my-work' && !['reporting', 'planning', 'configuration'].includes(view) && (
+            <section className="panel">
+              <div className="section-heading">
+                <h2>Projects</h2>
+                <button
+                  className="button"
+                  disabled={!directory.can_create || !members.length}
+                  onClick={() => setEditingProject({ new: true })}
+                >
+                  Create project
+                </button>
+              </div>
+              <p>
+                Projects are private to their participants and workspace administrators. Task counts
+                cover the selected project.
+              </p>
+              {directory.truncated && (
+                <p role="status">Showing the first {directory.limit} authorized projects.</p>
+              )}
+              {!selected && (
+                <div className="work-toolbar">
+                  <Field label="Search projects">
+                    <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
+                  </Field>
+                  <Field label="Project filter">
+                    <select
+                      value={projectFilter}
+                      onChange={(e) => setProjectFilter(e.target.value)}
+                    >
+                      {['all', 'mine', 'active', 'on_hold', 'completed', 'archived'].map((v) => (
+                        <option key={v} value={v}>
+                          {v === 'mine'
+                            ? 'My projects'
+                            : v === 'all'
+                              ? 'All authorized projects'
+                              : v.replaceAll('_', ' ')}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Group projects by">
+                    <select value={projectGroup} onChange={(e) => setProjectGroup(e.target.value)}>
+                      <option value="none">None</option>
+                      <option value="owner">Owner</option>
+                      <option value="status">Status</option>
+                    </select>
+                  </Field>
+                  <button
+                    className="secondary-button"
+                    aria-pressed={projectMode === 'cards'}
+                    onClick={() => setProjectMode('cards')}
+                  >
+                    Cards
+                  </button>
+                  <button
+                    className="secondary-button"
+                    aria-pressed={projectMode === 'list'}
+                    onClick={() => setProjectMode('list')}
+                  >
+                    List
+                  </button>
+                </div>
+              )}
+              {!selected && projectMode === 'cards' && (
+                <div className="project-directory">
+                  {projects.map((project: any, index: number) => (
+                    <div className="work-project-card-wrap" key={project.id}>
+                      {projectGroup !== 'none' &&
+                        (index === 0 ||
+                          (projectGroup === 'owner'
+                            ? project.owner_id !== projects[index - 1].owner_id
+                            : project.status !== projects[index - 1].status)) && (
+                          <h3>
+                            {projectGroup === 'owner' ? name(project.owner_id) : project.status}
+                          </h3>
+                        )}
+                      <button
+                        className="project-directory-card"
+                        key={project.id}
+                        onClick={() => {
+                          setViewing(null);
+                          setView('board');
+                          recordUrl(project.id, 'board');
+                          setSelected(project.id);
+                          setQuery('');
+                        }}
+                      >
+                        <span className="project-directory-icon" aria-hidden="true">
+                          {project.data.name.slice(0, 1).toUpperCase()}
+                        </span>
+                        <strong>{project.data.name}</strong>
+                        <p>{project.data.description || 'Private project workspace'}</p>
+                        <p>
+                          {name(project.owner_id)}
+                          {project.due_on ? ' · Due ' + project.due_on : ''}
+                        </p>
+                        <small>
+                          <strong>{project.task_summary?.total ?? '—'} Tasks</strong> ·{' '}
+                          {project.task_summary?.completed ?? '—'} completed ·{' '}
+                          {project.task_summary?.overdue ?? '—'} overdue · {project.status} ·{' '}
+                          {project.data.milestones.filter((m: any) => m.completed).length}/
+                          {project.data.milestones.length} milestones
+                        </small>
+                        <span className="work-card-members" aria-label="Project participants">
+                          {project.data.members.slice(0, 5).map((m: any) => (
+                            <span
+                              className="work-assignee-avatar"
+                              key={m.user_id}
+                              title={name(m.user_id)}
+                            >
+                              {name(m.user_id)
+                                .split(' ')
+                                .map((v: string) => v[0])
+                                .slice(0, 2)
+                                .join('')}
+                            </span>
+                          ))}
+                        </span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {!selected && projectMode === 'list' && (
+                <div className="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Project</th>
+                        <th>Owner</th>
+                        <th>Deadline</th>
+                        <th>Status</th>
+                        <th>Tasks</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {projects.map((item: any) => (
+                        <tr key={item.id}>
+                          <td>
+                            <button
+                              className="quiet-button"
+                              onClick={() => {
+                                recordUrl(item.id, 'board');
+                                setSelected(item.id);
+                                setQuery('');
+                              }}
+                            >
+                              {item.data.name}
+                            </button>
+                          </td>
+                          <td>{name(item.owner_id)}</td>
+                          <td>{item.due_on || 'Unscheduled'}</td>
+                          <td>{item.status}</td>
+                          <td>{item.task_summary?.total ?? '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {!projects.length && <p>No projects match the current search and filters.</p>}
+              <Field label="Open project">
+                <select
+                  value={selected}
+                  onChange={(e) => {
+                    setBoard(null);
+                    setViewing(null);
+                    setSelected(e.target.value);
+                    setQuery('');
+                    if (e.target.value) recordUrl(e.target.value, 'board');
+                  }}
+                >
+                  <option value="">Choose a project</option>
+                  {directory.data.map((n: any) => (
+                    <option key={n.id} value={n.id}>
+                      {n.data.name} · {n.status}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              {!directory.data.length && (
+                <p>
+                  No projects are visible to you yet.{' '}
+                  {!directory.can_create
+                    ? 'A workspace owner, administrator or operational member can create a project and invite you.'
+                    : !members.length
+                      ? 'Load current Team members before choosing a project owner.'
+                      : 'Create a project to start your task board.'}
+                </p>
+              )}
+            </section>
+          )}
         </>
       )}
       {selected && !board && !error && <p role="status">Loading project tasks…</p>}
@@ -760,6 +879,7 @@ export function WorkWorkspace({
               'workload',
               'report',
               'discussions',
+              'updates',
             ].map((v) => (
               <button
                 key={v}
@@ -771,7 +891,7 @@ export function WorkWorkspace({
               </button>
             ))}
           </nav>
-          {!['discussions', 'workload'].includes(view) && (
+          {!['discussions', 'workload', 'updates'].includes(view) && (
             <div className="work-toolbar">
               <Field label="Search loaded project tasks">
                 <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
@@ -869,19 +989,38 @@ export function WorkWorkspace({
               )}
             </section>
           ) : ['calendar', 'timeline'].includes(view) ? (
-            <WorkDateViews
-              tasks={filtered}
-              milestones={p.data.milestones}
-              view={view}
-              onOpen={openTask}
-            />
+            <>
+              <WorkDateViews
+                tasks={filtered}
+                milestones={p.data.milestones}
+                view={view}
+                onOpen={openTask}
+              />
+              {view === 'timeline' && board.permissions.write && (
+                <WorkSchedulePlanner
+                  api={api}
+                  projectId={p.id}
+                  tasks={tasks}
+                  changed={() => setRevision((v) => v + 1)}
+                />
+              )}
+            </>
           ) : view === 'report' ? (
-            <WorkAnalysis
-              milestones={p.data.milestones}
-              name={name}
-              tasks={filtered}
-              stages={p.data.stages}
-              truncated={board.tasks_truncated ?? board.truncated}
+            <WorkReports
+              api={api}
+              projects={directory?.data || []}
+              projectId={p.id}
+              members={members}
+            />
+          ) : view === 'updates' ? (
+            <WorkProjectUpdates
+              project={p}
+              tasks={tasks}
+              members={members}
+              api={api}
+              canManage={board.permissions.manage}
+              revision={revision}
+              changed={() => setRevision((v) => v + 1)}
             />
           ) : view === 'workload' ? (
             <section className="panel">

@@ -255,12 +255,17 @@ test('shared board version prevents simultaneous overwrites and stale retries', 
     expected_project_version: current.project.version,
     expected_task_version: before.version,
     stage: 'complete',
+    task_status: 'completed',
   });
   assert.equal(result.status, 200, JSON.stringify(result.data));
   const b = current.tasks.find((t: any) => t.id === taskB);
   const done = await api(root() + '/work/projects/' + projectId + '/tasks/' + taskB, 'PUT', {
     expected_version: b.version,
-    task: task('Review synthetic shipment', { stage: 'complete', dependencies: [taskA] }),
+    task: task('Review synthetic shipment', {
+      stage: 'complete',
+      task_status: 'completed',
+      dependencies: [taskA],
+    }),
   });
   assert.equal(done.status, 200, JSON.stringify(done.data));
 });
@@ -279,6 +284,7 @@ test('subtasks and checklists must complete before a parent; historical revision
   const parentTask = {
     ...parent.data.data,
     stage: 'complete',
+    task_status: 'completed',
     checklist: parent.data.data.checklist.map((c: any) => ({ ...c, completed: true })),
   };
   assert.equal(
@@ -294,7 +300,7 @@ test('subtasks and checklists must complete before a parent; historical revision
     (
       await api(root() + '/work/projects/' + projectId + '/tasks/' + child.data.id, 'PUT', {
         expected_version: 1,
-        task: { ...child.data.data, stage: 'complete' },
+        task: { ...child.data.data, stage: 'complete', task_status: 'completed' },
       })
     ).status,
     200,
@@ -311,6 +317,389 @@ test('subtasks and checklists must complete before a parent; historical revision
   const h = await api(root() + '/work/projects/' + projectId + '/history/' + parent.data.id);
   assert.equal(h.data.data.length, 2);
   assert.equal(h.data.data[0].snapshot.data.checklist[0].completed, false);
+});
+test('task status is separate from its visual stage and linked milestones report task progress', async () => {
+  let p = (await api(root() + '/work/projects', 'POST', config())).data;
+  const milestone = {
+    id: randomUUID(),
+    name: 'Synthetic delivery',
+    due_on: '2026-12-20',
+    completed: false,
+    owner_id: owner,
+    criteria: 'Deliver one verified package',
+  };
+  p = (
+    await api(root() + '/work/projects/' + p.id, 'PUT', {
+      expected_version: p.version,
+      project: { ...p.data, milestones: [milestone] },
+    })
+  ).data;
+  assert.equal(p.data.milestones[0].criteria, milestone.criteria);
+  const inProgress = await api(root() + '/work/projects/' + p.id + '/tasks', 'POST', {
+    expected_version: 0,
+    task: task('Stage is complete but status is open', {
+      stage: 'complete',
+      task_status: 'in_progress',
+      milestone_id: milestone.id,
+    }),
+  });
+  assert.equal(inProgress.status, 201, JSON.stringify(inProgress.data));
+  assert.equal(inProgress.data.status, 'open');
+  assert.equal(inProgress.data.data.task_status, 'in_progress');
+  const approved = await api(root() + '/work/projects/' + p.id + '/tasks', 'POST', {
+    expected_version: 0,
+    task: task('Approved outside complete stage', {
+      task_status: 'approved',
+      milestone_id: milestone.id,
+    }),
+  });
+  assert.equal(approved.status, 201, JSON.stringify(approved.data));
+  assert.equal(approved.data.stage, 'planned');
+  assert.equal(approved.data.status, 'open');
+  assert.equal(approved.data.data.task_status, 'approved');
+  const board = await api(root() + '/work/projects/' + p.id);
+  const result = board.data.project.data.milestones.find((m: any) => m.id === milestone.id);
+  assert.equal(result.task_count, 2);
+  assert.equal(result.completed_task_count, 0);
+  assert.equal(result.progress_percent, 0);
+});
+test('timesheets persist, enforce separation of duties, and timers save once from server time', async () => {
+  const p = (
+    await api(root() + '/work/projects', 'POST', {
+      name: 'Synthetic time capture',
+      owner_id: owner,
+      members: [
+        { user_id: owner, permission: 'manage' },
+        { user_id: editor, permission: 'edit' },
+        { user_id: outsider, permission: 'manage' },
+      ],
+    })
+  ).data;
+  const date = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Nairobi',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+  const t = await api(root() + '/work/projects/' + p.id + '/tasks', 'POST', {
+    expected_version: 0,
+    task: task('Synthetic logged effort', { assignee_id: owner, starts_on: date, due_on: date }),
+  });
+  assert.equal(t.status, 201, JSON.stringify(t.data));
+  const entry = await api(root() + '/work/timesheets', 'POST', {
+    project_id: p.id,
+    task_id: t.data.id,
+    work_date: date,
+    minutes: 30,
+    description: 'Reviewed synthetic package',
+  });
+  assert.equal(entry.status, 201, JSON.stringify(entry.data));
+  assert.equal(entry.data.status, 'draft');
+  assert.equal(entry.data.data.seconds, 1800);
+  assert.equal(
+    (
+      await api(root() + '/work/timesheets/' + entry.data.id + '/submit', 'POST', {
+        expected_version: entry.data.version,
+      })
+    ).status,
+    200,
+  );
+  assert.equal(
+    (
+      await api(root() + '/work/timesheets/' + entry.data.id + '/review', 'POST', {
+        expected_version: 2,
+        decision: 'approved',
+      })
+    ).status,
+    403,
+    'contributor cannot approve own entry',
+  );
+  assert.equal(
+    (
+      await api(
+        root() + '/work/timesheets/' + entry.data.id + '/review',
+        'POST',
+        { expected_version: 2, decision: 'approved' },
+        editorCookie,
+      )
+    ).status,
+    403,
+    'editor cannot review',
+  );
+  const approved = await api(
+    root() + '/work/timesheets/' + entry.data.id + '/review',
+    'POST',
+    { expected_version: 2, decision: 'approved' },
+    outsiderCookie,
+  );
+  assert.equal(approved.status, 200, JSON.stringify(approved.data));
+  assert.equal(approved.data.status, 'approved');
+  assert.equal(
+    (
+      await api(root() + '/work/timesheets/' + entry.data.id, 'PUT', {
+        expected_version: approved.data.version,
+        work_date: date,
+        minutes: 45,
+        description: 'Changed approved entry',
+      })
+    ).status,
+    403,
+  );
+
+  const started = await api(root() + '/work/timers', 'POST', {
+    project_id: p.id,
+    task_id: t.data.id,
+  });
+  assert.equal(started.status, 201, JSON.stringify(started.data));
+  assert.equal((await api(root() + '/work/timesheets')).data.active_timer.id, started.data.id);
+  assert.equal(
+    (await api(root() + '/work/timers', 'POST', { project_id: p.id, task_id: t.data.id })).status,
+    409,
+  );
+  await dbRun('UPDATE ac_work_timers SET started_at=? WHERE id=?', [
+    new Date(Date.now() - 120000).toISOString(),
+    started.data.id,
+  ]);
+  const stopKey = randomUUID();
+  const stopped = await api(
+    root() + '/work/timers/' + started.data.id + '/stop',
+    'POST',
+    {},
+    cookie,
+    stopKey,
+  );
+  assert.equal(stopped.status, 200, JSON.stringify(stopped.data));
+  assert.ok(stopped.data.entry.data.seconds >= 119 && stopped.data.entry.data.seconds <= 121);
+  const retried = await api(
+    root() + '/work/timers/' + started.data.id + '/stop',
+    'POST',
+    {},
+    cookie,
+    stopKey,
+  );
+  assert.equal(retried.data.entry.id, stopped.data.entry.id);
+  assert.equal(
+    Number(
+      (
+        await dbGet(
+          "SELECT COUNT(*) AS n FROM ac_erp_objects WHERE org_id=? AND kind='work_timesheet' AND parent_id=?",
+          [org, t.data.id],
+        )
+      ).n,
+    ),
+    2,
+  );
+  const report = await api(
+    root() +
+      '/work/projects/' +
+      p.id +
+      '/reports/tasks?group_by=stage&from=' +
+      date +
+      '&to=' +
+      date,
+  );
+  assert.equal(report.status, 200, JSON.stringify(report.data));
+  assert.equal(report.data.total_actual_seconds, 1800 + stopped.data.entry.data.seconds);
+  assert.equal(report.data.complete, true);
+});
+test('recurrence generation is manager-only, stable on retry, and uses new task identity', async () => {
+  const p = (await api(root() + '/work/projects', 'POST', config())).data;
+  const date = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Nairobi',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+  const source = await api(root() + '/work/projects/' + p.id + '/tasks', 'POST', {
+    expected_version: 0,
+    task: task('Weekly synthetic recurrence', {
+      starts_on: date,
+      due_on: date,
+      recurrence: { unit: 'week', interval: 1, next_on: date, active: true },
+    }),
+  });
+  assert.equal(source.status, 201, JSON.stringify(source.data));
+  assert.ok(source.data.data.recurrence.rule_id);
+  assert.equal(
+    (
+      await api(
+        root() + '/work/projects/' + p.id + '/tasks/' + source.data.id + '/recurrence/generate',
+        'POST',
+        {},
+        editorCookie,
+      )
+    ).status,
+    403,
+  );
+  const key = randomUUID();
+  const generated = await api(
+    root() + '/work/projects/' + p.id + '/tasks/' + source.data.id + '/recurrence/generate',
+    'POST',
+    {},
+    cookie,
+    key,
+  );
+  assert.equal(generated.status, 200, JSON.stringify(generated.data));
+  assert.notEqual(generated.data.generated.id, source.data.id);
+  assert.equal(generated.data.generated.data.recurrence_occurrence.occurrence_on, date);
+  assert.deepEqual(generated.data.omitted, [
+    'dependencies',
+    'subtasks',
+    'followers',
+    'discussion',
+    'timesheets',
+    'attachments',
+    'approvals',
+  ]);
+  const retry = await api(
+    root() + '/work/projects/' + p.id + '/tasks/' + source.data.id + '/recurrence/generate',
+    'POST',
+    {},
+    cookie,
+    key,
+  );
+  assert.equal(retry.data.generated.id, generated.data.generated.id);
+  assert.equal(
+    Number(
+      (
+        await dbGet('SELECT COUNT(*) AS n FROM ac_work_occurrences WHERE org_id=? AND rule_id=?', [
+          org,
+          source.data.data.recurrence.rule_id,
+        ])
+      ).n,
+    ),
+    1,
+  );
+});
+test('dependency schedule preview includes successors and apply is version-checked atomically', async () => {
+  const p = (await api(root() + '/work/projects', 'POST', config())).data;
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Nairobi',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+  const plus = (days: number) => {
+    const d = new Date(today + 'T12:00:00Z');
+    d.setUTCDate(d.getUTCDate() + days);
+    return d.toISOString().slice(0, 10);
+  };
+  const first = await api(root() + '/work/projects/' + p.id + '/tasks', 'POST', {
+    expected_version: 0,
+    task: task('Schedule predecessor', { starts_on: plus(1), due_on: plus(2) }),
+  });
+  const next = await api(root() + '/work/projects/' + p.id + '/tasks', 'POST', {
+    expected_version: 0,
+    task: task('Schedule successor', {
+      starts_on: plus(3),
+      due_on: plus(4),
+      dependencies: [first.data.id],
+    }),
+  });
+  const preview = await api(root() + '/work/projects/' + p.id + '/schedule/preview', 'POST', {
+    task_id: first.data.id,
+    starts_on: plus(5),
+  });
+  assert.equal(preview.status, 200, JSON.stringify(preview.data));
+  assert.equal(preview.data.changes.length, 2);
+  assert.equal(preview.data.changes.find((x: any) => x.id === next.data.id).starts_on, plus(7));
+  const changes = preview.data.changes.map(({ id, expected_version, starts_on, due_on }: any) => ({
+    id,
+    expected_version,
+    starts_on,
+    due_on,
+  }));
+  const applied = await api(root() + '/work/projects/' + p.id + '/schedule/apply', 'POST', {
+    expected_project_version: preview.data.project_version,
+    task_id: first.data.id,
+    starts_on: plus(5),
+    changes,
+  });
+  assert.equal(applied.status, 200, JSON.stringify(applied.data));
+  assert.equal(applied.data.changed, 2);
+  const board = await api(root() + '/work/projects/' + p.id);
+  assert.equal(board.data.tasks.find((x: any) => x.id === next.data.id).data.starts_on, plus(7));
+  const stalePreview = await api(root() + '/work/projects/' + p.id + '/schedule/preview', 'POST', {
+    task_id: first.data.id,
+    starts_on: plus(6),
+  });
+  const latest = await api(root() + '/work/projects/' + p.id);
+  const successor = latest.data.tasks.find((x: any) => x.id === next.data.id);
+  const edited = { ...successor.data, labels: [...successor.data.labels, 'reschedule-race'] };
+  const mutation = await api(root() + '/work/projects/' + p.id + '/tasks/' + next.data.id, 'PUT', {
+    expected_version: successor.version,
+    task: edited,
+  });
+  assert.equal(mutation.status, 200, JSON.stringify(mutation.data));
+  const staleChanges = stalePreview.data.changes.map(
+    ({ id, expected_version, starts_on, due_on }: any) => ({
+      id,
+      expected_version,
+      starts_on,
+      due_on,
+    }),
+  );
+  assert.equal(
+    (
+      await api(root() + '/work/projects/' + p.id + '/schedule/apply', 'POST', {
+        expected_project_version: stalePreview.data.project_version,
+        task_id: first.data.id,
+        starts_on: plus(6),
+        changes: staleChanges,
+      })
+    ).status,
+    409,
+  );
+});
+test('dated project updates require managers and retain prior update snapshots', async () => {
+  const p = (
+    await api(root() + '/work/projects', 'POST', {
+      name: 'Synthetic health reporting',
+      owner_id: owner,
+      members: [
+        { user_id: owner, permission: 'manage' },
+        { user_id: editor, permission: 'edit' },
+        { user_id: outsider, permission: 'manage' },
+      ],
+    })
+  ).data;
+  const t = await api(root() + '/work/projects/' + p.id + '/tasks', 'POST', {
+    expected_version: 0,
+    task: task('Upcoming update task', { due_on: '2026-12-10' }),
+  });
+  assert.equal(t.status, 201);
+  const body = {
+    reporting_date: '2026-11-19',
+    status: 'at_risk',
+    summary: 'Supplier timing needs review',
+    risks: 'Delivery may slip',
+    milestone_summary: 'First milestone in progress',
+    related_tasks: [t.data.id],
+  };
+  assert.equal(
+    (await api(root() + '/work/projects/' + p.id + '/updates', 'POST', body, editorCookie)).status,
+    403,
+  );
+  const first = await api(
+    root() + '/work/projects/' + p.id + '/updates',
+    'POST',
+    body,
+    outsiderCookie,
+  );
+  assert.equal(first.status, 201, JSON.stringify(first.data));
+  assert.equal(first.data.data.upcoming_deadlines[0].task_id, t.data.id);
+  assert.equal(first.data.data.milestone_summary, body.milestone_summary);
+  const second = await api(
+    root() + '/work/projects/' + p.id + '/updates',
+    'POST',
+    { ...body, reporting_date: '2026-11-20', status: 'on_track', summary: 'Schedule confirmed' },
+    outsiderCookie,
+  );
+  assert.equal(second.status, 201);
+  const page = await api(root() + '/work/projects/' + p.id + '/updates?offset=0');
+  assert.equal(page.data.data.length, 2);
+  assert.equal(page.data.data[0].id, second.data.id);
+  assert.equal(page.data.data[1].id, first.data.id);
 });
 test('threaded discussions persist within project/task boundaries and cannot mention outsiders', async () => {
   const p = await api(root() + '/work/projects/' + projectId + '/messages', 'POST', {
@@ -358,6 +747,14 @@ test('threaded discussions persist within project/task boundaries and cannot men
 test('revoking membership defeats existing project grants and completed idempotency receipts', async () => {
   const key = randomUUID(),
     payload = { body: 'Before revocation', mentions: [] };
+  const projectCountBefore = Number(
+    (
+      await dbGet('SELECT COUNT(*) AS n FROM ac_erp_objects WHERE org_id=? AND kind=?', [
+        org,
+        'work_project',
+      ])
+    ).n,
+  );
   const result = await api(
     root() + '/work/projects/' + projectId + '/messages',
     'POST',
@@ -392,7 +789,7 @@ test('revoking membership defeats existing project grants and completed idempote
         ])
       ).n,
     ),
-    1,
+    projectCountBefore,
   );
 });
 test('project creation retries recheck the resulting project after participant access is removed', async () => {
@@ -840,6 +1237,7 @@ test('approved private completion workflows deduplicate, preserve privacy and re
       task_id: target.id,
       expected_task_version: target.version,
       stage: 'complete',
+      task_status: 'completed',
       before_id: null,
     },
     key = randomUUID(),

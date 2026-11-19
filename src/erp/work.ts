@@ -15,6 +15,7 @@ import {
   decode,
   type ERPObject,
 } from './store';
+import { recordTaskEvent } from './work-time';
 
 const id = z.string().uuid(),
   text = z.string().trim().min(1).max(200),
@@ -46,10 +47,24 @@ export const projectInput = z
       ]),
     deadline: date,
     status: z.enum(['active', 'on_hold', 'completed', 'archived']).default('active'),
+    starts_on: date,
+    priority: z.enum(['low', 'normal', 'high', 'urgent']).default('normal'),
+    planned_minutes: z.number().int().min(0).max(525600).default(0),
     customer_id: id.nullable().default(null),
     order_id: id.nullable().default(null),
     milestones: z
-      .array(z.object({ id, name: text, due_on: z.string().date(), completed: z.boolean() }))
+      .array(
+        z
+          .object({
+            id,
+            name: text,
+            due_on: z.string().date(),
+            completed: z.boolean(),
+            owner_id: id.nullable().default(null),
+            criteria: z.string().max(2000).default(''),
+          })
+          .strict(),
+      )
       .max(100)
       .default([]),
   })
@@ -72,6 +87,26 @@ export const taskInput = z
       .max(100)
       .default([]),
     estimate_minutes: z.number().int().min(0).max(525600).default(0),
+    milestone_id: id.nullable().default(null),
+    task_status: z
+      .enum(['in_progress', 'changes_requested', 'approved', 'completed', 'cancelled'])
+      .optional(),
+    recurrence: z
+      .object({
+        rule_id: id.nullable().optional(),
+        unit: z.enum(['day', 'week', 'month', 'year']),
+        interval: z.number().int().min(1).max(365),
+        ends_on: date.optional().default(null),
+        next_on: z.string().date().optional(),
+        active: z.boolean().default(true),
+      })
+      .strict()
+      .nullable()
+      .default(null),
+    recurrence_occurrence: z
+      .object({ rule_id: id, source_task_id: id, occurrence_on: z.string().date() })
+      .nullable()
+      .optional(),
   })
   .strict();
 export const taskMoveInput = z
@@ -80,6 +115,9 @@ export const taskMoveInput = z
     task_id: id,
     expected_task_version: z.number().int().min(1),
     stage: z.string().min(1).max(40),
+    task_status: z
+      .enum(['in_progress', 'changes_requested', 'approved', 'completed', 'cancelled'])
+      .optional(),
     before_id: id.nullable(),
   })
   .strict();
@@ -128,6 +166,8 @@ async function validateProject(a: Access, d: z.infer<typeof projectInput>) {
     !d.members.some((m) => m.user_id === d.owner_id && m.permission === 'manage')
   )
     fail(400, 'The project owner must be a unique managing participant');
+  if (d.starts_on && d.deadline && d.starts_on > d.deadline)
+    fail(400, 'Project start date must not follow its deadline');
   if (
     new Set(d.stages.map((s) => s.id)).size !== d.stages.length ||
     !d.stages.some((s) => s.complete) ||
@@ -136,6 +176,14 @@ async function validateProject(a: Access, d: z.infer<typeof projectInput>) {
     fail(400, 'Stages must be unique and include open and completed states');
   if (new Set(d.milestones.map((m) => m.id)).size !== d.milestones.length)
     fail(400, 'Milestone identifiers must be unique');
+  if (
+    d.milestones.some(
+      (m) =>
+        m.owner_id &&
+        !d.members.some((member) => member.user_id === m.owner_id && member.permission !== 'view'),
+    )
+  )
+    fail(400, 'Milestone owners must be project participants with edit access');
   for (const m of d.members) await members(a, [m.user_id], m.permission !== 'view');
   for (const [kind, ref] of [
     ['customers', d.customer_id],
@@ -204,11 +252,22 @@ export async function editProject(a: Access, projectId: string, input: unknown, 
         const value = await read(a, t.id, 'work_task'),
           nextStage = d.project.stages.find((s) => s.id === t.stage);
         if (!nextStage) fail(409, 'Retain stages referenced by existing tasks');
-        if (nextStage!.complete !== (t.status === 'completed'))
+        if (nextStage?.complete && value.status !== 'completed')
           fail(
             409,
-            'Move tasks explicitly before changing whether their stage represents completion',
+            'Move incomplete tasks out of completed stages before changing the stage policy',
           );
+        if (
+          value.data.milestone_id &&
+          !d.project.milestones.some((m) => m.id === value.data.milestone_id)
+        )
+          fail(409, 'Move tasks to another milestone before removing their current milestone');
+        if (
+          value.data.milestone_id &&
+          d.project.milestones.find((m) => m.id === value.data.milestone_id)?.completed &&
+          t.status !== 'completed'
+        )
+          fail(409, 'A completed milestone cannot contain an incomplete task');
         if (d.project.status === 'completed' && t.status !== 'completed')
           fail(409, 'Complete all project tasks before closing the project');
         if (
@@ -229,6 +288,15 @@ export async function editProject(a: Access, projectId: string, input: unknown, 
             {},
             'removed_project_participants_unfollowed',
           );
+      }
+      for (const milestone of d.project.milestones) {
+        if (
+          milestone.completed &&
+          tasks.some(
+            (task) => task.status !== 'completed' && task.data.milestone_id === milestone.id,
+          )
+        )
+          fail(409, 'Complete all linked tasks before completing their milestone');
       }
       const result = await update(
         a,
@@ -292,8 +360,19 @@ export async function workProject(a: Access, projectId: string, messageOffset = 
   const active = (await entitlement(a, 'work'))?.status === 'active',
     tasks = await visible(a, 'work_task', p.id),
     messages = await visible(a, 'work_message', p.id, messageOffset);
+  const milestones = p.data.milestones.map((m: any) => {
+    const linked = tasks.filter((t) => t.data.milestone_id === m.id);
+    const completed = linked.filter((t) => t.status === 'completed').length;
+    return {
+      ...m,
+      task_count: linked.length,
+      completed_task_count: completed,
+      progress_percent: linked.length ? Math.round((completed * 100) / linked.length) : 0,
+      tasks: linked.map((t) => ({ id: t.id, title: t.data.title, status: t.status })),
+    };
+  });
   return {
-    project: p,
+    project: { ...p, data: { ...p.data, milestones } },
     permissions: {
       write:
         active &&
@@ -315,6 +394,8 @@ async function validateTask(a: Access, p: ERPObject, d: z.infer<typeof taskInput
   if (p.status !== 'active') fail(409, 'Project is not active');
   const selected = p.data.stages.find((s: any) => s.id === d.stage);
   if (!selected) fail(400, 'Unknown project stage');
+  if (d.milestone_id && !p.data.milestones.some((m: any) => m.id === d.milestone_id))
+    fail(400, 'Milestone must belong to the selected project');
   if (d.starts_on && d.due_on && d.starts_on > d.due_on)
     fail(400, 'Start date must not follow due date');
   if (
@@ -386,8 +467,15 @@ async function validateTask(a: Access, p: ERPObject, d: z.infer<typeof taskInput
     visited.add(node);
   };
   for (const key of graph.keys()) visit(key);
+  const taskStatus = d.task_status || (selected.complete ? 'completed' : 'in_progress');
   if (
-    !selected.complete &&
+    d.milestone_id &&
+    p.data.milestones.find((m: any) => m.id === d.milestone_id)?.completed &&
+    taskStatus !== 'completed'
+  )
+    fail(409, 'A completed milestone cannot receive an incomplete task');
+  if (
+    taskStatus !== 'completed' &&
     [...map.values()].some(
       (t) => t.status === 'completed' && (t.data.dependencies || []).includes(taskId),
     )
@@ -396,7 +484,7 @@ async function validateTask(a: Access, p: ERPObject, d: z.infer<typeof taskInput
   if (d.parent_id && map.get(d.parent_id)?.status === 'completed' && !selected.complete)
     fail(409, 'Reopen the parent before adding or reopening an incomplete subtask');
   if (
-    selected.complete &&
+    taskStatus === 'completed' &&
     (d.dependencies.some((ref) => map.get(ref)?.status !== 'completed') ||
       d.checklist.some((c) => !c.completed) ||
       [...map.values()].some(
@@ -404,7 +492,11 @@ async function validateTask(a: Access, p: ERPObject, d: z.infer<typeof taskInput
       ))
   )
     fail(409, 'Complete dependencies, subtasks and checklist items first');
-  return selected.complete ? 'completed' : 'open';
+  return taskStatus === 'completed'
+    ? 'completed'
+    : taskStatus === 'cancelled'
+      ? 'cancelled'
+      : 'open';
 }
 export async function saveTask(
   a: Access,
@@ -428,6 +520,15 @@ export async function saveTask(
         old = taskId ? await read(a, taskId, 'work_task') : null;
       if (old?.root_id && old.root_id !== p.id) fail(404, 'Task not found');
       if ((old?.version || 0) !== d.expected_version) fail(409, 'Task changed; reload');
+      const stageComplete = p.data.stages.find((s: any) => s.id === d.task.stage)?.complete;
+      d.task.task_status ||= stageComplete ? 'completed' : 'in_progress';
+      if (d.task.recurrence) {
+        d.task.recurrence.rule_id ||= old?.data.recurrence?.rule_id || randomUUID();
+        d.task.recurrence.next_on ||=
+          d.task.due_on ||
+          d.task.starts_on ||
+          new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Nairobi' });
+      }
       const status = await validateTask(a, p, d.task, nextId);
       let value: ERPObject;
       if (old)
@@ -453,6 +554,18 @@ export async function saveTask(
           position: Number(pos?.position ?? -1) + 1,
         });
       }
+      await recordTaskEvent(
+        a,
+        p.id,
+        value,
+        old
+          ? old.stage !== value.stage
+            ? 'stage_changed'
+            : old.status !== value.status
+              ? 'status_changed'
+              : 'task_updated'
+          : 'created',
+      );
       // Board version changes for every task mutation, including concurrent new cards.
       const updatedProject = await update(a, p, p.data, {}, 'task_updated'),
         workflow_runs =
@@ -480,7 +593,14 @@ export async function moveTask(a: Access, projectId: string, input: unknown, key
       const task = await read(a, d.task_id, 'work_task');
       if (task.root_id !== p.id) fail(404, 'Task not found');
       if (task.version !== d.expected_task_version) fail(409, 'Task changed; reload');
-      const data = taskInput.parse({ ...task.data, stage: d.stage }),
+      const data = taskInput.parse({
+          ...task.data,
+          stage: d.stage,
+          task_status:
+            d.task_status ||
+            task.data.task_status ||
+            (task.status === 'completed' ? 'completed' : 'in_progress'),
+        }),
         status = await validateTask(a, p, data, task.id);
       const rows = (await visible(a, 'work_task', p.id)).filter(
         (t) => t.stage === d.stage && t.id !== task.id,
@@ -501,6 +621,13 @@ export async function moveTask(a: Access, projectId: string, input: unknown, key
           status === 'completed' && task.status !== 'completed'
             ? await (await import('./work-automation')).executeWorkRules(a, board, result)
             : [];
+      if (task.stage !== result.stage || task.status !== result.status)
+        await recordTaskEvent(
+          a,
+          p.id,
+          result,
+          task.stage !== result.stage ? 'stage_changed' : 'status_changed',
+        );
       return { project_version: board.version, task: result, workflow_runs };
     },
   );

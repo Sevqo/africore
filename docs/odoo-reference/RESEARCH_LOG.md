@@ -26,6 +26,22 @@ that produced a conclusion does.
 
 ## Entries
 
+## 2026-11-19 — Work timesheet, recurrence and history patterns
+
+- Question: how do the pinned Odoo 20 Community Project and Timesheets sources represent task/milestone links, recurrence generation, task-state history, timer ownership, and timesheet approval, and which patterns can AfriCore adapt without weakening its project grants, audit trail or financial boundaries?
+- Odoo commit: `bd181ee5eb1f200db3c062733d4f464c37ef9e25` (`20.0`), clean at inspection.
+- Read (paths): `addons/project/models/project_task.py`; `addons/project/models/project_task_recurrence.py`; `addons/project/report/project_task_burndown_chart_report.py`; `addons/hr_timesheet/models/account_analytic_line.py`.
+- Findings:
+  - Project tasks have distinct `stage_id` and `state` values. State includes in-progress, changes-requested, approved, done, cancelled and dependency-waiting; stage changes can reset an open task's state, while completion remains a separate state transition (`addons/project/models/project_task.py`, `state`, `_compute_state`, `write`).
+  - `milestone_id` is a project-scoped task relation, and milestone mismatch is corrected when a task's project changes (`addons/project/models/project_task.py`, `milestone_id`, `_compute_milestone_id`, `write`).
+  - Recurrence has interval/unit/end configuration. Next tasks are generated from terminal tasks, dates are postponed, checklists/children are copied according to recurrence logic, and dependencies are resolved after the batch (`addons/project/models/project_task.py`, `_inverse_state`; `addons/project/models/project_task_recurrence.py`, `_create_next_occurrences`, `_create_next_occurrences_values`).
+  - Burndown is an analytical projection over actual stage-duration tracking, requiring date and stage grouping; it is not a fabricated series from current task status (`addons/project/report/project_task_burndown_chart_report.py`, `_search`, `_validate_group_by`).
+  - Timesheet lines link project, task, user and employee; task/project consistency is validated, and ordinary users cannot write another user's timesheet (`addons/hr_timesheet/models/account_analytic_line.py`, `task_id`, `project_id`, `_check_can_write`, `create`).
+- Conclusions: preserve separate stage and workflow state, use project-validated milestone links, generate recurrence from an immutable occurrence identity with explicit copy policy, and disclose historical coverage. In AfriCore, keep time-entry identity bound to the current human login and separate manager review from entry creation; no employee, payroll or finance access follows from project membership.
+- Decision: [D-008](DECISIONS.md#d-008-keep-work-effort-in-its-own-audited-authority).
+- Follow-ups: implementation and source-backed focused tests; inspect running AfriCore views where browser tooling permits.
+- Limits: focused Community-source read only; no Odoo runtime or tests were launched. The reviewed paths do not establish that a durable task timer is a Community capability; timer behavior is therefore implemented as an AfriCore server-owned feature, not claimed as Odoo parity. No source/assets were copied.
+
 ## 2026-11-19 — Point of Sale workflows and supplied Odoo reference screens
 
 - Question: how does the pinned Odoo 20 Community POS manage register configuration, cashier sessions, product selection, basket/payment/receipt, order history/filters, cash closing, and order analysis, and which interaction/data rules can inform the AfriCore Phase 2.8B expansion?
@@ -176,3 +192,12 @@ that produced a conclusion does.
 - Question: how does the pinned Odoo 20 Community POS manage register configuration, cashier sessions, product selection, basket/payment/receipt, order history/filters, cash closing, and order analysis, and which interaction/data rules can inform the AfriCore Phase 2.8B expansion?
 - Planned read-only paths: `addons/point_of_sale/__manifest__.py`; POS models for configuration, orders, sessions and payments; frontend product and payment screens; order/report views and tests where needed. Confirm exact paths and pinned commit before reading.
 - Status: question recorded before source inspection. Findings and AfriCore decisions will be appended after the focused source review; supplied screenshots remain design references, not proof of AfriCore behavior.
+
+## 2026-11-19 — Work task, timesheet, recurrence and reporting expansion
+
+- Question: which Odoo Community Project/Timesheets constraints shown in the supplied nine screenshots belong in AfriCore's Work expansion, and which should remain bounded by AfriCore's own task, time, privacy and history authorities?
+- Read-only source: pinned Odoo 20 Community commit `bd181ee5eb1f200db3c062733d4f464c37ef9e25`; focused paths include `addons/project/models/project_task.py`, `project_task_recurrence.py`, `report/project_task_burndown_chart_report.py`, project form/list/search views, and `addons/hr_timesheet/models/account_analytic_line.py`.
+- Findings: task stage and state are independent; milestones are constrained to the task's project; recurrence generates from a terminal task under a recurrence rule and applies explicit copy/date-reset behavior; burndown depends on stored stage durations rather than today's state; timesheets are analytic lines with task/project/user/employee relations and write checks. Detailed source observations are in [`notes/project.md`](notes/project.md).
+- AfriCore implementation: recorded time is a separate encrypted authority, bound to its author and project/task, with server-owned timers, review separation and immutable approvals. Recurrence generation is explicit and idempotent. Milestone consistency, schedule changes and task progress history are server-validated; reporting uses scoped, capped sources and a documented migration cutover. Work estimates/time are not payroll, attendance, recognized revenue or invoices.
+- Decision: D-008, keep Work effort in its own audited authority. No Odoo source/assets were copied.
+- Verification/limits: the full isolated backend suite passed 471 with 0 failures and 1 PostgreSQL-only skip; focused Work tests passed 19/19. The live signed-in sandbox rendered the calendar, but Timesheets and Reporting returned “Resource not found”; refresh/runtime verification, side-by-side visual comparison, founder acceptance, PostgreSQL and the complete requested manual matrix remain open. See `docs/PHASE2_APP_PROGRESS.md` for the implementation and exact limits.

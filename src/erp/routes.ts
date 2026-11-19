@@ -85,6 +85,21 @@ import {
   workHistory,
 } from './work';
 import {
+  createWorkTimesheet,
+  discardWorkTimer,
+  editWorkTimesheet,
+  listWorkTimesheets,
+  reviewWorkTimesheet,
+  startWorkTimer,
+  stopWorkTimer,
+  submitWorkTimesheet,
+  workProgressReport,
+} from './work-time';
+import { generateRecurringTask } from './work-recurrence';
+import { projectStatusUpdates, publishProjectUpdate } from './work-updates';
+import { workTaskReport, workTimesheetReport } from './work-reporting';
+import { applyWorkSchedule, previewWorkSchedule } from './work-scheduling';
+import {
   accountingConfiguration,
   setupAccounting,
   saveAccount,
@@ -249,6 +264,158 @@ erp.get(
 erp.get(
   '/organizations/:org/work/my-work',
   route(async (req, res) => res.json(await myWork(await access(req), req.query))),
+);
+erp.get(
+  '/organizations/:org/work/timesheets',
+  route(async (req, res) => res.json(await listWorkTimesheets(await access(req), req.query))),
+);
+erp.post(
+  '/organizations/:org/work/timesheets',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createWorkTimesheet(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.put(
+  '/organizations/:org/work/timesheets/:entry',
+  route(async (req, res) =>
+    res.json(
+      await editWorkTimesheet(
+        await access(req, 'operations'),
+        String(req.params.entry),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.post(
+  '/organizations/:org/work/timesheets/:entry/submit',
+  route(async (req, res) =>
+    res.json(
+      await submitWorkTimesheet(
+        await access(req, 'operations'),
+        String(req.params.entry),
+        req.body?.expected_version,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.post(
+  '/organizations/:org/work/timesheets/:entry/review',
+  route(async (req, res) =>
+    res.json(
+      await reviewWorkTimesheet(
+        await access(req, 'operations'),
+        String(req.params.entry),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.post(
+  '/organizations/:org/work/timers',
+  route(async (req, res) =>
+    res.status(201).json(await startWorkTimer(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/work/timers/:timer/stop',
+  route(async (req, res) =>
+    res.json(
+      await stopWorkTimer(await access(req, 'operations'), String(req.params.timer), key(req)),
+    ),
+  ),
+);
+erp.post(
+  '/organizations/:org/work/timers/:timer/discard',
+  route(async (req, res) =>
+    res.json(
+      await discardWorkTimer(await access(req, 'operations'), String(req.params.timer), key(req)),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/work/projects/:id/reports/progress',
+  route(async (req, res) =>
+    res.json(await workProgressReport(await access(req), String(req.params.id), req.query)),
+  ),
+);
+erp.get(
+  '/organizations/:org/work/projects/:id/reports/tasks',
+  route(async (req, res) =>
+    res.json(await workTaskReport(await access(req), String(req.params.id), req.query)),
+  ),
+);
+erp.get(
+  '/organizations/:org/work/projects/:id/reports/timesheets',
+  route(async (req, res) =>
+    res.json(await workTimesheetReport(await access(req), String(req.params.id), req.query)),
+  ),
+);
+erp.post(
+  '/organizations/:org/work/projects/:id/schedule/preview',
+  route(async (req, res) =>
+    res.json(
+      await previewWorkSchedule(await access(req, 'operations'), String(req.params.id), req.body),
+    ),
+  ),
+);
+erp.post(
+  '/organizations/:org/work/projects/:id/schedule/apply',
+  route(async (req, res) =>
+    res.json(
+      await applyWorkSchedule(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/work/projects/:id/updates',
+  route(async (req, res) =>
+    res.json(
+      await projectStatusUpdates(
+        await access(req),
+        String(req.params.id),
+        z.coerce.number().int().min(0).max(100000).default(0).parse(req.query.offset),
+      ),
+    ),
+  ),
+);
+erp.post(
+  '/organizations/:org/work/projects/:id/updates',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(
+        await publishProjectUpdate(
+          await access(req, 'operations'),
+          String(req.params.id),
+          req.body,
+          key(req),
+        ),
+      ),
+  ),
+);
+erp.post(
+  '/organizations/:org/work/projects/:id/tasks/:task/recurrence/generate',
+  route(async (req, res) =>
+    res.json(
+      await generateRecurringTask(
+        await access(req, 'operations'),
+        String(req.params.id),
+        String(req.params.task),
+        key(req),
+      ),
+    ),
+  ),
 );
 erp.get(
   '/organizations/:org/work/target/:id',
@@ -640,8 +807,17 @@ erp.post(
 const purchaseType = (value: unknown) =>
   z
     .enum([
-      'supplier', 'request', 'rfq', 'order', 'receipt', 'bill', 'payment', 'credit',
-      'price', 'agreement', 'template',
+      'supplier',
+      'request',
+      'rfq',
+      'order',
+      'receipt',
+      'bill',
+      'payment',
+      'credit',
+      'price',
+      'agreement',
+      'template',
     ])
     .parse(value);
 erp.get(

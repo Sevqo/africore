@@ -28,6 +28,8 @@ export function WorkTaskDetails({
 }) {
   const [tab, setTab] = useState('description');
   const [history, setHistory] = useState<any[]>([]),
+    [timeEntries, setTimeEntries] = useState<any[] | null>(null),
+    [activeTimer, setActiveTimer] = useState<any>(null),
     [offset, setOffset] = useState(0),
     [more, setMore] = useState(false),
     [error, setError] = useState(''),
@@ -41,6 +43,16 @@ export function WorkTaskDetails({
       setHistory(r.data);
       setOffset(start);
       setMore(r.has_more);
+      setError('');
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  async function loadTime() {
+    try {
+      const result = await api('/work/timesheets?project_id=' + project.id + '&offset=0&limit=100');
+      setTimeEntries(result.data.filter((entry: any) => entry.parent_id === t.id));
+      setActiveTimer(result.active_timer);
       setError('');
     } catch (e) {
       setError((e as Error).message);
@@ -78,6 +90,8 @@ export function WorkTaskDetails({
           <dd>{project.data.name}</dd>
           <dt>Stage</dt>
           <dd>{project.data.stages.find((s: any) => s.id === t.stage)?.name || t.stage}</dd>
+          <dt>Task status</dt>
+          <dd>{(t.data.task_status || t.status).replaceAll('_', ' ')}</dd>
           <dt>Assignee</dt>
           <dd>{name(t.data.assignee_id)}</dd>
           <dt>Start</dt>
@@ -86,12 +100,17 @@ export function WorkTaskDetails({
           <dd>{t.due_on || 'Unscheduled'}</dd>
           <dt>Estimate</dt>
           <dd>{t.data.estimate_minutes} minutes · planned, not recorded time</dd>
+          <dt>Milestone</dt>
+          <dd>
+            {project.data.milestones.find((m: any) => m.id === t.data.milestone_id)?.name || 'None'}
+          </dd>
           <dt>Labels</dt>
           <dd>{t.data.labels.join(', ') || 'None'}</dd>
         </dl>
         <nav className="work-detail-tabs" aria-label="Task information">
           {[
             ['description', 'Description'],
+            ['timesheets', 'Timesheets'],
             ['dependencies', 'Blocked By'],
             ['checklist', 'Checklist'],
             ['subtasks', 'Subtasks'],
@@ -107,6 +126,7 @@ export function WorkTaskDetails({
                 setTab(id);
                 if (id === 'discussion') onDiscuss();
                 if (id === 'history') void load();
+                if (id === 'timesheets') void loadTime();
               }}
             >
               {label}
@@ -115,6 +135,70 @@ export function WorkTaskDetails({
         </nav>
         {tab === 'description' && (
           <p className="work-message-body">{t.data.description || 'No description recorded.'}</p>
+        )}
+        {tab === 'timesheets' && (
+          <>
+            <h3>Time recorded</h3>
+            {timeEntries === null ? (
+              <p>Loading authorized task time…</p>
+            ) : (
+              <>
+                <p>
+                  {timeEntries
+                    .filter((entry) => entry.status !== 'rejected')
+                    .reduce(
+                      (sum, entry) => sum + Number(entry.data.seconds || entry.data.minutes * 60),
+                      0,
+                    )}{' '}
+                  seconds in the first authorized page. Estimates remain separate from recorded
+                  effort.
+                </p>
+                {timeEntries.map((entry) => (
+                  <p key={entry.id}>
+                    {entry.data.work_date} · {entry.data.minutes} min · {entry.status} ·{' '}
+                    {entry.data.description || 'Timer entry'}
+                  </p>
+                ))}
+                {!timeEntries.length && <p>No authorized time entries for this task.</p>}
+              </>
+            )}
+            {writable && !activeTimer && (
+              <button
+                className="secondary-button"
+                onClick={async () => {
+                  try {
+                    const result = await api('/work/timers', 'POST', {
+                      project_id: project.id,
+                      task_id: t.id,
+                    });
+                    setActiveTimer(result);
+                    setError('');
+                  } catch (e) {
+                    setError((e as Error).message);
+                  }
+                }}
+              >
+                Start timer for this task
+              </button>
+            )}
+            {activeTimer?.task_id === t.id && (
+              <p role="status">
+                Server timer running since {new Date(activeTimer.started_at).toLocaleTimeString()}.
+                Stop and save it in My Timesheets.
+              </p>
+            )}
+            <button
+              className="quiet-button"
+              onClick={() => {
+                const url = new URL(location.href);
+                url.searchParams.set('section', 'timesheets');
+                window.history.pushState(null, '', url.pathname + url.search + url.hash);
+                dispatchEvent(new PopStateEvent('popstate'));
+              }}
+            >
+              Open My Timesheets
+            </button>
+          </>
         )}
         {t.parent_id && (
           <p>

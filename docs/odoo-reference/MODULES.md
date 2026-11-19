@@ -26,8 +26,9 @@ the relevant source paths. Earlier focused HR findings remain in `notes/hr.md`.
 | `hr` | `odoo-reference/addons/hr` | deep-dive | [hr.md](notes/hr.md) | AfriCore People employees and departments |
 | `hr_attendance` | `odoo-reference/addons/hr_attendance` | deep-dive | [hr.md](notes/hr.md) | AfriCore People attendance |
 | `hr_holidays` | `odoo-reference/addons/hr_holidays` | deep-dive | [hr.md](notes/hr.md) | AfriCore People leave and approvals |
+| `hr_timesheet` | `odoo-reference/addons/hr_timesheet` | read | [project.md](notes/project.md) | AfriCore Work time-entry patterns; time is not payroll by implication |
 | `point_of_sale` | `odoo-reference/addons/point_of_sale` | deep-dive | [point_of_sale.md](notes/point_of_sale.md) | AfriCore POS registers, sessions, payments, order flow and reporting |
-| `project` | `odoo-reference/addons/project` | read | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | AfriCore Work |
+| `project` | `odoo-reference/addons/project` | deep-dive | [project.md](notes/project.md) | AfriCore Work tasks, state, milestones, recurrence and burndown |
 | `purchase` | `odoo-reference/addons/purchase` | deep-dive | [purchase.md](notes/purchase.md) | AfriCore Procurement; RFQs, orders, agreements, bills, vendor prices and analysis |
 | `sale` | `odoo-reference/addons/sale` | read | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | AfriCore Sales and Commerce |
 | `spreadsheet` | `odoo-reference/addons/spreadsheet` | skimmed | [application comparison](AFRICORE_APPLICATION_COMPARISON.md) | Analytics authoring comparison; not a standalone app in this manifest |

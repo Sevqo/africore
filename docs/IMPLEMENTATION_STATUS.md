@@ -1,5 +1,11 @@
 # Implementation status — Stage 3 sandbox beta
 
+## Phase 2.9B Work — local functional expansion, 19 November 2026
+
+Work now includes encrypted author-bound timesheets, durable one-per-user timers, submit/review controls, explicit recurring-task generation, project-scoped milestone links and progress, finish-to-start schedule preview/apply, append-only project updates, and server-filtered task/time/history reports. Task stage and work status remain distinct. Migration 013 adds timer/occurrence uniqueness and task event history. The full isolated SQLite suite passes **471**, with **0 failures** and **1 PostgreSQL-only skip**; focused Work tests pass **19/19**. TypeScript, lint, builds and API checks are recorded in [Phase 2.9B](PHASE2_APP_PROGRESS.md#checkpoint-29b--work-functional-expansion).
+
+Live visual review reached the signed-in sandbox and confirmed the Work calendar, but Timesheets and Reporting returned “Resource not found”; those new endpoints need runtime refresh/verification. Founder acceptance remains open. Recurrence is explicit rather than background-scheduled; the Gantt is a date grid with preview/confirm rather than dependency-arrow drag/resize; Work time is not payroll, attendance, billing or invoicing. No hosted migration, production write, deployment, commit or push was performed.
+
 ## Phase 2.8B Point of Sale — local functional continuation, 19 November 2026
 
 This continuation corrects the missing canonical Customers install dependency and replaces the prior one-register/one-day reporting surface with a bounded, server-aggregated POS analysis report. The report supports authorized register, cashier, session, date, payment intent, invoice state, product/category and currency filters; register-local time windows; currency-separated measures; complete matching-set aggregates; grouped views; underlying sale drilldown; CSV and print. Cash movements, drawer adjustments and session close differences retain their event scope and are explicitly distinguished from sale filters and payment settlement. New confirmed sales persist their configured payment intent for reliable grouping, with a compatibility fallback for older sales. App metadata and stored POS service definition are versioned additively without granting Customers or creating customer data.

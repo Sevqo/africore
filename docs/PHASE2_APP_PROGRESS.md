@@ -1,6 +1,6 @@
 # Phase 2 — Applications Progress
 
-Current checkpoint: **2.8B POS functional expansion** — local implementation and automated verification are recorded below; browser visual comparison and founder manual acceptance remain pending.
+Current checkpoint: **2.9B Work functional expansion** — implementation and automated verification are recorded below; live Timesheets and Reporting currently return “Resource not found”, so those screens need runtime verification before founder acceptance.
 
 Source checkpoint: Phase 1 committed by the founder; this work is uncommitted by design.
 Hard limits observed: no commits, pushes, deployments, production data or provider changes.
@@ -17,7 +17,8 @@ Hard limits observed: no commits, pushes, deployments, production data or provid
 | 2.6        | Procurement | Expanded in 2.6B (prices, agreements/templates, comparison, reporting, server-paged approvals); automated checks recorded below; browser acceptance pending |
 | 2.7        | Accounting  | Implemented (Odoo-style ledger workspace); build/tests green; browser click-through not executed                                                                  |
 | 2.8        | POS         | Expanded in 2.8B (Customers dependency, bounded multi-register analysis and line-aware grouping); local checks recorded below; browser acceptance pending |
-| 2.9        | Work        | Implemented; focused engineering/browser verification recorded below; founder acceptance pending                                                                  |
+| 2.9        | Work        | Base project/task implementation is recorded below; expanded in 2.9B                                                                                              |
+| 2.9B       | Work        | Time tracking, recurrence generation, milestone links, scheduling preview, updates and reports implemented; backend suite passes; runtime screens need route verification |
 | 2.10       | People      | Implemented — independent source loading/retry; backend People tests and production builds pass; founder browser acceptance pending                               |
 | 2.11       | Documents   | Source implementation and focused checks pass; live request-recipient route needs runtime verification; populated-file and founder acceptance pending             |
 | 2.12       | Analytics   | Implemented; prior focused checks recorded below; founder screenshot acceptance pending                                                                           |
@@ -1548,3 +1549,62 @@ Visual acceptance is also **not complete**. Although the eight supplied Odoo ima
 7. Verify the Reconciliation service remains the only live payment allocation authority; do not treat an allocation or manual payment note as a matched bank statement.
 
 No full `npm test` suite, PostgreSQL test run, authenticated visual comparison, founder manual acceptance, production migration, live financial write, deployment, commit or push was performed for this checkpoint.
+
+## Checkpoint 2.9B — Work functional expansion, 19 November 2026
+
+This continues the existing Work project/task service. Screenshots supplied with this request are Odoo Project and Timesheets references; the pasted brief is the implementation request. Existing project grants, task version checks, stage/work-state distinction, dependencies, task events, workflow reviews, canonical links, and document permissions remain authoritative. No parallel project, payroll, invoice, or file authority was added.
+
+### Baseline and integrations
+
+The existing private project/member model, custom stages, task board/list and movement, assignees/followers, priorities/labels/dates/descriptions, subtasks/checklists/dependencies, project milestones, calendar/timeline/workload, discussion/mentions/notifications, attachment references, task/project history, approvals, templates and Sales-source project creation were preserved. Existing project customer/order references, task/project document links and notification records continue through their canonical services and their existing permissions. This increment adds no new Finance, Procurement, People leave/capacity, Documents upload or external messaging handoff; time remains separate from all of them.
+
+### Implemented
+
+- **Project/task structure:** project start/due dates, priority and planned effort; independent task state and stage; project-scoped milestone links and progress; milestone completion cannot hide incomplete linked tasks.
+- **Timesheets and timer:** encrypted, author-bound time entries with edit/submit/review states; author cannot review their own time, approved entries are immutable, and rejected entries are omitted from recorded effort. A server-owned timer survives reloads, supports idempotent stop/discard, and splits elapsed records across workspace-local day boundaries. Estimates and recorded work remain separate.
+- **Recurrence:** daily/weekly/monthly/yearly rules with interval and end date. Generation is an explicit authorized action with a stable rule/date uniqueness key. The copy policy excludes dependencies, subtasks, followers, messages, timesheets, attachments, and approvals. No unattended scheduler is claimed.
+- **Scheduling:** finish-to-start dependency preview shifts dated successors and returns the affected task/version set. Apply rechecks the proposal and versions, then updates the graph transactionally. Cycles, stale proposals and missing required dates fail without a partial shift.
+- **Reports and history:** server-side filters/grouping and scoped aggregates for tasks, estimates, recorded time, stage/state/assignee/priority/milestone, overdue/blocked/completed work, and task event durations. Task event history begins at migration 013; earlier transitions are not reconstructed. APIs cap each report source and disclose coverage rather than presenting capped totals as complete.
+- **Project updates:** manager-published append-only updates snapshot the selected period, status, progress, achievements, risks, blockers, next steps and related task/milestone state.
+- **Workspace:** global Projects, My Tasks, Planning, Timesheets, Reporting and Configuration navigation; project views include board/list/calendar/timeline/my work/workload/report/discussions/updates. The schedule view supports a date-grid preview/apply flow; it is not a full draggable dependency-arrow Gantt.
+- Migration `013-work-time-and-history` adds timer and recurrence uniqueness state plus append-only task event storage. New routes are declared in the workspace route policy and OpenAPI inventory.
+
+### Verification
+
+| Check | Result |
+| --- | --- |
+| `npm test` | Passed **471**, failed **0**, skipped **1** PostgreSQL-only test (**472 total**); builds backend and uses disposable local test data. Initial run hit sandbox loopback `EACCES`; rerun with local-network access passed. |
+| Focused Work integration suite | Passed **19/19** |
+| `npm run typecheck`, `npm --prefix website run typecheck` | Passed |
+| `npm run lint` | Passed; ESLint, architecture and test-isolation checks |
+| `npm run validate:openapi` | Passed; 59 mounted operations |
+| `npm run validate:platform` | Passed; 483 workspace operations validated against Express registrations |
+| `npm --prefix website run build` | Passed; production build, prerender and content/app suite **135/135** |
+| Changed Work code Prettier check | Passed for all changed/new Work source files |
+| `npm run format:check` | Repository-wide check reports 51 pre-existing formatting warnings; none are in the changed Work source files |
+| `git diff --check` | Passed; only normal Windows line-ending notices |
+
+The supplied Odoo Project and Timesheets screenshots were reviewed as references. The signed-in local AfriCore browser showed the Work project calendar, but both Timesheets and Reporting rendered **“Resource not found.”** No timesheet, timer, project update, or other live record was created to probe the error. The source routes and isolated API tests pass, but the current browser runtime has not demonstrated those endpoints; refresh/runtime verification is required before visual acceptance. No screenshot side-by-side or founder acceptance is claimed.
+
+### Explicit scope limits
+
+- Recurrence runs only when explicitly generated; there is no background recurrence worker.
+- Gantt has no dependency arrows or drag/resize scheduling; schedule changes use explicit preview and confirm.
+- Work does not calculate payroll, attendance, billable work, invoices, project profit, budgets, utilization capacity or leave availability. It does not send outbound email/push or claim external delivery.
+- Earlier stage history is unavailable before migration 013. Timesheet manual entries are author supplied; timer overlap with a manual entry is not detected.
+- Reports are bounded by their authorized source windows/caps. Milestone progress uses the currently loaded task window. Existing task, project and update lists retain their own paging limits.
+- This increment does not expand project-template cloning to support relative dates and dependency/milestone reference remapping, add report CSV/PDF/pivot export, add project/customer-wide portfolio aggregation, or add milestone owners/documents. Existing templates, reports and project links remain available within their current contracts.
+- Existing document links and grants remain separate; this expansion adds no general file upload or cross-service permission bypass.
+
+### Founder/runtime acceptance
+
+1. Refresh the local API runtime, then open Timesheets and Reporting in the signed-in sandbox. Confirm source errors recover and that empty records are shown as empty rather than “Resource not found.”
+2. Create, edit, submit, review and reject a timesheet under author, reviewer and unauthorized roles; reload before and during an active timer and retry stop/discard.
+3. Verify a timer crossing the workspace-local midnight boundary splits to the correct dates; confirm estimates, time and any financial records remain separate.
+4. Generate recurring daily/weekly/monthly/yearly tasks twice for the same due date; verify only one occurrence exists and excluded child/history fields are not copied.
+5. Link tasks to milestones; test project mismatch rejection and refusal to complete a milestone with incomplete tasks.
+6. Preview a dependency schedule change, apply it, and verify successor dates; test stale versions, cycles, missing dates, and rollback.
+7. Compare the project cards, task board/form/timesheets, scheduling and analysis layouts to the supplied nine screenshots at similar viewport sizes; check narrow layouts and error/empty states.
+8. Review task reports and project updates against known authorized records; confirm coverage labels and date filters, and ensure no historical transition is implied before migration 013.
+
+No production migration, live financial write, outbound notification, deployment, commit or push was performed. The migration exists locally but has not been applied to a hosted or production database.
