@@ -20,6 +20,7 @@ const requiredVersions = [
   '019-point-of-sale',
   '020-procurement-expansion',
   '021-people-expansion',
+  '026-app15-16',
 ];
 interface DatabasePreparation {
   isPostgres: boolean;

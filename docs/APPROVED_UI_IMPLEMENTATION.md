@@ -42,3 +42,6 @@ See [browser observations](evidence/approved-ui/checks.json) and [Finance previe
 The local implementation is verified at representative layout/workflow scope. This does not claim pixel-for-pixel identity for every state, manual acceptance of every section/role permutation, physical iPhone/Safari testing, comprehensive screen-reader certification or measured Core Web Vitals. Public article/guide content, prices, SEO/prerender and onboarding routes are retained. No new reference assets or dependencies were needed.
 
 This approved-reference implementation is committed locally; it has not been pushed or deployed. The earlier Cloudflare release belongs to the preceding UI checkpoint and does not contain these new reference-driven changes.
+
+## Phase 3 note — 20 November 2026
+The prior approved-shell implementation documents the original 14-app checkpoint. The local Phase 3 working tree registers Calendar and Website as apps 15–16, but does not yet have matched-size browser acceptance or founder approval; see the Phase 3 implementation notes. These two apps are not covered by the former approved UI comparisons.

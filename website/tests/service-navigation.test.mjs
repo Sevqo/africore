@@ -65,6 +65,8 @@ const requiredServices = [
   'verification_api',
   'developer_api',
   'webhooks',
+  'calendar',
+  'website',
 ];
 const trustServices = new Set([
   'passport',

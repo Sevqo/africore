@@ -25,6 +25,8 @@ export type IconName =
   | 'network'
   | 'check'
   | 'external'
+  | 'calendar'
+  | 'globe'
   | 'eye'
   | 'eye-off';
 const paths: Record<IconName, string> = {
@@ -57,6 +59,8 @@ const paths: Record<IconName, string> = {
   network: 'M12 4v6M5 18l7-8 7 8M9 2h6v5H9zM2 17h6v5H2zM16 17h6v5h-6z',
   check: 'm5 12 4 4L19 6',
   external: 'M14 3h7v7M21 3 10 14M10 3H3v18h18v-7',
+  calendar: 'M4 4h16v17H4zM8 2v4M16 2v4M4 9h16M8 13h3m-3 4h3m3-4h2m-2 4h2',
+  globe: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20',
 };
 export function Icon({ name, ...props }: SVGProps<SVGSVGElement> & { name: IconName }) {
   return (

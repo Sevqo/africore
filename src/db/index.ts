@@ -14,6 +14,7 @@ import { migrateFinance } from '../finance/schema';
 import { migrateTrust } from '../trust/schema';
 import { migrateSecurity } from '../platform/security-schema';
 import { migrateMarketplace } from '../marketplace/schema';
+import { migratePhase3Catalog } from '../marketplace/phase3-schema';
 import { migrateOperations } from '../operations/schema';
 import { migratePlatform } from '../platform/schema';
 import { migrateAccounts } from '../platform/accounts-schema';
@@ -330,6 +331,7 @@ export async function migrate(): Promise<void> {
   await migrateWorkspaceExperiences();
   await migrateSecurity();
   await migrateMarketplace();
+  await migratePhase3Catalog();
   await migrateFinance();
   await migrateConnected();
   await migrateApps();

@@ -249,3 +249,9 @@ Waves1/2 evaluation deployment5November: application228b16c, all five CI jobs gr
 ## Phase 2.5 CRM and immersive application navigation — local implementation, 18 November 2026
 
 Current local CRM and shared app-navigation changes are implemented and automated checks pass: website suite 133/133, backend suite 460 passed + one PostgreSQL-only skip, TypeScript, lint/architecture, legacy and workspace OpenAPI, development-config tests (3/3), and production website build. The nine Odoo reference images were inspected at native resolution. Runtime visual acceptance remains pending: only the authenticated empty pipeline shell was captured (912 × 960), which is not comparable to the populated 1716 × 894 pipeline reference; the other eight runtime screens were not captured. See the Phase 2.5 checkpoint at the end of [PHASE2_APP_PROGRESS.md](PHASE2_APP_PROGRESS.md) and reusable [APP_UI_IMPLEMENTATION_STANDARD.md](APP_UI_IMPLEMENTATION_STANDARD.md). No commit, push, deployment, migration or dependency installation occurred.
+
+## Phase 3 service, Calendar and Website local checkpoint — 20 November 2026
+
+Implemented the eight-family service presentation registry, additive catalog migration 026, Apps 15/16 entries, scoped Calendar event/invitation core, typed Website page draft/publication core and UI slices. See [service consolidation](SERVICE_CONSOLIDATION.md), [Calendar](CALENDAR_IMPLEMENTATION.md), and [Website](WEBSITE_IMPLEMENTATION.md) for exact delivered and missing capabilities. This is not a claim that the full Phase 3 brief is complete.
+
+The new tests/builds and complete local gates are being recorded in the phase report after they finish. The latest GitHub CI is run 124 on base commit `d986a01a92f539756f31148c72c34f8ce3b36e97`; it does not include this local working tree. No commit/push/deploy/hosted migration occurred. Render, disposable PostgreSQL, and matched-size browser verification remain unverified; see `DEPLOYMENT_TEST_RESULTS.md`.

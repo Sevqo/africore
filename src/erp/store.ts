@@ -26,6 +26,8 @@ export type ERPKind =
   | 'purchase_template'
   | 'work_project'
   | 'work_task'
+  | 'calendar_event'
+  | 'website_page'
   | 'work_timesheet'
   | 'work_project_update'
   | 'work_message'

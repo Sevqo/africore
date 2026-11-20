@@ -16,4 +16,6 @@ export const appIcons: Record<string, IconName> = {
   sales: 'tag',
   analytics: 'code',
   automations: 'bolt',
+  calendar: 'calendar',
+  website: 'globe',
 };

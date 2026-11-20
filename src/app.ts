@@ -15,6 +15,7 @@ import { developerRequestLog } from './platform/request-logs';
 import { auth, sameOrigin } from './platform/auth';
 import { platform } from './platform/routes';
 import { operations } from './operations/routes';
+import { publicWebsitePage } from './apps/phase3';
 import express from 'express';
 import path from 'node:path';
 import { dbGet, isPostgres } from './db';
@@ -127,6 +128,10 @@ export function createApp() {
   app.get('/api/openapi.json', (_req, res) =>
     res.sendFile('platform-openapi.json', { root: process.cwd() }),
   );
+  app.get('/api/public/sites/:slug', async (req,res) => {
+    try { const page=await publicWebsitePage(String(req.params.slug)); if(!page) return res.status(404).json({error:'not_found'}); return res.setHeader('Cache-Control','public, max-age=60').json(page); }
+    catch { return res.status(404).json({error:'not_found'}); }
+  });
 
   // Liveness: process-only, deliberately does NOT touch the database, so a
   // slow DB cannot cause an orchestrator to kill a healthy process.
@@ -216,6 +221,7 @@ export function createApp() {
       '/app',
       '/app/{*path}',
       '/checkout/{*path}',
+      '/sites/{*path}',
       '/buyer/{*path}',
       '/signin',
       '/signup',

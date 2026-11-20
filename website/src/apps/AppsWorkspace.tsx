@@ -19,6 +19,7 @@ import { Icon } from '../components/Icon';
 import { Overlay } from '../components/Overlay';
 import { money, type API } from '../operations/UI';
 import { FinanceAppWorkspace } from './lazy-workspaces';
+import { CalendarWorkspace, WebsiteWorkspace } from './lazy-workspaces';
 import { appIcons as icons } from './appIcons';
 import { appPortfolioPath } from './app-portfolio-path';
 import './apps.css';
@@ -460,6 +461,10 @@ export function AppsWorkspace({
                   navigate={navigate}
                   section={activeSection}
                 />
+              ) : app.id === 'calendar' ? (
+                <CalendarWorkspace key={scope} api={api} scope={scope} section={activeSection} />
+              ) : app.id === 'website' ? (
+                <WebsiteWorkspace key={scope} api={api} scope={scope} section={activeSection} />
               ) : (
                 <section className="panel">
                   <h2>Workspace interface update required</h2>

@@ -32,6 +32,7 @@ import { FeatureSection } from './components/Media';
 const PublicStorefront = lazy(() =>
   import('./commerce/PublicStorefront').then((m) => ({ default: m.PublicStorefront })),
 );
+const PublicWebsite = lazy(() => import('./apps/PublicWebsite').then((m)=>({default:m.PublicWebsite})));
 const Checkout = lazy(() => import('./BusinessApp').then((m) => ({ default: m.Checkout })));
 import { AuthPage } from './accounts/AuthPage';
 import { Logo } from './components/Logo';
@@ -186,6 +187,7 @@ function Application() {
   if (path.startsWith('/trust/share/')) return <TrustPublic mode="share" />;
   if (path.startsWith('/passport/')) return <TrustPublic mode="profile" />;
   if (path.startsWith('/buyer/')) return <BuyerPortal />;
+  if (/^\/sites\/[a-z0-9]+(?:-[a-z0-9]+)*\/?$/.test(path)) return <PublicWebsite slug={path.split('/')[2]} />;
   if (path === '/app' || path.startsWith('/app/') || path === '/auth/callback')
     return <AccountApp />;
   if (path === '/get-started' || path === '/signup') return <AccountChooser />;

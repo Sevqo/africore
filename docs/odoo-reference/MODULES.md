@@ -47,3 +47,6 @@ into a "read everything" plan.
 | Module | Why it might inform AfriCore | Trigger |
 | --- | --- | --- |
 | `mail` | Generic activity/thread/messaging mixins | Review of notifications and activity feeds |
+
+| `calendar` | `odoo-reference/addons/calendar` | read | [calendar notes](notes/calendar.md) | AfriCore Calendar event/privacy/recurrence workflows |
+| `website` | `odoo-reference/addons/website` | read | [website builder notes](notes/website_builder.md) | AfriCore Website pages, menus, publication and routing |

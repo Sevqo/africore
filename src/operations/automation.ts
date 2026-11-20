@@ -346,7 +346,8 @@ export async function notify(
         | 'work'
         | 'accounting'
         | 'procurement'
-        | 'business_id';
+        | 'business_id'
+        | 'calendar';
       section?: string;
       record_id?: string;
       approval_id?: string;

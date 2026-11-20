@@ -1772,3 +1772,11 @@ For founder acceptance, compare desktop folder cards/list and selection toolbar,
 ### Automated and runtime verification
 
 Detailed final command results, skips and limitations are recorded in [DEPLOYMENT_TEST_RESULTS.md](DEPLOYMENT_TEST_RESULTS.md). The hosted GitHub CI, local Docker daemon/image, Render deployment, hosted migration ledger and founder acceptance remain separate statuses and are not inferred from local results.
+
+## Phase 3 — Service families, Calendar and Website (local implementation slice, 20 November 2026)
+
+Added typed service-family registry and marketplace family filter while retaining 35 prior IDs and adding independent Calendar/Website service IDs. Added installable app catalog entries for 15 Calendar and 16 Website; the combined target remains 26 apps. Migration `026-app15-16` only inserts the two definitions/price rows and is included in verify-mode migration requirements; no hosted migration was run.
+
+Calendar has encrypted scoped event records, current-member invitations, in-app Notifications notices, response states, idempotent writes, version-aware changes/cancellation, UTC instants/IANA zones, day/week/month UI, date navigation and server-side private busy redaction. Website has encrypted typed page drafts, template-created blocks, draft editor, exact-version immutable publication snapshots, safe-link validation, sandbox/public-route separation, production active-publication lookup and unpublish. Installation tests and safe-link/privacy checks are in `src/__tests__/phase3-apps.test.ts`.
+
+**Material gaps remain:** Calendar recurrence only stores a pattern enum; there is no recurrence engine/exception editing, availability, reminders, appointments, linked-source authorization, or edit/cancel UI. Website lacks functional menu hierarchy, media upload/selection, public forms, real Commerce product sourcing, per-site host ownership, publication restore, sitemap/canonical/redirect support, theme/undo/redo, and rich block-specific renderers. Visual browser and hosted public route checks are pending. The implementation is a usable prototype slice, not the complete Phase 3 acceptance scope. See the implementation docs for details.

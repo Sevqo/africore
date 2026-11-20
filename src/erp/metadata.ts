@@ -1,5 +1,16 @@
 export const erpRouteKinds: Record<string, readonly string[]> = {};
 export const erpPolicies: Record<string, { services: string[] }> = {};
+for (const [suffix, service] of [
+  ['GET /calendar/events','calendar'],['POST /calendar/events','calendar'],
+  ['PUT /calendar/events/:id','calendar'],['POST /calendar/events/:id/respond','calendar'],
+  ['POST /calendar/events/:id/cancel','calendar'],['GET /website/pages','website'],
+  ['POST /website/pages','website'],['PUT /website/pages/:id','website'],
+  ['POST /website/pages/:id/publish','website'],
+  ['POST /website/pages/:id/unpublish','website'],
+] as const) {
+  const [method,path]=suffix.split(' '), key=method+' /organizations/:org'+path;
+  erpRouteKinds[key]=['business']; erpPolicies[key]={services:[service]};
+}
 erpRouteKinds['POST /organizations/:org/accounting/sources'] = ['business'];
 erpPolicies['POST /organizations/:org/accounting/sources'] = { services: ['accounting'] };
 erpRouteKinds['GET /organizations/:org/accounting/sources'] = ['business'];

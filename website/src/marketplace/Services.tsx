@@ -3,6 +3,7 @@ import { api, apiFetch } from '../lib/api-client';
 import { Overlay } from '../components/Overlay';
 import { Icon } from '../components/Icon';
 import { serviceCatalog, serviceForTab, foundationTabs } from '../../../src/marketplace/catalog';
+import { serviceFamilies, serviceFamilyFor } from '../../../src/marketplace/families';
 import './services.css';
 import { allowanceLabel, formatUnits, planLabel, selectUsage } from './usage-presentation';
 import { serviceOpenDestination } from './service-open-destination';
@@ -206,6 +207,7 @@ export function Services({
   const [serviceLayout, setServiceLayout] = useState<'grid' | 'list'>('list');
   const [search, setSearch] = useState(''),
     [category, setCategory] = useState('all'),
+    [family, setFamily] = useState('all'),
     [pricing, setPricing] = useState('all'),
     [detail, setDetail] = useState<string | null>(
       new URLSearchParams(location.search).get('service'),
@@ -289,6 +291,7 @@ export function Services({
         (view === 'Explore Services' || s.entitlement) &&
         [s.name, s.description, s.detail].join(' ').toLowerCase().includes(search.toLowerCase()) &&
         (category === 'all' || s.category === category) &&
+        (family === 'all' || serviceFamilyFor(s.id)?.id === family) &&
         (pricing === 'all' ||
           (pricing === 'free' && s.price?.model === 'free') ||
           (pricing === 'paid' && s.price?.model !== 'free') ||
@@ -443,6 +446,15 @@ export function Services({
           />
         </label>
         <label className="field">
+          <span>Service family</span>
+          <select value={family} onChange={(e) => setFamily(e.target.value)}>
+            <option value="all">All families</option>
+            {serviceFamilies.filter((f) => f.kinds.includes((market.catalog?.kind || market.kind) as any)).map((f) => (
+              <option value={f.id} key={f.id}>{f.name}</option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
           <span>Category</span>
           <select value={category} onChange={(e) => setCategory(e.target.value)}>
             <option value="all">All categories</option>
@@ -505,7 +517,7 @@ export function Services({
                   />
                 </span>
                 <div className="service-card-meta">
-                  <span>{s.category}</span>
+                  <span>{serviceFamilyFor(s.id)?.name || s.category}</span>
                   <span className="badge">{status(s.status)}</span>
                 </div>
                 <h2>{s.name}</h2>

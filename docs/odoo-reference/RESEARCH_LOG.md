@@ -25,6 +25,26 @@ that produced a conclusion does.
 ```
 
 ## Entries
+## 2026-11-20 — Calendar and website builder source findings
+
+- Question: which concrete Calendar event, invitation, recurrence and website page/editor/publication patterns should AfriCore compare against before implementing its combined Calendar and Website apps? This entry supersedes the pending source-review placeholder immediately above.
+- Odoo commit: `c1ef83e9c`.
+- Read (paths): `addons/calendar/models/calendar_event.py`; `addons/calendar/models/calendar_recurrence.py`; `addons/calendar/models/calendar_attendee.py`; `addons/calendar/tests/test_access_rights.py`; `addons/website/models/website_page.py`; `addons/website/models/website_menu.py`; `addons/website/controllers/main.py`.
+- Findings: calendar events link attendee response state and recurrence authority, with access/privacy behavior tested separately. Website pages own URL/publication state, hierarchical menus are separate ordered records, and page listing/serving/sitemap are distinct paths. Detailed focused notes: [calendar](notes/calendar.md), [website builder](notes/website_builder.md).
+- Conclusions: retain UTC instants plus timezone, separate recurring series from single events, enforce private-event redaction at the server, and keep draft/public content separated by immutable publication snapshots.
+- Decision: see the implementation choices in the linked notes; no code or assets were copied.
+- Follow-ups: add automated privacy and publication workflow tests; complete recurrence exceptions and real website menus/media/forms before describing those areas as complete.
+- Limits: official Odoo 20 docs pages timed out or were not accessible in the reader; supplied UI screenshots are Odoo 19. Focused source review is not a parity audit.
+## 2026-11-20 — Calendar and website builder workflow reference
+
+- Question: which concrete Calendar event, invitation, recurrence and website page/editor/publication patterns should AfriCore compare against before implementing its combined Calendar and Website apps?
+- Odoo commit: `c1ef83e9c`.
+- Read (paths): pending targeted source review of `addons/calendar` and `addons/website` after recording this question.
+- Findings: pending.
+- Conclusions: observations will be separated from AfriCore decisions and the supplied screenshots will remain visual references, not copied assets.
+- Decision: none.
+- Follow-ups: review models, views, controllers and focused tests for event recurrence, attendee responses, page editing and published routing.
+- Limits: no source files have been opened for this entry yet.
 
 ## 2026-11-19 — Documents workflow reference and supplied screens
 

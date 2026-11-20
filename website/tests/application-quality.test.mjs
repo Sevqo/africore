@@ -9,9 +9,9 @@ import { appIcons } from '../src/apps/appIcons.ts';
 import { appPortfolioPath } from '../src/apps/app-portfolio-path.ts';
 import { serviceOpenDestination } from '../src/marketplace/service-open-destination.ts';
 
-test('the fourteen apps have unique visual identities and prerendered focused pages', () => {
+test('the sixteen apps have unique visual identities and prerendered focused pages', () => {
   const appIds = Object.keys(appIcons);
-  assert.equal(appIds.length, 14);
+  assert.equal(appIds.length, 16);
   assert.equal(new Set(Object.values(appIcons)).size, appIds.length);
   const manifest = JSON.parse(fs.readFileSync('../deploy/cloudflare/public-paths.json', 'utf8'));
   assert.ok(manifest.includes('/apps'));

@@ -36,6 +36,11 @@ const groups = [
     description: 'Inspect authorized information and supported workflow runs.',
     ids: ['automations', 'analytics'],
   },
+  {
+    title: 'Plan & publish',
+    description: 'Coordinate workspace meetings and publish reviewed business pages.',
+    ids: ['calendar', 'website'],
+  },
 ] as const;
 
 const journeys: Record<string, { title: string; steps: string[] }> = {

@@ -103,6 +103,7 @@ import {
   completePeopleLifecycleCase,
   peopleExpansionReport,
 } from './people-expansion';
+import { cancelCalendarEvent, calendarEvents, createCalendarEvent, editCalendarEvent, publishWebsitePage, respondCalendarInvite, saveWebsitePage, unpublishWebsitePage, websitePages } from '../apps/phase3';
 import { Router } from 'express';
 import { prepareAccountingSource } from './accounting-sources';
 import { accountingSourceList } from './accounting-source-list';
@@ -1421,3 +1422,14 @@ erp.put(
     ),
   ),
 );
+
+erp.get('/organizations/:org/calendar/events', route(async (req,res)=>res.json(await calendarEvents(await access(req)))));
+erp.post('/organizations/:org/calendar/events', route(async (req,res)=>res.status(201).json(await createCalendarEvent(await access(req,'operations'),req.body,key(req)))));
+erp.put('/organizations/:org/calendar/events/:id', route(async (req,res)=>res.json(await editCalendarEvent(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
+erp.post('/organizations/:org/calendar/events/:id/respond', route(async (req,res)=>res.json(await respondCalendarInvite(await access(req,'read'),String(req.params.id),req.body?.response,key(req)))));
+erp.post('/organizations/:org/calendar/events/:id/cancel', route(async (req,res)=>res.json(await cancelCalendarEvent(await access(req,'operations'),String(req.params.id),req.body?.expected_version,key(req)))));
+erp.get('/organizations/:org/website/pages', route(async (req,res)=>res.json(await websitePages(await access(req)))));
+erp.post('/organizations/:org/website/pages', route(async (req,res)=>res.status(201).json(await saveWebsitePage(await access(req,'operations'),null,req.body,key(req)))));
+erp.put('/organizations/:org/website/pages/:id', route(async (req,res)=>res.json(await saveWebsitePage(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
+erp.post('/organizations/:org/website/pages/:id/publish', route(async (req,res)=>res.json(await publishWebsitePage(await access(req,'operations'),String(req.params.id),req.body?.expected_version,key(req)))));
+erp.post('/organizations/:org/website/pages/:id/unpublish', route(async (req,res)=>res.json(await unpublishWebsitePage(await access(req,'operations'),String(req.params.id),req.body?.expected_version,key(req)))));

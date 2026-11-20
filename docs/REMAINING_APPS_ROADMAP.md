@@ -109,3 +109,25 @@ Create a plan and contract, change plan while preserving old price history, gene
 - **AfriCore Studio:** only after core application closure; isolated, permissioned customization with schema/version review, audit and safe rollback. No arbitrary server code or bypass of tenant/data boundaries.
 
 Before adding these entries to the app catalog, close the original 14-app items in [`APP_EXPANSION_CLOSURE.md`](APP_EXPANSION_CLOSURE.md), qualify PostgreSQL and hosted release gates, and complete founder acceptance for the recently expanded apps.
+
+## 26-app catalog update — Phase 3 local checkpoint, 20 November 2026
+
+The maintained target catalog remains 26:
+
+| # | App | Status / purpose |
+|---:|---|---|
+| 1–14 | Commerce, Finance, Sales, Inventory, CRM, Procurement, Accounting, POS, Work, People, Documents, Analytics, Automations, Business ID | Existing apps; consult the separate original-app closure matrix. |
+| 15 | Calendar | Registered local app; event/invitation core and day/week/month shell implemented; recurrence, availability, appointments and integrations remain. |
+| 16 | Website | Registered local app; typed page editor and immutable snapshot publication core implemented; menus/forms/media/product sourcing and full lifecycle remain. |
+| 17 | Marketing | Campaigns, audiences, templates and consent-aware delivery over canonical CRM/Contacts. |
+| 18 | Support | Tickets, inbox, teams, SLA and scoped customer replies. |
+| 19 | Subscriptions | Plans, contracts, renewals and invoice occurrences without payment mandates. |
+| 20 | Manufacturing | BOM, work centers, production planning and canonical stock movements. |
+| 21 | Field Operations | Dispatch and onsite workflows using Work/Inventory/People/Calendar. |
+| 22 | Logistics | Shipment planning, carriers and tracking only after providers/authority exist. |
+| 23 | Property & Hospitality | Property/unit and reservation/guest workflows over existing shared records where possible. |
+| 24 | Knowledge & Learning | Published knowledge base and learning paths, separate from private Documents blobs. |
+| 25 | AfriCore Studio | Governed low-code metadata and workflows; no arbitrary executable surface. |
+| 26 | Integrations Hub | Connectors, credentials, scopes, webhooks and health; reuses existing integration services. |
+
+Apps 17–26 remain roadmap-only. Do not implement them in this assignment. Each must reuse canonical customer/product/order/finance/document authorities, use workspace/role-scoped data boundaries, have app navigation and lifecycle tests, and pass app-specific founder acceptance before installation is enabled. Suggested order after Phase 3 closure: Marketing → Support → Subscriptions → Manufacturing → Field Operations → Logistics → Property & Hospitality → Knowledge & Learning → Studio → Integrations Hub. This order is provisional and subject to dependency review.

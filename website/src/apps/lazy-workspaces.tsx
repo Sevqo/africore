@@ -91,6 +91,12 @@ export const BusinessIDWorkspace = workspace<
 export const AutomationsWorkspace = workspace<
   Parameters<(typeof import('./AutomationsWorkspace'))['AutomationsWorkspace']>[0]
 >(() => import('./AutomationsWorkspace').then((m) => ({ default: m.AutomationsWorkspace })));
+export const CalendarWorkspace = workspace<
+  Parameters<(typeof import('./CalendarWorkspace'))['CalendarWorkspace']>[0]
+>(() => import('./CalendarWorkspace').then((m) => ({ default: m.CalendarWorkspace })));
+export const WebsiteWorkspace = workspace<
+  Parameters<(typeof import('./WebsiteWorkspace'))['WebsiteWorkspace']>[0]
+>(() => import('./WebsiteWorkspace').then((m) => ({ default: m.WebsiteWorkspace })));
 export const SalesWorkspace = workspace<
   Parameters<(typeof import('./SalesWorkspace'))['SalesWorkspace']>[0]
 >(() => import('./SalesWorkspace').then((m) => ({ default: m.SalesWorkspace })));

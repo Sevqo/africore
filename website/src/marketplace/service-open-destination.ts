@@ -41,6 +41,8 @@ const destinations: Record<string, ServiceOpenDestination> = {
   developer_api: { tab: 'Developers' },
   webhooks: { tab: 'Webhooks' },
   verification_api: { tab: 'Verification APIs' },
+  calendar: { tab: 'Apps', app: 'calendar', section: 'calendar' },
+  website: { tab: 'Apps', app: 'website', section: 'overview' },
 };
 
 /** Personal workspaces use different tab labels for the same canonical records. */
