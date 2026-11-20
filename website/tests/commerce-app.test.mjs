@@ -38,6 +38,7 @@ test('the Commerce app has workflow navigation distinct from the service tab', (
       'orders',
       'storefront',
       'inventory',
+      'promotions',
       'payments',
       'reports',
       'settings',
@@ -75,6 +76,11 @@ test('the installed Commerce app renders a merchant workspace instead of the ser
   assert.match(merchantSource, /\/configuration/);
   assert.match(merchantSource, /\/listings\?/);
   assert.match(merchantSource, /\/orders\?/);
+  assert.match(merchantSource, /Product layout/);
+  assert.match(merchantSource, /listingLayout === 'cards'/);
+  assert.match(merchantSource, /view === 'promotions'/);
+  assert.match(merchantSource, /configuration\?\.discounts/);
+  assert.match(merchantSource, /Manage discount rules/);
   assert.match(
     merchantSource,
     /No live funds move/,

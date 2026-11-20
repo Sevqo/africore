@@ -1,5 +1,11 @@
 # Implementation status — Stage 3 sandbox beta
 
+## Current combined Business ID + Commerce checkpoint — 20 November 2026
+
+Business ID continues to use its existing ten-section Trust/Passport authority; this continuation added no duplicate identity store or migration. Commerce now has a source-backed Promotions register over existing validated discount rules and Cards/List presentation over canonical product listings. Focused app tests passed 10/10. See [the phase report](PHASE2_APP_PROGRESS.md#combined-phase-214b-business-id--21b-commerce--20-november-2026), [closure register](APP_EXPANSION_CLOSURE.md) and [remaining-app roadmap](REMAINING_APPS_ROADMAP.md).
+
+Latest observable committed main CI is [run 123](https://github.com/Sevqo/africore/actions/runs/44607759099), successful for exact current base SHA `cdfa55f77e17843eb2b4e166e9cdeaee4310e24a`; it includes the PostgreSQL CRM grouping repair. This run predates the local Commerce edits. Render logs/status, hosted migration ledger, Docker image build and PostgreSQL validation of the final working tree remain unverified. No deploy, migration, production data change, commit or push was made. Founder browser acceptance and matched-size Odoo visual comparison remain pending.
+
 ## Combined Analytics 2.12B + Automations 2.13B — local integration, 19 November 2026
 
 Analytics now reports aggregate counts from the canonical Automation rules and run ledgers, with Automations service and finance-role access checks, status groupings, registry coverage, and an Automation Activity dashboard template. The CRM forecast PostgreSQL group-by fix is also present locally. No second ledger, worker, or migration was introduced. Local SQLite tests and quality gates pass; PostgreSQL qualification, hosted rerun, full combined-brief metric/export expansion, screenshot comparison, Render verification and founder acceptance remain open. Details are in the [combined phase checkpoint](PHASE2_APP_PROGRESS.md#combined-analytics-212b--automations-213b--local-integration-19-november-2026) and [deployment test results](DEPLOYMENT_TEST_RESULTS.md).

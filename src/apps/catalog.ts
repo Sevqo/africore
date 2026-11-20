@@ -60,6 +60,7 @@ export const appCatalog: AppDefinition[] = [
       { label: 'Orders', section: 'orders' },
       { label: 'Storefront', section: 'storefront' },
       { label: 'Inventory', section: 'inventory' },
+      { label: 'Promotions', section: 'promotions' },
       { label: 'Payments', section: 'payments' },
       { label: 'Reports', section: 'reports' },
       { label: 'Settings', section: 'settings' },

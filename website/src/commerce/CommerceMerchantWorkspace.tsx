@@ -73,6 +73,7 @@ export function CommerceMerchantWorkspace({
   const [view, setView] = useState(section),
     [listingQuery, setListingQuery] = useState(''),
     [listingState, setListingState] = useState('all'),
+    [listingLayout, setListingLayout] = useState<'list' | 'cards'>('list'),
     [listingOffset, setListingOffset] = useState(0),
     [orderQuery, setOrderQuery] = useState(''),
     [orderOffset, setOrderOffset] = useState(0);
@@ -586,8 +587,70 @@ export function CommerceMerchantWorkspace({
                 <option value="archived">Archived</option>
               </select>
             </Field>
+            <div
+              className="commerce-merchant-layout-switch"
+              role="group"
+              aria-label="Product layout"
+            >
+              <button
+                type="button"
+                className={listingLayout === 'cards' ? 'is-active' : ''}
+                aria-pressed={listingLayout === 'cards'}
+                onClick={() => setListingLayout('cards')}
+              >
+                Cards
+              </button>
+              <button
+                type="button"
+                className={listingLayout === 'list' ? 'is-active' : ''}
+                aria-pressed={listingLayout === 'list'}
+                onClick={() => setListingLayout('list')}
+              >
+                List
+              </button>
+            </div>
           </div>
           <p className="muted">{listings?.coverage}</p>
+          {listingLayout === 'cards' ? (
+            <div className="commerce-merchant-product-cards">
+              {rows.map((item) => (
+                <article className="panel" key={item.id}>
+                  <div className="section-heading">
+                    <h3>{item.data.title || item.canonical_product.name}</h3>
+                    <span className="badge">{item.status}</span>
+                  </div>
+                  <p>
+                    {item.data.description ||
+                      item.canonical_product.description ||
+                      'No listing description'}
+                  </p>
+                  <dl className="commerce-merchant-facts">
+                    <div>
+                      <dt>SKU</dt>
+                      <dd>{item.canonical_product.sku || '—'}</dd>
+                    </div>
+                    <div>
+                      <dt>Price</dt>
+                      <dd>
+                        {money(
+                          item.canonical_product.sale_price_minor,
+                          item.canonical_product.currency,
+                        )}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Product state</dt>
+                      <dd>{item.canonical_product.status}</dd>
+                    </div>
+                    <div>
+                      <dt>Stock tracking</dt>
+                      <dd>{item.canonical_product.track_inventory ? 'Tracked in Inventory' : 'Not tracked'}</dd>
+                    </div>
+                  </dl>
+                </article>
+              ))}
+            </div>
+          ) : (
           <DataTable>
             <thead>
               <tr>
@@ -628,6 +691,7 @@ export function CommerceMerchantWorkspace({
               ))}
             </tbody>
           </DataTable>
+          )}
           {!rows.length && (
             <p>
               No listing matches this search. Create listings in the Commerce service catalogue
@@ -957,6 +1021,42 @@ export function CommerceMerchantWorkspace({
               real collection.
             </p>
           </section>
+        </div>
+      )}
+      {view === 'promotions' && (
+        <div className="commerce-merchant-section">
+          <div className="section-heading">
+            <div>
+              <h2>Promotion rules</h2>
+              <p>These are the current store discount policies used by the server quote. Eligibility is recalculated at checkout.</p>
+            </div>
+            <button className="button" type="button" onClick={() => navigate('Commerce')}>
+              Manage discount rules
+            </button>
+          </div>
+          <p className="muted">{configuration?.discounts?.length ?? '—'} configured rule(s) · inactive, expired and minimum-order rules are still listed as configured policy.</p>
+          <DataTable>
+            <thead><tr><th>Code</th><th>Discount</th><th>Minimum subtotal</th><th>Maximum discount</th><th>Valid from</th><th>Valid until</th><th>State</th></tr></thead>
+            <tbody>
+              {(configuration?.discounts || []).map((rule: any) => (
+                <tr key={rule.code}>
+                  <td>{rule.code}</td>
+                  <td>{rule.kind === 'percentage' ? `${(rule.value / 100).toFixed(2)}%` : money(rule.value, currency)}</td>
+                  <td>{money(rule.minimum_subtotal_minor, currency)}</td>
+                  <td>{rule.maximum_discount_minor == null ? 'No configured cap' : money(rule.maximum_discount_minor, currency)}</td>
+                  <td>{date(rule.starts_at)}</td>
+                  <td>{date(rule.ends_at)}</td>
+                  <td><span className="badge">{rule.active ? 'Enabled policy' : 'Disabled'}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </DataTable>
+          {configuration && !configuration.discounts?.length && <p>No discount rules are configured for this store.</p>}
+          <p className="commerce-capability-note">
+            Codes are validated by the canonical server quote, including date window, minimum
+            subtotal, percentage limits and discount cap. This register does not claim campaign
+            attribution or customer usage analytics.
+          </p>
         </div>
       )}
       {view === 'reports' && (

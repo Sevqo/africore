@@ -5,6 +5,7 @@ export const commerceMerchantSections = [
   { section: 'orders', label: 'Orders' },
   { section: 'storefront', label: 'Storefront' },
   { section: 'inventory', label: 'Inventory' },
+  { section: 'promotions', label: 'Promotions' },
   { section: 'payments', label: 'Payments' },
   { section: 'reports', label: 'Reports' },
   { section: 'settings', label: 'Settings' },

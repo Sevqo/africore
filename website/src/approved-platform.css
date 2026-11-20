@@ -1363,6 +1363,34 @@ html:has([data-platform-density]) {
   gap: 12px;
   align-items: end;
 }
+.business-shell[data-platform-density] .commerce-merchant-layout-switch {
+  display: flex;
+  gap: 2px;
+  justify-self: end;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 2px;
+}
+.business-shell[data-platform-density] .commerce-merchant-layout-switch > button {
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  padding: 7px 12px;
+  color: var(--muted);
+}
+.business-shell[data-platform-density] .commerce-merchant-layout-switch > button.is-active {
+  color: var(--ink);
+  background: #edf7e3;
+}
+.business-shell[data-platform-density] .commerce-merchant-product-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 12px;
+}
+.business-shell[data-platform-density] .commerce-merchant-product-cards > .panel {
+  min-width: 0;
+  padding: 14px;
+}
 @media (max-width: 900px) {
   .business-shell[data-platform-density] .commerce-merchant-context {
     grid-template-columns: 1fr;

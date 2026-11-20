@@ -21,6 +21,37 @@ Public homepage/login/app/personal/product direct routes returned200HTML/no-stor
 
 No paid resources activated. Render Free sleeps while idle; scheduled/background execution pauses and in-memory legacy Orbit work is not restart durable. One verified local AfriCore API process was stopped to prevent competing polling. Existing unrelated services unchanged. GitHub deployment workflow is prepared as a manual main-only evaluation pipeline; scoped Cloudflare token/account variable and Render deploy-hook secrets are not configured, so automatic deployment is not claimed. Existing CI for4452a29passed all five checks; later commit CI must be checked separately.
 
+# Current local candidate — Business ID + Commerce, 20 November 2026
+
+The local tree starts from committed `main` SHA `cdfa55f77e17843eb2b4e166e9cdeaee4310e24a`. Public GitHub Actions run [44607759099](https://github.com/Sevqo/africore/actions/runs/44607759099), run 123, completed successfully across the workflow jobs for that exact committed SHA, including PostgreSQL. It includes the previously fixed CRM forecast query. The local Promotions register and Cards/List UI changes in this working tree were made after that run and are not hosted-CI verified.
+
+## Current candidate checks
+
+| Check | Result |
+|---|---|
+| `npm run typecheck` | Passed |
+| `npm run lint` | Passed; ESLint, architecture (215 frontend modules) and test-isolation checks |
+| `npm run validate:openapi` | Passed, 59/59 mounted operations |
+| `npm run validate:platform` | Passed, 528 workspace operations; includes backend build |
+| `npm test` | Passed, 472 passed, 0 failed, 1 PostgreSQL-only skip (473 total) |
+| `npm --prefix website run build` | Passed; TypeScript, Vite production build, 82 prerendered pages and content/app suite 135/135 |
+| Business ID + Commerce focused app tests | Passed, 10/10 (`node --test tests/commerce-app.test.mjs tests/business-id-quality.test.mjs` from `website`) |
+| `npm run test:dev` | Passed, 6/6 |
+| `npm run test:render-deploy` | Passed, 5/5 verifier tests; this tests verifier behavior, not a live deployment |
+| `node --test deploy/cloudflare/worker.test.mjs` | Passed, 10/10 |
+| `npm run check:chain` | Passed; ephemeral local EVM contract 1/1, Trust integration 21/21 and independent credential verification |
+| `git diff --check` | Passed; Git emitted only normal LF/CRLF working-copy notices |
+
+The first sandboxed `npm test` attempt failed before application assertions because ephemeral localhost listeners returned `EACCES` (367 harness failures). The same command rerun with the repository's isolated local loopback test permission passed as shown above. `npm run check:chain` likewise required that permission for its local Hardhat RPC at 127.0.0.1:18545; the authorized rerun passed. No test used a production database. PostgreSQL is represented by the successful pre-change CI run, while one current-worktree PostgreSQL-only test remains skipped locally.
+
+## Hosting and visual status
+
+No Render API/log integration or deployment credentials are available in this task. Therefore the latest Render deployment SHA, build/startup phase, `/v1/readiness` result and hosted migration ledger are **unverified**. The `render.yaml` and Dockerfile retain the Docker runtime, `/v1/readiness` health check, and `AFRICORE_MIGRATIONS_MODE=verify`; the manual deployment pipeline verifies an exact SHA. No deployment or migration was triggered. Docker Desktop's Linux engine is unavailable (`docker info` cannot connect to `dockerDesktopLinuxEngine`), so the image was not built locally. Migration `021-people-expansion` remains unconfirmed, not a diagnosed cause.
+
+The supplied Business ID and Commerce Odoo screenshots were reviewed. No fresh authenticated running-app capture or matched-viewport side-by-side comparison was performed after these changes; visual acceptance and founder acceptance remain open. Existing approved UI evidence is from an earlier checkpoint and is not claimed to cover Promotions or Cards/List.
+
+No production record, provider, credentials, commit, push, hosted migration or deployment was changed. The current changes are local and uncommitted.
+
 ## Local verification — 2026-11-19, Documents / CI / Render diagnostic
 
 ## Combined Analytics 2.12B + Automations 2.13B — 2026-11-19 local verification

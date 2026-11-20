@@ -1,6 +1,6 @@
 # Phase 2 — Applications Progress
 
-Current checkpoint: **2.11B Documents functional expansion and infrastructure repair** — local code, browser verification and automated checks are recorded below. Work Timesheets/Reporting and the Documents request-recipient flow now render in a refreshed authenticated sandbox; hosted runtime and founder acceptance remain separate gates.
+Current checkpoint: **2.14B Business ID + 2.1B Commerce continuation** — local source verification, Promotions register and product Cards/List presentation are recorded below. Business ID continues to use the existing Passport authority. GitHub run 123 is green for the committed baseline; local changes are not yet covered by CI. Render and matched-size founder visual acceptance remain separate gates.
 
 Source checkpoint: Phase 1 committed by the founder; this work is uncommitted by design.
 Hard limits observed: no commits, pushes, deployments, production data or provider changes.
@@ -9,7 +9,7 @@ Hard limits observed: no commits, pushes, deployments, production data or provid
 
 | Checkpoint | App         | State                                                                                                                                                             |
 | ---------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2.1        | Commerce    | Implemented; build/tests green; browser click-through not executed                                                                                                |
+| 2.1        | Commerce    | Expanded with source-backed Promotions and product Cards/List; automated checks recorded below; Odoo visual and complete browser acceptance pending |
 | 2.2        | Finance     | Implemented and automatically verified; live visual comparison and founder acceptance pending                                                                    |
 | 2.3        | Sales       | Implemented (Odoo-style document workspace); build/tests green; browser click-through not executed                                                                |
 | 2.4        | Inventory   | Implemented (Odoo-style warehouse workspace); build/tests green; browser click-through not executed                                                               |
@@ -26,6 +26,37 @@ Hard limits observed: no commits, pushes, deployments, production data or provid
 | 2.12       | Analytics   | Implemented; prior focused checks recorded below; founder screenshot acceptance pending                                                                           |
 | 2.13       | Automations | Implemented; focused tests/checks recorded below; browser screenshot comparison not performed; founder acceptance pending                                         |
 | 2.14       | Business ID | Implemented; build/tests green; founder manual and visual acceptance pending                                                                                      |
+| 2.14B      | Business ID | Existing ten-section Trust/Passport workflows preserved and rechecked; no duplicate identity authority; founder visual/role acceptance pending |
+
+## Combined Phase 2.14B Business ID + 2.1B Commerce — 20 November 2026
+
+### Scope and existing authority
+
+The source review confirmed Business ID already has the full ten-section workflow over the existing Trust/Passport services: Overview, Business Profile, Verification, Business Passport, Credentials, Evidence, Shared Access, Relationships, History and Settings. This continuation preserves that single authority, its current source/permission checks, review invalidation, holder consent, issuer/status distinctions and sandbox limitations. No second organization, evidence, credential or sharing model was introduced.
+
+Commerce already has distinct merchant and public customer experiences. Canonical Products/listings, Sales orders, invoices, Inventory, payment evidence, quote calculation and store publication remain the respective authorities. The public catalog remains an allowlisted published projection. The guest cart retains a store/environment-scoped capability and checkout uses server quote and canonical idempotent order conversion. This continuation adds two concrete merchant workflow gaps without duplicating these authorities:
+
+- Added **Promotions** to the installed Commerce navigation. It reads the current configured discount-policy list, including code, fixed/percentage rule, minimum, cap, validity window and enabled state. Editing opens the existing Commerce service editor. Server-side quote validation remains authoritative; the list does not imply campaign attribution or usage analytics.
+- Added a keyboard-accessible **Cards/List** control to Catalogue. Both views use the same server-filtered, paginated canonical listings; cards display existing SKU, canonical price/product state and the truthful tracked/not-tracked stock flag. Exact available quantity is not inferred from a listing.
+- Added focused regression assertions for the merchant sections, policy source, Promotions editor route and both catalog layouts.
+
+### Reference and limits
+
+Business ID uses the Odoo Contacts company form's compact record header, smart-button strip, aligned fields and tabs as layout guidance, with W3C credential semantics documented in the prior 2.14 entry. Commerce source research reviewed pinned Odoo 20 `website_sale` catalog, cart, product-configurator and checkout paths; details are in [the Commerce research note](odoo-reference/notes/website_sale.md). Official Odoo Contacts/eCommerce/catalog/checkout documentation requests timed out. This continuation did not run a fresh authenticated browser capture or matched-size comparison, so no pixel-parity claim is made.
+
+Business ID remains a sandbox Trust/Passport product: no official registry query, recognized production issuer, production signing, deployed DID method, generic selective disclosure or institutional network is implied. Commerce still lacks real payment-provider settlement, carrier tracking, wishlist, arbitrary product-attribute/price/stock facets and campaign attribution where no canonical service exists.
+
+### Verification and release boundaries
+
+From the `website` directory, `node --test tests/commerce-app.test.mjs tests/business-id-quality.test.mjs` passed **10/10**. The Commerce and Business ID data/security behavior remains covered by the existing focused backend suites; the full required validation matrix is recorded in [deployment results](DEPLOYMENT_TEST_RESULTS.md). GitHub [run 123](https://github.com/Sevqo/africore/actions/runs/44607759099) is green on the exact starting `main` SHA `cdfa55f77e17843eb2b4e166e9cdeaee4310e24a`; it does not include this task's working-tree changes. Render deployment/logs/migration ledger and PostgreSQL against the final candidate remain unverified. No migration, production write, commit, push or deployment was performed.
+
+### Founder acceptance
+
+1. In Business ID, open the company profile, edit and save a material identity field, confirm review invalidation, then check Credentials, Evidence, Shared Access and Relationships with owner/reviewer/unauthorized roles.
+2. Compare the supplied profile and create-dialog references to the running view at desktop and 390px widths; check breadcrumb, source-backed smart counts, tabs, dialog sizing, keyboard focus and overflow.
+3. In Commerce → Catalogue, search/filter and page products, switch Cards/List and confirm the same records/prices/statuses; follow canonical product editing and verify current inventory separately.
+4. In Commerce → Promotions, review active/inactive/date-bounded discount policies, then manage them in the service editor and test a qualifying/nonqualifying coupon through a sandbox cart. Confirm stale price/stock and approval limits are rechecked by server quote.
+5. Test public publication and anonymous route access, guest cart recovery, quote refresh, duplicate-submit retry, canonical order/invoice/payment status and separate fulfillment status. Use synthetic data only; no real payment or shipment is performed.
 
 ## Combined Analytics 2.12B + Automations 2.13B — local integration, 19 November 2026
 
