@@ -1,15 +1,35 @@
 export const erpRouteKinds: Record<string, readonly string[]> = {};
 export const erpPolicies: Record<string, { services: string[] }> = {};
 for (const [suffix, service] of [
-  ['GET /calendar/events','calendar'],['POST /calendar/events','calendar'],
-  ['PUT /calendar/events/:id','calendar'],['POST /calendar/events/:id/respond','calendar'],
-  ['POST /calendar/events/:id/cancel','calendar'],['GET /website/pages','website'],
-  ['POST /website/pages','website'],['PUT /website/pages/:id','website'],
-  ['POST /website/pages/:id/publish','website'],
-  ['POST /website/pages/:id/unpublish','website'],
+  ['GET /calendar/events', 'calendar'],
+  ['GET /calendar/events/:id/history', 'calendar'],
+  ['GET /calendar/settings', 'calendar'],
+  ['PUT /calendar/settings', 'calendar'],
+  ['GET /calendar/availability', 'calendar'],
+  ['POST /calendar/events', 'calendar'],
+  ['PUT /calendar/events/:id', 'calendar'],
+  ['POST /calendar/events/:id/respond', 'calendar'],
+  ['PUT /calendar/events/:id/occurrences/:occurrence', 'calendar'],
+  ['POST /calendar/events/:id/occurrences/:occurrence/cancel', 'calendar'],
+  ['POST /calendar/events/:id/cancel', 'calendar'],
+  ['GET /calendar/appointment-types', 'calendar'],
+  ['POST /calendar/appointment-types', 'calendar'],
+  ['PUT /calendar/appointment-types/:id', 'calendar'],
+  ['POST /calendar/appointment-types/:id/bookings', 'calendar'],
+  ['GET /website/settings', 'website'],
+  ['PUT /website/settings', 'website'],
+  ['GET /website/pages', 'website'],
+  ['POST /website/pages', 'website'],
+  ['PUT /website/pages/:id', 'website'],
+  ['POST /website/pages/:id/publish', 'website'],
+  ['POST /website/pages/:id/unpublish', 'website'],
+  ['GET /website/pages/:id/publication-history', 'website'],
+  ['POST /website/pages/:id/publication-history/:version/restore', 'website'],
 ] as const) {
-  const [method,path]=suffix.split(' '), key=method+' /organizations/:org'+path;
-  erpRouteKinds[key]=['business']; erpPolicies[key]={services:[service]};
+  const [method, path] = suffix.split(' '),
+    key = method + ' /organizations/:org' + path;
+  erpRouteKinds[key] = ['business'];
+  erpPolicies[key] = { services: [service] };
 }
 erpRouteKinds['POST /organizations/:org/accounting/sources'] = ['business'];
 erpPolicies['POST /organizations/:org/accounting/sources'] = { services: ['accounting'] };

@@ -19,5 +19,7 @@ exports.wave3MigrationPlan = async function (versions) {
   await require('../dist/commerce/schema').migrateCommerce(database);
   await require('../dist/publishing/schema').migratePublicMedia(database);
   await require('../dist/pos/schema').migratePOS(database);
+  if (known.has('026-app15-16'))
+    await require('../dist/apps/website-forms-schema').migrateWebsiteForms(database);
   return commands;
 };

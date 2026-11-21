@@ -26,3 +26,17 @@ Migration `026-app15-16` inserts only the two service definitions and evaluation
 ## Verification and limits
 
 Added a focused registry test for 35 legacy IDs, unique membership, 16 app definitions and 37 service definitions. The website content suite reported 135/135 passing after catalog/nav adjustments. Full backend regression is being rerun with loopback access after updating the deployment verifier fixture; its final result is appended to deployment results. No browser screenshot comparison was completed. Marketplace family filters were verified from source/content tests only.
+
+
+## Phase 3 runtime regression — 20 November 2026
+
+The disposable synthetic Business DB applied migration 026-app15-16, contained Calendar and Website service definitions and effective evaluation-v1 price rows, and installed both apps through the normal preview/confirmation flow. The app endpoint returned 16 eligible apps even before service activation; the cards showed each service’s availability. Existing 35 plus 2 new definitions remain 37 total; the eight families remain presentation-only. See [Phase 3 acceptance](PHASE3_ACCEPTANCE.md) for the exact runtime and release limits.
+
+## Phase 3 regression snapshot, 21 November 2026
+
+Calendar/Website work continues to use their exact existing service dependencies and the existing entitlement/usage model. Calendar appointments store encrypted ERP objects and linked Calendar events and add no migration or scheduler. Route policy validation passed with 553 workspace operations; no service-family mapping or billing behavior was intentionally changed in this continuation. Full service-family regression was not rerun after this continuation.
+
+Latest focused check covers appointment type creation, member booking, conflict rejection and deactivation; 5/5 Phase 3 API tests passed. The operations model still uses the existing Calendar service, encrypted ERP records and idempotency receipts. No migration was introduced.
+# Phase 3 local catalog verification — 21 November 2026
+
+Read-only inspection of the repository's local `africore.db` found 26 rows in `platform_migrations`, including `021-people-expansion`, `026-app15-16` and `027-website-forms`. The persisted `ac_services` catalog contains 37 definitions. Calendar and Website each have one `evaluation-v1` KES price row, model `free`, effective 28 October 2026, with no expiry; both are current for the inspection date. No entitlements were fabricated and no migration was applied by this check. This is local SQLite evidence only; it does not establish hosted Neon/Render state.

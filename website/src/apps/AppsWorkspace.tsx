@@ -215,17 +215,34 @@ export function AppsWorkspace({
                   <h2>{a.name}</h2>
                   <p>{a.description}</p>
                   <span className="badge">
-                    {a.installation?.status === 'installed' ? 'Installed' : 'Optional app'}
+                    {a.installation?.status === 'installed' ? 'Installed' : 'Available to install'}
                   </span>
+                  {a.required_services?.length > 0 && (
+                    <p className="app-directory-requirements">
+                      Requires{' '}
+                      {a.required_services
+                        .map((id: string) => {
+                          const service = services.find((candidate: any) => candidate.id === id);
+                          const state = service?.status || 'catalog check required';
+                          return `${id.replaceAll('_', ' ')} (${state.replaceAll('_', ' ')})`;
+                        })
+                        .join(' · ')}
+                    </p>
+                  )}
                 </div>
                 <button
                   className="secondary-button"
+                  aria-label={
+                    a.installation?.status === 'installed'
+                      ? `Open ${a.name}`
+                      : `Review ${a.name} installation`
+                  }
                   onClick={() => {
                     setSelected(a.id);
                     setOptional([]);
                   }}
                 >
-                  {a.installation?.status === 'installed' ? 'Open app' : 'Explore app'}{' '}
+                  {a.installation?.status === 'installed' ? 'Open app' : 'Install'}{' '}
                   <Icon name="right" />
                 </button>
               </article>
@@ -422,7 +439,9 @@ export function AppsWorkspace({
                   navigate={navigate}
                   initialSection={activeSection}
                   writable={writable}
-                  salesEnabled={services.some((service) => service.id === 'sales' && service.status === 'active')}
+                  salesEnabled={services.some(
+                    (service) => service.id === 'sales' && service.status === 'active',
+                  )}
                 />
               ) : app.id === 'inventory' ? (
                 <InventoryAppWorkspace

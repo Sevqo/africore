@@ -1,11 +1,13 @@
 import { workspaceKind } from '../marketplace/engine';
-import { emit } from './events';
+import { capture, emit } from './events';
 import { dbAll, dbGet, dbRun } from '../db/adapter';
 import { type Access } from '../platform/auth';
 import { now } from '../platform/crypto';
 import { atomic, day, addDays } from './store';
 import { notify, expireApprovals } from './automation';
 import { product, stockBalance } from '../inventory/service';
+import { read as readErp } from '../erp/store';
+import { expandCalendarSeries } from '../apps/calendar-recurrence';
 const types = [
   'approval.decided',
   'approval.expired',
@@ -25,6 +27,7 @@ const types = [
   'crm.followup_due',
   'crm.stage_changed',
   'automation.run_failed',
+  'calendar.reminder_due',
 ];
 /** Consume existing durable scoped events. Receipt and notification commit together; no second queue. */
 export async function processBusinessEvents(a: Access) {
@@ -219,6 +222,24 @@ export async function processBusinessEvents(a: Access) {
           severity: 'action_required',
           action_data: { app_id: 'automations', section: 'runs' },
         };
+      if (event.event_type === 'calendar.reminder_due') {
+        const setting = await dbGet(
+          "SELECT id FROM ac_erp_objects WHERE org_id=? AND environment=? AND kind='calendar_settings' AND owner_id=? AND status='active' ORDER BY updated_at DESC LIMIT 1",
+          [a.org, a.environment, payload.user_id],
+        );
+        const timezone = setting
+          ? (await readErp(a, setting.id, 'calendar_settings')).data.timezone
+          : 'Africa/Nairobi';
+        input = {
+          category: 'calendar',
+          title: 'Meeting reminder',
+          body: `A meeting starts at ${new Intl.DateTimeFormat('en-GB', { timeZone: timezone, year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }).format(new Date(payload.starts_at))}. Open Calendar to review the invitation.`,
+          resource_id: payload.event_id,
+          key: 'business:' + event.id,
+          user_id: payload.user_id,
+          action_data: { app_id: 'calendar', section: 'invitations', record_id: payload.event_id },
+        };
+      }
       if (input) notifications += (await notify(a, input)).inserted;
       if (input && event.event_type.startsWith('stock.') && payload.product_id)
         await emit(
@@ -233,6 +254,58 @@ export async function processBusinessEvents(a: Access) {
       );
     }
     return { processed: events.length, notifications };
+  });
+}
+
+/** Schedule attendee-specific in-app reminders through the existing durable event/notification pipeline. */
+export async function processCalendarReminders(a: Access, at = new Date()) {
+  const nowMs = at.getTime(), from = new Date(nowMs).toISOString(), to = new Date(nowMs + 26 * 3600000).toISOString();
+  return atomic(a, async () => {
+    const rows = await dbAll(
+      "SELECT id FROM ac_erp_objects WHERE org_id=? AND environment=? AND kind='calendar_event' AND status='active' ORDER BY updated_at,id LIMIT 1001",
+      [a.org, a.environment],
+    );
+    const settingsRows = await dbAll(
+      "SELECT id,owner_id FROM ac_erp_objects WHERE org_id=? AND environment=? AND kind='calendar_settings' AND status='active' ORDER BY updated_at,id LIMIT 1001",
+      [a.org, a.environment],
+    );
+    const reminders = new Map<string, number | null>();
+    for (const row of settingsRows.slice(0, 1000)) {
+      const settings = await readErp(a, row.id, 'calendar_settings');
+      reminders.set(row.owner_id, settings.data.reminder_minutes_before ?? null);
+    }
+    if (![...reminders.values()].some((minutes) => minutes !== null))
+      return { scheduled: 0, scanned: 0 };
+    let scheduled = 0;
+    for (const row of rows.slice(0, 1000)) {
+      const event = await readErp(a, row.id, 'calendar_event');
+      if (event.data.cancelled_at) continue;
+      const attendeeIds = [...new Set([event.data.organizer_id, ...(event.data.attendees || []).filter((x: any) => x.response !== 'declined').map((x: any) => x.user_id)].filter(Boolean))];
+      if (!attendeeIds.length) continue;
+      const current = await dbAll(
+        'SELECT user_id FROM ac_memberships WHERE org_id=? AND user_id IN (' + attendeeIds.map(() => '?').join(',') + ')',
+        [a.org, ...attendeeIds],
+      );
+      const activeMembers = new Set(current.map((member: any) => member.user_id));
+      const instances = expandCalendarSeries(event, from, to);
+      for (const occurrence of instances) {
+        const startMs = Date.parse(occurrence.data.start);
+        if (startMs <= nowMs || startMs > nowMs + 26 * 3600000) continue;
+        for (const userId of attendeeIds) {
+          const minutes = reminders.get(userId);
+          if (!activeMembers.has(userId) || !minutes || startMs - minutes * 60000 > nowMs) continue;
+          const start = new Date(startMs).toISOString();
+          const result = await capture(
+            a,
+            'calendar.reminder_due',
+            { event_id: event.id, user_id: userId, starts_at: start },
+            { key: `calendar-reminder:${event.id}:${start}:${userId}:${minutes}` },
+          );
+          if (result.inserted) scheduled++;
+        }
+      }
+    }
+    return { scheduled, scanned: Math.min(rows.length, 1000) };
   });
 }
 

@@ -189,6 +189,66 @@ test('published storefront entry paths and public catalog API have explicit gate
   assert.equal(response.headers.get('x-africore-gateway-secret'), null);
 });
 
+test('published Website pages, media and contact forms have scoped anonymous gateway routes', async () => {
+  const sitePath = '/api/public/sites/fictional-company',
+    mediaPath = sitePath + '/media/12345678-1234-4123-8123-123456789012',
+    sitemapPath = sitePath + '/sitemap.xml',
+    formsPath = sitePath + '/forms';
+  for (const path of ['/sites/fictional-company', '/sites/a2']) {
+    const page = await handle(new Request('https://africore.example' + path), env);
+    assert.equal(page.status, 200, path);
+    assert.match(page.headers.get('Content-Security-Policy'), /script-src 'self'/);
+  }
+  for (const path of ['/sites/fictional-company/nested', '/sites/%66ictional-company'])
+    assert.equal((await handle(new Request('https://africore.example' + path), env)).status, 404, path);
+
+  const paths = [sitePath, mediaPath, sitemapPath];
+  for (const path of paths) {
+    let forwarded = false;
+    const response = await handle(
+      new Request('https://africore.example' + path),
+      env,
+      async (request) => {
+        forwarded = true;
+        assert.equal(request.method, 'GET');
+        assert.equal(request.headers.get('authorization'), null);
+        assert.equal(request.headers.get('x-africore-gateway-secret'), env.AFRICORE_GATEWAY_SECRET);
+        return Response.json({ ok: true });
+      },
+    );
+    assert.equal(forwarded, true, path);
+    assert.equal(response.status, 200, path);
+    assert.equal(response.headers.get('Cache-Control'), 'no-store');
+    assert.equal(response.headers.get('x-africore-gateway-secret'), null);
+  }
+
+  const form = await handle(
+    new Request('https://africore.example' + formsPath, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Synthetic visitor' }),
+    }),
+    env,
+    async (request) => {
+      assert.equal(request.method, 'POST');
+      assert.equal(new URL(request.url).pathname, formsPath);
+      return Response.json({ accepted: true }, { status: 202 });
+    },
+  );
+  assert.equal(form.status, 202);
+  assert.equal(form.headers.get('Cache-Control'), 'no-store');
+
+  for (const [path, method, expected] of [
+    [formsPath, 'GET', 405],
+    [sitePath, 'POST', 405],
+    [sitemapPath, 'POST', 405],
+    [sitePath + '/unknown', 'GET', 404],
+  ]) {
+    const response = await handle(new Request('https://africore.example' + path, { method }), env);
+    assert.equal(response.status, expected, `${method} ${path}`);
+  }
+});
+
 test('storefront cart cookies and confirmation bodies cross the gateway without caching or capability expansion', async () => {
   const cookie = 'africore_cart_fixture=' + 'a'.repeat(64),
     path = '/api/v1/storefronts/sandbox/fictional-shop/cart/confirm',

@@ -15,9 +15,17 @@ import { developerRequestLog } from './platform/request-logs';
 import { auth, sameOrigin } from './platform/auth';
 import { platform } from './platform/routes';
 import { operations } from './operations/routes';
-import { publicWebsitePage } from './apps/phase3';
+import {
+  publicWebsiteImage,
+  publicWebsitePage,
+  publicWebsiteSitemap,
+  submitPublicWebsiteForm,
+} from './apps/phase3';
 import express from 'express';
+import { ZodError } from 'zod';
 import path from 'node:path';
+import { readFile } from 'node:fs/promises';
+import { renderWebsiteSeoDocument } from './apps/website-seo';
 import { dbGet, isPostgres } from './db';
 import businessRoutes from './routes/businesses';
 import consentRoutes from './routes/consents';
@@ -128,9 +136,50 @@ export function createApp() {
   app.get('/api/openapi.json', (_req, res) =>
     res.sendFile('platform-openapi.json', { root: process.cwd() }),
   );
-  app.get('/api/public/sites/:slug', async (req,res) => {
-    try { const page=await publicWebsitePage(String(req.params.slug)); if(!page) return res.status(404).json({error:'not_found'}); return res.setHeader('Cache-Control','public, max-age=60').json(page); }
-    catch { return res.status(404).json({error:'not_found'}); }
+  app.get('/api/public/sites/:slug/media/:id', async (req, res) => {
+    try {
+      const image = await publicWebsiteImage(String(req.params.slug), String(req.params.id));
+      if (!image) return res.status(404).json({ error: 'not_found' });
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+      res.setHeader('Content-Disposition', 'inline; filename="public-image.webp"');
+      return res.type(image.mime).send(image.bytes);
+    } catch {
+      return res.status(404).json({ error: 'not_found' });
+    }
+  });
+  app.get('/api/public/sites/:slug/sitemap.xml', async (req, res) => {
+    try {
+      const sitemap = await publicWebsiteSitemap(String(req.params.slug));
+      if (!sitemap) return res.status(404).type('text/plain').send('Not found');
+      return res
+        .setHeader('Cache-Control', 'no-store')
+        .type('application/xml')
+        .send(sitemap);
+    } catch {
+      return res.status(404).type('text/plain').send('Not found');
+    }
+  });
+  app.get('/api/public/sites/:slug', async (req, res) => {
+    try {
+      const page = await publicWebsitePage(String(req.params.slug));
+      if (!page) return res.status(404).json({ error: 'not_found' });
+      return res.setHeader('Cache-Control', 'no-store').json(page);
+    } catch {
+      return res.status(404).json({ error: 'not_found' });
+    }
+  });
+  app.post('/api/public/sites/:slug/forms', async (req, res, next) => {
+    try {
+      const result = await submitPublicWebsiteForm(String(req.params.slug), req.body);
+      if (!result) return res.status(404).json({ error: 'not_found' });
+      return res.setHeader('Cache-Control', 'no-store').status(202).json(result);
+    } catch (err) {
+      if (err instanceof ZodError)
+        return res.status(400).json({ error: 'invalid_submission' });
+      return next(err);
+    }
   });
 
   // Liveness: process-only, deliberately does NOT touch the database, so a
@@ -201,6 +250,27 @@ export function createApp() {
       );
     }
     next();
+  });
+  app.get('/sites/:slug', async (req, res, next) => {
+    try {
+      const slug = String(req.params.slug);
+      const page = await publicWebsitePage(slug);
+      if (!page) return res.status(404).type('text/plain').send('Website page not found');
+      const indexHtml = await readFile(path.join(process.cwd(), 'website/dist/index.html'), 'utf8');
+      const html = renderWebsiteSeoDocument(
+        indexHtml,
+        page,
+        slug,
+        process.env.AFRICORE_PUBLIC_ORIGIN || '',
+      );
+      if (!html) return res.status(503).type('text/plain').send('Website page unavailable');
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Robots-Tag', page.noindex ? 'noindex, nofollow' : 'index, follow');
+      return res.type('html').send(html);
+    } catch (error) {
+      return next(error);
+    }
   });
   app.use(express.static(path.join(process.cwd(), 'website/dist')));
   app.get(/^\/s\/(?:sandbox|production)\/[a-z0-9]+(?:-[a-z0-9]+)*\/?$/, (_req, res) =>

@@ -56,3 +56,26 @@ Updated 2026-11-20 against local `main` source at `cdfa55f77e17843eb2b4e166e9cde
 ## Phase 3 implementation checkpoint — 20 November 2026
 
 The local branch now has eight service families, adds Calendar and Website as apps 15 and 16, and preserves the other 14 definitions. Families are presentation groupings only; there are 37 independent service definitions (35 old + 2 new). Calendar and Website have core server-backed drafts/events and initial UIs, but remain **partially implemented**. Full recurrence/availability/appointments and Website menus/forms/media/Commerce/publication history/SEO remain closure items. There is no matched-size browser evidence, no disposable PostgreSQL run, no Render verification or founder acceptance for this checkpoint. Do not move these two apps to “complete” in the original 14-app closure matrix; keep the 14-app backlog separate from this new-app work.
+
+
+## App 15–16 checkpoint — 20 November 2026
+
+Calendar and Website are still partial, not accepted or closed. Runtime visibility, installation, open and refresh were confirmed on a synthetic Business workspace; a Calendar event lifecycle and Website draft/menu/publication smoke workflow also ran. Recurrence, appointments, availability, public contact submissions, media, website identity, publication history, production routing and matched desktop Odoo review remain open. Do not mark Apps 15–16 complete. See [PHASE3_ACCEPTANCE.md](PHASE3_ACCEPTANCE.md).
+
+### Status correction — 21 November 2026
+
+The prior sentence is a 20 November checkpoint. Later local work adds recurrence/availability, Website forms/media, identity/settings and publication-history APIs/UI. The apps remain incomplete and unaccepted; latest evidence and exact open acceptance items are in [PHASE3_ACCEPTANCE.md](PHASE3_ACCEPTANCE.md). Apps 17–26 were not started.
+
+## Phase 3 continuation snapshot, 21 November 2026
+
+Calendar appointment management and member-only booking with staff conflict checks were added, and public Website pages now populate client-rendered SEO/share metadata. Final local focused Calendar/Website integration passed 5/5; website build/content checks passed 138/138; backend suite 486 passed and skipped only its PostgreSQL-only case. This does not close Phase 3: public appointments, full Calendar integrations and browser/Odoo comparison, Website publication/domain/SEO sitemap/redirect/media/editor gaps, disposable PostgreSQL, live Render verification and founder acceptance remain outstanding.
+
+Latest continuation added versioned appointment type activation/deactivation and the Website page duplicate action. The public renderer now sets client-side search/share metadata. Focused Phase 3 integration tests pass 5/5 and the Website production build/content checks pass 138/138. The whole phase remains incomplete pending public appointments, remaining Website product/host/SEO/editor features, browser visual acceptance, PostgreSQL and production deployment verification.
+
+### Work task link update — 21 November 2026
+
+Calendar now stores supported Work task links on events, checks the Work project permission again when creating or editing, and routes link opens back through Work's own scoped target. The focused API test verifies a permitted link and a 404 for a workspace member without project access. Latest full backend regression passed 489 tests with no failures and one PostgreSQL-only skip. This closes only the Work-task link slice; public appointment booking, other source integrations, matched-size browser/Odoo review, hosted schema recovery and the remaining Website release gates remain open.
+
+### CRM links and full local regression — 21 November 2026
+
+The supported Calendar link types now also include active CRM leads and opportunities; each write checks the CRM service and same-tenant active record. The UI routes an event's CRM link back to the CRM pipeline record selection. Backend test coverage confirms both CRM/Work links and unsupported link rejection. Latest full suite: 489 passed, 0 failed, 1 PostgreSQL-only skip. This does not close Calendar: Sales, People and Documents integration, public appointment requests/capability/capacity, and browser/Odoo review remain. Website/Render/PostgreSQL acceptance blockers remain listed in [PHASE3_ACCEPTANCE.md](PHASE3_ACCEPTANCE.md).

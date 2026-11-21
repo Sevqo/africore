@@ -17,6 +17,11 @@
   grid-column: 2;
   justify-self: start;
 }
+.app-directory-requirements {
+  color: var(--muted, #657087);
+  font-size: 0.875rem;
+  margin: 8px 0 0;
+}
 .app-mark {
   display: inline-flex;
   align-items: center;

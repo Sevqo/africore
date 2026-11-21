@@ -1,5 +1,17 @@
 # Odoo research log
 
+## 2026-11-21 — Phase 3 Calendar and Website source follow-up
+
+- Question: which source-backed lifecycle and publication rules should guide completion of Calendar and Website, and what evidence remains unavailable for visual acceptance?
+- Odoo commit: `c1ef83e9c43760afd21db514e87568298a3a00b0` (local Community 20.0 reference checkout).
+- Read (paths): `addons/calendar/models/calendar_event.py` (recurrence edit/split/break transitions); `addons/calendar/models/calendar_recurrence.py`; `addons/calendar/models/calendar_attendee.py`; `addons/calendar/views/calendar_views.xml`; `addons/website/models/website_page.py`; `addons/website/models/website_menu.py`; `addons/website/controllers/main.py` (public and sitemap routes); `addons/website/controllers/form.py`; `addons/website/views/website_pages_views.xml`; `addons/website/views/website_views.xml`.
+- Findings:
+  - Calendar recurrence has separate single-occurrence, following-occurrence and whole-series update behavior, backed by a recurrence record and attendee state transitions. A recurrence enum on an event is insufficient — `addons/calendar/models/calendar_event.py` and `calendar_recurrence.py`.
+  - Website pages and menus are separate website-scoped records. Public sitemap generation filters published pages, and public form handling is a server-side submission workflow with validation/anti-abuse hooks — `addons/website/models/website_page.py`, `website_menu.py`, `controllers/main.py`, `controllers/form.py`.
+- AfriCore decision: keep occurrence exceptions and edits in Calendar service authority; public sitemap/forms must be based on tenant-matched published site state and validated persisted submissions. Draft menu/page changes retain a publication boundary.
+- Follow-ups: complete matched-viewport Odoo 19 screenshot comparison and browser acceptance. The official Odoo 20 documentation fetch was unavailable in the earlier reader attempt; these notes rely on pinned source and user-supplied screenshots. No Odoo source or visual asset was copied.
+- Limits: focused source review only; no Odoo server was started and no live AfriCore visual comparison was performed.
+
 Append-only. Newest entry at the top, directly under this header. Never rewrite
 or delete a past entry; if a conclusion changed, add a new entry that supersedes
 it and say so explicitly.

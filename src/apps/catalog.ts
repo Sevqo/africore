@@ -30,6 +30,7 @@ export const appCatalog: AppDefinition[] = [
       { label: 'Calendar', section: 'calendar' },
       { label: 'My Calendar', section: 'mine' },
       { label: 'Team Calendar', section: 'team' },
+      { label: 'Appointments', section: 'appointments' },
       { label: 'Invitations', section: 'invitations' },
       { label: 'Availability', section: 'availability' },
       { label: 'Settings', section: 'settings' },

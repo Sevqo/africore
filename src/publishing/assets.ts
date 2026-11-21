@@ -27,9 +27,13 @@ export const withdrawAssetInput = z
   .strict();
 const context = (a: Pick<Access, 'org' | 'environment'>, id: string) =>
   JSON.stringify(['public-media', a.org, a.environment, id]);
-export async function publicMediaAccess(a: Access, write = true) {
+export async function publicMediaAccess(
+  a: Access,
+  write = true,
+  services: string[] = ['commerce'],
+) {
   const role = await currentMember(a);
-  await requireServices(a, ['commerce'], !write);
+  await requireServices(a, services, !write);
   if (!['owner', 'admin'].includes(role))
     fail(403, 'Current owner or administrator required for public media');
 }
@@ -91,8 +95,8 @@ export async function assetReferences(a: Access, ids: string[]) {
   }
   return ids.map((id) => values.get(id) || fail(404, 'Public image not found'));
 }
-export async function listAssets(a: Access, input: unknown) {
-  await publicMediaAccess(a, false);
+export async function listAssets(a: Access, input: unknown, services: string[] = ['commerce']) {
+  await publicMediaAccess(a, false, services);
   const q = z
     .object({ offset: z.coerce.number().int().min(0).max(500).default(0) })
     .strict()
@@ -111,9 +115,21 @@ export async function listAssets(a: Access, input: unknown) {
       'Only separately uploaded public-use images. Private Documents cannot be selected. Images are re-encoded; this is not a malware-scanning or physical-erasure service.',
   };
 }
-export async function uploadAsset(a: Access, input: unknown, key: string) {
+export async function uploadAsset(
+  a: Access,
+  input: unknown,
+  key: string,
+  services: string[] = ['commerce'],
+) {
   const d = publicAssetInput.parse(input);
-  await publicMediaAccess(a);
+  await publicMediaAccess(a, true, services);
+  const activeService = await dbGet(
+    'SELECT e.service_id FROM ac_service_entitlements e JOIN ac_services s ON s.id=e.service_id WHERE e.org_id=? AND e.environment=? AND e.status=\'active\' AND s.enabled=1 AND e.service_id IN (' +
+      services.map(() => '?').join(',') +
+      ') ORDER BY CASE e.service_id WHEN \'commerce\' THEN 0 ELSE 1 END LIMIT 1',
+    [a.org, a.environment, ...services],
+  );
+  if (!activeService) fail(402, 'Activate the Website or Commerce service before uploading media');
   // Decode outside the database transaction, with bounded process-wide work.
   // Current authority is checked again under the workspace lock below.
   const image = await canonicalPublicImage(d.image_base64),
@@ -123,10 +139,10 @@ export async function uploadAsset(a: Access, input: unknown, key: string) {
     .digest('hex');
   return operation(
     a,
-    'commerce.asset.upload',
+    activeService.service_id + '.asset.upload',
     key,
     d,
-    () => publicMediaAccess(a),
+    () => publicMediaAccess(a, true, services),
     async () => {
       const old = await dbGet(
         'SELECT * FROM ac_public_media WHERE org_id=? AND environment=? AND identity_hash=?',
@@ -193,18 +209,65 @@ export async function uploadAsset(a: Access, input: unknown, key: string) {
     },
   );
 }
-export async function withdrawAsset(a: Access, id: string, input: unknown, key: string) {
+
+/** Authenticated, short-lived editor preview. Public delivery uses publication references. */
+export async function previewAsset(a: Access, id: string) {
+  await publicMediaAccess(a, false, ['commerce', 'website']);
+  const asset = await currentAsset(a, id);
+  return {
+    id: asset.id,
+    data_url: `data:${asset.mime};base64,${assetBytes(asset).toString('base64')}`,
+  };
+}
+export async function withdrawAsset(
+  a: Access,
+  id: string,
+  input: unknown,
+  key: string,
+  services: string[] = ['commerce'],
+) {
   const d = withdrawAssetInput.parse(input);
+  const activeService = await dbGet(
+    'SELECT e.service_id FROM ac_service_entitlements e JOIN ac_services s ON s.id=e.service_id WHERE e.org_id=? AND e.environment=? AND e.status=\'active\' AND s.enabled=1 AND e.service_id IN (' +
+      services.map(() => '?').join(',') +
+      ") ORDER BY CASE e.service_id WHEN 'commerce' THEN 0 ELSE 1 END LIMIT 1",
+    [a.org, a.environment, ...services],
+  );
+  if (!activeService) fail(402, 'Activate the Website or Commerce service before withdrawing media');
   return operation(
     a,
-    'commerce.asset.withdraw:' + id,
+    activeService.service_id + '.asset.withdraw:' + id,
     key,
     d,
-    () => publicMediaAccess(a),
+    () => publicMediaAccess(a, true, services),
     async () => {
       const row = await currentAsset(a, id);
       if (row.version !== d.expected_version)
         fail(409, 'Image state changed; reload before withdrawing');
+      const publications = await dbAll(
+        "SELECT id,version,snapshot FROM ac_publications WHERE org_id=? AND environment=? AND active=1 AND source_kind='website'",
+        [a.org, a.environment],
+      );
+      for (const publication of publications) {
+        try {
+          const context = JSON.stringify([
+            'website-publication',
+            a.org,
+            a.environment,
+            publication.id,
+            Number(publication.version),
+          ]);
+          const snapshot = JSON.parse(unseal(publication.snapshot, context));
+          const references =
+            snapshot.site?.logo_media_id === id ||
+            snapshot.sections?.some((section: any) => section.image_id === id);
+          if (references)
+            fail(409, 'Remove this image from active publications before withdrawing it');
+        } catch (error) {
+          if (error instanceof Error && 'status' in error) throw error;
+          fail(503, 'A publication snapshot could not be checked; image withdrawal is blocked');
+        }
+      }
       await dbRun(
         "UPDATE ac_public_media SET status='withdrawn',version=version+1,updated_at=? WHERE id=? AND org_id=? AND environment=? AND version=?",
         [now(), id, a.org, a.environment, row.version],

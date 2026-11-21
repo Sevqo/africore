@@ -11,3 +11,5 @@ export const appRouteKinds: Record<string, readonly string[]> = {
 export const appPolicies = Object.fromEntries(
   Object.keys(appRouteKinds).map((key) => [key, { services: [] as string[] }]),
 );
+appRouteKinds['GET /organizations/:org/website/forms'] = ['business'];
+appPolicies['GET /organizations/:org/website/forms'] = { services: ['website'] };

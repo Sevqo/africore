@@ -8,6 +8,9 @@ process.env.DATABASE_URL = '';
 // Keep this disposable local-account demo independent of a developer's .env identity provider.
 process.env.NEON_AUTH_BASE_URL = '';
 const demoDirectory = path.resolve(__dirname, '../.tmp');
+const demoPort = Number(process.env.AFRICORE_DEMO_PORT || 4001);
+if (!Number.isInteger(demoPort) || demoPort < 1024 || demoPort > 65535)
+  throw new Error('AFRICORE_DEMO_PORT must be an integer between 1024 and 65535.');
 const requestedDbPath = process.env.AFRICORE_DEMO_DB_PATH || 'connected-demo.db';
 const demoDbPath = path.resolve(demoDirectory, requestedDbPath);
 const relativeDemoDbPath = path.relative(demoDirectory, demoDbPath);
@@ -19,8 +22,8 @@ if (
   throw new Error('AFRICORE_DEMO_DB_PATH must stay within the ignored .tmp directory.');
 }
 process.env.DB_PATH = demoDbPath;
-process.env.PORT = '4001';
-process.env.AFRICORE_PUBLIC_ORIGIN = 'http://127.0.0.1:4001';
+process.env.PORT = String(demoPort);
+process.env.AFRICORE_PUBLIC_ORIGIN = 'http://127.0.0.1:' + demoPort;
 process.env.AFRICORE_TRUST_OPERATOR_EMAILS = 'issuer@africore.localdemo';
 process.env.AFRICORE_ENGINEERING_EMAILS = 'issuer@africore.localdemo';
 process.env.AFRICORE_ANCHOR_RPC = '';
@@ -36,7 +39,7 @@ if (process.env.AFRICORE_DEMO_CHAIN === 'true') {
 fs.mkdirSync(path.dirname(process.env.DB_PATH), { recursive: true });
 const { migrate, closeDb } = require('../dist/db'),
   { createApp } = require('../dist/app');
-const base = 'http://127.0.0.1:4001',
+const base = 'http://127.0.0.1:' + demoPort,
   password = 'AfriCoreDemo2026!';
 let cookie = '';
 async function api(p, method = 'GET', body) {
@@ -82,7 +85,7 @@ async function account(email, name) {
 }
 (async () => {
   await migrate();
-  const server = createApp().listen(4001, '127.0.0.1');
+  const server = createApp().listen(demoPort, '127.0.0.1');
   await new Promise((r) => server.once('listening', r));
   const owner = await account('owner@africore.localdemo', 'Amani Supplies · Connected Demo'),
     issuer = await account('issuer@africore.localdemo', 'AfriCore Sandbox Issuer · Demo'),
@@ -276,6 +279,6 @@ async function account(email, name) {
   process.on('SIGINT', stop);
   process.on('SIGTERM', stop);
 })().catch((error) => {
-  console.error(error.message);
+  console.error(error.message, error.cause ? String(error.cause) : '');
   process.exit(1);
 });

@@ -16,3 +16,15 @@ Use typed sections with a shared React renderer, safe link validation and immuta
 ## Limits
 
 Official Odoo 20 Website documentation URLs timed out or were inaccessible in the available reader on 2026-11-20. Source review is focused on page, menu and routing models, not a complete block editor study. Supplied screenshots are Odoo 19 UI references.
+
+## Phase 3 source follow-up — 2026-11-21
+
+Focused paths at the pinned commit sharpen the page, menu and public-route comparisons:
+
+- `addons/website/models/website_page.py` is the website-scoped page record and includes publication and page-property handling. The page register reference is implemented from page records, not inferred from menu links.
+- `addons/website/models/website_menu.py` persists menu hierarchy, ordering and website ownership. Draft menu edits therefore need an explicit save/publish boundary in AfriCore.
+- `addons/website/controllers/main.py` contains the public website and sitemap routes; its sitemap logic filters to published pages. AfriCore's public route and sitemap must likewise derive from published, tenant-matched snapshots.
+- `addons/website/controllers/form.py` exposes a public form submission path with validation and anti-abuse checks. AfriCore public forms need persisted submissions and rate/spam controls; a rendered form alone is not a working workflow.
+- `addons/website/views/website_pages_views.xml` and `addons/website/views/website_views.xml` provide the page register and menu editing references corresponding to supplied W2–W4 screenshots.
+
+AfriCore follow-up decision: test public forms and sitemap generation against the exact published site identity and page snapshot; keep private media inaccessible and expose only reviewed public assets. Official documentation retrieval and matched-viewport AfriCore/Odoo visual comparison were not completed, so no pixel-parity claim is made.

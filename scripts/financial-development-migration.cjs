@@ -75,10 +75,13 @@ const deadline = setTimeout(() => {
   if (crypto.createHash('sha256').update(recovered).digest('hex') !== digest)
     throw Error('Backup readback');
   const wave3 = process.argv.includes('--wave3'),
+    phase3 = process.argv.includes('--phase3'),
     erp = process.argv.includes('--erp'),
     apps = process.argv.includes('--apps'),
     connected = process.argv.includes('--connected'),
-    migration = wave3
+    migration = phase3
+      ? '027-website-forms'
+      : wave3
       ? '019-point-of-sale'
       : erp
         ? '016-procurement'
@@ -92,7 +95,9 @@ const deadline = setTimeout(() => {
     !versions.some(
       (v) =>
         v.version ===
-        (wave3
+        (phase3
+          ? '026-app15-16'
+          : wave3
           ? '016-procurement'
           : erp
             ? '011-connected-business-operations'
@@ -106,7 +111,7 @@ const deadline = setTimeout(() => {
     throw Error('Foundation missing');
   if (process.argv.includes('--apply') && !versions.some((v) => v.version === migration)) {
     stage = 'additive_migration';
-    if (apps || erp || wave3) {
+    if (apps || erp || wave3 || phase3) {
       const commands = [],
         known = new Set(versions.map((v) => v.version));
       const database = {
@@ -123,7 +128,7 @@ const deadline = setTimeout(() => {
           return { changes: 1 };
         },
       };
-      if (wave3) {
+      if (wave3 || phase3) {
         process.env.DATABASE_URL = 'postgresql://maintenance_plan@127.0.0.1:1/never_connect';
         commands.push(
           ...(await require('./wave3-migration-plan.cjs').wave3MigrationPlan([...known])),
@@ -200,8 +205,10 @@ const deadline = setTimeout(() => {
   const applied =
     (await sql.query('SELECT version FROM platform_migrations WHERE version=$1', [migration]))
       .length === 1;
-  if (apps || erp || wave3) {
-    const required = wave3
+  if (apps || erp || wave3 || phase3) {
+    const required = phase3
+      ? ['021-people-expansion', '026-app15-16', '027-website-forms']
+      : wave3
       ? ['017-commerce-foundation', '018-public-media', '019-point-of-sale']
       : erp
         ? [

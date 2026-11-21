@@ -131,3 +131,26 @@ The maintained target catalog remains 26:
 | 26 | Integrations Hub | Connectors, credentials, scopes, webhooks and health; reuses existing integration services. |
 
 Apps 17–26 remain roadmap-only. Do not implement them in this assignment. Each must reuse canonical customer/product/order/finance/document authorities, use workspace/role-scoped data boundaries, have app navigation and lifecycle tests, and pass app-specific founder acceptance before installation is enabled. Suggested order after Phase 3 closure: Marketing → Support → Subscriptions → Manufacturing → Field Operations → Logistics → Property & Hospitality → Knowledge & Learning → Studio → Integrations Hub. This order is provisional and subject to dependency review.
+
+
+## Phase 3 sequencing update — 20 November 2026
+
+Marketing and Support remain the next roadmap apps and were not started. Do not begin them until Calendar and Website close their remaining acceptance work in [PHASE3_ACCEPTANCE.md](PHASE3_ACCEPTANCE.md). As of 21 November, recurrence/availability and Website identity/media/forms/publication-history slices exist locally, but appointments, reminders, integrations, complete SEO/public routing/Commerce support, PostgreSQL regression, Render evidence and matched-size Odoo review remain outstanding.
+
+### Phase 3 current status — 21 November 2026
+
+The implementation table above is an earlier checkpoint. Calendar and Website remain partial. Current implemented and verified slices, local tests, browser scope, and release blockers are tracked in [PHASE3_ACCEPTANCE.md](PHASE3_ACCEPTANCE.md). Marketing and Support have not been started.
+
+## Phase 3 status, 21 November 2026
+
+Calendar has an authenticated internal appointment type and booking slice; Websites now set page title, description, robots, Open Graph and canonical metadata in the public renderer. These are not completion claims. Public appointment capability, capacity and lifecycle management, Calendar cross-app integrations, Website sitemap/redirect/domain mapping and full visual editor interactions, production publication verification and hosted migration recovery remain work for Phase 3 acceptance. No Marketing or Support app was started.
+
+### Updated Phase 3 state — 21 November 2026
+
+Calendar now also has recurrence exceptions, work-hour availability, reminders, event history and member appointment rescheduling/cancellation. Website now has public media withdrawal safeguards, sitemap routing, and a Commerce-backed product showcase. The apps remain partial: public appointment capabilities and Calendar cross-app links, live public Website production verification and Odoo-matched visual acceptance, disposable PostgreSQL, and hosted Render ledger/readiness remain open. Marketing and Support stay deferred.
+
+### Phase 3 local continuation — 21 November 2026
+
+Calendar now links meetings to assigned Work tasks, with server-side Work project reauthorization and navigation back into Work's scoped task view. Focused API coverage verifies access denial for a member outside the task's project. The selector is build-verified but not browser-verified. CRM, Sales, People leave and Documents integrations, public appointment capabilities/requests/capacity and full visual acceptance remain outstanding. The latest full backend run passed 489 tests, failed 0 and skipped 1 PostgreSQL-only test. No Marketing or Support work started. Hosted Render recovery still needs read-only migration ledger and backup evidence; no hosted operations were run.
+
+Calendar also supports links to active CRM leads/opportunities with current CRM service checks and same-tenant record validation; opening a link targets the record inside CRM. The full backend run including both integrations passed 489 tests, 0 failed, 1 PostgreSQL-only skipped. CRM/Work link browser interaction, Sales/People/Documents links, public appointments and remaining release acceptance are still open. Marketing and Support remain deferred.

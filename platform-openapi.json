@@ -11447,6 +11447,88 @@
         }
       }
     },
+    "/api/v1/organizations/{org}/commerce/assets/{id}/preview": {
+      "get": {
+        "summary": "GET /organizations/:org/commerce/assets/:id/preview",
+        "operationId": "workspace_get__organizations__org_commerce_assets__id_preview",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          }
+        ]
+      }
+    },
     "/api/v1/organizations/{org}/commerce/assets/{id}/withdraw": {
       "post": {
         "summary": "POST /organizations/:org/commerce/assets/:id/withdraw",
@@ -30836,6 +30918,331 @@
         }
       }
     },
+    "/api/v1/organizations/{org}/calendar/events/{id}/history": {
+      "get": {
+        "summary": "GET /organizations/:org/calendar/events/:id/history",
+        "operationId": "workspace_get__organizations__org_calendar_events__id_history",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organizations/{org}/calendar/settings": {
+      "get": {
+        "summary": "GET /organizations/:org/calendar/settings",
+        "operationId": "workspace_get__organizations__org_calendar_settings",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ]
+      },
+      "put": {
+        "summary": "PUT /organizations/:org/calendar/settings",
+        "operationId": "workspace_put__organizations__org_calendar_settings",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Runtime-validated by Zod schemas in src/platform; examples and fields documented in docs/API.md"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/calendar/availability": {
+      "get": {
+        "summary": "GET /organizations/:org/calendar/availability",
+        "operationId": "workspace_get__organizations__org_calendar_availability",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ]
+      }
+    },
     "/api/v1/organizations/{org}/calendar/events/{id}": {
       "put": {
         "summary": "PUT /organizations/:org/calendar/events/:id",
@@ -30851,6 +31258,214 @@
           },
           {
             "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Runtime-validated by Zod schemas in src/platform; examples and fields documented in docs/API.md"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/calendar/events/{id}/occurrences/{occurrence}": {
+      "put": {
+        "summary": "PUT /organizations/:org/calendar/events/:id/occurrences/:occurrence",
+        "operationId": "workspace_put__organizations__org_calendar_events__id_occurrences__occurrence",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "occurrence",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Runtime-validated by Zod schemas in src/platform; examples and fields documented in docs/API.md"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/calendar/events/{id}/occurrences/{occurrence}/cancel": {
+      "post": {
+        "summary": "POST /organizations/:org/calendar/events/:id/occurrences/:occurrence/cancel",
+        "operationId": "workspace_post__organizations__org_calendar_events__id_occurrences__occurrence_cancel",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "occurrence",
             "in": "path",
             "required": true,
             "schema": {
@@ -31043,6 +31658,713 @@
           },
           {
             "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Runtime-validated by Zod schemas in src/platform; examples and fields documented in docs/API.md"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/calendar/appointment-types": {
+      "get": {
+        "summary": "GET /organizations/:org/calendar/appointment-types",
+        "operationId": "workspace_get__organizations__org_calendar_appointment_types",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "POST /organizations/:org/calendar/appointment-types",
+        "operationId": "workspace_post__organizations__org_calendar_appointment_types",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Runtime-validated by Zod schemas in src/platform; examples and fields documented in docs/API.md"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/calendar/appointment-types/{id}": {
+      "put": {
+        "summary": "PUT /organizations/:org/calendar/appointment-types/:id",
+        "operationId": "workspace_put__organizations__org_calendar_appointment_types__id",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Runtime-validated by Zod schemas in src/platform; examples and fields documented in docs/API.md"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/calendar/appointment-types/{id}/bookings": {
+      "post": {
+        "summary": "POST /organizations/:org/calendar/appointment-types/:id/bookings",
+        "operationId": "workspace_post__organizations__org_calendar_appointment_types__id_bookings",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Runtime-validated by Zod schemas in src/platform; examples and fields documented in docs/API.md"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/website/settings": {
+      "get": {
+        "summary": "GET /organizations/:org/website/settings",
+        "operationId": "workspace_get__organizations__org_website_settings",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ]
+      },
+      "put": {
+        "summary": "PUT /organizations/:org/website/settings",
+        "operationId": "workspace_put__organizations__org_website_settings",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Runtime-validated by Zod schemas in src/platform; examples and fields documented in docs/API.md"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org}/website/pages/{id}/publication-history": {
+      "get": {
+        "summary": "GET /organizations/:org/website/pages/:id/publication-history",
+        "operationId": "workspace_get__organizations__org_website_pages__id_publication_history",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organizations/{org}/website/pages/{id}/publication-history/{version}/restore": {
+      "post": {
+        "summary": "POST /organizations/:org/website/pages/:id/publication-history/:version/restore",
+        "operationId": "workspace_post__organizations__org_website_pages__id_publication_history__version_restore",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
             "in": "path",
             "required": true,
             "schema": {
@@ -31573,6 +32895,83 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/organizations/{org}/website/forms": {
+      "get": {
+        "summary": "GET /organizations/:org/website/forms",
+        "operationId": "workspace_get__organizations__org_website_forms",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox",
+                "production"
+              ],
+              "default": "sandbox"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "JSON response; see docs/API.md for workflow and fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organization, role, scope or environment denied"
+          },
+          "409": {
+            "description": "State or idempotency conflict"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "managedSession": []
+          },
+          {
+            "apiKey": []
+          }
+        ]
       }
     },
     "/api/v1/organizations/{org}/apps": {

@@ -45,3 +45,8 @@ This approved-reference implementation is committed locally; it has not been pus
 
 ## Phase 3 note — 20 November 2026
 The prior approved-shell implementation documents the original 14-app checkpoint. The local Phase 3 working tree registers Calendar and Website as apps 15–16, but does not yet have matched-size browser acceptance or founder approval; see the Phase 3 implementation notes. These two apps are not covered by the former approved UI comparisons.
+
+
+## Phase 3 scope note — 20 November 2026
+
+The prior approved UI comparisons do not establish Calendar or Website visual acceptance. The current Calendar screen is operationally usable for basic single meetings and the Website editor has draft page/menu/theme/SEO controls, but the screenshot comparisons against the supplied Odoo 19 captures were not performed at matched desktop dimensions. No parity or founder acceptance claim is made. See [PHASE3_ACCEPTANCE.md](PHASE3_ACCEPTANCE.md).

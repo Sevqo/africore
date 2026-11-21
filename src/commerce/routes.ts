@@ -25,6 +25,7 @@ import {
   currentAsset,
   assetBytes,
   publicMediaAccess,
+  previewAsset,
 } from '../publishing/assets';
 import { publicStoreImage } from './public-images';
 export const commerce = Router();
@@ -43,19 +44,39 @@ function imageResponse(res: any, bytes: Buffer, mime: string) {
 }
 commerce.get(
   '/organizations/:org/commerce/assets',
-  route(async (req, res) => res.json(await listAssets(await access(req, 'admin'), req.query))),
+  route(async (req, res) =>
+    res.json(await listAssets(await access(req, 'admin'), req.query, ['commerce', 'website'])),
+  ),
 );
 commerce.post(
   '/organizations/:org/commerce/assets',
   route(async (req, res) =>
-    res.status(201).json(await uploadAsset(await access(req, 'admin'), req.body, key(req))),
+    res
+      .status(201)
+      .json(
+        await uploadAsset(await access(req, 'admin'), req.body, key(req), ['commerce', 'website']),
+      ),
+  ),
+);
+commerce.get(
+  '/organizations/:org/commerce/assets/:id/preview',
+  route(async (req, res) =>
+    res.json(
+      await previewAsset(await access(req, 'admin'), z.string().uuid().parse(req.params.id)),
+    ),
   ),
 );
 commerce.post(
   '/organizations/:org/commerce/assets/:id/withdraw',
   route(async (req, res) =>
     res.json(
-      await withdrawAsset(await access(req, 'admin'), String(req.params.id), req.body, key(req)),
+      await withdrawAsset(
+        await access(req, 'admin'),
+        String(req.params.id),
+        req.body,
+        key(req),
+        ['commerce', 'website'],
+      ),
     ),
   ),
 );

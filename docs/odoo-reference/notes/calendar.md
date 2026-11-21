@@ -17,3 +17,13 @@ Keep event authority workspace-scoped and encrypted. Invitations use current mem
 ## Limits
 
 Official Odoo 20 documentation URLs for Calendar and Appointments timed out in the available reader on 2026-11-20. This comparison is based on the pinned Community source and supplied screenshots. The screenshots show Odoo 19 UI, not Odoo 20 UI.
+
+## Phase 3 source follow-up — 2026-11-21
+
+Focused source paths at the pinned commit confirm the lifecycle details behind the observations above:
+
+- `addons/calendar/models/calendar_event.py` owns event create/write and the recurrence transition methods (`_edit`, `_edit_recurrence`, `_break_series`, `_split_and_shorten_recurrence`). Recurrence edits distinguish a single occurrence, following occurrences and the whole series. A recurrence label alone does not implement those behaviors.
+- `addons/calendar/models/calendar_recurrence.py` is the series authority; `addons/calendar/models/calendar_attendee.py` handles attendee transitions and event-linked invitations. Keep event permissions and invitation changes at those authorities rather than treating UI visibility as authorization.
+- `addons/calendar/views/calendar_views.xml` supplies the calendar, event form and search/action views that inform the Odoo-style toolbar, calendar canvas and compact-to-full event editing path.
+
+AfriCore follow-up decision: maintain bounded occurrence expansion and persist exception/series changes through the Calendar service; make the UI expose only transitions the service validates. The supplied Odoo 19 captures remain visual references. No matched-viewport AfriCore comparison was completed in this session.

@@ -1,5 +1,5 @@
 import { purgeExpiredConversations, processIntelligencePolicy } from './connected-worker';
-import { processBusinessEvents, processCrmDueReminders } from './business-worker';
+import { processBusinessEvents, processCalendarReminders, processCrmDueReminders } from './business-worker';
 import { dbAll, dbGet } from '../db';
 import { runAutomations } from './automation';
 import { all } from './store';
@@ -33,6 +33,7 @@ export async function processOperations() {
               [a.org, a.environment, service],
             ));
           if (await enabled('crm')) await processCrmDueReminders(a);
+          if (await enabled('calendar')) await processCalendarReminders(a);
           await processBusinessEvents(a);
           if (await enabled('intelligence')) await processIntelligencePolicy(a);
           if (await enabled('automations')) await runAutomations(a);

@@ -49,10 +49,25 @@ export async function handle(request, env, upstreamFetch = fetch) {
     // Deny encoded separators, dot segments, repeated slashes and unknown API
     // roots before forwarding. Legacy/admin routes require a separate channel.
     const path = url.pathname;
+    const publicWebsitePath =
+      /^\/api\/public\/sites\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\/media\/[0-9a-f-]{36}|\/forms|\/sitemap\.xml)?$/.test(
+        path,
+      );
+    const publicWebsiteMethodAllowed = path.endsWith('/forms')
+      ? request.method === 'POST'
+      : ['GET', 'HEAD'].includes(request.method);
+    if (publicWebsitePath && !publicWebsiteMethodAllowed)
+      return secured(
+        new Response('Method not allowed', {
+          status: 405,
+          headers: { Allow: path.endsWith('/forms') ? 'POST' : 'GET, HEAD' },
+        }),
+        { privateResponse: true },
+      );
     const publicRoot =
       /^\/api\/(?:auth(?:\/|$)|openapi\.json$|v1\/(?:organizations(?:\/|$)|workspaces(?:\/|$)|invitations\/accept$|checkout\/|storefronts\/|callbacks\/|buyer\/|trust\/|\.well-known\/))/.test(
         path,
-      );
+      ) || (publicWebsitePath && publicWebsiteMethodAllowed);
     if (/%|\\|\/\//.test(path) || (!publicRoot && !['/v1/health', '/v1/readiness'].includes(path)))
       return secured(Response.json({ error: 'not_found' }, { status: 404 }), {
         privateResponse: true,
@@ -157,8 +172,10 @@ export async function handle(request, env, upstreamFetch = fetch) {
     return new Response('Method not allowed', { status: 405, headers: { Allow: 'GET, HEAD' } });
   const normalized = url.pathname.replace(/\/+$/, '') || '/';
   const storefront = /^\/s\/(?:sandbox|production)\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalized);
+  const publicWebsite = /^\/sites\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalized);
   const application =
     storefront ||
+    publicWebsite ||
     /^(?:\/app(?:\/|$)|\/checkout\/|\/buyer\/|\/trust\/share\/|\/passport\/|\/sign-up\/)/.test(
       normalized,
     ) ||

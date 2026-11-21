@@ -103,7 +103,31 @@ import {
   completePeopleLifecycleCase,
   peopleExpansionReport,
 } from './people-expansion';
-import { cancelCalendarEvent, calendarEvents, createCalendarEvent, editCalendarEvent, publishWebsitePage, respondCalendarInvite, saveWebsitePage, unpublishWebsitePage, websitePages } from '../apps/phase3';
+import {
+  calendarAvailability,
+  calendarAppointmentTypes,
+  createCalendarAppointmentType,
+  updateCalendarAppointmentType,
+  bookCalendarAppointment,
+  calendarEventHistory,
+  getCalendarSettings,
+  cancelCalendarEvent,
+  cancelCalendarOccurrence,
+  calendarEvents,
+  createCalendarEvent,
+  editCalendarEvent,
+  editCalendarOccurrence,
+  getWebsiteIdentity,
+  publishWebsitePage,
+  restoreWebsitePublication,
+  respondCalendarInvite,
+  saveCalendarSettings,
+  saveWebsitePage,
+  saveWebsiteIdentity,
+  unpublishWebsitePage,
+  websitePublicationHistory,
+  websitePages,
+} from '../apps/phase3';
 import { Router } from 'express';
 import { prepareAccountingSource } from './accounting-sources';
 import { accountingSourceList } from './accounting-source-list';
@@ -1423,13 +1447,239 @@ erp.put(
   ),
 );
 
-erp.get('/organizations/:org/calendar/events', route(async (req,res)=>res.json(await calendarEvents(await access(req)))));
-erp.post('/organizations/:org/calendar/events', route(async (req,res)=>res.status(201).json(await createCalendarEvent(await access(req,'operations'),req.body,key(req)))));
-erp.put('/organizations/:org/calendar/events/:id', route(async (req,res)=>res.json(await editCalendarEvent(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
-erp.post('/organizations/:org/calendar/events/:id/respond', route(async (req,res)=>res.json(await respondCalendarInvite(await access(req,'read'),String(req.params.id),req.body?.response,key(req)))));
-erp.post('/organizations/:org/calendar/events/:id/cancel', route(async (req,res)=>res.json(await cancelCalendarEvent(await access(req,'operations'),String(req.params.id),req.body?.expected_version,key(req)))));
-erp.get('/organizations/:org/website/pages', route(async (req,res)=>res.json(await websitePages(await access(req)))));
-erp.post('/organizations/:org/website/pages', route(async (req,res)=>res.status(201).json(await saveWebsitePage(await access(req,'operations'),null,req.body,key(req)))));
-erp.put('/organizations/:org/website/pages/:id', route(async (req,res)=>res.json(await saveWebsitePage(await access(req,'operations'),String(req.params.id),req.body,key(req)))));
-erp.post('/organizations/:org/website/pages/:id/publish', route(async (req,res)=>res.json(await publishWebsitePage(await access(req,'operations'),String(req.params.id),req.body?.expected_version,key(req)))));
-erp.post('/organizations/:org/website/pages/:id/unpublish', route(async (req,res)=>res.json(await unpublishWebsitePage(await access(req,'operations'),String(req.params.id),req.body?.expected_version,key(req)))));
+erp.get(
+  '/organizations/:org/calendar/events',
+  route(async (req, res) =>
+    res.json(
+      await calendarEvents(
+        await access(req),
+        typeof req.query.from === 'string' ? req.query.from : undefined,
+        typeof req.query.to === 'string' ? req.query.to : undefined,
+      ),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/calendar/events/:id/history',
+  route(async (req, res) =>
+    res.json(await calendarEventHistory(await access(req), String(req.params.id))),
+  ),
+);
+erp.get(
+  '/organizations/:org/calendar/settings',
+  route(async (req, res) => res.json(await getCalendarSettings(await access(req)))),
+);
+erp.put(
+  '/organizations/:org/calendar/settings',
+  route(async (req, res) =>
+    res.json(await saveCalendarSettings(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/calendar/availability',
+  route(async (req, res) => {
+    const from = z.string().datetime({ offset: true }).parse(req.query.from);
+    const to = z.string().datetime({ offset: true }).parse(req.query.to);
+    const members = z
+      .string()
+      .max(3000)
+      .default('')
+      .parse(req.query.members)
+      .split(',')
+      .filter(Boolean);
+    res.json(await calendarAvailability(await access(req), from, to, members));
+  }),
+);
+erp.post(
+  '/organizations/:org/calendar/events',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createCalendarEvent(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.put(
+  '/organizations/:org/calendar/events/:id',
+  route(async (req, res) =>
+    res.json(
+      await editCalendarEvent(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.put(
+  '/organizations/:org/calendar/events/:id/occurrences/:occurrence',
+  route(async (req, res) =>
+    res.json(
+      await editCalendarOccurrence(
+        await access(req, 'operations'),
+        String(req.params.id),
+        decodeURIComponent(String(req.params.occurrence)),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.post(
+  '/organizations/:org/calendar/events/:id/occurrences/:occurrence/cancel',
+  route(async (req, res) =>
+    res.json(
+      await cancelCalendarOccurrence(
+        await access(req, 'operations'),
+        String(req.params.id),
+        decodeURIComponent(String(req.params.occurrence)),
+        req.body?.expected_version,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.post(
+  '/organizations/:org/calendar/events/:id/respond',
+  route(async (req, res) =>
+    res.json(
+      await respondCalendarInvite(
+        await access(req, 'read'),
+        String(req.params.id),
+        req.body?.response,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.post(
+  '/organizations/:org/calendar/events/:id/cancel',
+  route(async (req, res) =>
+    res.json(
+      await cancelCalendarEvent(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body?.expected_version,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/calendar/appointment-types',
+  route(async (req, res) => res.json(await calendarAppointmentTypes(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/calendar/appointment-types',
+  route(async (req, res) =>
+    res.status(201).json(
+      await createCalendarAppointmentType(await access(req, 'operations'), req.body, key(req)),
+    ),
+  ),
+);
+erp.put(
+  '/organizations/:org/calendar/appointment-types/:id',
+  route(async (req, res) =>
+    res.json(
+      await updateCalendarAppointmentType(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.post(
+  '/organizations/:org/calendar/appointment-types/:id/bookings',
+  route(async (req, res) =>
+    res.status(201).json(
+      await bookCalendarAppointment(
+        await access(req),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/website/settings',
+  route(async (req, res) => res.json(await getWebsiteIdentity(await access(req)))),
+);
+erp.put(
+  '/organizations/:org/website/settings',
+  route(async (req, res) =>
+    res.json(await saveWebsiteIdentity(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/website/pages/:id/publication-history',
+  route(async (req, res) =>
+    res.json(await websitePublicationHistory(await access(req), String(req.params.id))),
+  ),
+);
+erp.post(
+  '/organizations/:org/website/pages/:id/publication-history/:version/restore',
+  route(async (req, res) =>
+    res.json(
+      await restoreWebsitePublication(
+        await access(req, 'operations'),
+        String(req.params.id),
+        Number(req.params.version),
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/website/pages',
+  route(async (req, res) => res.json(await websitePages(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/website/pages',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await saveWebsitePage(await access(req, 'operations'), null, req.body, key(req))),
+  ),
+);
+erp.put(
+  '/organizations/:org/website/pages/:id',
+  route(async (req, res) =>
+    res.json(
+      await saveWebsitePage(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.post(
+  '/organizations/:org/website/pages/:id/publish',
+  route(async (req, res) =>
+    res.json(
+      await publishWebsitePage(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body?.expected_version,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.post(
+  '/organizations/:org/website/pages/:id/unpublish',
+  route(async (req, res) =>
+    res.json(
+      await unpublishWebsitePage(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body?.expected_version,
+        key(req),
+      ),
+    ),
+  ),
+);

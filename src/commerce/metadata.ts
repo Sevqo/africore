@@ -7,8 +7,18 @@ for (const route of [
   'GET /organizations/:org/commerce/assets/:id/content',
 ]) {
   commerceRouteKinds[route] = ['business'];
-  commercePolicies[route] = { services: ['commerce'] };
+  commercePolicies[route] = { services: ['commerce', 'website'] };
 }
+commercePolicies['POST /organizations/:org/commerce/assets/:id/withdraw'] = {
+  services: ['commerce', 'website'],
+};
+commercePolicies['GET /organizations/:org/commerce/assets/:id/content'] = {
+  services: ['commerce'],
+};
+commerceRouteKinds['GET /organizations/:org/commerce/assets/:id/preview'] = ['business'];
+commercePolicies['GET /organizations/:org/commerce/assets/:id/preview'] = {
+  services: ['commerce', 'website'],
+};
 commerceRouteKinds['GET /organizations/:org/commerce/stores/:id/orders'] = ['business'];
 commercePolicies['GET /organizations/:org/commerce/stores/:id/orders'] = { services: ['commerce'] };
 commerceRouteKinds['PUT /organizations/:org/commerce/stores/:id/checkout-policy'] = ['business'];
