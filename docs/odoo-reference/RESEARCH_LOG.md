@@ -1,5 +1,23 @@
 # Odoo research log
 
+## 2026-11-23 — Cash rounding from compiled symbols to accounting entries
+
+- Source pin 4968b8772ab96e25471ebbcdcbe32f6049e5b728.
+- REA inspected the compiled AccountCashRounding model from addons/account/models/account_cash_rounding.py. Source review confirmed the positive precision constraint and traced the signed difference into account_move.py (_recompute_cash_rounding_lines).
+- Odoo can either use a separate profit or loss account or add a rounding line tagged to its largest tax amount. The Python implementation matches the three arithmetic methods in odoo/tools/float_utils.py. AfriCore applies the two line strategies to its single configured tax workflow and stores the original total and rounding difference with the reviewed journal source.
+- Scope and checks are recorded in docs/odoo-reverse-engineering/IMPLEMENTATION_LEDGER.md.
+
+## 2026-11-23 — Accounting tax calculation boundary
+
+- Question: can AfriCore's bounded manual single-rate tax preview reuse Odoo 20 accounting behavior without importing the Odoo ORM or replacing AfriCore's accounting authority?
+- Odoo commit: 4968b8772ab96e25471ebbcdcbe32f6049e5b728 (local 20.0 branch; checkout reports 14 commits behind its remote tracking branch).
+- Read: odoo-reference/addons/account/__manifest__.py; odoo-reference/addons/account/models/account_tax.py (_get_tax_details, compute_all); odoo-reference/addons/account/tests/test_tax.py.
+- Findings: Odoo handles ordered/grouped taxes, quantity, currency precision, per-line/global rounding, price inclusion and document context. Its behavior is broader than AfriCore's configured one-rate integer calculation.
+- AfriCore decision: reuse only the bounded calculation seam through a dependency-free Python adapter; keep TypeScript authoritative for tenant access, tax codes, account selection, approval, audit, idempotency and journal persistence. Do not describe this as full tax parity or statutory calculation. No Odoo implementation code was copied.
+- REA: CLI 6.10.1 was verified and import-reference-source was run against addons/account; it returned capability_unavailable because safe no-follow opens are unavailable on Windows. WSL access was denied. The generated inventory is AST fallback, not REA output.
+- Follow-ups: run focused AfriCore Accounting test; qualify PostgreSQL and Docker; trace bank-statement reconciliation and accounting security/views/tests next.
+- Limits: no live Odoo server/screenshots, Enterprise source, broad module call graph or PostgreSQL test was available in this session.
+
 ## 2026-11-21 — Phase 3 Calendar and Website source follow-up
 
 - Question: which source-backed lifecycle and publication rules should guide completion of Calendar and Website, and what evidence remains unavailable for visual acceptance?

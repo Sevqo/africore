@@ -463,11 +463,20 @@ test('Calendar work hours are private by default and availability returns busy w
     timezone: 'Africa/Nairobi', recurrence: 'none', attendees: [{ user_id: guestId, response: 'pending' }],
   });
   assert.equal(event.status, 201, JSON.stringify(event.body));
+  const cancelledEvent = await call(orgPath('/calendar/events'), ownerCookie, 'POST', {
+    title: 'Cancelled reminder fixture', description: '', start: start.toISOString(), end: end.toISOString(),
+    timezone: 'Africa/Nairobi', recurrence: 'none', attendees: [],
+  });
+  assert.equal(cancelledEvent.status, 201, JSON.stringify(cancelledEvent.body));
   const worker = { org, environment: 'sandbox', actor: 'stage2_worker', role: 'system', api: false } as any;
   const scheduled = await processCalendarReminders(worker, new Date());
   const repeated = await processCalendarReminders(worker, new Date());
-  assert.equal(scheduled.scheduled, 2); // Organizer and invited attendee each receive their own setting.
+  assert.equal(scheduled.scheduled, 3);
   assert.equal(repeated.scheduled, 0);
+  const cancellation = await call(orgPath(`/calendar/events/${cancelledEvent.body.id}/cancel`), ownerCookie, 'POST', {
+    expected_version: cancelledEvent.body.version,
+  });
+  assert.equal(cancellation.status, 200, JSON.stringify(cancellation.body));
   await processBusinessEvents(worker);
   const notices = await dbAll(
     "SELECT user_id,title,body FROM ac2_notifications WHERE org_id=? AND environment='sandbox' AND category='calendar' AND resource_id=? AND title='Meeting reminder'",
@@ -476,6 +485,11 @@ test('Calendar work hours are private by default and availability returns busy w
   assert.equal(notices.length, 2);
   assert.ok(notices.every((notice: any) => notice.body.includes('GMT+3')));
   assert.ok(!notices.some((notice: any) => notice.body.includes(event.body.data.title)));
+  const cancelledNotices = await dbAll(
+    "SELECT id FROM ac2_notifications WHERE org_id=? AND environment='sandbox' AND category='calendar' AND resource_id=? AND title='Meeting reminder'",
+    [org, cancelledEvent.body.id],
+  );
+  assert.equal(cancelledNotices.length, 0);
 });
 
 test('Calendar appointment types confirm member bookings only when staff calendars are free', async () => {

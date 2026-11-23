@@ -37,6 +37,8 @@ website/*-qa.png
 
 # Scratch work
 .tmp/
+__pycache__/
+*.pyc
 
 # Local pointer to private development configuration (never contains credentials)
 .africore-dev.json

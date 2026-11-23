@@ -39,19 +39,20 @@ jobs:
             website/package-lock.json
             deploy/cloudflare/package-lock.json
       - run: npm ci && npm --prefix website ci && npm --prefix deploy/cloudflare ci
-      - run: npm run typecheck && npm run lint && npm run test:dev
+      - run: npm run typecheck && npm run lint && npm run test:dev && npm run test:render-deploy
       - run: npm test && npm run validate:openapi && npm run validate:platform
       - run: npm --prefix website run build && npm --prefix deploy/cloudflare test && npm --prefix deploy/cloudflare run check
       - name: Record Render deploy start time
         id: render_start
         if: ${{ success() }}
         run: echo "started_at=$(date -u +'%Y-%m-%dT%H:%M:%S.%3NZ')" >> "$GITHUB_OUTPUT"
-      - name: Trigger existing Render backend deployment
+      - name: Trigger Render deployment for the tested commit
         if: ${{ success() }}
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          RENDER_EXPECTED_COMMIT: ${{ steps.source.outputs.commit_sha }}
         run: |
-          if ! curl --fail --silent --request POST "$RENDER_DEPLOY_HOOK" > /dev/null 2>&1; then
+          if ! curl --fail --silent --request POST --url-query "ref=$RENDER_EXPECTED_COMMIT" "$RENDER_DEPLOY_HOOK" > /dev/null 2>&1; then
             echo '::error::Render deploy hook request failed.'
             exit 1
           fi

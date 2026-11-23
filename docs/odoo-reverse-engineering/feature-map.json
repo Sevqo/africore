@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "odoo_commit": "4968b8772ab96e25471ebbcdcbe32f6049e5b728",
+  "africore_baseline": "28c6f5c922af1125b32fc4a9cd65e4a6573824d2",
+  "features": [
+    {
+      "id": "accounting.manual-tax-preview",
+      "app": "Accounting",
+      "priority": "runtime-integration-proof",
+      "odoo_addon": "account",
+      "odoo_model": "account.tax",
+      "odoo_sources": {
+        "manifest": "addons/account/__manifest__.py",
+        "models": {
+          "addons/account/models/account_tax.py": [
+            "_eval_tax_amount_price_excluded",
+            "_get_tax_details",
+            "compute_all"
+          ],
+          "odoo/tools/float_utils.py": ["float_round"]
+        },
+        "views": ["addons/account/views/account_tax_views.xml"],
+        "tests": ["addons/account/tests/test_tax.py"]
+      },
+      "africore_files": [
+        "python/africore_accounting/tax.py",
+        "src/erp/python-accounting.ts",
+        "src/erp/accounting-tax.ts",
+        "website/src/apps/AccountingTax.tsx"
+      ],
+      "method": "C",
+      "scope": "One price-excluded percentage rate, half-up to integer minor units",
+      "migration": null,
+      "tests": [
+        "python/tests/test_tax.py",
+        "src/__tests__/python-accounting.test.ts",
+        "src/__tests__/accounting.test.ts"
+      ],
+      "screenshot": null,
+      "verification": "IMPLEMENTATION_LEDGER.md"
+    },
+    {
+      "id": "accounting.manual-cash-rounding",
+      "app": "Accounting",
+      "odoo_addon": "account",
+      "odoo_model": "account.cash.rounding",
+      "odoo_sources": {
+        "models": {
+          "addons/account/models/account_cash_rounding.py": ["validate_rounding", "round", "compute_difference"],
+          "addons/account/models/account_move.py": ["_recompute_cash_rounding_lines"],
+          "odoo/tools/float_utils.py": ["float_round"]
+        }
+      },
+      "africore_files": [
+        "python/africore_accounting/tax.py",
+        "src/erp/accounting-tax.ts",
+        "website/src/apps/AccountingTax.tsx"
+      ],
+      "method": "C",
+      "scope": "Manual accounting adjustment with one configured tax and either rounding strategy",
+      "migration": null,
+      "tests": ["python/tests/test_tax.py", "src/__tests__/accounting.test.ts"],
+      "screenshot": null,
+      "verification": "IMPLEMENTATION_LEDGER.md"
+    }
+  ]
+}

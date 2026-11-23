@@ -6394,6 +6394,82 @@
             "enum": [
               true
             ]
+          },
+          "cash_rounding": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "strategy": {
+                    "type": "string",
+                    "enum": [
+                      "add_invoice_line"
+                    ]
+                  },
+                  "increment_minor": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000000
+                  },
+                  "method": {
+                    "type": "string",
+                    "enum": [
+                      "UP",
+                      "DOWN",
+                      "HALF-UP"
+                    ]
+                  },
+                  "profit_account_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "loss_account_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "strategy",
+                  "increment_minor",
+                  "method",
+                  "profit_account_id",
+                  "loss_account_id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "strategy": {
+                    "type": "string",
+                    "enum": [
+                      "biggest_tax"
+                    ]
+                  },
+                  "increment_minor": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000000
+                  },
+                  "method": {
+                    "type": "string",
+                    "enum": [
+                      "UP",
+                      "DOWN",
+                      "HALF-UP"
+                    ]
+                  }
+                },
+                "required": [
+                  "strategy",
+                  "increment_minor",
+                  "method"
+                ],
+                "additionalProperties": false
+              }
+            ]
           }
         },
         "required": [

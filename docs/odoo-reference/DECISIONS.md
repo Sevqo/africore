@@ -31,6 +31,14 @@ decided, and why. An entry here is authoritative for future sessions; a note in
 
 ## Log
 
+### D-010 — Keep AfriCore authority around a bounded Python tax adapter
+- Date: 2026-11-23
+- Status: accepted
+- Evidence: Odoo addons/account/models/account_tax.py (_get_tax_details, compute_all), addons/account/tests/test_tax.py, and the 2026-11-23 RESEARCH_LOG entry.
+- Constraint: AfriCore keeps integer minor-unit money, tenant-scoped configuration, separate-person approval, immutable posted entries and source provenance.
+- Decision: isolate only the existing one-rate half-up tax calculation in a standard-library Python adapter called by the existing TypeScript preview. TypeScript remains authoritative for access, records, audit and journal posting. No Odoo source is copied; groups, price-included taxes, fiscal positions and localization are unsupported.
+- Consequences: container runtime includes Python 3; adapter has bounded process/input/output behavior and focused tests. Do not claim tax compliance or Odoo parity beyond this calculation.
+
 ### D-009 — Keep People resources private and transitions explicit
 - Date: 2026-11-19
 - Status: accepted

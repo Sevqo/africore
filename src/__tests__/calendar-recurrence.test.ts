@@ -123,3 +123,17 @@ test('a moved exception changes one occurrence and a cancellation suppresses onl
   assert.equal((result[1] as any).data.title, 'Rescheduled');
   assert.equal((result[2] as any).data.start, '2025-01-04T09:00:00.000Z');
 });
+
+test('an occurrence moved earlier is visible even if its original date is outside the range', () => {
+  const e = event('2025-01-06T09:00:00.000Z', '2025-01-06T10:00:00.000Z', rule('weekly'), {
+    occurrence_exceptions: [{
+      key: '2025-02-03T09:00:00',
+      data: { start: '2025-01-09T12:00:00Z', end: '2025-01-09T13:00:00Z' },
+    }],
+  });
+  const moved = expandCalendarSeries(e, '2025-01-09T00:00:00.000Z', '2025-01-10T00:00:00.000Z');
+  assert.equal(moved.length, 1);
+  assert.equal(moved[0].occurrence_key, '2025-02-03T09:00:00');
+  assert.equal(moved[0].data.start, '2025-01-09T12:00:00.000Z');
+  assert.deepEqual(range('2025-02-03T00:00:00.000Z', '2025-02-04T00:00:00.000Z', e), []);
+});

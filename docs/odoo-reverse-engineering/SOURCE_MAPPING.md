@@ -1,0 +1,42 @@
+# Odoo-to-AfriCore source map
+
+AfriCore baseline: 28c6f5c922af1125b32fc4a9cd65e4a6573824d2. Existing worktree edits were present before this task and were preserved.
+
+App grouping below is a heuristic by addon technical name/category. It is an inventory aid, not feature parity evidence.
+
+| AfriCore app | Odoo addons | AfriCore status |
+|---|---|---|
+| Commerce | payment, payment_adyen, payment_aps, payment_asiapay, payment_authorize, payment_buckaroo, payment_custom, payment_demo, payment_dpo, payment_ecpay, payment_flutterwave, payment_iyzico, payment_mercado_pago, payment_mollie, payment_nuvei, payment_paymob, payment_paypal, payment_payu, payment_qfpay, payment_razorpay, payment_redsys, payment_stripe … 25 total | Feature-level source map and acceptance remain open |
+| Finance |  | Feature-level source map and acceptance remain open |
+| Sales | base_address_extended, base_geolocalize, contacts, event_booth_sale, event_sale, loyalty, mail_plugin, partnership, product, product_margin, product_matrix, sale, sale_edi_ubl, sale_expense, sale_expense_margin, sale_gelato, sale_loyalty, sale_management, sale_margin, sale_pdf_quote_builder, sale_product_matrix, sale_service … 27 total | Feature-level source map and acceptance remain open |
+| Inventory | barcodes, barcodes_gs1_nomenclature, product_expiry, project_purchase_stock, project_stock, project_stock_landed_costs, purchase_alternative_stock, purchase_requisition_stock, purchase_stock, sale_gelato_stock, sale_project_stock, sale_purchase_stock, sale_stock, sale_stock_margin, sale_stock_product_expiry, stock, stock_landed_costs, stock_sms | Feature-level source map and acceptance remain open |
+| CRM | crm, crm_iap_enrich, crm_iap_mine, crm_mail_plugin, event_crm, event_crm_sale, gamification_sale_crm, iap_crm, sale_crm, test_crm_full | Feature-level source map and acceptance remain open |
+| Procurement | project_purchase, purchase, purchase_alternative, purchase_alternative_sale, purchase_edi_ubl_bis3, purchase_product_matrix, purchase_requisition, sale_purchase, sale_purchase_project, test_sale_purchase_edi_ubl | Feature-level source map and acceptance remain open |
+| Accounting | account, account_check_printing, account_debit_note, account_edi, account_edi_proxy_client, account_edi_ubl_cii, account_payment, account_payment_custom, account_payment_interco, account_peppol, account_qr_code_emv, account_qr_code_sepa, account_tax_python, account_test, account_update_tax_tags, analytic, google_account, l10n_account_edi_ubl_cii_tests, l10n_account_withholding_tax, l10n_account_withholding_tax_pos, l10n_ae, l10n_ae_pos … 253 total | Feature-level source map and acceptance remain open |
+| POS | l10n_be_pos_restaurant, l10n_be_pos_sale, l10n_fr_pos_cert, l10n_id_pos_self_order_qris, l10n_test_pos_qr_payment, point_of_sale, pos_account_tax_python, pos_adyen, pos_bancontact_pay, pos_cashdro, pos_cashmatic, pos_discount, pos_dpopay, pos_edi_ubl, pos_event, pos_event_sale, pos_glory_cash, pos_hr, pos_hr_restaurant, pos_imin, pos_loyalty, pos_mercado_pago … 54 total | Feature-level source map and acceptance remain open |
+| Work | crm_sale_project, project, project_mail_plugin, project_sale_expense, project_timesheet_holidays, project_todo, sale_project, sale_project_margin, sale_timesheet, sale_timesheet_margin, spreadsheet_dashboard_sale_timesheet | Feature-level source map and acceptance remain open |
+| People | gamification, hr, hr_address_extended, hr_attendance, hr_expense, hr_gamification, hr_holidays, hr_holidays_attendance, hr_presence, hr_recruitment, hr_recruitment_skills, hr_skills, hr_skills_event, hr_timesheet, hr_timesheet_attendance, hr_work_entry, lunch, project_hr_expense, project_hr_skills, spreadsheet_dashboard_hr_expense, spreadsheet_dashboard_hr_timesheet | Feature-level source map and acceptance remain open |
+| Documents | auth_password_policy_signup, auth_signup | Feature-level source map and acceptance remain open |
+| Analytics | spreadsheet, spreadsheet_dashboard, test_spreadsheet | Feature-level source map and acceptance remain open |
+| Automations | base_automation, test_base_automation | Feature-level source map and acceptance remain open |
+| Business ID |  | Feature-level source map and acceptance remain open |
+| Calendar | calendar, calendar_sms, google_calendar, hr_calendar, hr_calendar_google, microsoft_calendar | Feature-level source map and acceptance remain open |
+| Website | l10n_ar_website_sale, l10n_br_website_sale, l10n_es_website_sale, l10n_es_website_sale_id_type, l10n_tw_edi_ecpay_website_sale, spreadsheet_dashboard_website_sale, spreadsheet_dashboard_website_sale_slides, test_website, test_website_modules, test_website_slides_full, website, website_address_autocomplete, website_blog, website_cf_turnstile, website_crm, website_crm_iap_reveal, website_crm_livechat, website_crm_partner_assign, website_crm_sms, website_customer, website_event, website_event_booth … 62 total | Feature-level source map and acceptance remain open |
+| Marketing | crm_sms, event_sms, hr_recruitment_sms, mail_tracking_mass_mailing, mail_tracking_sms, marketing_card, marketing_card_event, mass_mailing, mass_mailing_crm, mass_mailing_crm_sms, mass_mailing_event, mass_mailing_event_sms, mass_mailing_event_track, mass_mailing_event_track_sms, mass_mailing_sale, mass_mailing_sale_sms, mass_mailing_slides, mass_mailing_sms, mass_mailing_themes, project_sms, sale_sms, sms … 26 total | Feature-level source map and acceptance remain open |
+| Support | crm_livechat, hr_livechat, im_livechat, portal_rating, rating, spreadsheet_dashboard_im_livechat | Feature-level source map and acceptance remain open |
+| Subscriptions | mysubscription | Feature-level source map and acceptance remain open |
+| Manufacturing | mrp, mrp_account, mrp_delivery, mrp_landed_costs, mrp_product_expiry, mrp_repair, mrp_subcontracting, mrp_subcontracting_account, mrp_subcontracting_dropshipping, mrp_subcontracting_landed_costs, mrp_subcontracting_purchase, project_mrp, project_mrp_account, project_mrp_sale, project_mrp_stock_landed_costs, purchase_mrp, sale_mrp, sale_mrp_margin | Feature-level source map and acceptance remain open |
+| Field Operations | account_fleet, fleet, fleet_maintenance, hr_fleet, hr_maintenance, l10n_din5008_repair, maintenance, purchase_repair, repair, stock_fleet, stock_maintenance | Feature-level source map and acceptance remain open |
+| Logistics | delivery, l10n_gr_edi_delivery_note, sale_loyalty_delivery, stock_delivery, stock_dropshipping | Feature-level source map and acceptance remain open |
+| Property & Hospitality |  | Feature-level source map and acceptance remain open |
+| Knowledge & Learning | hr_recruitment_survey, hr_skills_slides, hr_skills_survey, survey, survey_crm | Feature-level source map and acceptance remain open |
+| AfriCore Studio |  | Feature-level source map and acceptance remain open |
+| Integrations Hub | api_doc, iap, iap_mail | Feature-level source map and acceptance remain open |
+
+## Implemented bounded slice
+
+| Source | Behavior inspected | AfriCore target | Method | Current boundary |
+|---|---|---|---|---|
+| addons/account/models/account_tax.py: _get_tax_details, compute_all | Ordered tax computation and per-line rounding; richer than AfriCore's single configured percentage | src/erp/accounting-tax.ts preview | C: isolated Python calculation through TypeScript | Single percentage only; no tax groups, price-included taxes, fiscal positions, localization or statutory certification |
+
+TypeScript remains the authority for tenant access, tax-code configuration, accounts, approvals, audit, idempotency and journal persistence. No Odoo source was copied.

@@ -672,8 +672,9 @@ test('source selectors filter the canonical date, currency and supersession stat
   const matchingReference = items.data.data.find((line: any) => line.reference)?.reference;
   assert.ok(matchingReference);
   assert.ok(
-    (await api(root() + '/accounting/items?search=' + encodeURIComponent(matchingReference))).data
-      .data.some((line: any) => line.reference === matchingReference),
+    (
+      await api(root() + '/accounting/items?search=' + encodeURIComponent(matchingReference))
+    ).data.data.some((line: any) => line.reference === matchingReference),
   );
   const filteredItems = await api(
     root() +
@@ -684,11 +685,16 @@ test('source selectors filter the canonical date, currency and supersession stat
   assert.equal(filteredItems.status, 200, JSON.stringify(filteredItems.data));
   assert.equal(filteredItems.data.total, 0);
   const filteredEntries = await api(
-    root() + '/accounting/entries?journal_id=' + config.journals[0].id + '&from=2026-11-01&to=2026-11-30',
+    root() +
+      '/accounting/entries?journal_id=' +
+      config.journals[0].id +
+      '&from=2026-11-01&to=2026-11-30',
   );
   assert.equal(filteredEntries.status, 200, JSON.stringify(filteredEntries.data));
   assert.ok(filteredEntries.data.total > 0);
-  assert.ok(filteredEntries.data.data.every((row: any) => row.journal_id === config.journals[0].id));
+  assert.ok(
+    filteredEntries.data.data.every((row: any) => row.journal_id === config.journals[0].id),
+  );
   const supplierPayments = await api(root() + '/accounting/sources?source_type=supplier_payment');
   assert.equal(supplierPayments.status, 200, JSON.stringify(supplierPayments.data));
   assert.equal(supplierPayments.data.source_type, 'supplier_payment');
@@ -697,11 +703,12 @@ test('source selectors filter the canonical date, currency and supersession stat
     (await api(root() + '/accounting/sources?source_type=invoice&currency=USD')).data.data.length,
     0,
   );
-  const invoiceReference = (
-    await api(root() + '/accounting/sources?source_type=invoice')
-  ).data.data[0].id;
+  const invoiceReference = (await api(root() + '/accounting/sources?source_type=invoice')).data
+    .data[0].id;
   const searchedInvoice = await api(
-    root() + '/accounting/sources?source_type=invoice&search=' + encodeURIComponent(invoiceReference),
+    root() +
+      '/accounting/sources?source_type=invoice&search=' +
+      encodeURIComponent(invoiceReference),
   );
   assert.equal(searchedInvoice.status, 200, JSON.stringify(searchedInvoice.data));
   assert.equal(searchedInvoice.data.total, 1);
@@ -936,6 +943,88 @@ test('configured tax codes prepare exact integer manual adjustments and changed 
   const currentInput = { ...input, expected_tax_version: changed.data.version },
     fresh = await api(root() + '/accounting/tax-entries', 'POST', currentInput);
   assert.equal(fresh.status, 201, JSON.stringify(fresh.data));
+  const halfMinor = await api(root() + '/accounting/tax-preview', 'POST', {
+    ...currentInput,
+    base_minor: 10,
+  });
+  assert.equal(halfMinor.status, 200, JSON.stringify(halfMinor.data));
+  assert.equal(halfMinor.data.tax_minor, 2);
+  assert.equal(halfMinor.data.total_minor, 12);
+  const gain = await api(root() + '/accounting/accounts', 'POST', {
+    expected_version: 0,
+    code: '4098',
+    name: 'Cash rounding gain',
+    type: 'revenue',
+  });
+  assert.equal(gain.status, 201, JSON.stringify(gain.data));
+  const round = {
+    ...currentInput,
+    base_minor: 100,
+    cash_rounding: {
+      strategy: 'add_invoice_line',
+      method: 'HALF-UP',
+      increment_minor: 10,
+      profit_account_id: gain.data.id,
+      loss_account_id: account('5000'),
+    },
+  };
+  const roundingPreview = await api(root() + '/accounting/tax-preview', 'POST', round);
+  assert.equal(roundingPreview.status, 200, JSON.stringify(roundingPreview.data));
+  assert.equal(roundingPreview.data.total_minor, 120);
+  assert.equal(roundingPreview.data.tax_minor, 15);
+  assert.equal(
+    roundingPreview.data.lines.find((l: any) => l.account_id === gain.data.id).credit_minor,
+    5,
+  );
+  const lowered = await api(root() + '/accounting/tax-preview', 'POST', {
+    ...round,
+    cash_rounding: { ...round.cash_rounding, method: 'DOWN' },
+  });
+  assert.equal(
+    lowered.data.lines.find((l: any) => l.account_id === account('5000')).debit_minor,
+    5,
+  );
+  const taxRound = {
+    ...round,
+    cash_rounding: { strategy: 'biggest_tax', method: 'UP', increment_minor: 10 },
+  };
+  const taxPreview = await api(root() + '/accounting/tax-preview', 'POST', taxRound);
+  assert.equal(taxPreview.status, 200, JSON.stringify(taxPreview.data));
+  assert.equal(taxPreview.data.tax_minor, 20);
+  assert.equal(
+    (await api(root() + '/accounting/tax-preview', 'POST', taxRound, operationsCookie)).status,
+    403,
+  );
+  assert.equal(
+    (
+      await api(root() + '/accounting/tax-preview', 'POST', {
+        ...round,
+        cash_rounding: { ...round.cash_rounding, profit_account_id: randomUUID() },
+      })
+    ).status,
+    400,
+  );
+  const roundKey = randomUUID();
+  const roundedDraft = await api(
+    root() + '/accounting/tax-entries',
+    'POST',
+    taxRound,
+    cookie,
+    roundKey,
+  );
+  assert.equal(roundedDraft.status, 201, JSON.stringify(roundedDraft.data));
+  const replay = await api(root() + '/accounting/tax-entries', 'POST', taxRound, cookie, roundKey);
+  assert.equal(replay.data.id, roundedDraft.data.id);
+  const roundedPost = await api(
+    root() + '/accounting/entries/' + roundedDraft.data.id + '/post',
+    'POST',
+    {
+      expected_version: roundedDraft.data.version,
+      approval_id: await review(roundedDraft.data),
+    },
+  );
+  assert.equal(roundedPost.status, 200, JSON.stringify(roundedPost.data));
+  assert.equal(roundedPost.data.data.source_snapshot.facts.cash_rounding.difference_minor, 5);
   const freshApproval = await review(fresh.data),
     posted = await api(root() + '/accounting/entries/' + fresh.data.id + '/post', 'POST', {
       expected_version: fresh.data.version,

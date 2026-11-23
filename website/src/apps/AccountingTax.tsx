@@ -22,6 +22,7 @@ export function AccountingTax({
     [preview, setPreview] = useState<any>(null),
     [selected, setSelected] = useState(''),
     [currency, setCurrency] = useState(c.settings.currency),
+    [roundingStrategy, setRoundingStrategy] = useState(''),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
     code = c.tax_codes.find((v: any) => v.id === selected);
@@ -91,6 +92,17 @@ export function AccountingTax({
               counter_account_id: d.counter,
               reason: d.reason,
               acknowledge_separate_manual_adjustment: d.acknowledge === 'on',
+              cash_rounding: roundingStrategy
+                ? {
+                    strategy: roundingStrategy,
+                    increment_minor: parseMoney(d.roundingIncrement, currency),
+                    method: d.roundingMethod,
+                    ...(roundingStrategy === 'add_invoice_line' && {
+                      profit_account_id: d.roundingProfit,
+                      loss_account_id: d.roundingLoss,
+                    }),
+                  }
+                : undefined,
             });
             setPreview(result);
           }}
@@ -162,6 +174,47 @@ export function AccountingTax({
           <Field label="Manual adjustment reason">
             <textarea name="reason" required minLength={8} maxLength={2000} />
           </Field>
+          <Field label="Cash rounding">
+            <select value={roundingStrategy} onChange={(e) => setRoundingStrategy(e.target.value)}>
+              <option value="">None</option>
+              <option value="add_invoice_line">Add a rounding line</option>
+              <option value="biggest_tax">Apply the difference to the configured tax</option>
+            </select>
+          </Field>
+          {roundingStrategy && (
+            <>
+              <Field label={'Smallest cash increment in ' + currency}>
+                <input name="roundingIncrement" inputMode="decimal" required />
+              </Field>
+              <Field label="Rounding method">
+                <select name="roundingMethod" defaultValue="HALF-UP">
+                  <option value="HALF-UP">Nearest, ties up</option>
+                  <option value="UP">Up</option>
+                  <option value="DOWN">Down</option>
+                </select>
+              </Field>
+            </>
+          )}
+          {roundingStrategy === 'add_invoice_line' &&
+            (
+              [
+                ['roundingProfit', 'Rounding gain account', 'revenue'],
+                ['roundingLoss', 'Rounding loss account', 'expense'],
+              ] as const
+            ).map(([name, label, type]) => (
+              <Field key={name} label={label}>
+                <select name={name} required>
+                  <option value="">Choose an account</option>
+                  {c.accounts
+                    .filter((a: any) => a.active && a.type === type)
+                    .map((a: any) => (
+                      <option key={a.id} value={a.id}>
+                        {a.code} · {a.name}
+                      </option>
+                    ))}
+                </select>
+              </Field>
+            ))}
           <label className="checkbox-field">
             <input name="acknowledge" type="checkbox" required />
             This is a separate manual adjustment; I have checked that it does not duplicate a shared
@@ -182,6 +235,12 @@ export function AccountingTax({
             {money(preview.base_minor, currency)} · tax {money(preview.tax_minor, currency)} · total{' '}
             {money(preview.total_minor, currency)}
           </p>
+          {preview.cash_rounding && (
+            <p>
+              Before cash rounding {money(preview.cash_rounding.original_total_minor, currency)}
+              {' · '}difference {money(preview.cash_rounding.difference_minor, currency)}
+            </p>
+          )}
           {preview.lines.map((l: any, i: number) => (
             <p key={i}>
               {preview.accounts.find((a: any) => a.id === l.account_id)?.name} · debit{' '}

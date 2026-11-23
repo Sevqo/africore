@@ -6,6 +6,7 @@ import { currencySchema } from '../platform/domain';
 import { canonical } from '../finance/service';
 import { accountingAccess, accountingSettings, prepareDerivedEntry } from './accounting';
 import { operation, read, insert, update, decode } from './store';
+import { calculateTaxWithPython } from './python-accounting';
 export const taxCodeInput = z
   .object({
     expected_version: z.number().int().min(0),
@@ -31,6 +32,26 @@ export const taxEntryInput = z
     counter_account_id: z.string().uuid(),
     reason: z.string().trim().min(8).max(2000),
     acknowledge_separate_manual_adjustment: z.literal(true),
+    cash_rounding: z
+      .discriminatedUnion('strategy', [
+        z
+          .object({
+            strategy: z.literal('add_invoice_line'),
+            increment_minor: z.number().int().min(1).max(1_000_000),
+            method: z.enum(['UP', 'DOWN', 'HALF-UP']),
+            profit_account_id: z.string().uuid(),
+            loss_account_id: z.string().uuid(),
+          })
+          .strict(),
+        z
+          .object({
+            strategy: z.literal('biggest_tax'),
+            increment_minor: z.number().int().min(1).max(1_000_000),
+            method: z.enum(['UP', 'DOWN', 'HALF-UP']),
+          })
+          .strict(),
+      ])
+      .optional(),
   })
   .strict();
 export async function taxCodes(a: Access) {
@@ -89,8 +110,11 @@ export async function previewTaxEntry(a: Access, input: unknown) {
   if (code.status !== 'active' || code.version !== d.expected_tax_version)
     fail(409, 'Review an active current tax code version');
   if (d.entry_on < settings.start_on) fail(409, 'Tax adjustment predates the reviewed books');
+  const roundingRule = d.cash_rounding;
   const ids = [d.base_account_id, d.counter_account_id, code.data.account_id];
-  if (new Set(ids).size !== 3) fail(400, 'Use distinct base, counter and tax accounts');
+  if (roundingRule?.strategy === 'add_invoice_line')
+    ids.push(roundingRule.profit_account_id, roundingRule.loss_account_id);
+  if (new Set(ids).size !== ids.length) fail(400, 'Choose distinct journal accounts');
   const accounts: any[] = [];
   for (const id of ids) {
     const account = await dbGet(
@@ -112,19 +136,53 @@ export async function previewTaxEntry(a: Access, input: unknown) {
       400,
       'Sales adjustments require revenue/asset base and counter accounts; purchase adjustments require expense-or-asset/liability accounts',
     );
-  const tax = Number((BigInt(d.base_minor) * BigInt(code.data.rate_bps) + 5000n) / 10000n),
-    total = d.base_minor + tax,
+  if (
+    roundingRule?.strategy === 'add_invoice_line' &&
+    (accounts[3].type !== 'revenue' || accounts[4].type !== 'expense')
+  )
+    fail(
+      400,
+      'Choose a revenue account for rounding gains and an expense account for rounding losses',
+    );
+  const calculation = await calculateTaxWithPython(
+      d.base_minor,
+      code.data.rate_bps,
+      roundingRule && {
+        increment_minor: roundingRule.increment_minor,
+        method: roundingRule.method,
+      },
+    ),
+    difference = calculation.cash_rounding?.difference_minor ?? 0,
+    tax = calculation.tax_minor,
+    total = calculation.cash_rounding?.rounded_total_minor ?? calculation.total_minor,
+    taxRounding = roundingRule?.strategy === 'biggest_tax',
+    bookTax = tax + (taxRounding ? difference : 0),
     sales = code.data.purpose === 'sales',
-    line = (index: number, debit: number, credit: number) => ({
+    line = (index: number, debit: number, credit: number, memo = d.reason) => ({
       account_id: accounts[index].id,
       contact_id: null,
       debit_minor: debit,
       credit_minor: credit,
-      memo: d.reason,
+      memo,
     }),
     lines = sales
       ? [line(1, total, 0), line(0, 0, d.base_minor), ...(tax ? [line(2, 0, tax)] : [])]
       : [line(0, d.base_minor, 0), ...(tax ? [line(2, tax, 0)] : []), line(1, 0, total)];
+  if (roundingRule && (total <= 0 || total > 100_000_000_000))
+    fail(400, 'Rounded total falls outside the supported journal amount');
+  if (taxRounding && difference && (!tax || bookTax < 0))
+    fail(400, 'Tax rounding requires a tax amount that can absorb the difference');
+  if (difference) {
+    const signedCredit = sales ? difference : -difference;
+    lines.push(
+      line(
+        taxRounding ? 2 : signedCredit > 0 ? 3 : 4,
+        Math.max(0, -signedCredit),
+        Math.max(0, signedCredit),
+        taxRounding ? 'Cash rounding on ' + code.data.code : 'Cash rounding difference',
+      ),
+    );
+  }
   return {
     input: d,
     tax_code: {
@@ -137,8 +195,16 @@ export async function previewTaxEntry(a: Access, input: unknown) {
       account_id: code.data.account_id,
     },
     base_minor: d.base_minor,
-    tax_minor: tax,
+    tax_minor: bookTax,
     total_minor: total,
+    ...(roundingRule && {
+      cash_rounding: {
+        ...roundingRule,
+        original_total_minor: calculation.total_minor,
+        original_tax_minor: tax,
+        difference_minor: difference,
+      },
+    }),
     lines,
     accounts,
     notice:
@@ -163,6 +229,7 @@ export async function taxAdjustmentSource(a: Access, id: string) {
       base_minor: d.base_minor,
       tax_minor: d.tax_minor,
       total_minor: d.total_minor,
+      ...(d.cash_rounding && { cash_rounding: d.cash_rounding }),
       lines: d.lines,
       assurance: 'user_configured_manual_adjustment_not_statutory_certification',
     },

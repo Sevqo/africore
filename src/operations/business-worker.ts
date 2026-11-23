@@ -29,6 +29,42 @@ const types = [
   'automation.run_failed',
   'calendar.reminder_due',
 ];
+
+async function currentCalendarReminder(
+  a: Access,
+  payload: { event_id: string; user_id: string; starts_at: string },
+) {
+  const start = Date.parse(payload.starts_at);
+  const currentTime = Date.now();
+  if (!Number.isFinite(start) || start <= currentTime) return null;
+
+  const setting = await dbGet(
+    "SELECT s.id FROM ac_erp_objects s JOIN ac_memberships m ON m.org_id=s.org_id AND m.user_id=s.owner_id WHERE s.org_id=? AND s.environment=? AND s.kind='calendar_settings' AND s.owner_id=? AND s.status='active' ORDER BY s.updated_at DESC LIMIT 1",
+    [a.org, a.environment, payload.user_id],
+  );
+  if (!setting) return null;
+  const { data: preferences } = await readErp(a, setting.id, 'calendar_settings');
+  const minutes = preferences.reminder_minutes_before;
+  if (!minutes || start - minutes * 60000 > currentTime) return null;
+
+  const record = await dbGet(
+    "SELECT id FROM ac_erp_objects WHERE id=? AND org_id=? AND environment=? AND kind='calendar_event' AND status='active'",
+    [payload.event_id, a.org, a.environment],
+  );
+  if (!record) return null;
+  const event = await readErp(a, record.id, 'calendar_event');
+  if (event.status !== 'active' || event.data.cancelled_at) return null;
+
+  const occurrence = expandCalendarSeries(event, new Date(start).toISOString(), new Date(start + 1).toISOString())
+    .find((candidate) => Date.parse(candidate.data.start) === start);
+  if (!occurrence) return null;
+  const { organizer_id, attendees = [] } = occurrence.data;
+  const invited = attendees.some((attendee: { user_id: string; response: string }) =>
+    attendee.user_id === payload.user_id && attendee.response !== 'declined',
+  );
+  return organizer_id === payload.user_id || invited ? preferences.timezone : null;
+}
+
 /** Consume existing durable scoped events. Receipt and notification commit together; no second queue. */
 export async function processBusinessEvents(a: Access) {
   return atomic(a, async () => {
@@ -223,14 +259,8 @@ export async function processBusinessEvents(a: Access) {
           action_data: { app_id: 'automations', section: 'runs' },
         };
       if (event.event_type === 'calendar.reminder_due') {
-        const setting = await dbGet(
-          "SELECT id FROM ac_erp_objects WHERE org_id=? AND environment=? AND kind='calendar_settings' AND owner_id=? AND status='active' ORDER BY updated_at DESC LIMIT 1",
-          [a.org, a.environment, payload.user_id],
-        );
-        const timezone = setting
-          ? (await readErp(a, setting.id, 'calendar_settings')).data.timezone
-          : 'Africa/Nairobi';
-        input = {
+        const timezone = await currentCalendarReminder(a, payload);
+        if (timezone) input = {
           category: 'calendar',
           title: 'Meeting reminder',
           body: `A meeting starts at ${new Intl.DateTimeFormat('en-GB', { timeZone: timezone, year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }).format(new Date(payload.starts_at))}. Open Calendar to review the invitation.`,

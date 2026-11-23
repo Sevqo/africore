@@ -45,6 +45,10 @@ docker-compose.yml
 .vscode/
 .idea/
 .tmp/
+**/__pycache__/
+**/*.pyc
+python/tests/
+docs/odoo-reverse-engineering/odoo20-community-index.json
 *.log
 npm-debug.log*
 .DS_Store

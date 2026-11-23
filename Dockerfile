@@ -58,6 +58,9 @@ RUN npm ci --omit=dev && npm cache clean --force
 FROM node:22-bookworm-slim AS runtime
 
 WORKDIR /app
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends python3 \
+ && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production \
     PORT=4000 \
     DB_PATH=/app/data/afriscore.db
@@ -68,6 +71,7 @@ COPY docs ./docs
 COPY --from=website-build /app/website/dist ./website/dist
 COPY --from=production-deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+COPY python ./python
 
 # The official Node images ship an unprivileged `node` user (uid 1000).
 # /app/data is the writable location for the optional SQLite database; a

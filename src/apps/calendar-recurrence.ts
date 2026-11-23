@@ -148,13 +148,26 @@ export function expandCalendarSeries(event: any, from: string, to: string) {
   const lastLocal = partsAt(Date.parse(to), timezone);
   let day = utcDate(firstLocal) < utcDate(anchor) ? anchor : plusDays(firstLocal, -366);
   if (utcDate(day) < utcDate(anchor)) day = anchor;
-  const finalDay = utcDate(lastLocal);
   const output: any[] = [];
-  const exceptions = new Map((event.data.occurrence_exceptions || []).map((x: any) => [x.key, x]));
+  const exceptions = new Map<string, any>((event.data.occurrence_exceptions || []).map((x: any) => [x.key, x]));
+  const lastVisibleDay = utcDate(lastLocal);
+  const latestExceptionDay = utcDate(plusDays(lastLocal, 367));
+  let finalDay = lastVisibleDay;
+  // An exception can move a later recurrence into the visible window.
+  for (const [key, exception] of exceptions) {
+    if (exception.cancelled || !exception.data?.start || !exception.data?.end) continue;
+    if (
+      Date.parse(exception.data.start) >= Date.parse(to) ||
+      Date.parse(exception.data.end) <= Date.parse(from)
+    ) continue;
+    const originalDay = Date.parse(key.slice(0, 10) + 'T00:00:00Z');
+    if (originalDay > finalDay && originalDay <= latestExceptionDay) finalDay = originalDay;
+  }
+  const maxDays = 770 + (finalDay - lastVisibleDay) / 86400000;
   // Callers bound the visible range. This local-day ceiling also protects corrupted rules.
   for (
     let steps = 0;
-    day && utcDate(day) <= finalDay && steps < 770;
+    day && utcDate(day) <= finalDay && steps < maxDays;
     steps++, day = plusDays(day, 1)
   ) {
     if (!eligible(day, anchor, rule)) continue;

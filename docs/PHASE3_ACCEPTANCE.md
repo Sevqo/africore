@@ -337,3 +337,11 @@ Website Settings now accepts a site address and default page. Publishing that pa
 Calendar's week and day views now place all-day events in a dedicated band. The band clips events to the visible range, spans the covered day columns, and assigns overlapping events to separate rows. The focused layout test covers clipping, overlap, lane reuse, and the exclusive end date.
 
 The full SQLite suite passed 497 with zero failures and one PostgreSQL-only skip. The focused PostgreSQL Phase 3 suite passed 10/10. Platform registration remains at 560 operations, OpenAPI drift at 59 operations, Cloudflare tests passed 12/12, the Render verifier passed 5/5, and the Website build passed 149/149 content tests. These are local checks. The hosted migration ledger, current hosted readiness, and full browser acceptance remain outstanding.
+
+### Browser reinstall and all-day verification — 23 November 2026
+
+In the same disposable Business workspace, Calendar and Website were uninstalled through the reviewed workflow with their services left active. Both reinstalled and reopened from the existing app URLs. Calendar still displayed the synthetic all-day event. Website returned to the editor with the original Contact draft and title intact.
+
+At a 550px browser viewport, an all-day event from 23 November to the exclusive midnight of 26 November spanned three Calendar columns. The all-day band remained visible while the timed grid scrolled. A focused SQLite rerun also confirmed a second Business workspace cannot take over another workspace's published Website home address. Lint passed on `28c6f5c922af1125b32fc4a9cd65e4a6573824d2`. These checks extend local acceptance. They provide no hosted release or founder sign-off.
+
+The Website Menus screen also saved a synthetic navigation label and destination, reflected the new item on the draft canvas, and loaded both again after a browser refresh. The browser check used a sandbox draft. Current GitHub connector lookups returned no combined checks or pull request workflow runs for `28c6f5c922af1125b32fc4a9cd65e4a6573824d2`. Push-run status remains unverified.
