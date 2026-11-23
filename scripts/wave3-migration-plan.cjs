@@ -21,5 +21,7 @@ exports.wave3MigrationPlan = async function (versions) {
   await require('../dist/pos/schema').migratePOS(database);
   if (known.has('026-app15-16'))
     await require('../dist/apps/website-forms-schema').migrateWebsiteForms(database);
+  if (known.has('027-website-forms'))
+    await require('../dist/apps/calendar-appointments-schema').migrateCalendarAppointments(database);
   return commands;
 };

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Overlay } from '../components/Overlay';
 import { Field, type API } from '../operations/UI';
-import { activeAppointmentTypes } from './calendar-appointments';
-import { eventsOnDay, layoutOverlappingEvents } from './calendar-layout';
+import { activeAppointmentTypes, approvedLeaveCalendarEvents } from './calendar-appointments';
+import { calendarTimeInput, eventsOnDay, layoutCalendarAllDay, layoutOverlappingEvents, retainedCalendarInstant } from './calendar-layout';
 import { appNavigationEvent } from './AppNavigation';
 import './phase3-apps.css';
 
@@ -69,6 +69,39 @@ function zonedIso(value: string, zone: string) {
   return new Date(instant).toISOString();
 }
 const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+function CalendarMiniMonth({ date, onChange }: { date: Date; onChange: (date: Date) => void }) {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const monthStart = new Date(year, month, 1, 12);
+  const firstWeekday = monthStart.getDay();
+  const today = dayKey(new Date());
+  const selected = dayKey(date);
+  return (
+    <section className="calendar-mini-month" aria-label="Mini calendar">
+      <div className="calendar-mini-heading">
+        <button type="button" aria-label="Previous month" onClick={() => onChange(new Date(year, month - 1, 1, 12))}>‹</button>
+        <strong aria-live="polite">{monthStart.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</strong>
+        <button type="button" aria-label="Next month" onClick={() => onChange(new Date(year, month + 1, 1, 12))}>›</button>
+      </div>
+      <div className="calendar-mini-grid">
+        {weekDays.map((day) => <span key={day} aria-hidden="true">{day.slice(0, 1)}</span>)}
+        {Array.from({ length: 42 }, (_, index) => {
+          const day = new Date(year, month, 1 - firstWeekday + index, 12);
+          const key = dayKey(day);
+          return <button
+            key={key}
+            type="button"
+            className={day.getMonth() === month ? '' : 'calendar-other-month'}
+            aria-label={day.toLocaleDateString(undefined, { dateStyle: 'full' })}
+            aria-current={key === today ? 'date' : undefined}
+            aria-pressed={key === selected}
+            onClick={() => onChange(day)}
+          >{day.getDate()}</button>;
+        })}
+      </div>
+    </section>
+  );
+}
 function wallParts(instant: number, timezone: string) {
   const values = Object.fromEntries(
     new Intl.DateTimeFormat('en', {
@@ -161,6 +194,10 @@ export function CalendarWorkspace({
     [actorId, setActorId] = useState(''),
     [eventHistory, setEventHistory] = useState<any[] | null>(null);
   const [appointmentTypes, setAppointmentTypes] = useState<any[]>([]),
+    [appointmentRequests, setAppointmentRequests] = useState<any[]>([]),
+    [appointmentHistory, setAppointmentHistory] = useState<{ id: string; title: string; entries: { action: string; actor_type: string; created_at: string }[] } | null>(null),
+    [publicCapacity, setPublicCapacity] = useState(1),
+    [publicWorkdays, setPublicWorkdays] = useState([1, 2, 3, 4, 5]),
     [appointmentName, setAppointmentName] = useState(''),
     [appointmentDuration, setAppointmentDuration] = useState(30),
     [appointmentStaff, setAppointmentStaff] = useState<string[]>([]),
@@ -170,6 +207,12 @@ export function CalendarWorkspace({
     [workState, setWorkState] = useState<'loading' | 'installed' | 'missing' | 'error'>('loading');
   const [crmEntries, setCrmEntries] = useState<any[]>([]),
     [crmState, setCrmState] = useState<'loading' | 'installed' | 'missing' | 'error'>('loading');
+  const [salesQuotes, setSalesQuotes] = useState<any[]>([]),
+    [salesState, setSalesState] = useState<'loading' | 'installed' | 'missing' | 'error'>('loading');
+  const [documentsList, setDocumentsList] = useState<any[]>([]),
+    [documentsState, setDocumentsState] = useState<'loading' | 'installed' | 'missing' | 'error'>('loading');
+  const [peopleLeave, setPeopleLeave] = useState<any[]>([]),
+    [peopleLeaveState, setPeopleLeaveState] = useState<'loading' | 'installed' | 'missing' | 'unavailable'>('loading');
   const calendarGrid = useRef<HTMLElement | null>(null);
   async function load() {
     try {
@@ -221,6 +264,77 @@ export function CalendarWorkspace({
   }, [api, scope]);
   useEffect(() => {
     let current = true;
+    setSalesQuotes([]);
+    setSalesState('loading');
+    api('/apps')
+      .then(async (result) => {
+        const installed = (result.apps || []).some(
+          (app: any) => app.id === 'sales' && app.installation?.status === 'installed',
+        );
+        if (!current) return;
+        setSalesState(installed ? 'installed' : 'missing');
+        if (!installed) return;
+        const quotes = await api('/sales/quotations');
+        if (current) setSalesQuotes(quotes.data || []);
+      })
+      .catch(() => {
+        if (current) setSalesState('error');
+      });
+    return () => { current = false; };
+  }, [api, scope]);
+  useEffect(() => {
+    let current = true;
+    setDocumentsList([]);
+    setDocumentsState('loading');
+    api('/apps')
+      .then(async (result) => {
+        const installed = (result.apps || []).some(
+          (app: any) => app.id === 'documents' && app.installation?.status === 'installed',
+        );
+        if (!current) return;
+        setDocumentsState(installed ? 'installed' : 'missing');
+        if (!installed) return;
+        const files = await api('/documents?view=recent&kind=file&hide_personnel=true&offset=0');
+        if (current) setDocumentsList(files.data || []);
+      })
+      .catch(() => {
+        if (current) setDocumentsState('error');
+      });
+    return () => { current = false; };
+  }, [api, scope]);
+  useEffect(() => {
+    let current = true;
+    setPeopleLeave([]);
+    setPeopleLeaveState('loading');
+    api('/apps')
+      .then(async (result) => {
+        const installed = (result.apps || []).some(
+          (app: any) => app.id === 'people' && app.installation?.status === 'installed',
+        );
+        if (!current) return;
+        if (!installed) {
+          setPeopleLeaveState('missing');
+          return;
+        }
+        setPeopleLeaveState('installed');
+        const first = new Date(date.getFullYear(), date.getMonth(), date.getDate() - (view === 'month' ? 35 : 0));
+        const last = new Date(date.getFullYear(), date.getMonth(), date.getDate() + (view === 'month' ? 41 : view === 'week' ? 6 : 0));
+        const from = dayKey(first);
+        const to = dayKey(last);
+        try {
+          const result = await api(`/people/leave-calendar?${new URLSearchParams({ from, to, status: 'approved' })}`);
+          if (current) setPeopleLeave(approvedLeaveCalendarEvents(result.data || []));
+        } catch {
+          if (current) setPeopleLeaveState('unavailable');
+        }
+      })
+      .catch(() => {
+        if (current) setPeopleLeaveState('unavailable');
+      });
+    return () => { current = false; };
+  }, [api, scope, date, view]);
+  useEffect(() => {
+    let current = true;
     setCrmEntries([]);
     setCrmState('loading');
     api('/apps')
@@ -260,7 +374,7 @@ export function CalendarWorkspace({
       if (!root || !hours) return;
       const rootTop = root.getBoundingClientRect().top;
       const hoursTop = hours.getBoundingClientRect().top - rootTop + root.scrollTop;
-      const headerHeight = root.querySelector('.calendar-day-head')?.getBoundingClientRect().height || 0;
+      const headerHeight = root.querySelector('.calendar-grid-header')?.getBoundingClientRect().height || 0;
       root.scrollTop = Math.max(0, hoursTop + 6 * 54 - headerHeight);
     });
     return () => cancelAnimationFrame(frame);
@@ -303,6 +417,15 @@ export function CalendarWorkspace({
       })
       .catch((e) => setError((e as Error).message));
   }, [scope, section]);
+  useEffect(() => {
+    if (section !== 'appointments' || !appointmentTypes.length) return;
+    Promise.all(appointmentTypes.map(async (type) => {
+      try {
+        const result = await api(`/calendar/appointment-types/${type.id}/requests`);
+        return (result.data || []).map((request: any) => ({ ...request, type_id: type.id, type_name: type.data.name }));
+      } catch { return []; }
+    })).then((groups) => setAppointmentRequests(groups.flat()));
+  }, [scope, section, appointmentTypes, actorId]);
   async function saveSettings() {
     if (!calendarSettings) return;
     setBusy(true);
@@ -389,6 +512,57 @@ export function CalendarWorkspace({
       setBusy(false);
     }
   }
+  async function publishAppointmentType(type: any) {
+    setBusy(true);
+    try {
+      const result = await api(`/calendar/appointment-types/${type.id}/public-link`, 'POST', {
+        capacity: publicCapacity,
+        work_days: publicWorkdays.map((weekday) => ({ weekday, start: '09:00', end: '17:00' })),
+      }, { 'Idempotency-Key': crypto.randomUUID() });
+      const link = new URL(result.url, window.location.origin).toString();
+      await navigator.clipboard?.writeText(link);
+      setNotice(`Public booking link copied: ${link}`);
+      setAppointmentTypes((current) => current.map((item) => item.id === type.id ? { ...item, public_link_active: true } : item));
+    } catch (e) { setError((e as Error).message); }
+    finally { setBusy(false); }
+  }
+  async function revokeAppointmentTypeLink(type: any) {
+    setBusy(true);
+    try {
+      await api(`/calendar/appointment-types/${type.id}/public-link`, 'DELETE');
+      setAppointmentTypes((current) => current.map((item) => item.id === type.id ? { ...item, public_link_active: false } : item));
+      setNotice('Public booking link disabled. Existing request management links remain usable.');
+    } catch (e) { setError((e as Error).message); }
+    finally { setBusy(false); }
+  }
+  async function reviewAppointmentRequest(request: any, action: string) {
+    setBusy(true);
+    try {
+      await api(`/calendar/appointment-types/${request.type_id}/requests/${request.id}/review`, 'POST', { action }, { 'Idempotency-Key': crypto.randomUUID() });
+      const result = await api(`/calendar/appointment-types/${request.type_id}/requests`);
+      setAppointmentRequests((current) => [...current.filter((item) => item.type_id !== request.type_id), ...(result.data || []).map((item: any) => ({ ...item, type_id: request.type_id, type_name: request.type_name }))]);
+      if (appointmentHistory?.id === request.id)
+        await loadAppointmentHistory(request).catch(() => setAppointmentHistory(null));
+      setNotice('Appointment request updated.');
+      await load();
+    } catch (e) { setError((e as Error).message); }
+    finally { setBusy(false); }
+  }
+  async function loadAppointmentHistory(request: { id: string; type_id: string; type_name: string }) {
+    const result = await api(`/calendar/appointment-types/${request.type_id}/requests/${request.id}/history`);
+    setAppointmentHistory({ id: request.id, title: request.type_name, entries: result.data || [] });
+  }
+  async function showAppointmentHistory(request: { id: string; type_id: string; type_name: string }) {
+    setBusy(true);
+    setError('');
+    try {
+      await loadAppointmentHistory(request);
+    } catch (error) {
+      setError((error as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   function updateWorkDay(weekday: number, checked: boolean) {
     if (!calendarSettings) return;
     const current = calendarSettings.data.work_days || [];
@@ -404,10 +578,10 @@ export function CalendarWorkspace({
   const bookableAppointmentTypes = activeAppointmentTypes(appointmentTypes);
   const visible = useMemo(
     () =>
-      events.filter(
+      [...events, ...peopleLeave].filter(
         (e) =>
           e.data?.cancelled_at == null &&
-          (e.data?.title === 'Busy' ||
+          (e.source === 'people_leave' || e.data?.title === 'Busy' ||
             displayMembers.includes(e.data?.organizer_id) ||
             e.data?.attendees?.some((a: any) => displayMembers.includes(a.user_id))) &&
           (!search.trim() ||
@@ -415,7 +589,7 @@ export function CalendarWorkspace({
               .filter(Boolean)
               .some((value) => String(value).toLowerCase().includes(search.trim().toLowerCase()))),
       ),
-    [events, displayMembers, search],
+    [events, peopleLeave, displayMembers, search],
   );
   const days =
     view === 'day'
@@ -454,14 +628,15 @@ export function CalendarWorkspace({
         occurrence_key,
         series_data,
         occurrence_data,
+        original_times,
         organizer_id: _organizerId,
         ...fields
       } = form;
       const body: any = {
         ...fields,
         recurrence_rule: form.recurrence === 'none' ? null : form.recurrence_rule,
-        start: zonedIso(form.start, form.timezone),
-        end: zonedIso(form.end, form.timezone),
+        start: retainedCalendarInstant(form.start, form.timezone, original_times?.start) ?? zonedIso(form.start, form.timezone),
+        end: retainedCalendarInstant(form.end, form.timezone, original_times?.end) ?? zonedIso(form.end, form.timezone),
         attendees: form.attendees.map((user_id: string) => ({ user_id, response: 'pending' })),
       };
       if (id && scope === 'occurrence' && series_id && occurrence_key) {
@@ -550,8 +725,12 @@ export function CalendarWorkspace({
       occurrence_data: event.series_id ? { ...d } : null,
       version: event.version,
       organizer_id: d.organizer_id,
-      start: localInput(new Date(d.start)),
-      end: localInput(new Date(d.end)),
+      start: calendarTimeInput(d.start, d.timezone),
+      end: calendarTimeInput(d.end, d.timezone),
+      original_times: {
+        start: { instant: d.start, timezone: d.timezone },
+        end: { instant: d.end, timezone: d.timezone },
+      },
       attendees: (d.attendees || []).map((a: any) => a.user_id),
     });
   }
@@ -570,6 +749,24 @@ export function CalendarWorkspace({
     url.searchParams.set('app', 'crm');
     url.searchParams.set('section', 'pipeline');
     url.searchParams.set('crm-record', id);
+    url.hash = 'Apps';
+    history.pushState(null, '', url.pathname + url.search + url.hash);
+    dispatchEvent(new Event(appNavigationEvent));
+  }
+  function openSalesQuote(id: string) {
+    const url = new URL(location.href);
+    url.searchParams.set('app', 'sales');
+    url.searchParams.set('section', 'quotations');
+    url.searchParams.set('sales-quotation', id);
+    url.hash = 'Apps';
+    history.pushState(null, '', url.pathname + url.search + url.hash);
+    dispatchEvent(new Event(appNavigationEvent));
+  }
+  function openDocument(id: string) {
+    const url = new URL(location.href);
+    url.searchParams.set('app', 'documents');
+    url.searchParams.set('section', 'files');
+    url.searchParams.set('document', id);
     url.hash = 'Apps';
     history.pushState(null, '', url.pathname + url.search + url.hash);
     dispatchEvent(new Event(appNavigationEvent));
@@ -639,6 +836,9 @@ export function CalendarWorkspace({
                   ? 'Manage member appointment types and confirm a time against staff availability'
                 : 'Workspace meetings · timezone-aware event times · in-app invitations'}
           </p>
+          {peopleLeaveState === 'unavailable' && section !== 'settings' && section !== 'availability' && section !== 'appointments' && (
+            <small className="calendar-leave-note">People leave is hidden because the current account cannot read the People leave calendar.</small>
+          )}
         </div>
         <div className="phase3-actions">
           {section !== 'settings' && section !== 'availability' && section !== 'appointments' && (
@@ -832,11 +1032,18 @@ export function CalendarWorkspace({
         <section className="calendar-availability-page">
           <div className="panel">
             <h3>Create an appointment type</h3>
-            <p className="muted">Internal workspace booking only. Staff must be current members; the system checks their calendar before confirming.</p>
+            <p className="muted">Members can book directly. Public requests are confirmed by a Calendar owner after staff availability is checked.</p>
             <Field label="Appointment name"><input value={appointmentName} maxLength={120} onChange={(e) => setAppointmentName(e.target.value)} placeholder="Consultation" /></Field>
             <Field label="Duration"><select value={appointmentDuration} onChange={(e) => setAppointmentDuration(Number(e.target.value))}><option value={15}>15 minutes</option><option value={30}>30 minutes</option><option value={45}>45 minutes</option><option value={60}>1 hour</option><option value={90}>90 minutes</option><option value={120}>2 hours</option></select></Field>
             <fieldset className="calendar-workdays"><legend>Available staff</legend>{members.map((member) => <label className="checkbox-field" key={member.user_id}><input type="checkbox" checked={appointmentStaff.includes(member.user_id)} onChange={(e) => setAppointmentStaff((list) => e.target.checked ? [...list, member.user_id] : list.filter((id) => id !== member.user_id))} />{member.display_name || member.name || 'Workspace member'}</label>)}</fieldset>
             <button className="button" disabled={busy || !appointmentName.trim() || !appointmentStaff.length} onClick={() => void createAppointmentType()}>Create appointment type</button>
+          </div>
+          <div className="panel">
+            <h3>Public booking availability</h3>
+            <p className="muted">Visitors see open times only. Details are stored encrypted; new requests need confirmation in Calendar. No external email is sent.</p>
+            <Field label="Bookings per time slot"><select value={publicCapacity} onChange={(event) => setPublicCapacity(Number(event.target.value))}><option value={1}>1</option><option value={2}>2</option><option value={3}>3</option><option value={4}>4</option></select></Field>
+            <fieldset className="calendar-workdays"><legend>Public hours · 09:00–17:00 in each appointment type timezone</legend>{[['Sunday',0],['Monday',1],['Tuesday',2],['Wednesday',3],['Thursday',4],['Friday',5],['Saturday',6]].map(([name, weekday]) => <label className="checkbox-field" key={String(weekday)}><input type="checkbox" checked={publicWorkdays.includes(Number(weekday))} onChange={(event) => setPublicWorkdays((days) => event.target.checked ? [...days, Number(weekday)].sort() : days.filter((day) => day !== Number(weekday)))} />{name}</label>)}</fieldset>
+            {!appointmentTypes.length ? <p>Create an appointment type first.</p> : appointmentTypes.map((type) => <article className="calendar-appointment-type" key={`public-${type.id}`}><div><strong>{type.data.name}</strong><p>{type.public_link_active ? 'Public link active' : 'No public link'}</p></div><div className="phase3-actions"><button className="secondary-button" disabled={busy || !type.data.active || publicCapacity > type.data.staff.length || !publicWorkdays.length} onClick={() => void publishAppointmentType(type)}>{type.public_link_active ? 'Rotate and copy link' : 'Create public link'}</button>{type.public_link_active && <button className="secondary-button" disabled={busy} onClick={() => void revokeAppointmentTypeLink(type)}>Disable link</button>}</div></article>)}
           </div>
           <div className="panel">
             <h3>Book an appointment</h3>
@@ -852,6 +1059,50 @@ export function CalendarWorkspace({
               <div><strong>{type.data.name}</strong><p>{type.data.duration_minutes} minutes · {type.data.timezone} · {type.data.active ? 'Active' : 'Inactive'}</p></div>
               <button className="secondary-button" disabled={busy} onClick={() => void toggleAppointmentType(type)}>{type.data.active ? 'Deactivate' : 'Activate'}</button>
             </article>)}
+          </div>
+          <div className="panel">
+            <h3>Public booking requests</h3>
+            {!appointmentRequests.length ? <p>No public booking requests.</p> : appointmentRequests.map((request) => (
+              <article className="calendar-appointment-type" key={request.id}>
+                <div>
+                  <strong>{request.visitor.name}</strong>
+                  <p>{request.type_name} · {new Date(request.start).toLocaleString()} · {request.status.replaceAll('_', ' ')}</p>
+                  <p>{request.visitor.email}{request.visitor.phone ? ` · ${request.visitor.phone}` : ''}</p>
+                  {request.visitor.note && <p>{request.visitor.note}</p>}
+                  {request.proposed_start && <p>Requested change: {new Date(request.proposed_start).toLocaleString()}</p>}
+                </div>
+                <div className="phase3-actions">
+                  {request.status === 'pending' && <>
+                    <button className="secondary-button" disabled={busy} onClick={() => void reviewAppointmentRequest(request, 'approve')}>Confirm</button>
+                    <button className="secondary-button" disabled={busy} onClick={() => void reviewAppointmentRequest(request, 'decline')}>Decline</button>
+                  </>}
+                  {request.status === 'reschedule_requested' && <>
+                    <button className="secondary-button" disabled={busy} onClick={() => void reviewAppointmentRequest(request, 'approve_reschedule')}>Confirm new time</button>
+                    <button className="secondary-button" disabled={busy} onClick={() => void reviewAppointmentRequest(request, 'reject_change')}>Keep current time</button>
+                  </>}
+                  {request.status === 'cancellation_requested' && <>
+                    <button className="secondary-button" disabled={busy} onClick={() => void reviewAppointmentRequest(request, 'approve_cancellation')}>Confirm cancellation</button>
+                    <button className="secondary-button" disabled={busy} onClick={() => void reviewAppointmentRequest(request, 'reject_change')}>Keep appointment</button>
+                  </>}
+                  <button className="secondary-button" disabled={busy} onClick={() => void showAppointmentHistory(request)}>View history</button>
+                </div>
+              </article>
+            ))}
+            {appointmentHistory && (
+              <section className="calendar-history" aria-label="Appointment request history">
+                <h4>{appointmentHistory.title} activity</h4>
+                {appointmentHistory.entries.length ? (
+                  <ol>
+                    {appointmentHistory.entries.map((entry, index) => (
+                      <li key={`${entry.created_at}-${index}`}>
+                        {entry.action.replaceAll('_', ' ')} · {entry.actor_type === 'visitor' ? 'Visitor' : 'Workspace member'} · <time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString()}</time>
+                      </li>
+                    ))}
+                  </ol>
+                ) : <p>No activity recorded.</p>}
+                <button className="secondary-button" onClick={() => setAppointmentHistory(null)}>Close history</button>
+              </section>
+            )}
           </div>
           <div className="panel">
             <h3>Booked appointments</h3>
@@ -981,9 +1232,9 @@ export function CalendarWorkspace({
                   {d.getDate()}
                 </button>
                 {shownEvents.map((e) => (
-                    <button
-                      key={e.id}
-                      className="event-chip"
+                  <button
+                    key={e.id}
+                    className={`event-chip${e.source === 'people_leave' ? ' calendar-leave-chip' : ''}`}
                       disabled={e.read_only}
                       title={e.data.title}
                       onClick={() => !e.read_only && editEvent(e)}
@@ -1002,33 +1253,38 @@ export function CalendarWorkspace({
           className="calendar-time-grid"
           style={{ '--calendar-days': days.length } as any}
         >
-          <div className="calendar-day-head">
-            <span>All day</span>
-            {days.map((d) => (
-              <strong key={dayKey(d)}>
-                {d.toLocaleDateString(undefined, {
-                  weekday: 'short',
-                  month: 'short',
-                  day: 'numeric',
-                })}
-              </strong>
-            ))}
+          <div className="calendar-grid-header">
+            <div className="calendar-day-head">
+              <span>Time</span>
+              {days.map((d) => (
+                <strong key={dayKey(d)}>
+                  {d.toLocaleDateString(undefined, {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </strong>
+              ))}
+            </div>
+            {visible.some((e) => e.source === 'people_leave' && e.data.all_day) && (
+              <p className="calendar-leave-note">Approved leave shown here follows the People app's access rules. Private reasons are not displayed.</p>
+            )}
+            <div className="calendar-allday-grid" aria-label="All-day events">
+              <span className="calendar-allday-label">All day</span>
+              {layoutCalendarAllDay(visible, days).map(({ event, first, last, lane }) => (
+                <button
+                  type="button"
+                  className={`calendar-allday-event${event.source === 'people_leave' ? ' calendar-leave-chip' : ''}`}
+                  key={event.id}
+                  style={{ gridColumn: `${first + 2} / ${last + 3}`, gridRow: lane + 1 }}
+                  disabled={event.read_only}
+                  onClick={() => !event.read_only && editEvent(event)}
+                >
+                  {event.data.title}
+                </button>
+              ))}
+            </div>
           </div>
-          {visible
-            .filter(
-              (e) =>
-                e.data.all_day && days.some((d) => dayKey(d) === dayKey(new Date(e.data.start))),
-            )
-            .map((e) => (
-              <button
-                className="calendar-allday-event"
-                key={e.id}
-                disabled={e.read_only}
-                onClick={() => !e.read_only && editEvent(e)}
-              >
-                {e.data.title}
-              </button>
-            ))}
           <div className="calendar-hour-grid">
             <div className="calendar-hours">
               {Array.from({ length: 24 }, (_, i) => (
@@ -1038,10 +1294,10 @@ export function CalendarWorkspace({
             {days.map((d) => (
               <div className="calendar-day-column" key={dayKey(d)}>
                 {Array.from({ length: 24 }, (_, i) => (
-                  <div
+                  <button
                     className="calendar-hour"
                     key={i}
-                    role="button"
+                    type="button"
                     aria-label={`Create meeting ${d.toLocaleDateString()} ${String(i).padStart(2, '0')}:00`}
                     onClick={() => {
                       const start = new Date(d);
@@ -1085,14 +1341,7 @@ export function CalendarWorkspace({
       )}
       {section !== 'settings' && (
         <aside className="phase3-sidebar">
-          <label className="field">
-            <span>Mini calendar</span>
-            <input
-              type="date"
-              value={dayKey(date)}
-              onChange={(e) => e.target.value && setDate(new Date(e.target.value + 'T12:00:00'))}
-            />
-          </label>
+          <CalendarMiniMonth date={date} onChange={setDate} />
           <h3>Attendee calendars</h3>
           {members.map((m) => (
             <label className="checkbox-field" key={m.user_id}>
@@ -1230,13 +1479,23 @@ export function CalendarWorkspace({
                 Open linked CRM record
               </button>
             )}
+            {form.linked_record?.kind === 'sales_quote' && (
+              <button type="button" className="secondary-button" onClick={() => openSalesQuote(form.linked_record.id)}>
+                Open linked Sales quotation
+              </button>
+            )}
+            {form.linked_record?.kind === 'document' && (
+              <button type="button" className="secondary-button" onClick={() => openDocument(form.linked_record.id)}>
+                Open linked Document
+              </button>
+            )}
             {(!form.id || form.scope === 'series') &&
               form.linked_record?.kind !== 'calendar_appointment_type' && (
-              <Field label="Related Work or CRM record">
-                {workState === 'installed' || crmState === 'installed' ? (
+              <Field label="Related Work, CRM, Sales or Documents record">
+                {workState === 'installed' || crmState === 'installed' || salesState === 'installed' || documentsState === 'installed' ? (
                   <select
                     value={
-                      ['work_task', 'crm_entry'].includes(form.linked_record?.kind)
+                      ['work_task', 'crm_entry', 'sales_quote', 'document'].includes(form.linked_record?.kind)
                         ? `${form.linked_record.kind}:${form.linked_record.id}`
                         : ''
                     }
@@ -1247,7 +1506,7 @@ export function CalendarWorkspace({
                           ? {
                               kind: e.target.value.startsWith('work_task:')
                                 ? 'work_task'
-                                : 'crm_entry',
+                                : e.target.value.startsWith('crm_entry:') ? 'crm_entry' : e.target.value.startsWith('sales_quote:') ? 'sales_quote' : 'document',
                               id: e.target.value.split(':', 2)[1],
                             }
                           : null,
@@ -1277,15 +1536,33 @@ export function CalendarWorkspace({
                         CRM · {entry.title}
                       </option>
                     ))}
+                    {salesState === 'installed' && form.linked_record?.kind === 'sales_quote' &&
+                      !salesQuotes.some((quote) => quote.id === form.linked_record.id) && (
+                        <option value={`sales_quote:${form.linked_record.id}`}>Existing linked Sales quotation</option>
+                      )}
+                    {salesState === 'installed' && salesQuotes.map((quote) => (
+                      <option key={`sales:${quote.id}`} value={`sales_quote:${quote.id}`}>
+                        Sales · {quote.reference} · {quote.status}
+                      </option>
+                    ))}
+                    {documentsState === 'installed' && form.linked_record?.kind === 'document' &&
+                      !documentsList.some((document) => document.id === form.linked_record.id) && (
+                        <option value={`document:${form.linked_record.id}`}>Existing linked Document (access rechecked)</option>
+                      )}
+                    {documentsList.map((document) => (
+                      <option key={`document:${document.id}`} value={`document:${document.id}`}>
+                        Document · {document.data?.name || document.id}
+                      </option>
+                    ))}
                   </select>
-                ) : workState === 'error' || crmState === 'error' ? (
+                ) : workState === 'error' || crmState === 'error' || salesState === 'error' ? (
                   <p className="muted">
-                    Work or CRM app access could not be checked. Reload Calendar to try again.
+                    Linked app access could not be checked. Reload Calendar to try again.
                   </p>
-                ) : workState === 'loading' || crmState === 'loading' ? (
-                  <p className="muted">Checking Work and CRM app access…</p>
+                ) : workState === 'loading' || crmState === 'loading' || salesState === 'loading' ? (
+                  <p className="muted">Checking Work, CRM and Sales app access…</p>
                 ) : (
-                  <p className="muted">Install AfriCore Work or CRM to link its records.</p>
+                  <p className="muted">Install AfriCore Work, CRM or Sales to link its records.</p>
                 )}
               </Field>
             )}
@@ -1326,8 +1603,12 @@ export function CalendarWorkspace({
                       ).map((person: any) =>
                         typeof person === 'string' ? person : person.user_id,
                       ),
-                      start: localInput(new Date(source.start)),
-                      end: localInput(new Date(source.end)),
+                      start: calendarTimeInput(source.start, source.timezone),
+                      end: calendarTimeInput(source.end, source.timezone),
+                      original_times: {
+                        start: { instant: source.start, timezone: source.timezone },
+                        end: { instant: source.end, timezone: source.timezone },
+                      },
                       scope,
                     });
                   }}

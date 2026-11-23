@@ -42,15 +42,6 @@ jobs:
       - run: npm run typecheck && npm run lint && npm run test:dev
       - run: npm test && npm run validate:openapi && npm run validate:platform
       - run: npm --prefix website run build && npm --prefix deploy/cloudflare test && npm --prefix deploy/cloudflare run check
-      - name: Deploy Cloudflare frontend and gateway
-        id: cloudflare_deploy
-        working-directory: deploy/cloudflare
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Configure a scoped evaluation Cloudflare API token.'; exit 1; }
-          npm run deploy
       - name: Record Render deploy start time
         id: render_start
         if: ${{ success() }}
@@ -72,3 +63,12 @@ jobs:
           RENDER_EXPECTED_COMMIT: ${{ steps.source.outputs.commit_sha }}
           RENDER_DEPLOY_TRIGGERED_AT: ${{ steps.render_start.outputs.started_at }}
         run: node scripts/verify-render-deploy.mjs
+      - name: Deploy Cloudflare frontend and gateway
+        id: cloudflare_deploy
+        working-directory: deploy/cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Configure a scoped evaluation Cloudflare API token.'; exit 1; }
+          npm run deploy

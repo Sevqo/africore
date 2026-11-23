@@ -8,7 +8,7 @@ Authenticated Website and Commerce administrators can list public media at `GET 
 
 `POST /api/public/sites/{slug}/forms` is anonymous and accepts JSON fields `name`, `email`, optional `company`, `message`, `consent: true`, and optional honeypot `website`. The named production publication must be active and contain a `contact_form` block. Success returns `202 { "accepted": true }`; an unpublished page or page without the form returns `404`; invalid fields or missing consent return `400`; global IP rate limits return `429`. A populated honeypot receives the generic success response but is not stored.
 
-Submissions are stored as authenticated-encryption envelopes with organization/environment-bound context in `ac_website_form_submissions`. `GET /api/v1/organizations/{org}/website/forms` is restricted to current workspace administrators and requires the Website service. It returns at most the newest 100 records. Content expires after 90 days and is cleared when this inbox is next read; no email delivery, CRM conversion, or exact deletion schedule is claimed. Migration `027-website-forms` adds the table and index, enables PostgreSQL RLS and revokes public table access. Deployments in verify mode must have this migration applied before startup.
+Submissions are stored as authenticated-encryption envelopes with organization/environment-bound context in `ac_website_form_submissions`. `GET /api/v1/organizations/{org}/website/forms` is restricted to current workspace administrators and requires the Website service. It returns at most the newest 100 records. Content expires after 90 days and is cleared when this inbox is next read. An administrator can explicitly hand a new inquiry to `POST /api/v1/organizations/{org}/website/forms/{submission}/convert-to-crm`; this requires active Website and CRM services and creates a canonical CRM lead through the normal CRM operation path. The encrypted inbox copy is cleared after conversion, while the CRM lead retains its normal CRM retention and access policy. No email delivery is claimed. Migration `027-website-forms` adds the table and index, enables PostgreSQL RLS and revokes public table access. Deployments in verify mode must have this migration applied before startup.
 
 ## Website identity and publications
 
@@ -47,3 +47,21 @@ Nested menu contract: each Website page menu item has `label`, safe `url`, and n
 | POST | `/api/public/sites/:slug/forms` | Anonymous, published contact block required | Validates consent and fields, rate-limits, then persists an encrypted submission. |
 
 The Cloudflare worker forwards only these exact public routes. GET/HEAD are allowed for page, media, and sitemap routes; contact forms accept POST only. Public responses are not cached at the gateway.
+
+## Calendar public appointment capabilities — 22 November 2026
+
+This section supersedes earlier text saying Calendar has no anonymous booking link. Current workspace users can create/rotate or revoke scoped links using `POST`/`DELETE /api/v1/organizations/{org}/calendar/appointment-types/{id}/public-link`; links accept capacity and weekly 09:00–17:00 hours. Owner review endpoints list requests, confirm/decline, approve rescheduling/cancellation and expose request history under `/calendar/appointment-types/{id}/requests`.
+
+Anonymous routes are `GET /api/public/calendar/{token}`, `GET /api/public/calendar/{token}/availability?date=YYYY-MM-DD`, `POST /api/public/calendar/{token}/bookings`, and `GET|POST /api/public/calendar/manage/{token}`. Public responses return times only, never staff IDs or event names. Visitor name/email/phone/note are encrypted; capability tokens are random and stored as hashes. New bookings await owner confirmation; visitor changes to confirmed events also await owner review. No external email is sent. Migration `028-calendar-appointments` adds appointment-link, request, capacity-slot and history tables and is now a required schema version.
+## Calendar public booking migration verification — 22 November 2026
+
+Migration 028-calendar-appointments is present in the local development database and participates in the isolated PostgreSQL test suite. The full suite passed 494/494 on fresh PostgreSQL 17 after the booking-slot capacity upsert was corrected. The local check is not authorization or evidence to apply the migration to hosted PostgreSQL; hosted ledger and backup readiness remain unknown.
+### Migration preflight ordering — 23 November 2026
+
+The guarded Phase 3 maintenance runner now checks 021, 026 and 027 before it can apply 028. Missing version IDs are reported in the sanitized diagnostic. Focused preflight cases and the full isolated PostgreSQL suite pass. No hosted migration was run.
+
+### Anonymous Calendar page routing — 23 November 2026
+
+The Express static SPA allowlist now includes `/calendar/*`, matching the public capability URLs already allowed by the Cloudflare Worker. `/calendar/book/:token` and `/calendar/manage/:token` therefore load the Website application shell while their data remains token-scoped through `/api/public/calendar/...`. The route regression checks both paths and requires an HTML response. Browser verification after the fix is still outstanding.
+
+Website settings accepts an optional `site_slug`. The settings read exposes `public_home_url` only while the current workspace's home can resolve. `GET /sites/:siteSlug/home` returns a no-store 307 to the current published default page or 404 when unavailable. The binding changes when the configured default page is published. Anonymous page payloads expose a resolved `site.home_url` for safe Home navigation.

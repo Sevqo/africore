@@ -154,3 +154,43 @@ Calendar now also has recurrence exceptions, work-hour availability, reminders, 
 Calendar now links meetings to assigned Work tasks, with server-side Work project reauthorization and navigation back into Work's scoped task view. Focused API coverage verifies access denial for a member outside the task's project. The selector is build-verified but not browser-verified. CRM, Sales, People leave and Documents integrations, public appointment capabilities/requests/capacity and full visual acceptance remain outstanding. The latest full backend run passed 489 tests, failed 0 and skipped 1 PostgreSQL-only test. No Marketing or Support work started. Hosted Render recovery still needs read-only migration ledger and backup evidence; no hosted operations were run.
 
 Calendar also supports links to active CRM leads/opportunities with current CRM service checks and same-tenant record validation; opening a link targets the record inside CRM. The full backend run including both integrations passed 489 tests, 0 failed, 1 PostgreSQL-only skipped. CRM/Work link browser interaction, Sales/People/Documents links, public appointments and remaining release acceptance are still open. Marketing and Support remain deferred.
+
+Latest local slice: Calendar's People leave overlay uses the People app's permission-filtered approved-leave API and renders private-reason-free, read-only all-day markers; Website Editor has session-local undo/redo. Current full suite is 489 passed with one PostgreSQL-only skip, and Website content checks are 144/144. These additions do not change the remaining P0 hosted Render migration/readiness evidence or P1 public appointment, cross-app, browser and Odoo comparison work.
+
+Calendar events can also link to Sales quotations. Writes verify active Sales access and same-workspace quotation identity; the UI lists canonical Sales records and routes the selection to Sales' quote preview. Focused HTTP integration passed 6/6, Website build/content passed 144/144, and root typecheck/lint passed. The new selector has not been browser tested; public appointment links, Documents linking and hosted/visual acceptance remain outstanding.
+
+### Calendar and Website follow-up — 21 November 2026
+
+Calendar now supports source-authorized links to Work tasks, CRM leads/opportunities, Sales quotations and Documents files, plus a permission-filtered approved People leave overlay. Website galleries now accept up to 12 unique reviewed media items and reject withdrawal while active publications reference any gallery item. Anonymous Website forms also have a separate in-process 10-per-minute IP limit. These are local implementation slices; public appointment capabilities/capacity, production host/media/form verification, full browser/Odoo comparison, hosted Render readiness and PostgreSQL CI diagnosis remain open. Marketing and Support remain deferred.
+
+## Current Phase 3 boundary — 22 November 2026
+
+The latest full local suite is 491 passed, 0 failed, 1 PostgreSQL-only skip; API route checks and Website build pass. Synthetic browser checks confirmed both cards and install/open paths; Calendar week layout and Website draft lifecycle were exercised. Website sandbox publication has no public URL. The remaining critical work is hosted migration/backup/readiness evidence and CI PostgreSQL diagnosis, plus anonymous appointment capabilities/capacity and broader Website production publication, forms/media/SEO and Odoo visual/browser acceptance. This batch is not closed.
+
+### Phase 3 local acceptance update — 22 November 2026
+
+Website now has an explicit administrator-controlled handoff from inquiry inbox to canonical CRM lead. The new action is idempotent and clears the encrypted inbox payload after success. Latest suite and checks are detailed in [DEPLOYMENT_TEST_RESULTS.md](DEPLOYMENT_TEST_RESULTS.md). Calendar public booking capabilities and capacity workflows, full Website multi-site identity and builder/SEO/publication acceptance, production browser routing, Odoo comparisons, PostgreSQL, current CI failure diagnosis, hosted migration ledger/backup readiness and Render readiness remain open. Marketing and Support remain deferred.
+
+### Phase 3 continuation — 22 November 2026
+
+Calendar now has a public capability-link/request/review lifecycle (migration 028), Calendar owner controls, and a visitor page. Focused API and edge-gateway checks pass; these flows still need browser verification. Remaining acceptance includes Calendar recurrence/invitation/integration browser scenarios; Website editor/menu/media/SEO/publication and production host requirements; formal Odoo comparison; PostgreSQL/CI diagnosis; Docker; and hosted migration/backup/readiness. Marketing and Support remain deferred.
+
+The latest full local backend regression after Calendar public booking passed 493 tests with 0 failures and 1 PostgreSQL-only skip (494 total); Website build/content 146/146, Cloudflare 12/12, Render verifier 5/5 and development-config 6/6. It does not close current CI/PostgreSQL, browser/Odoo, production Website, or hosted Render migration/readiness gates.
+## Superseding local acceptance record — 22 November 2026
+
+A fresh disposable PostgreSQL 17 cluster ran the full PostgreSQL suite after the Calendar capacity-upsert correction: 494 passed, 0 failed, 0 skipped across 21 suites. This supersedes earlier notes that reported only a partial PostgreSQL rerun. The isolated cluster was stopped afterward; no hosted database was contacted.
+
+A synthetic Business workspace was opened through the isolated in-app browser. Browse Apps showed AfriCore Calendar and AfriCore Website. Website search returned its card. Each installation preview resolved its required free evaluation service; both installations succeeded, each workspace opened, and refresh preserved both installations. Returning to Browse Apps showed Open controls for both. Calendar week view and Website Overview screenshots were inspected in-session; image files were not exported as repository artifacts.
+
+The local development database was inspected read-only: migrations 021, 026, 027 and 028 are present; Calendar and Website exist in ac_services with current evaluation-v1 KES price rows. No database mutation was performed during this inspection.
+
+Phase 3 remains open. The hosted Render migration ledger, backup readiness and post-deploy readiness are unavailable; the CI PostgreSQL failure lacks step logs. Full Calendar recurrence, invitation, availability, appointment and integration acceptance and the full Website editor, media, SEO, anonymous forms, publication-host and commerce matrix remain incomplete or unverified. No commit, push, hosted migration or deployment was performed. Marketing and Support remain deferred.
+## Final local regression update — 23 November 2026
+
+After adding the hosted migration prerequisite preflight and correcting a Nairobi-local analytics test date, a fresh disposable PostgreSQL 17 cluster ran npm run test:pg: 497 passed, 0 failed, 0 skipped, 21 suites. Root build was part of that command. Typecheck, lint, migration-runner syntax and diff checks also pass. The isolated cluster was stopped and removed.
+
+The migration runner now checks Phase 3 prerequisites in dependency order before any migration DDL and reports all missing version IDs: phase3-calendar requires 021-people-expansion, 026-app15-16 and 027-website-forms before target 028-calendar-appointments. This is a local code hardening only; the runner was not pointed at hosted PostgreSQL. Render's actual migration ledger and backup/restore status remain unavailable, and Phase 3 is not closed.
+
+### Phase 3 handoff gate — 23 November 2026
+
+Marketing and Support remain next only after Calendar and Website acceptance. Phase 3 is still open pending hosted Render migration-ledger/backup evidence, current CI and readiness, post-fix browser confirmation of public Calendar booking, full browser acceptance, and Odoo desktop/mobile comparison. Local test counts and known limitations are recorded in `PHASE3_ACCEPTANCE.md`.

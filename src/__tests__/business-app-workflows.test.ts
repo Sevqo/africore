@@ -2548,7 +2548,7 @@ test('automation directories filter before pagination and run history uses its s
   assert.equal(versions.data.data[0].actor_name, 'Synthetic owner');
   assert.equal('actor' in versions.data.data[0], false);
 
-  const from = occurred.slice(0, 10),
+  const from = new Date(occurred).toLocaleDateString('en-CA', { timeZone: 'Africa/Nairobi' }),
     runReport = await api(path(`/business/analytics/report?metric=automations.runs&group_by=status&from=${from}&to=${from}`)),
     rulesReport = await api(path(`/business/analytics/report?metric=automations.rules&group_by=status&from=${from}&to=${from}`));
   assert.equal(runReport.status, 200, JSON.stringify(runReport.data));

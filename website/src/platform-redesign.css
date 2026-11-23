@@ -1407,6 +1407,13 @@
     .apps-workspace:not([data-app-selected='true'])
     .app-directory-card
     > div
+    .app-directory-requirements {
+    grid-row: 3;
+  }
+  .business-shell[data-platform-density]
+    .apps-workspace:not([data-app-selected='true'])
+    .app-directory-card
+    > div
     .badge {
     grid-column: 2;
     grid-row: 1;

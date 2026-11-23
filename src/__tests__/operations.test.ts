@@ -852,6 +852,8 @@ test('direct public/auth/buyer links and OpenAPI downloads work in hidden parent
       '/learn',
       '/learn/reconciliation',
       '/buyer/synthetic-preview',
+      '/calendar/book/' + 'a'.repeat(43),
+      '/calendar/manage/' + 'b'.repeat(43),
     ]) {
       const r = await fetch(base + path);
       assert.equal(r.status, 200, path);

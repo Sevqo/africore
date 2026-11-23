@@ -33,6 +33,7 @@ const PublicStorefront = lazy(() =>
   import('./commerce/PublicStorefront').then((m) => ({ default: m.PublicStorefront })),
 );
 const PublicWebsite = lazy(() => import('./apps/PublicWebsite').then((m)=>({default:m.PublicWebsite})));
+const PublicAppointment = lazy(() => import('./apps/PublicAppointment').then((m) => ({ default: m.PublicAppointment })));
 const Checkout = lazy(() => import('./BusinessApp').then((m) => ({ default: m.Checkout })));
 import { AuthPage } from './accounts/AuthPage';
 import { Logo } from './components/Logo';
@@ -184,6 +185,8 @@ function Application() {
   const path = usePathname();
   usePageMetadata(path);
   if (path === '/verify-credential') return <TrustPublic mode="verify" />;
+  const appointmentRoute = path.match(/^\/calendar\/(book|manage)\/([A-Za-z0-9_-]{40,60})$/);
+  if (appointmentRoute) return <PublicAppointment key={path} mode={appointmentRoute[1] as 'book' | 'manage'} token={appointmentRoute[2]} />;
   if (path.startsWith('/trust/share/')) return <TrustPublic mode="share" />;
   if (path.startsWith('/passport/')) return <TrustPublic mode="profile" />;
   if (path.startsWith('/buyer/')) return <BuyerPortal />;

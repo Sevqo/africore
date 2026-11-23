@@ -185,3 +185,155 @@ Website's `commerce_showcase` block now accepts a validated storefront slug and 
 ### Local browser continuation — 21 November 2026
 
 A fresh disposable Business workspace was opened in the synthetic browser at 1280×720. Browse Apps showed both Calendar and Website as available, with their required service states. Calendar installation preview/confirmation opened the Calendar week view. Website installation preview/confirmation opened its workspace; a new draft and Commerce showcase block were created, saved, and restored after refresh with the storefront slug intact. The Marketplace screen and Calendar canvas screenshots are present in the task interaction record. These screenshots show local behavior and layout, not side-by-side Odoo parity. Afterwards, Calendar's time grid was updated to initially scroll to 06:00; typecheck, lint, and Website build/content checks passed (142/142), but the new scroll position has not yet received browser verification.
+# Website editor undo and redo — 21 November 2026
+
+Added page-draft undo/redo with a bounded 100-snapshot in-memory history, toolbar controls and keyboard shortcuts. Changes restored from history remain drafts and are persisted only through the existing version-checked save path. Website build/content checks passed (142/142); root typecheck, lint/architecture checks and `git diff --check` passed. Browser interaction is still required; history is not durable across reloads. Phase 3 remains incomplete.
+# Calendar People leave overlay — 21 November 2026
+
+Calendar now displays approved People leave as read-only all-day markers only when the installed People app's permission-filtered leave-calendar API permits access. The overlay includes no private reasons and keeps the People record as the authority. Website build/content checks passed 144/144, including helper tests for approval filtering, date validation, bounded multi-day expansion and sensitive-reason omission. Root `npm test` passed 489 tests with 0 failures and 1 PostgreSQL-only skip. Multi-member browser permission verification remains outstanding; this does not close Phase 3.
+# Calendar Sales quotations — 21 November 2026
+
+Calendar now links to canonical Sales quotations with active-service and same-workspace validation on event writes. The editor loads quotes through the installed Sales app and opens the quote in the Sales preview by scoped URL selection. Focused Calendar/Website HTTP integration passed 6/6; Website build/content passed 144/144; typecheck/lint passed. Browser interaction remains unverified. This adds one requested integration; Phase 3 remains incomplete.
+
+### Current CI run check — 21 November 2026
+
+Fetched the actual latest run: CI run 126 on `e061805f57ba8fccfc4afa5adabccf7b96f5079b` failed only at the PostgreSQL test job; Website build, type/lint, local EVM and SQLite jobs passed. The connected GitHub tool provides the job conclusion but not the failed-step log. Local `npm test` passes SQLite cases with one PostgreSQL-only test skipped, so the PostgreSQL failure is unresolved pending its log and a local disposable PostgreSQL reproduction. Phase 3 is not complete.
+
+### Calendar Documents link follow-up — 21 November 2026
+
+Implemented the Documents cross-app link slice. Calendar event writes reauthorize current document read rights; Documents remains the authority and private file access is not inherited from event visibility. The picker filters to files visible to the current member and excludes personnel files. Focused Phase 3 integration passes 6/6 and covers permitted private-document linking plus denied linking by a workspace member without a document grant. UI control browser acceptance remains open.
+
+### Website anonymous form rate control — 21 November 2026
+
+Added a dedicated in-process per-IP control of 10 anonymous form submissions per 60 seconds, alongside the existing global limiter and honeypot. Focused hardening tests pass 6/6. Multi-instance coordination, CAPTCHA, production submission and lead handoff remain unverified or incomplete.
+
+### Full local regression — 21 November 2026
+
+`npm test` after Calendar Documents linking and Website form throttling passed 490, failed 0, skipped 1 PostgreSQL-only test (491 total, 21 suites). Hardening passed 6/6; Website build/content 144/144; typecheck/lint, OpenAPI 59/59, platform 554 operations, Render verifier 5/5 and `git diff --check` passed. CI run 126 still has an unresolved PostgreSQL job failure because the connected source exposes no failed-step log. No Docker/isolated PostgreSQL or hosted Render verification is available.
+
+### Website gallery completion slice — 21 November 2026
+
+Typed gallery blocks now select up to 12 reviewed media assets and render them as a responsive public grid. Server validation enforces distinct IDs and bounds. Media rights/public classification is rechecked when saving and publishing, and an asset used by any active page publication cannot be withdrawn. The focused Phase 3 suite passes 6/6 after a test exposed and fixed the gallery withdrawal reference gap. Website build/content passes 144/144. Anonymous production and visual comparison remain open.
+
+### Sitemap respects noindex — 21 November 2026
+
+Fixed public sitemap generation to omit pages with `noindex: true` while retaining direct access and robots metadata. Typecheck, lint, backend build, and focused Phase 3 integration (7/7) passed. Full local regression is being rerun with this regression check included. Production URL/robots behavior remains unverified.
+
+## Phase 3 local acceptance update — 22 November 2026
+
+The final local backend regression after the sitemap `noindex` fix passed **491 tests, 0 failures, 1 PostgreSQL-only skip** (492 total, 21 suites). Focused Phase 3 HTTP integration passed 7/7. `npm run typecheck`, `npm run lint`, `npm run build`, `npm run validate:openapi` (59/59), `npm run validate:platform` (554 workspace operations), `npm run test:render-deploy` (5/5), Website production build/content checks (144/144), and `git diff --check` passed.
+
+Browser verified on a disposable synthetic Business workspace: Calendar and Website were visible in Apps, Website search returned the Website card, both installation previews resolved, both apps installed and opened, and the installed Website draft remained selected after refresh. Calendar opened its week view with hourly slots, mini-calendar and attendee filters at desktop width; a 550px viewport was also inspected. Website Contact template creation, hero insertion and inline edit, draft save, preview, sandbox publication and refresh were exercised. The sandbox publication explicitly showed that it has no production URL. Calendar appointment booking/reschedule/cancel had a prior synthetic browser pass; other recurrence, invitations, integrations, mobile flows and most Website management workflows were not fully browser accepted. Screens were inspected, but no exhaustive pixel-parity review against every Odoo reference was completed.
+
+Known blockers: the Render deployment `dep-dc08d315efls73b3m2p0` for `f177c55cf2a6d4a1b5276fbb9d86c0cd294dd08e` built/pushed its image, then startup stopped in `prepareDatabase()` with `Deployment schema is incomplete; run reviewed migrations separately`. This supports a schema-verification failure, but the hosted `platform_migrations` ledger and restorable-backup state were not available, so exact missing versions and current readiness remain unverified. No hosted SQL or deployment was run. GitHub Actions run 126 for `e061805f57ba8fccfc4afa5adabccf7b96f5079b` has a failed PostgreSQL job; the connector does not expose its failing step. Docker and disposable PostgreSQL verification remain unavailable. Anonymous appointment capability booking/capacity/approval, live production Website/public host routing, and full Odoo desktop/mobile comparison remain incomplete. Phase 3 remains open; Marketing and Support remain deferred.
+
+### Website theme controls — 22 November 2026
+
+A fixed set of theme settings is now editable in draft preview and carried into published rendering: typography, background, section spacing, header and footer styles, button shape, brand color, and content width. Invalid or arbitrary CSS values are rejected by the typed schema. Focused Phase 3 integration tests passed 7/7. This closes the narrow theme-token gap; it does not close the remaining Website builder, publication-host, anonymous form, multi-site, or visual-comparison work.
+
+## Website-to-CRM handoff — 22 November 2026
+
+Administrator-controlled handoff is available from the Website Forms inbox. The conversion endpoint requires active Website and CRM services, uses the existing CRM lead workflow with the original inquiry as the stable record identity and idempotency key, stores the Website page slug as source context, and clears the encrypted form payload after successful conversion. Focused integration passed 8/8 and full local backend passed 492 with 0 failures and one PostgreSQL-only skip. This does not prove production anonymous form delivery or tenant-host routing.
+
+## Final local verification snapshot — 22 November 2026
+
+Backend: 492 passed, 0 failed, 1 PostgreSQL-only skip (493 total). Focused Phase 3 integration: 8/8. Typecheck, lint, build, OpenAPI 59/59, platform registry 555 operations, Render verifier 5/5, Website build/content 144/144, Cloudflare Worker 11/11 and `git diff --check` passed. The founder's Render log still shows startup rejection at `prepareDatabase()` after successful image build/push; hosted migration ledger, backup readiness and final readiness are unavailable. CI run 126's PostgreSQL job failure is still unresolved. Phase 3 remains open; no hosted operation or deployment occurred.
+
+### Website editor reorder update — 22 November 2026
+
+The draft canvas now supports drag-and-drop block movement while preserving selection, alongside the existing move buttons. Reordering helpers pass forward/backward and invalid-drop checks. The Website build and content suite now passes 146/146. A browser drag gesture and full Odoo layout comparison are still outstanding.
+
+### Calendar public booking implementation — 22 November 2026
+
+Added token-scoped public booking pages, availability, encrypted visitor details, capacity reservations, idempotent request replay, visitor reschedule/cancellation requests, owner review, confirmation/decline and immutable request history. Migration `028-calendar-appointments` creates four tables and is required by the hosted schema verifier. Focused synthetic API coverage passes 1/1; Cloudflare Worker tests pass 12/12; Website build/content passes 146/146. Public page and owner request controls are compile-verified but not browser verified. Do not apply migration 028 to hosted PostgreSQL until the ledger and restorable backup are confirmed and an isolated PostgreSQL rehearsal is available. The whole Phase 3 acceptance remains open.
+
+### Current local regression — 22 November 2026
+
+The full serial backend suite passed **493 tests, 0 failures, 1 PostgreSQL-only skip** (494 total, 21 suites), including public Calendar appointment capability lifecycle and migration 028 verify checks. The focused new public appointment test passed 1/1. Website production build/content passed 146/146. Cloudflare Worker gateway tests passed 12/12; Render verifier passed 5/5; development-config tests passed 6/6. These local results do not establish PostgreSQL CI, Docker, Render readiness, public production routing, browser acceptance of the new public appointment screens, full Calendar/Website completion, or Odoo visual parity.
+
+### Final local checks — 22 November 2026
+
+Lint and architecture checks passed; OpenAPI drift passed 59/59; platform route validation passed 560 workspace operations; `check:chain` passed; `git diff --check` passed; and both migration runner scripts passed Node syntax checks. A synthetic migration-plan inspection emitted the four Calendar booking tables, their indexes, RLS enables and PUBLIC revocations. The public appointment browser pass was attempted against a fresh disposable demo database, but the desktop in-app browser timed out and the local listener was not reachable; no browser pass or screenshot is claimed for those new screens. Existing marketplace and core Calendar/Website browser evidence is recorded above and does not cover full Phase 3 acceptance. Phase 3 remains open.
+
+The installed PostgreSQL 17 binaries were usable for a fresh isolated local cluster. The first full PostgreSQL suite run after portability fixes passed 493/494; it exposed the Calendar capacity upsert's ambiguous `occupied` column. The target column is now qualified. The focused booking lifecycle passed on PostgreSQL, then the entire Phase 3 integration file passed 9/9 on a fresh disposable PostgreSQL database. The 494-test full PostgreSQL suite was not rerun after the SQL correction, so a complete post-fix PostgreSQL suite pass is not claimed. The temporary cluster was stopped; no hosted database was contacted.
+## Superseding local acceptance record — 22 November 2026
+
+A fresh disposable PostgreSQL 17 cluster ran the full PostgreSQL suite after the Calendar capacity-upsert correction: 494 passed, 0 failed, 0 skipped across 21 suites. This supersedes earlier notes that reported only a partial PostgreSQL rerun. The isolated cluster was stopped afterward; no hosted database was contacted.
+
+A synthetic Business workspace was opened through the isolated in-app browser. Browse Apps showed AfriCore Calendar and AfriCore Website. Website search returned its card. Each installation preview resolved its required free evaluation service; both installations succeeded, each workspace opened, and refresh preserved both installations. Returning to Browse Apps showed Open controls for both. Calendar week view and Website Overview screenshots were inspected in-session; image files were not exported as repository artifacts.
+
+The local development database was inspected read-only: migrations 021, 026, 027 and 028 are present; Calendar and Website exist in ac_services with current evaluation-v1 KES price rows. No database mutation was performed during this inspection.
+
+Phase 3 remains open. The hosted Render migration ledger, backup readiness and post-deploy readiness are unavailable; the CI PostgreSQL failure lacks step logs. Full Calendar recurrence, invitation, availability, appointment and integration acceptance and the full Website editor, media, SEO, anonymous forms, publication-host and commerce matrix remain incomplete or unverified. No commit, push, hosted migration or deployment was performed. Marketing and Support remain deferred.
+## Final local regression update — 23 November 2026
+
+After adding the hosted migration prerequisite preflight and correcting a Nairobi-local analytics test date, a fresh disposable PostgreSQL 17 cluster ran npm run test:pg: 497 passed, 0 failed, 0 skipped, 21 suites. Root build was part of that command. Typecheck, lint, migration-runner syntax and diff checks also pass. The isolated cluster was stopped and removed.
+
+The migration runner now checks the full deployment prerequisite chain before Phase 3 DDL and reports all missing versions in dependency order: 016-procurement through 021-people-expansion, then 026-app15-16 and 027-website-forms before target 028-calendar-appointments. This is a local code hardening only; the runner was not pointed at hosted PostgreSQL. Render's actual migration ledger and backup/restore status remain unavailable, and Phase 3 is not closed.
+
+## Public Calendar route repair — 23 November 2026
+
+An anonymous browser check of the owner-generated `/calendar/book/:token` URL returned the Express JSON 404. The API endpoints existed, but the backend's SPA fallback did not include `/calendar/*`; Cloudflare already allowed these routes. Added the missing Express fallback and extended the direct-route HTTP regression to cover both booking and manage URLs. `node --test --test-concurrency=1 dist/__tests__/operations.test.js` passed 20/20 after a fresh backend build. A post-fix browser check against a fresh isolated demo endpoint timed out before navigation, so anonymous page rendering is regression-tested but not browser-verified after the fix. No hosted action occurred; Phase 3 remains open.
+
+## Phase 3 verification update — 23 November 2026
+
+Current worktree HEAD: `e061805f57ba8fccfc4afa5adabccf7b96f5079b` plus uncommitted Phase 3 work. Fresh checks: `npm test` passed 496, failed 0, skipped 1 PostgreSQL-only test (497 tests, 21 suites); this includes the Calendar SPA route fallback regression. The earlier isolated PostgreSQL 17 run on the same application/schema changes passed 497/497; the only later backend change was the SPA fallback and its HTTP test. `npm run typecheck`, `npm run lint`, `npm run validate:openapi` (59 operations), `npm run validate:platform` (560 workspace operations), `npm run test:render-deploy` (5/5), and `npm --prefix website run build` (146/146 content checks) passed. Focused Phase 3 APIs passed 9/9, Calendar and Website helpers 6/6, Cloudflare Worker tests 12/12, and the direct-route suite 20/20. `git diff --check` passed.
+
+The production build now serves `/calendar/book/:token` and `/calendar/manage/:token` through the SPA fallback, fixing the observed Express 404. The direct HTTP regression passes. The post-fix in-app browser attempt timed out against the isolated local listener, so this fix has not been browser-verified and no new screenshot is claimed. Previous synthetic browser evidence showed Calendar and Website in Browse Apps, successful install/open and refresh persistence; it does not cover the complete requested Calendar/Website matrix or Odoo pixel/layout comparison.
+
+Render evidence remains bounded: the supplied failed deployment was `dep-dc08d315efls73b3m2p0`, commit `f177c55cf2a6d4a1b5276fbb9d86c0cd294dd08e`. Image build/push completed; startup stopped in `prepareDatabase()` with `Deployment schema is incomplete; run reviewed migrations separately`. The hosted migration ledger and restorable-backup status are unavailable. GitHub returned no checks or workflow runs for local HEAD `e061805f57ba8fccfc4afa5adabccf7b96f5079b`; the previously reported CI PostgreSQL failure has no step log. Docker is unavailable because the local Docker Desktop engine is not running. No hosted database query or mutation, deployment, commit or push occurred.
+
+Phase 3 is not accepted or production-ready. Next release gate: obtain sanitized hosted `platform_migrations` output and confirmed restorable-backup status; review the missing migration SQL and rehearse additively on isolated PostgreSQL; only then request separate authorization for any hosted migration/deployment. Before acceptance, rerun the post-fix anonymous booking page in a browser, complete the Calendar/Website browser matrices at desktop/mobile sizes, capture screenshots, compare against the supplied Odoo references, and obtain current CI and Render readiness evidence. Marketing and Support remain deferred.
+
+## Website CTA behavior repair — 23 November 2026
+
+Source review found that the draft canvas showed CTA buttons without navigation and public pages rendered empty or rejected CTA destinations as a clickable `#`. Added a shared safe CTA resolver. Drafts show a disabled visual until a valid link is configured; editor Preview exposes the resolved same-site or approved external destination; the public Website omits CTAs without a valid destination. Focused CTA/link and editor helper tests pass 5/5, root typecheck and lint pass, and Website production build/content checks pass 147/147.
+
+### Cloudflare publication delivery — 23 November 2026
+
+The gateway previously served its static SPA fallback for every valid-looking `/sites/:slug`, so unpublished pages initially returned HTTP 200 and published pages missed Express-generated SEO metadata. The worker now forwards only GET and HEAD on the supported public path. Express checks publication availability and returns a route marker on its response. The worker strips request credentials, response cookies and the marker, sets no-store, preserves an application 404 and rejects unmarked upstream loading pages. A manual release now verifies that the expected Render commit is live before rolling out the Cloudflare frontend and gateway. Render still uses verify mode and its readiness probe.
+
+Local gateway tests passed 12/12, Phase 3 HTTP tests passed 9/9, platform validation checked 560 operations, OpenAPI checked 59 operations, lint passed and Render verifier tests passed 5/5. Wrangler dry run was unavailable because its local dependency install requires packages absent from the offline cache. Hosted routing and deployment readiness still need verification.
+
+Disposable SQLite runtime smoke: `/v1/health` and `/v1/readiness` returned HTTP 200. A missing Website slug returned 404, and a direct synthetic Calendar booking URL served the HTML shell with HTTP 200. The existing browser session's local port was closed when checked. Installing the locked Wrangler dependencies also failed because the package registry could not be resolved.
+
+
+Full backend regression after the Cloudflare publication change passed 496 tests with no failures and one PostgreSQL-only skip. This run used SQLite. The earlier PostgreSQL full-suite result predates this gateway change.
+
+### Public Website lifecycle and withdrawal — 23 November 2026
+
+Publication restore checks the current Website public-access setting before making a production page active. Anonymous HTML, media, forms and sitemaps use the same publication lookup. Form persistence checks the exact publication ID, tenant, version and current service/workspace state in the insert statement. The disposable API fixture qualified the public workflow by temporarily allowing Website activation in that test database and activating through the ordinary API. It did not edit the shipped service catalog or manually insert entitlement rows. SQLite verified anonymous page reads, inquiry persistence, withdrawal, and refusal to restore while disabled. Hosted Website availability still requires separate release verification.
+
+
+The updated focused Phase 3 suite passed 10/10 on both disposable SQLite and PostgreSQL 17, including public HTML title, anonymous inquiry persistence, withdrawal, and refusal to restore while disabled. The PostgreSQL cluster was stopped. Backend build, lint, platform validation (560), and diff checks passed.
+
+### Redirects, appointment concurrency, and connected browser checks — 23 November 2026
+
+Renaming and republishing a Website page retains its old HTML path as a same-site 308 redirect to the page's current publication. Publication history restoration can return to the old path. A different page cannot claim the retained Website path, and withdrawn publications disable their redirects. The Worker accepts only a marked relative Website redirect. This uses existing ERP storage and adds no migration. The SQLite and PostgreSQL 17 focused suites passed 10/10, including concurrent booking replay, competing organizer approvals, and the Website redirect lifecycle. Gateway tests passed 12/12.
+
+In a fresh synthetic Business workspace, the in-app browser displayed Calendar and Website as installable. Both required-service previews resolved, installation opened each workspace, and both showed as installed after reload. The browser created a Contact draft, edited its title, and observed the save confirmation. Calendar saved and displayed a synthetic meeting. The Calendar Appointments screen created a synthetic type and booking link. The direct public route displayed date-specific availability, accepted an inquiry, then rendered the pending booking management screen. Browser inspection found and confirmed the Marketplace text-overlap fix. Desktop screenshots were emitted in the browser trace. Full mobile and Odoo comparison, screenshot export, hosted readiness, and the complete workflow matrix remain outstanding.
+
+The final Website build and all 147 content tests passed. The full SQLite backend suite passed 497 with no failures and one PostgreSQL-only skip. The public appointment management page reloaded with its stylesheet and the pending request intact. Calendar displayed a clickable month sidebar next to the hourly week grid. Clicking Next month changed both its selected month and the main week. The desktop comparison checked toolbar grouping, the date grid and sidebar against the supplied Calendar reference, and the canvas/sidebar against the Website reference. The screenshots were emitted into the browser trace. Full responsive and matched reference acceptance remain open.
+
+At a 390px in-app viewport, Calendar, Marketplace, and the Website page register rendered without document-level horizontal overflow. Both installed app controls stayed visible. The Website table scrolls within its own container and the saved Contact draft remained visible. The viewport override was cleared afterward. These spot checks do not cover the full responsive acceptance matrix.
+
+### Website SEO, page filters, and block insertion
+
+Website editors can select a canonical page from the same workspace. Publishing rejects external URLs, unpublished targets, noindex targets, and targets that declare another canonical page. Public HTML and the page API recheck the target and fall back to the current URL if the target becomes unavailable. The sitemap omits pages with a different valid canonical target. The backend SQLite Phase 3 and SEO suites passed 12/12. The Website build and 147 content checks passed.
+
+The Pages register filters by draft or published status alongside title and slug search. The browser confirmed the Published filter hides the synthetic Contact draft and the Drafts filter shows it. The browser also confirmed that dragging a Heading from the palette before the hero inserts and selects the block, and that its position persisted after save and reload. The browser trace contains a desktop capture. The palette still supports click insertion. The Theme shortcut opens actual draft theme settings.
+The same focused Phase 3 suite passed 10/10 on disposable PostgreSQL 17, including the canonical page publication and sitemap assertions. The cluster and the synthetic browser server were stopped.
+
+### Website layout controls and Calendar edit stability
+
+Website block settings now store reviewed width and alignment choices, and supported grid blocks can select two or three desktop columns that wrap according to the section's available width. Draft and public canvases use the same layout rules. Hero backgrounds now honor the configured color. An isolated SQLite and PostgreSQL run confirmed the layout choices survive into the publication snapshot and rejects fixed columns on text blocks. In the browser, a saved feature grid retained its settings after refresh and displayed three columns at a 1280px viewport and one at a 390px viewport.
+
+Calendar edit fields now use each meeting's original timezone. Saving an untouched date preserves its exact instant, including either occurrence of a repeated clock time. Switching between series and occurrence editing also uses the matching original timezone and instants. The frontend regression covers repeated New York times and a Nairobi date boundary. The Appointments inbox exposes recorded history through the existing permission-checked API. A browser check opened history for the synthetic public booking and rendered its activity panel.
+
+### Published Website home and Calendar all-day layout
+
+Website Settings now accepts a site address and default page. Publishing that page in a production-enabled workspace creates an owner-scoped binding at `/sites/:siteSlug/home`. The route returns a no-store 307 to the currently bound live page. Draft settings do not move the home; publishing the new default does. Disabling public access withdraws the home. The gateway accepts only a marked relative page destination. A Website whose Home navigation link is `/` uses the stable home path when the current publication can resolve it in its workspace. The feature reuses existing ERP storage and does not add a migration or custom host support.
+
+Calendar's week and day views now place all-day events in a dedicated band. The band clips events to the visible range, spans the covered day columns, and assigns overlapping events to separate rows. The focused layout test covers clipping, overlap, lane reuse, and the exclusive end date.
+
+The full SQLite suite passed 497 with zero failures and one PostgreSQL-only skip. The focused PostgreSQL Phase 3 suite passed 10/10. Platform registration remains at 560 operations, OpenAPI drift at 59 operations, Cloudflare tests passed 12/12, the Render verifier passed 5/5, and the Website build passed 149/149 content tests. These are local checks. The hosted migration ledger, current hosted readiness, and full browser acceptance remain outstanding.

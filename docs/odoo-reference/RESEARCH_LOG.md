@@ -284,3 +284,7 @@ that produced a conclusion does.
 - Findings: Odoo's catalog supports configured search/category/price/tag/sale/stock filters and sorting; cart is a canonical Sales order with quantity and product-configuration checks; checkout validates ordered steps and address/delivery readiness. AfriCore preserves canonical authorities and has a smaller, explicitly bounded feature set.
 - AfriCore decision: add the missing Promotions destination over existing validated server discount rules, plus Cards/List presentation in the canonical product listing. Do not duplicate product masters, make stock claims from listings or present payment as settlement.
 - Official Odoo 20 documentation page fetches for Contacts, eCommerce, catalog and checkout timed out on 2026-11-20. No new docs-backed claim is made. Supplied screenshots were reviewed but not compared with a running application at matched viewport sizes.
+
+### Phase 3 comparison status — 23 November 2026
+
+The supplied Odoo 19/20 Calendar and Website images remain visual references only. Local synthetic browser evidence exists for Marketplace install/open, Calendar week view, Website Overview, and selected editor flows, but a matched viewport screenshot comparison covering toolbar geometry, calendar density, editor canvas/sidebar, menu editor, and mobile behavior has not been completed. No pixel-parity claim is made. See `../PHASE3_ACCEPTANCE.md` for the remaining capture and review gates.

@@ -30,6 +30,8 @@ export type ERPKind =
   | 'calendar_settings'
   | 'calendar_appointment_type'
   | 'website_identity'
+  | 'website_redirect'
+  | 'website_site_home'
   | 'website_page'
   | 'work_timesheet'
   | 'work_project_update'

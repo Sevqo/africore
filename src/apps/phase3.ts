@@ -14,8 +14,10 @@ import {
   visible,
 } from '../erp/store';
 import { workTarget } from '../erp/work';
+import { documentDetails } from '../erp/documents-access';
 import { publicSlug } from '../commerce/contracts';
 import { notify } from '../operations/automation';
+import { createCrmEntry } from '../operations/crm';
 import { assetBytes, assetReferences } from '../publishing/assets';
 import { requireServices } from '../marketplace/engine';
 import {
@@ -74,6 +76,8 @@ const eventInput = z
         z.object({ kind: z.literal('calendar_appointment_type'), id: z.string().uuid() }).strict(),
         z.object({ kind: z.literal('work_task'), id: z.string().uuid() }).strict(),
         z.object({ kind: z.literal('crm_entry'), id: z.string().uuid() }).strict(),
+        z.object({ kind: z.literal('sales_quote'), id: z.string().uuid() }).strict(),
+        z.object({ kind: z.literal('document'), id: z.string().uuid() }).strict(),
       ])
       .nullable()
       .default(null),
@@ -404,6 +408,16 @@ export async function createCalendarEvent(a: Access, input: unknown, key: string
         );
         if (!entry) fail(404, 'CRM record not found');
       }
+      if (d.linked_record?.kind === 'sales_quote') {
+        await requireServices(a, ['sales']);
+        const quote = await dbGet(
+          'SELECT id FROM ac_sales_quotes WHERE id=? AND org_id=? AND environment=?',
+          [d.linked_record.id, a.org, a.environment],
+        );
+        if (!quote) fail(404, 'Sales quotation not found');
+      }
+      if (d.linked_record?.kind === 'document')
+        await documentDetails(a, d.linked_record.id);
     },
     async () => {
       const event = await insert(a, 'calendar_event', {
@@ -459,6 +473,16 @@ export async function editCalendarEvent(a: Access, id: string, input: unknown, k
         );
         if (!entry) fail(404, 'CRM record not found');
       }
+      if (d.linked_record?.kind === 'sales_quote') {
+        await requireServices(a, ['sales']);
+        const quote = await dbGet(
+          'SELECT id FROM ac_sales_quotes WHERE id=? AND org_id=? AND environment=?',
+          [d.linked_record.id, a.org, a.environment],
+        );
+        if (!quote) fail(404, 'Sales quotation not found');
+      }
+      if (d.linked_record?.kind === 'document')
+        await documentDetails(a, d.linked_record.id);
     },
     async () => {
       const old = await read(a, id, 'calendar_event');
@@ -729,10 +753,12 @@ export async function calendarAppointmentTypes(a: Access) {
   );
   const role = await currentMember(a);
   const types = await Promise.all(rows.map((row) => read(a, row.id, 'calendar_appointment_type')));
+  const links = await dbAll("SELECT type_id FROM ac_calendar_appointment_links WHERE org_id=? AND environment=? AND active=1", [a.org, a.environment]);
+  const linkedTypes = new Set(links.map((row: any) => row.type_id));
   return {
     data: types
       .filter((type) => type.data.active || type.owner_id === a.actor || ['owner', 'admin'].includes(role))
-      .map(({ id, version, owner_id, data }) => ({ id, version, owner_id, data })),
+      .map(({ id, version, owner_id, data }) => ({ id, version, owner_id, data, public_link_active: linkedTypes.has(id) })),
   };
 }
 
@@ -875,6 +901,7 @@ const block = z
     body: z.string().max(8000).default(''),
     image_url: z.string().url().max(1000).or(z.literal('')).default(''),
     image_id: z.string().uuid().nullable().default(null),
+    image_ids: z.array(z.string().uuid()).max(12).default([]),
     alt: z.string().max(500).default(''),
     button_label: z.string().max(100).default(''),
     button_url: z.string().max(1000).default(''),
@@ -887,8 +914,22 @@ const block = z
       .string()
       .regex(/^#[0-9a-fA-F]{6}$/)
       .default('#ffffff'),
+    content_width: z.enum(['theme', 'narrow', 'wide']).default('theme'),
+    alignment: z.enum(['start', 'center']).default('start'),
+    layout_columns: z.enum(['auto', 'two', 'three']).default('auto'),
   })
-  .strict();
+  .strict()
+  .superRefine((section, ctx) => {
+    const allImages = [...(section.image_id ? [section.image_id] : []), ...section.image_ids];
+    if (new Set(allImages).size !== allImages.length)
+      ctx.addIssue({ code: 'custom', message: 'Gallery images must be unique', path: ['image_ids'] });
+    if (section.type !== 'gallery' && section.image_ids.length)
+      ctx.addIssue({ code: 'custom', message: 'Multiple images are supported only in gallery blocks', path: ['image_ids'] });
+    if (allImages.length > 12)
+      ctx.addIssue({ code: 'custom', message: 'A gallery can contain at most 12 images', path: ['image_ids'] });
+    if (section.layout_columns !== 'auto' && !['columns', 'features', 'gallery', 'pricing'].includes(section.type))
+      ctx.addIssue({ code: 'custom', message: 'Column count is available for grid blocks only', path: ['layout_columns'] });
+  });
 const safeLink = (value: string) => /^(https:\/\/|mailto:|\/(?!\/)[^\\\r\n]*)/i.test(value);
 const pageInput = z
   .object({
@@ -898,6 +939,10 @@ const pageInput = z
     sections: z.array(block).max(60),
     meta_title: z.string().max(180).default(''),
     meta_description: z.string().max(320).default(''),
+    canonical_path: z.string().trim().max(70).refine((path) =>
+      !path || (path.startsWith('/sites/') && publicSlug.safeParse(path.slice(7)).success),
+      'Use a Website page path such as /sites/about',
+    ).default(''),
     noindex: z.boolean().default(false),
     theme: z
       .object({
@@ -906,9 +951,24 @@ const pageInput = z
           .regex(/^#[0-9a-fA-F]{6}$/)
           .default('#087e78'),
         width: z.enum(['standard', 'wide']).default('standard'),
+        typography: z.enum(['system', 'serif', 'modern']).default('system'),
+        section_spacing: z.enum(['compact', 'standard', 'relaxed']).default('standard'),
+        header_style: z.enum(['plain', 'sticky', 'contrast']).default('plain'),
+        footer_style: z.enum(['light', 'dark']).default('light'),
+        background: z.string().regex(/^#[0-9a-fA-F]{6}$/).default('#ffffff'),
+        button_style: z.enum(['rounded', 'square']).default('rounded'),
       })
       .strict()
-      .default({ primary: '#087e78', width: 'standard' }),
+      .default({
+        primary: '#087e78',
+        width: 'standard',
+        typography: 'system',
+        section_spacing: 'standard',
+        header_style: 'plain',
+        footer_style: 'light',
+        background: '#ffffff',
+        button_style: 'rounded',
+      }),
     menus: z
       .array(
         z
@@ -992,6 +1052,7 @@ const websiteIdentityInput = z
     description: z.string().max(1000).default(''),
     public_enabled: z.boolean().default(false),
     default_page_id: z.string().uuid().nullable().default(null),
+    site_slug: publicSlug.or(z.literal('')).default(''),
     logo_media_id: z.string().uuid().nullable().default(null),
     brand_color: z
       .string()
@@ -1006,6 +1067,7 @@ const defaultWebsiteIdentity = {
   description: '',
   public_enabled: false,
   default_page_id: null,
+  site_slug: '',
   logo_media_id: null,
   brand_color: '#087e78',
   content_width: 'standard',
@@ -1019,10 +1081,14 @@ async function websiteIdentityRow(a: Access) {
 export async function getWebsiteIdentity(a: Access) {
   await authorize(a, 'website');
   const row = await websiteIdentityRow(a);
+  const identity = row ? await read(a, row.id, 'website_identity') : null;
+  const data = identity?.data || defaultWebsiteIdentity;
+  const home = a.environment === 'production' && data.site_slug ? await resolveWebsiteHome(data.site_slug) : null;
   return {
     configured: !!row,
-    version: row ? (await read(a, row.id, 'website_identity')).version : null,
-    data: row ? (await read(a, row.id, 'website_identity')).data : defaultWebsiteIdentity,
+    version: identity?.version ?? null,
+    data,
+    public_home_url: home?.org === a.org ? `/sites/${data.site_slug}/home` : null,
   };
 }
 export async function saveWebsiteIdentity(a: Access, input: unknown, key: string) {
@@ -1091,7 +1157,7 @@ export async function saveWebsitePage(a: Access, id: string | null, input: unkno
   const d = pageInput
     .extend({ expected_version: z.number().int().positive().optional() })
     .parse(input);
-  const imageIds = d.sections.map((section) => section.image_id).filter(Boolean) as string[];
+  const imageIds = d.sections.flatMap((section) => [section.image_id, ...section.image_ids]).filter(Boolean) as string[];
   if (imageIds.length) await assetReferences(a, imageIds);
   if (d.sections.some((section) => section.image_url))
     fail(400, 'Use a reviewed image from the Website media library');
@@ -1110,6 +1176,68 @@ export async function saveWebsitePage(a: Access, id: string | null, input: unkno
     },
   );
 }
+const websiteRedirectId = (environment: string, slug: string) =>
+  'website-redirect:' + hash(JSON.stringify([environment, slug]));
+const websiteHomeId = (slug: string) => 'website-home:' + hash(slug);
+
+async function bindWebsiteHome(a: Access, siteSlug: string, identityId: string, pageId: string) {
+  const id = websiteHomeId(siteSlug);
+  const bound = await dbGet("SELECT org_id,root_id,parent_id FROM ac_erp_objects WHERE id=? AND kind='website_site_home'", [id]);
+  if (bound && (bound.org_id !== a.org || bound.root_id !== identityId))
+    fail(409, 'This Website home address is already in use');
+  if (!bound) {
+    try {
+      await insert(a, 'website_site_home', { slug: siteSlug }, { id, root: identityId, parent: pageId });
+    } catch (error) {
+      if (['23505', 'SQLITE_CONSTRAINT_PRIMARYKEY', 'SQLITE_CONSTRAINT_UNIQUE'].includes(String((error as { code?: string }).code)))
+        fail(409, 'This Website home address is already in use');
+      throw error;
+    }
+  } else if (bound.parent_id !== pageId) {
+    const current = await read(a, id, 'website_site_home');
+    await update(a, current, current.data, { parent_id: pageId }, 'default_page_changed');
+  }
+}
+
+async function validateWebsiteCanonical(a: Access, pageSlug: string, path: string | undefined) {
+  if (!path || path === '/sites/' + pageSlug) return;
+  const target = await dbGet(
+    "SELECT id,version,snapshot FROM ac_publications WHERE org_id=? AND environment=? AND source_kind='website' AND slug=? AND active=1",
+    [a.org, a.environment, path.slice(7)],
+  );
+  if (!target) fail(409, 'Publish the canonical page in this workspace first');
+  let snapshot;
+  try {
+    snapshot = JSON.parse(unseal(target.snapshot, JSON.stringify([
+      'website-publication', a.org, a.environment, target.id, Number(target.version),
+    ])));
+  } catch {
+    fail(409, 'The canonical page publication could not be verified');
+  }
+  if (snapshot.noindex === true || (snapshot.canonical_path && snapshot.canonical_path !== path))
+    fail(409, 'Choose an indexable page that uses its own published URL');
+}
+
+async function reserveWebsitePath(a: Access, slug: string, pageId: string) {
+  const occupied = await dbGet(
+    'SELECT id FROM ac_publications WHERE environment=? AND slug=? AND source_id<>?',
+    [a.environment, slug, pageId],
+  );
+  const alias = await dbGet(
+    "SELECT org_id,root_id FROM ac_erp_objects WHERE id=? AND environment=? AND kind='website_redirect'",
+    [websiteRedirectId(a.environment, slug), a.environment],
+  );
+  if (occupied || (alias && (alias.org_id !== a.org || alias.root_id !== pageId)))
+    fail(409, 'This public path is already in use');
+}
+
+async function retainPreviousWebsitePath(a: Access, previousSlug: string, nextSlug: string, pageId: string) {
+  if (previousSlug === nextSlug) return;
+  const id = websiteRedirectId(a.environment, previousSlug);
+  if (!(await dbGet('SELECT id FROM ac_erp_objects WHERE id=?', [id])))
+    await insert(a, 'website_redirect', { slug: previousSlug }, { id, root: pageId });
+}
+
 export async function publishWebsitePage(a: Access, id: string, version: number, key: string) {
   return operation(
     a,
@@ -1125,16 +1253,17 @@ export async function publishWebsitePage(a: Access, id: string, version: number,
         ? (await read(a, identityRow.id, 'website_identity')).data
         : defaultWebsiteIdentity;
       let defaultPageSlug: string | null = null;
-      if (identity.default_page_id) {
+      if (identity.default_page_id === id) defaultPageSlug = page.data.slug;
+      else if (identity.default_page_id) {
         const defaultPage = await dbGet(
-          "SELECT id FROM ac_erp_objects WHERE id=? AND org_id=? AND environment=? AND kind='website_page' AND status='active'",
+          "SELECT slug FROM ac_publications WHERE source_id=? AND org_id=? AND environment=? AND source_kind='website' AND active=1",
           [identity.default_page_id, a.org, a.environment],
         );
-        if (defaultPage)
-          defaultPageSlug = (await read(a, defaultPage.id, 'website_page')).data.slug;
+        defaultPageSlug = defaultPage?.slug ?? null;
       }
       if (!identity.public_enabled && a.environment === 'production')
         fail(409, 'Enable public access in Website Settings before publishing to production');
+      await validateWebsiteCanonical(a, page.data.slug, page.data.canonical_path);
       const internalLinks = [
         ...page.data.menus.map((menu: any) => menu.url),
         ...page.data.sections.map((section: any) => section.button_url).filter(Boolean),
@@ -1156,18 +1285,17 @@ export async function publishWebsitePage(a: Access, id: string, version: number,
         );
         if (!target) fail(409, 'Publish the linked page before publishing this page');
       }
-      const mediaIds = page.data.sections.map((section: any) => section.image_id).filter(Boolean);
+      const mediaIds = page.data.sections.flatMap((section: any) => [section.image_id, ...(section.image_ids || [])]).filter(Boolean);
       if (identity.logo_media_id) mediaIds.push(identity.logo_media_id);
       if (mediaIds.length) await assetReferences(a, mediaIds);
       const existing = await dbGet(
         "SELECT * FROM ac_publications WHERE org_id=? AND environment=? AND source_id=? AND source_kind='website'",
         [a.org, a.environment, id],
       );
-      const collision = await dbGet(
-        'SELECT id FROM ac_publications WHERE environment=? AND slug=? AND active=1 AND source_id<>?',
-        [a.environment, page.data.slug, id],
-      );
-      if (collision) fail(409, 'This public path is already in use');
+      await reserveWebsitePath(a, page.data.slug, id);
+      if (existing) await retainPreviousWebsitePath(a, existing.slug, page.data.slug, id);
+      if (a.environment === 'production' && identityRow && identity.site_slug && identity.default_page_id === id)
+        await bindWebsiteHome(a, identity.site_slug, identityRow.id, id);
       const pubId = existing?.id || randomUUID(),
         pubVersion = Number(existing?.version || 0) + 1,
         at = now();
@@ -1178,6 +1306,7 @@ export async function publishWebsitePage(a: Access, id: string, version: number,
           sections: page.data.sections,
           meta_title: page.data.meta_title,
           meta_description: page.data.meta_description,
+          canonical_path: page.data.canonical_path || '',
           noindex: page.data.noindex,
           theme: page.data.theme,
           menus: page.data.menus,
@@ -1190,6 +1319,7 @@ export async function publishWebsitePage(a: Access, id: string, version: number,
             public_enabled: identity.public_enabled,
             default_page_id: identity.default_page_id,
             default_page_slug: defaultPageSlug,
+            site_slug: identity.site_slug || '',
           },
         }),
         JSON.stringify(['website-publication', a.org, a.environment, pubId, pubVersion]),
@@ -1293,16 +1423,19 @@ export async function restoreWebsitePublication(
       }
       const { site: previousSite, ...previousPage } = snapshot;
       const safe = pageInput.parse({ ...previousPage, template: page.data.template });
-      const mediaIds = safe.sections.map((section) => section.image_id).filter(Boolean) as string[];
+      await validateWebsiteCanonical(a, safe.slug, safe.canonical_path);
+      const mediaIds = safe.sections.flatMap((section) => [section.image_id, ...section.image_ids]).filter(Boolean) as string[];
       if (previousSite?.logo_media_id) mediaIds.push(previousSite.logo_media_id);
       if (mediaIds.length) await assetReferences(a, mediaIds);
-      const collision = await dbGet(
-        'SELECT id FROM ac_publications WHERE environment=? AND slug=? AND active=1 AND source_id<>?',
-        [a.environment, safe.slug, id],
-      );
-      if (collision) fail(409, 'The historic public path is currently in use');
+      await reserveWebsitePath(a, safe.slug, id);
       if (a.environment === 'production' && previousSite?.public_enabled === false)
         fail(409, 'That historic publication was not publicly enabled');
+      if (a.environment === 'production') {
+        const identity = await websiteIdentityRow(a);
+        if (!identity || !(await read(a, identity.id, 'website_identity')).data.public_enabled)
+          fail(409, 'Enable public access in Website Settings before restoring a publication');
+      }
+      await retainPreviousWebsitePath(a, publication.slug, safe.slug, id);
       const nextVersion = Number(publication.version) + 1;
       const at = now();
       const restoredSnapshot = seal(
@@ -1339,11 +1472,10 @@ export async function restoreWebsitePublication(
     { meter: false },
   );
 }
-export async function publicWebsitePage(slug: string, path = '') {
-  const pageSlug = path ? slug + '/' + path : slug;
+async function activeWebsitePublication(slug: string) {
   const p = await dbGet(
     "SELECT * FROM ac_publications WHERE environment='production' AND slug=? AND active=1 AND source_kind='website'",
-    [pageSlug],
+    [slug],
   );
   if (!p) return null;
   const workspace = await dbGet('SELECT kind,status FROM ac_workspaces WHERE id=?', [p.org_id]);
@@ -1362,7 +1494,7 @@ export async function publicWebsitePage(slug: string, path = '') {
     );
     if (snapshot.site?.public_enabled === false) return null;
     const mediaIds = [
-      ...new Set(snapshot.sections.map((section: any) => section.image_id).filter(Boolean)),
+      ...new Set(snapshot.sections.flatMap((section: any) => [section.image_id, ...(section.image_ids || [])]).filter(Boolean)),
     ] as string[];
     if (mediaIds.length) {
       const activeMedia = await dbAll(
@@ -1373,27 +1505,95 @@ export async function publicWebsitePage(slug: string, path = '') {
       );
       if (activeMedia.length !== mediaIds.length) return null;
     }
-    return snapshot;
+    return { publication: p, snapshot };
   } catch {
     return null;
   }
 }
 
-/** Build a sitemap only for the active published pages belonging to this site. */
-export async function publicWebsiteSitemap(slug: string) {
-  const first = await dbGet(
-    "SELECT id,org_id FROM ac_publications WHERE environment='production' AND slug=? AND active=1 AND source_kind='website'",
-    [slug],
+export async function publicWebsitePage(slug: string, path = '') {
+  const active = await activeWebsitePublication(path ? slug + '/' + path : slug);
+  if (!active) return null;
+  const canonical = await resolveWebsiteCanonical(active);
+  const siteSlug = active.snapshot.site?.site_slug;
+  const home = typeof siteSlug === 'string' && siteSlug ? await resolveWebsiteHome(siteSlug) : null;
+  return {
+    ...active.snapshot,
+    canonical_path: canonical,
+    site: { ...active.snapshot.site, home_url: home?.org === active.publication.org_id ? `/sites/${siteSlug}/home` : null },
+  };
+}
+
+async function resolveWebsiteCanonical(active: NonNullable<Awaited<ReturnType<typeof activeWebsitePublication>>>) {
+  const ownPath = '/sites/' + active.publication.slug;
+  const path = active.snapshot.canonical_path;
+  if (typeof path !== 'string' || !path.startsWith('/sites/') || path === ownPath || !publicSlug.safeParse(path.slice(7)).success)
+    return ownPath;
+  const target = await activeWebsitePublication(path.slice(7));
+  if (!target || target.publication.org_id !== active.publication.org_id || target.snapshot.noindex === true)
+    return ownPath;
+  if (target.snapshot.canonical_path && target.snapshot.canonical_path !== path) return ownPath;
+  return path;
+}
+
+/** Resolve a previously published path directly to the same page's current publication. */
+export async function publicWebsiteRedirect(slug: string) {
+  if (!publicSlug.safeParse(slug).success) return null;
+  const destination = await dbGet(
+    `SELECT p.id,p.slug,p.org_id FROM ac_erp_objects r
+     JOIN ac_publications p ON p.org_id=r.org_id AND p.environment=r.environment AND p.source_id=r.root_id
+     WHERE r.id=? AND r.environment='production' AND r.kind='website_redirect' AND r.status='active'
+       AND p.source_kind='website' AND p.active=1 AND p.slug<>?`,
+    [websiteRedirectId('production', slug), slug],
   );
-  if (!first || !(await publicWebsitePage(slug))) return null;
+  if (!destination || !publicSlug.safeParse(destination.slug).success) return null;
+  const current = await activeWebsitePublication(destination.slug);
+  return current && current.publication.id === destination.id && current.publication.org_id === destination.org_id
+    ? '/sites/' + destination.slug
+    : null;
+}
+
+async function resolveWebsiteHome(siteSlug: string) {
+  if (!publicSlug.safeParse(siteSlug).success) return null;
+  const destination = await dbGet(
+    `SELECT p.id,p.slug,p.org_id,p.source_id FROM ac_erp_objects r
+     JOIN ac_publications p ON p.org_id=r.org_id AND p.environment=r.environment AND p.source_id=r.parent_id
+     WHERE r.id=? AND r.environment='production' AND r.kind='website_site_home' AND r.status='active'
+       AND p.source_kind='website' AND p.active=1`,
+    [websiteHomeId(siteSlug)],
+  );
+  if (!destination || !publicSlug.safeParse(destination.slug).success) return null;
+  const current = await activeWebsitePublication(destination.slug);
+  if (!current || current.publication.id !== destination.id || current.publication.org_id !== destination.org_id ||
+      current.snapshot.site?.site_slug !== siteSlug || current.snapshot.site?.default_page_id !== destination.source_id)
+    return null;
+  return { org: destination.org_id, path: '/sites/' + destination.slug };
+}
+
+export async function publicWebsiteHome(siteSlug: string) {
+  return (await resolveWebsiteHome(siteSlug))?.path ?? null;
+}
+
+export function websitePageIsIndexable(snapshot: { noindex?: unknown } | null | undefined) {
+  return !!snapshot && snapshot.noindex !== true;
+}
+
+/** Build a sitemap only for the active, indexable published pages of this site. */
+export async function publicWebsiteSitemap(slug: string) {
+  const first = await activeWebsitePublication(slug);
+  if (!first) return null;
   const sitePages = await dbAll(
-    "SELECT slug,published_at FROM ac_publications WHERE org_id=? AND environment='production' AND active=1 AND source_kind='website' ORDER BY slug",
-    [first.org_id],
+    "SELECT slug FROM ac_publications WHERE org_id=? AND environment='production' AND active=1 AND source_kind='website' ORDER BY slug",
+    [first.publication.org_id],
   );
   const publicPages = [] as Array<{ slug: string; published_at: string }>;
   for (const page of sitePages) {
-    if (await publicWebsitePage(String(page.slug)))
-      publicPages.push({ slug: String(page.slug), published_at: String(page.published_at) });
+    const current = await activeWebsitePublication(String(page.slug));
+    // noindex is an explicit SEO instruction. A page may remain publicly
+    // reachable while being excluded from search engine discovery.
+    if (current && current.publication.org_id === first.publication.org_id && websitePageIsIndexable(current.snapshot) &&
+        await resolveWebsiteCanonical(current) === '/sites/' + current.publication.slug)
+      publicPages.push({ slug: String(page.slug), published_at: String(current.publication.published_at) });
   }
   const origin = process.env.AFRICORE_PUBLIC_ORIGIN || '';
   let base: URL;
@@ -1423,42 +1623,14 @@ export async function publicWebsiteSitemap(slug: string) {
 /** Deliver only active images referenced by the current public site snapshot. */
 export async function publicWebsiteImage(slug: string, id: string) {
   z.string().uuid().parse(id);
-  const publication = await dbGet(
-    "SELECT * FROM ac_publications WHERE environment='production' AND slug=? AND active=1 AND source_kind='website'",
-    [slug],
-  );
-  if (!publication) return null;
-  let snapshot: any;
-  try {
-    snapshot = JSON.parse(
-      unseal(
-        publication.snapshot,
-        JSON.stringify([
-          'website-publication',
-          publication.org_id,
-          publication.environment,
-          publication.id,
-          Number(publication.version),
-        ]),
-      ),
-    );
-  } catch {
-    return null;
-  }
+  const active = await activeWebsitePublication(slug);
+  if (!active) return null;
+  const { publication, snapshot } = active;
   if (
     snapshot.site?.logo_media_id !== id &&
-    !snapshot.sections?.some((section: any) => section.image_id === id)
+    !snapshot.sections?.some((section: any) => section.image_id === id || section.image_ids?.includes(id))
   )
     return null;
-  const workspace = await dbGet('SELECT kind,status FROM ac_workspaces WHERE id=?', [
-    publication.org_id,
-  ]);
-  if (workspace?.kind !== 'business' || workspace.status !== 'active') return null;
-  const websiteService = await dbGet(
-    "SELECT 1 AS active FROM ac_service_entitlements e JOIN ac_services s ON s.id=e.service_id WHERE e.org_id=? AND e.environment='production' AND e.service_id='website' AND e.status='active' AND s.enabled=1",
-    [publication.org_id],
-  );
-  if (!websiteService) return null;
   const asset = await dbGet(
     "SELECT * FROM ac_public_media WHERE id=? AND org_id=? AND environment='production' AND status='active'",
     [id, publication.org_id],
@@ -1483,13 +1655,10 @@ export async function submitPublicWebsiteForm(slug: string, input: unknown) {
   const data = websiteContactInput.parse(input);
   // Honeypot bots receive the same success response but are not persisted.
   if (data.website) return { accepted: true };
-  const page = await publicWebsitePage(slug);
-  if (!page || !page.sections.some((section: any) => section.type === 'contact_form')) return null;
-  const publication = await dbGet(
-    "SELECT id,org_id FROM ac_publications WHERE environment='production' AND slug=? AND active=1 AND source_kind='website'",
-    [slug],
-  );
-  if (!publication) return null;
+  const active = await activeWebsitePublication(slug);
+  if (!active || !active.snapshot.sections.some((section: any) => section.type === 'contact_form'))
+    return null;
+  const { publication } = active;
   const id = randomUUID(),
     createdAt = now(),
     expires = new Date(Date.parse(createdAt) + 90 * 24 * 60 * 60 * 1000).toISOString(),
@@ -1507,11 +1676,16 @@ export async function submitPublicWebsiteForm(slug: string, input: unknown) {
   await dbRun("DELETE FROM ac_website_form_submissions WHERE expires_at<=? AND status='expired'", [
     createdAt,
   ]);
-  await dbRun(
-    "INSERT INTO ac_website_form_submissions(id,org_id,environment,publication_id,slug,payload,status,created_at,expires_at) VALUES (?,?,'production',?,?,?,?,?,?)",
-    [id, publication.org_id, publication.id, slug, payload, 'new', createdAt, expires],
+  const inserted = await dbRun(
+    `INSERT INTO ac_website_form_submissions(id,org_id,environment,publication_id,slug,payload,status,created_at,expires_at)
+     SELECT ?,p.org_id,p.environment,p.id,p.slug,?,'new',?,? FROM ac_publications p
+     JOIN ac_workspaces w ON w.id=p.org_id AND w.kind='business' AND w.status='active'
+     JOIN ac_service_entitlements e ON e.org_id=p.org_id AND e.environment=p.environment AND e.service_id='website' AND e.status='active'
+     JOIN ac_services s ON s.id=e.service_id AND s.enabled=1
+     WHERE p.id=? AND p.org_id=? AND p.environment='production' AND p.source_kind='website' AND p.active=1 AND p.slug=? AND p.version=?`,
+    [id, payload, createdAt, expires, publication.id, publication.org_id, slug, publication.version],
   );
-  return { accepted: true };
+  return inserted.changes === 1 ? { accepted: true } : null;
 }
 
 export async function websiteFormSubmissions(a: Access) {
@@ -1539,4 +1713,50 @@ export async function websiteFormSubmissions(a: Access) {
         : {}),
     })),
   };
+}
+
+/** Explicit administrator handoff from an encrypted Website inquiry to CRM. */
+export async function convertWebsiteFormToCrmLead(a: Access, id: string) {
+  await currentMember(a);
+  await requireServices(a, ['website'], true);
+  if (!['owner', 'admin'].includes(a.role)) fail(403, 'Workspace administrator required');
+  const row = await dbGet(
+    'SELECT environment,slug,payload,status FROM ac_website_form_submissions WHERE id=? AND org_id=? AND environment=?',
+    [id, a.org, a.environment],
+  );
+  if (!row) fail(404, 'Website inquiry not found');
+  if (row.status === 'converted') {
+    const prior = await dbGet(
+      "SELECT id FROM ac_crm_entries WHERE id=? AND org_id=? AND environment=? AND kind='lead'",
+      [id, a.org, a.environment],
+    );
+    if (!prior) fail(409, 'CRM handoff needs administrator review');
+    return { status: 'converted', lead_id: id };
+  }
+  if (row.status !== 'new' || !row.payload) fail(409, 'This inquiry is no longer available for conversion');
+  const details = JSON.parse(
+    unseal(row.payload, JSON.stringify(['website-form', a.org, row.environment, id])),
+  );
+  // createCrmEntry performs CRM activation, limits, audit, event and idempotency checks.
+  await createCrmEntry(
+    a,
+    {
+      kind: 'lead',
+      customer_id: null,
+      title: `Website inquiry: ${details.company || details.name}`.slice(0, 200),
+      notes: details.message,
+      contact_name: details.name,
+      company: details.company,
+      email: details.email,
+      source: 'website',
+      source_ref: row.slug,
+    },
+    `website-form-lead:${id}`,
+    id,
+  );
+  await dbRun(
+    "UPDATE ac_website_form_submissions SET status='converted',payload='' WHERE id=? AND org_id=? AND environment=? AND status='new'",
+    [id, a.org, a.environment],
+  );
+  return { status: 'converted', lead_id: id };
 }

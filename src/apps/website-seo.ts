@@ -20,7 +20,7 @@ function validPublicOrigin(value: string) {
 /** Add page-specific SEO metadata while letting the SPA render from an empty root. */
 export function renderWebsiteSeoDocument(
   indexHtml: string,
-  page: { title?: string; meta_title?: string; meta_description?: string; site?: { name?: string }; noindex?: boolean },
+  page: { title?: string; meta_title?: string; meta_description?: string; canonical_path?: string; site?: { name?: string }; noindex?: boolean },
   slug: string,
   publicOrigin: string,
 ) {
@@ -28,6 +28,9 @@ export function renderWebsiteSeoDocument(
   const title = String(page.meta_title || page.title || page.site?.name || 'Website').slice(0, 180);
   const description = String(page.meta_description || '').slice(0, 320);
   const url = validPublicOrigin(publicOrigin);
+  const canonicalPath = page.canonical_path && /^\/sites\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(page.canonical_path)
+    ? page.canonical_path
+    : '/sites/' + slug;
   const metas = [
     `<title>${escapeHtml(title)}</title>`,
     `<meta name="description" content="${escapeHtml(description)}">`,
@@ -36,8 +39,8 @@ export function renderWebsiteSeoDocument(
     `<meta property="og:description" content="${escapeHtml(description)}">`,
     ...(url
       ? [
-          `<link rel="canonical" href="${escapeHtml(url + '/sites/' + slug)}">`,
-          `<meta property="og:url" content="${escapeHtml(url + '/sites/' + slug)}">`,
+          `<link rel="canonical" href="${escapeHtml(url + canonicalPath)}">`,
+          `<meta property="og:url" content="${escapeHtml(url + canonicalPath)}">`,
         ]
       : []),
   ].join('');

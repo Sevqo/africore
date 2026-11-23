@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { publicWebsiteHref } from './public-website-links';
+import { publicWebsiteCtaHref, publicWebsiteHref } from './public-website-links';
 import { currencyDigits } from '../../../src/finance/money';
 import './phase3-apps.css';
 
@@ -185,7 +185,10 @@ export function PublicWebsite({ slug }: { slug: string }) {
       document.head.append(canonical);
     }
     const oldHref = canonical.getAttribute('href');
-    canonical.setAttribute('href', location.origin + '/sites/' + encodeURIComponent(slug));
+    const canonicalPath = typeof page.canonical_path === 'string' && /^\/sites\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(page.canonical_path)
+      ? page.canonical_path
+      : '/sites/' + encodeURIComponent(slug);
+    canonical.setAttribute('href', location.origin + canonicalPath);
     return () => {
       document.title = priorTitle;
       for (const entry of managed) {
@@ -221,9 +224,16 @@ export function PublicWebsite({ slug }: { slug: string }) {
   return (
     <main
       className="public-site"
-      style={{ '--website-primary': page.site?.brand_color || '#087e78' } as CSSProperties}
+      style={{
+        '--website-primary': page.theme?.primary || page.site?.brand_color || '#087e78',
+        '--website-content-width': page.theme?.width === 'wide' ? '1120px' : '900px',
+        '--website-font': page.theme?.typography === 'serif' ? 'Georgia, serif' : page.theme?.typography === 'modern' ? 'Arial, Helvetica, sans-serif' : 'system-ui, sans-serif',
+        '--website-background': page.theme?.background || '#ffffff',
+        '--website-section-spacing': page.theme?.section_spacing === 'compact' ? '28px' : page.theme?.section_spacing === 'relaxed' ? '64px' : '46px',
+        '--website-button-radius': page.theme?.button_style === 'square' ? '2px' : '8px',
+      } as CSSProperties}
     >
-      <header>
+      <header className={'website-header-' + (page.theme?.header_style || 'plain')}>
         {page.site?.logo_media_id && (
           <img
             className="public-site-logo"
@@ -233,7 +243,7 @@ export function PublicWebsite({ slug }: { slug: string }) {
         )}
         <strong>{page.site?.name || page.title}</strong>
         <nav aria-label="Website navigation">
-          {renderMenus(page.menus || [], slug, page.site?.default_page_slug)}
+          {renderMenus(page.menus || [], slug, page.site?.default_page_slug, page.site?.home_url)}
         </nav>
       </header>
       {page.sections.map((s: any, i: number) => {
@@ -241,6 +251,13 @@ export function PublicWebsite({ slug }: { slug: string }) {
           .split(/\r?\n/)
           .map((line: string) => line.trim())
           .filter(Boolean);
+        const ctaHref = publicWebsiteCtaHref(
+          s.button_label,
+          s.button_url,
+          slug,
+          page.site?.default_page_slug,
+          page.site?.home_url,
+        );
         const image = s.image_id ? (
           <img
             src={`/api/public/sites/${encodeURIComponent(slug)}/media/${s.image_id}`}
@@ -252,6 +269,9 @@ export function PublicWebsite({ slug }: { slug: string }) {
           <section
             key={i}
             className={'website-section website-block-' + s.type}
+            data-content-width={s.content_width}
+            data-alignment={s.alignment}
+            data-layout-columns={s.layout_columns}
             style={{ background: s.background || '#fff' }}
           >
             <div>
@@ -260,8 +280,8 @@ export function PublicWebsite({ slug }: { slug: string }) {
                   {image}
                   <h1>{s.title}</h1>
                   {paragraphs}
-                  {s.button_label && (
-                    <a className="button" href={publicWebsiteHref(s.button_url, slug, page.site?.default_page_slug)}>
+                  {ctaHref && (
+                    <a className="button" href={ctaHref}>
                       {s.button_label}
                     </a>
                   )}
@@ -271,7 +291,18 @@ export function PublicWebsite({ slug }: { slug: string }) {
               ) : s.type === 'image' || s.type === 'gallery' ? (
                 <>
                   {s.title && <h2>{s.title}</h2>}
-                  {image || (
+                  {s.type === 'gallery' && (s.image_ids || []).length ? (
+                    <div className="website-public-gallery">
+                      {(s.image_ids || []).map((id: string, index: number) => (
+                        <img
+                          key={id}
+                          src={`/api/public/sites/${encodeURIComponent(slug)}/media/${id}`}
+                          alt={s.alt || `Gallery image ${index + 1}`}
+                          loading="lazy"
+                        />
+                      ))}
+                    </div>
+                  ) : image || (
                     <p className="website-image-placeholder">
                       Add a reviewed image in the Website media library.
                     </p>
@@ -393,8 +424,8 @@ export function PublicWebsite({ slug }: { slug: string }) {
                   {s.title && <h2>{s.title}</h2>}
                   {image}
                   {paragraphs}
-                  {s.button_label && (
-                    <a className="button" href={publicWebsiteHref(s.button_url, slug, page.site?.default_page_slug)}>
+                  {ctaHref && (
+                    <a className="button" href={ctaHref}>
                       {s.button_label}
                     </a>
                   )}
@@ -404,7 +435,9 @@ export function PublicWebsite({ slug }: { slug: string }) {
           </section>
         );
       })}
-      <footer className="website-footer">{page.site?.name || page.title}</footer>
+      <footer className={'website-footer website-footer-' + (page.theme?.footer_style || 'light')}>
+        {page.site?.name || page.title}
+      </footer>
     </main>
   );
 }
@@ -412,14 +445,15 @@ function renderMenus(
   menus: any[],
   currentSlug: string,
   defaultSlug?: string | null,
+  homeUrl?: string | null,
   parent: number | null = null,
 ): any {
   const items = menus.flatMap((item, index) =>
     (item.parent_index ?? null) === parent
       ? [
           <li key={`${item.label}-${index}`}>
-            <a href={publicWebsiteHref(item.url, currentSlug, defaultSlug)}>{item.label}</a>
-            {renderMenus(menus, currentSlug, defaultSlug, index)}
+            <a href={publicWebsiteHref(item.url, currentSlug, defaultSlug, homeUrl)}>{item.label}</a>
+            {renderMenus(menus, currentSlug, defaultSlug, homeUrl, index)}
           </li>,
         ]
       : [],

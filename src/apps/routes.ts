@@ -10,12 +10,23 @@ import {
   uninstallApp,
   appPreferences,
 } from './installations';
-import { websiteFormSubmissions } from './phase3';
+import { convertWebsiteFormToCrmLead, websiteFormSubmissions } from './phase3';
 export const appRoutes = Router();
 const key = (value: unknown) => z.string().min(8).max(200).parse(value);
 appRoutes.get(
   '/organizations/:org/website/forms',
   route(async (req, res) => res.json(await websiteFormSubmissions(await access(req, 'admin')))),
+);
+appRoutes.post(
+  '/organizations/:org/website/forms/:submission/convert-to-crm',
+  route(async (req, res) =>
+    res.json(
+      await convertWebsiteFormToCrmLead(
+        await access(req, 'admin'),
+        String(req.params.submission),
+      ),
+    ),
+  ),
 );
 appRoutes.get(
   '/organizations/:org/apps',

@@ -1,5 +1,9 @@
 # Implementation status — Stage 3 sandbox beta
 
+## Phase 3 working-tree update — 21 November 2026
+
+Calendar now overlays approved People leave using the existing permission-filtered People API and displays read-only multi-day markers without leave reasons. Website Editor adds a bounded session-local undo/redo history for draft changes. Current local verification: root suite **489 passed, 0 failed, 1 PostgreSQL-only skipped**; root typecheck and lint passed; Website production build/content suite **144/144**; OpenAPI **59/59**; platform route validation **554 operations**; Render verifier **5/5**; `git diff --check` passed. These changes do not close Phase 3. Hosted Render readiness, hosted migration ledger/backup, PostgreSQL rehearsal, public appointment booking, remaining integrations, browser-level new controls and Odoo-matched comparison remain open. See [Phase 3 acceptance](PHASE3_ACCEPTANCE.md) for exact boundaries.
+
 ## Current combined Business ID + Commerce checkpoint — 20 November 2026
 
 Business ID continues to use its existing ten-section Trust/Passport authority; this continuation added no duplicate identity store or migration. Commerce now has a source-backed Promotions register over existing validated discount rules and Cards/List presentation over canonical product listings. Focused app tests passed 10/10. See [the phase report](PHASE2_APP_PROGRESS.md#combined-phase-214b-business-id--21b-commerce--20-november-2026), [closure register](APP_EXPANSION_CLOSURE.md) and [remaining-app roadmap](REMAINING_APPS_ROADMAP.md).
@@ -279,3 +283,41 @@ Current local checks: backend build and typecheck passed; lint passed; platform 
 ### 21 November local continuation
 
 Website Commerce showcase blocks now read up to four published Commerce catalog items by safe storefront slug, with current canonical prices and public media, and link visitors to the Commerce-owned storefront. After this addition, `npm test` passed 488 tests with 0 failures and 1 PostgreSQL-only skip; focused Phase 3 HTTP tests passed 5/5, Website build/content tests 142/142, typecheck/lint, OpenAPI (59/59), platform (554 operations), Render verifier (5/5), and `git diff --check` passed. Calendar cross-app integrations/public appointment booking and Website production visual/public-route acceptance remain incomplete. Hosted migration state and current Render readiness remain unverified, so this is not Phase 3 closure.
+
+## Phase 3 local status — 22 November 2026
+
+Marketplace/browser check on a disposable synthetic Business workspace showed Calendar and Website as available in Apps; Website search returned one result. Both installation previews resolved, installs completed, each app opened, and Website remained selected after refresh. Focused API Phase 3 integration is 7/7 and full backend suite is 491 passed/0 failed/1 PostgreSQL-only skip. Website draft/template/hero edit/save/preview/sandbox publication were browser exercised; Calendar week interface and a mobile-width layout were inspected. The local Website publication showed no production URL. Public appointments, several Calendar and Website workflows, full Odoo visual comparison, hosted Render readiness and PostgreSQL CI diagnosis remain incomplete. This is not closure or production acceptance.
+
+Website theme configuration is implemented for the supported typography, background, spacing, header/footer, button, brand-color and width tokens. Draft preview and published snapshots consume the validated values. Focused coverage passes; production-host rendering and Odoo comparison remain open. Phase 3 is not accepted or production-ready.
+
+The Website Forms inbox now provides an explicit admin action to create a canonical CRM lead from a public inquiry. Both services must be active. Local integration verifies stable identity, idempotent replay and encrypted payload clearing. Live production inquiry acceptance remains unverified.
+
+Website editor block reordering now supports a native drag gesture and continues to expose up/down buttons. Tests verify order and selection remapping; the interaction has not yet been browser exercised. Website build/content suite: 146/146.
+
+### Calendar public appointment continuation — 22 November 2026
+
+Added capability-scoped public appointment booking and owner review, including encrypted visitor fields, per-slot capacity, idempotent replay, request rescheduling/cancellation, confirmation/decline and history. Migration 028 is additive, included in `prepareDatabase()` verification, and supported by the guarded `--phase3-calendar` plan. Focused API passes 1/1 and Cloudflare gateway suite 12/12; Website build/content is 146/146. Visitor and owner screens compile but are not yet browser accepted. Hosted migration ledger/backup/readiness, PostgreSQL, current CI failure, production Website host and Odoo visual acceptance remain open. Phase 3 is not complete.
+
+Current local regression after public appointment work: `npm test` 493 passed, 0 failed, 1 PostgreSQL-only skipped (494 total, 21 suites); Website build/content 146/146; Cloudflare 12/12; Render verifier 5/5; development config 6/6. These are local checks only. Phase 3 remains incomplete because multiple browser/Odoo/public production and hosted infrastructure gates remain open.
+## Superseding local acceptance record — 22 November 2026
+
+A fresh disposable PostgreSQL 17 cluster ran the full PostgreSQL suite after the Calendar capacity-upsert correction: 494 passed, 0 failed, 0 skipped across 21 suites. This supersedes earlier notes that reported only a partial PostgreSQL rerun. The isolated cluster was stopped afterward; no hosted database was contacted.
+
+A synthetic Business workspace was opened through the isolated in-app browser. Browse Apps showed AfriCore Calendar and AfriCore Website. Website search returned its card. Each installation preview resolved its required free evaluation service; both installations succeeded, each workspace opened, and refresh preserved both installations. Returning to Browse Apps showed Open controls for both. Calendar week view and Website Overview screenshots were inspected in-session; image files were not exported as repository artifacts.
+
+The local development database was inspected read-only: migrations 021, 026, 027 and 028 are present; Calendar and Website exist in ac_services with current evaluation-v1 KES price rows. No database mutation was performed during this inspection.
+
+Phase 3 remains open. The hosted Render migration ledger, backup readiness and post-deploy readiness are unavailable; the CI PostgreSQL failure lacks step logs. Full Calendar recurrence, invitation, availability, appointment and integration acceptance and the full Website editor, media, SEO, anonymous forms, publication-host and commerce matrix remain incomplete or unverified. No commit, push, hosted migration or deployment was performed. Marketing and Support remain deferred.
+## Final local regression update — 23 November 2026
+
+After adding the hosted migration prerequisite preflight and correcting a Nairobi-local analytics test date, a fresh disposable PostgreSQL 17 cluster ran npm run test:pg: 497 passed, 0 failed, 0 skipped, 21 suites. Root build was part of that command. Typecheck, lint, migration-runner syntax and diff checks also pass. The isolated cluster was stopped and removed.
+
+The migration runner now checks Phase 3 prerequisites in dependency order before any migration DDL and reports all missing version IDs: phase3-calendar requires 021-people-expansion, 026-app15-16 and 027-website-forms before target 028-calendar-appointments. This is a local code hardening only; the runner was not pointed at hosted PostgreSQL. Render's actual migration ledger and backup/restore status remain unavailable, and Phase 3 is not closed.
+
+### Calendar public route repair — 23 November 2026
+
+Fixed the missing Express SPA fallback for generated Calendar booking and manage URLs after an isolated browser check returned JSON 404. A fresh backend build and direct-route regression passed 20/20. Post-fix browser verification timed out against the fresh isolated demo endpoint; public page rendering remains unverified in browser.
+
+### Phase 3 release status — 23 November 2026
+
+Calendar and Website Marketplace visibility, install/open APIs and broad operational workflows are implemented. Local backend, frontend, route, gateway, schema, and migration-preflight checks pass; see `PHASE3_ACCEPTANCE.md` for exact counts. The observed public Calendar route 404 is fixed in the Express SPA fallback and covered by HTTP tests. Phase 3 remains open: the public booking route has not been browser-rechecked after this fix; hosted Render migration/readiness evidence is unavailable; browser acceptance and Odoo comparison are incomplete. Do not label the release production-ready.

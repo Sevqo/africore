@@ -63,6 +63,26 @@ export function SalesWorkspace({
       current = false;
     };
   }, [scope, revision, inventoryActive]);
+  useEffect(() => {
+    const id = new URLSearchParams(location.search).get('sales-quotation');
+    if (!id) return;
+    const loaded = quotes.find((quote) => quote.id === id);
+    if (loaded) {
+      setPreview(loaded);
+      return;
+    }
+    let current = true;
+    api(`/sales/quotations/${encodeURIComponent(id)}`)
+      .then((quote) => { if (current) setPreview(quote); })
+      .catch((e) => { if (current) setError((e as Error).message); });
+    return () => { current = false; };
+  }, [scope, quotes, api]);
+  function closeQuotationPreview() {
+    const url = new URL(location.href);
+    url.searchParams.delete('sales-quotation');
+    history.replaceState(null, '', url.pathname + url.search + url.hash);
+    setPreview(null);
+  }
   async function write(path: string, body: any, method = 'POST') {
     await api(path, method, body, { 'Idempotency-Key': crypto.randomUUID() });
     setNotice(
@@ -143,7 +163,7 @@ export function SalesWorkspace({
           </Field>
         </div>
         {preview && (
-          <QuotationPreview quotation={preview} api={api} onClose={() => setPreview(null)} />
+          <QuotationPreview quotation={preview} api={api} onClose={closeQuotationPreview} />
         )}
         <DataTable>
           <thead>

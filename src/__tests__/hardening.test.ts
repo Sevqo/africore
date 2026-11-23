@@ -12,6 +12,7 @@ import { grantConsent, revokeConsent } from '../services/consentService';
 import { subscribe, emitEvent } from '../services/webhookService';
 import {
   ipRateLimit,
+  publicWebsiteFormRateLimit,
   clientRateLimit,
   resetRateLimitState,
   IP_LIMIT,
@@ -225,6 +226,30 @@ describe('Phase 1 hardening', () => {
 
     // A different client starts with a full bucket again.
     assert.strictEqual(clientRateLimit('client-def', fakeResponse() as any), true);
+  });
+
+  test('anonymous website form submissions are limited to ten per IP per minute', async () => {
+    resetRateLimitState();
+    const req = { ip: '198.51.100.22' } as any;
+    let allowed = 0;
+    let limited = 0;
+    for (let i = 0; i < 12; i++) {
+      const res = fakeResponse();
+      let nextCalled = false;
+      publicWebsiteFormRateLimit(req, res as any, () => {
+        nextCalled = true;
+      });
+      if (nextCalled) allowed++;
+      else if (res.statusCode === 429) limited++;
+    }
+    assert.strictEqual(allowed, 10);
+    assert.strictEqual(limited, 2);
+    const otherRes = fakeResponse();
+    let otherAllowed = false;
+    publicWebsiteFormRateLimit({ ip: '198.51.100.23' } as any, otherRes as any, () => {
+      otherAllowed = true;
+    });
+    assert.strictEqual(otherAllowed, true);
   });
 
   test('webhook target validator blocks IPv6, trailing-dot and private hosts', async () => {

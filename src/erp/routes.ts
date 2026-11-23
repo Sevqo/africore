@@ -132,6 +132,7 @@ import { Router } from 'express';
 import { prepareAccountingSource } from './accounting-sources';
 import { accountingSourceList } from './accounting-source-list';
 import { z } from 'zod';
+import { calendarAppointmentRequestHistory, createPublicCalendarLink, listCalendarAppointmentRequests, reviewCalendarAppointmentRequest, revokePublicCalendarLink } from '../apps/calendar-appointments';
 import { route, access } from '../platform/auth';
 import {
   myWork,
@@ -1602,6 +1603,30 @@ erp.post(
       ),
     ),
   ),
+);
+erp.post(
+  '/organizations/:org/calendar/appointment-types/:id/public-link',
+  route(async (req, res) =>
+    res.status(201).json(await createPublicCalendarLink(await access(req, 'operations'), String(req.params.id), req.body)),
+  ),
+);
+erp.delete(
+  '/organizations/:org/calendar/appointment-types/:id/public-link',
+  route(async (req, res) =>
+    res.json(await revokePublicCalendarLink(await access(req, 'operations'), String(req.params.id))),
+  ),
+);
+erp.get(
+  '/organizations/:org/calendar/appointment-types/:id/requests',
+  route(async (req, res) => res.json(await listCalendarAppointmentRequests(await access(req, 'admin'), String(req.params.id)))),
+);
+erp.post(
+  '/organizations/:org/calendar/appointment-types/:id/requests/:booking/review',
+  route(async (req, res) => res.json(await reviewCalendarAppointmentRequest(await access(req, 'operations'), String(req.params.id), String(req.params.booking), req.body))),
+);
+erp.get(
+  '/organizations/:org/calendar/appointment-types/:id/requests/:booking/history',
+  route(async (req, res) => res.json(await calendarAppointmentRequestHistory(await access(req, 'admin'), String(req.params.id), String(req.params.booking)))),
 );
 erp.get(
   '/organizations/:org/website/settings',

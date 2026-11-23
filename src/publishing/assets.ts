@@ -260,7 +260,7 @@ export async function withdrawAsset(
           const snapshot = JSON.parse(unseal(publication.snapshot, context));
           const references =
             snapshot.site?.logo_media_id === id ||
-            snapshot.sections?.some((section: any) => section.image_id === id);
+            snapshot.sections?.some((section: any) => section.image_id === id || section.image_ids?.includes(id));
           if (references)
             fail(409, 'Remove this image from active publications before withdrawing it');
         } catch (error) {

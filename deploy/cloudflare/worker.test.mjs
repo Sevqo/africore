@@ -195,12 +195,53 @@ test('published Website pages, media and contact forms have scoped anonymous gat
     sitemapPath = sitePath + '/sitemap.xml',
     formsPath = sitePath + '/forms';
   for (const path of ['/sites/fictional-company', '/sites/a2']) {
-    const page = await handle(new Request('https://africore.example' + path), env);
+    const page = await handle(new Request('https://africore.example' + path, {
+      headers: { Cookie: 'synthetic=1', Authorization: 'Bearer synthetic', 'If-None-Match': '"old"' },
+    }), env, async (request) => {
+      assert.equal(new URL(request.url).pathname, path);
+      assert.equal(request.headers.get('Cookie'), null);
+      assert.equal(request.headers.get('Authorization'), null);
+      assert.equal(request.headers.get('If-None-Match'), null);
+      return new Response('<title>Published Website</title>', { headers: {
+        'Content-Type': 'text/html', 'X-AfriCore-Website-Response': '1', 'Set-Cookie': 'synthetic=1',
+      } });
+    });
     assert.equal(page.status, 200, path);
     assert.match(page.headers.get('Content-Security-Policy'), /script-src 'self'/);
+    assert.equal(page.headers.get('Cache-Control'), 'no-store');
+    assert.equal(page.headers.get('Set-Cookie'), null);
+    assert.equal(page.headers.get('X-AfriCore-Website-Response'), null);
+    assert.equal(await page.text(), '<title>Published Website</title>');
   }
   for (const path of ['/sites/fictional-company/nested', '/sites/%66ictional-company'])
     assert.equal((await handle(new Request('https://africore.example' + path), env)).status, 404, path);
+  const missing = await handle(new Request('https://africore.example/sites/not-published'), env,
+    async () => new Response('Website page not found', { status: 404, headers: { 'X-AfriCore-Website-Response': '1' } }));
+  assert.equal(missing.status, 404);
+  assert.equal(missing.headers.get('Cache-Control'), 'no-store');
+  const cold = await handle(new Request('https://africore.example/sites/fictional-company'), env,
+    async () => new Response('<html>Waking up</html>', { headers: { 'Content-Type': 'text/html' } }));
+  assert.equal(cold.status, 503);
+  for (const [location, expected] of [
+    ['/sites/new-slug', 308],
+    ['https://other.example/sites/new-slug', 503],
+    ['//other.example/sites/new-slug', 503],
+    ['/sites/fictional-company', 503],
+  ]) {
+    const redirect = await handle(new Request('https://africore.example/sites/fictional-company'), env,
+      async () => new Response(null, { status: 308, headers: { Location: location, 'X-AfriCore-Website-Response': '1' } }));
+    assert.equal(redirect.status, expected, location);
+    assert.equal(redirect.headers.get('Location'), expected === 308 ? location : null);
+  }
+  assert.equal((await handle(new Request('https://africore.example/sites/fictional-company', { method: 'POST' }), env)).status, 405);
+  const homepage = await handle(new Request('https://africore.example/sites/fictional-company/home'), env,
+    async (request) => {
+      assert.equal(new URL(request.url).pathname, '/sites/fictional-company/home');
+      return new Response(null, { status: 307, headers: { Location: '/sites/fictional-about', 'X-AfriCore-Website-Response': '1' } });
+    });
+  assert.equal(homepage.status, 307);
+  assert.equal(homepage.headers.get('Location'), '/sites/fictional-about');
+  assert.equal(homepage.headers.get('Cache-Control'), 'no-store');
 
   const paths = [sitePath, mediaPath, sitemapPath];
   for (const path of paths) {
@@ -246,6 +287,36 @@ test('published Website pages, media and contact forms have scoped anonymous gat
   ]) {
     const response = await handle(new Request('https://africore.example' + path, { method }), env);
     assert.equal(response.status, expected, `${method} ${path}`);
+  }
+});
+
+test('Calendar appointment pages and capability routes are limited to expected public methods', async () => {
+  const token = 'A'.repeat(43);
+  for (const path of [`/calendar/book/${token}`, `/calendar/manage/${token}`]) {
+    const page = await handle(new Request('https://africore.example' + path), env);
+    assert.equal(page.status, 200, path);
+    assert.match(page.headers.get('Content-Security-Policy'), /script-src 'self'/);
+  }
+  for (const [path, method] of [
+    [`/api/public/calendar/${token}`, 'GET'],
+    [`/api/public/calendar/${token}/availability?date=2026-12-01`, 'GET'],
+    [`/api/public/calendar/${token}/bookings`, 'POST'],
+    [`/api/public/calendar/manage/${token}`, 'GET'],
+    [`/api/public/calendar/manage/${token}`, 'POST'],
+  ]) {
+    let forwarded = false;
+    const response = await handle(new Request('https://africore.example' + path, { method, headers: method === 'POST' ? { 'Content-Type': 'application/json' } : undefined, body: method === 'POST' ? '{}' : undefined }), env, async (request) => {
+      forwarded = true;
+      assert.equal(request.method, method);
+      return Response.json({ ok: true });
+    });
+    assert.equal(forwarded, true, `${method} ${path}`);
+    assert.equal(response.status, 200, `${method} ${path}`);
+    assert.equal(response.headers.get('Cache-Control'), 'no-store');
+  }
+  for (const [path, method] of [[`/api/public/calendar/${token}/bookings`, 'GET'], [`/api/public/calendar/manage/${token}`, 'DELETE']]) {
+    const response = await handle(new Request('https://africore.example' + path, { method }), env);
+    assert.equal(response.status, 405, `${method} ${path}`);
   }
 });
 

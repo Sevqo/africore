@@ -45,6 +45,8 @@ export async function handle(request, env, upstreamFetch = fetch) {
     return Response.redirect(url.href, 308);
   }
   const api = /^\/(?:api|v1)(?:\/|$)/.test(url.pathname);
+  const websitePath = /^\/sites\/[a-z0-9]+(?:-[a-z0-9]+)*(\/home)?\/?$/.exec(url.pathname);
+  const publicWebsite = !!websitePath;
   if (api) {
     // Deny encoded separators, dot segments, repeated slashes and unknown API
     // roots before forwarding. Legacy/admin routes require a separate channel.
@@ -53,6 +55,14 @@ export async function handle(request, env, upstreamFetch = fetch) {
       /^\/api\/public\/sites\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\/media\/[0-9a-f-]{36}|\/forms|\/sitemap\.xml)?$/.test(
         path,
       );
+    const publicCalendarPath = /^\/api\/public\/calendar\/(?:manage\/)?[A-Za-z0-9_-]{40,60}(?:\/(?:availability|bookings))?$/.test(path);
+    const publicCalendarMethodAllowed = path.endsWith('/bookings') && !path.includes('/manage/')
+      ? request.method === 'POST'
+      : path.includes('/manage/')
+        ? ['GET', 'POST'].includes(request.method)
+        : request.method === 'GET';
+    if (publicCalendarPath && !publicCalendarMethodAllowed)
+      return secured(new Response('Method not allowed', { status: 405, headers: { Allow: path.endsWith('/bookings') ? 'POST' : path.includes('/manage/') ? 'GET, POST' : 'GET' } }), { privateResponse: true });
     const publicWebsiteMethodAllowed = path.endsWith('/forms')
       ? request.method === 'POST'
       : ['GET', 'HEAD'].includes(request.method);
@@ -67,7 +77,7 @@ export async function handle(request, env, upstreamFetch = fetch) {
     const publicRoot =
       /^\/api\/(?:auth(?:\/|$)|openapi\.json$|v1\/(?:organizations(?:\/|$)|workspaces(?:\/|$)|invitations\/accept$|checkout\/|storefronts\/|callbacks\/|buyer\/|trust\/|\.well-known\/))/.test(
         path,
-      ) || (publicWebsitePath && publicWebsiteMethodAllowed);
+      ) || (publicWebsitePath && publicWebsiteMethodAllowed) || (publicCalendarPath && publicCalendarMethodAllowed);
     if (/%|\\|\/\//.test(path) || (!publicRoot && !['/v1/health', '/v1/readiness'].includes(path)))
       return secured(Response.json({ error: 'not_found' }, { status: 404 }), {
         privateResponse: true,
@@ -100,6 +110,10 @@ export async function handle(request, env, upstreamFetch = fetch) {
         return unavailable();
       }
     }
+  }
+  if (publicWebsite && !['GET', 'HEAD'].includes(request.method))
+    return secured(new Response('Method not allowed', { status: 405, headers: { Allow: 'GET, HEAD' } }), { privateResponse: true });
+  if (api || publicWebsite) {
     if (
       !env.BACKEND_ORIGIN ||
       !env.AFRICORE_GATEWAY_SECRET ||
@@ -122,6 +136,12 @@ export async function handle(request, env, upstreamFetch = fetch) {
         'x-real-ip',
       ])
         headers.delete(name);
+      if (publicWebsite) {
+        headers.delete('cookie');
+        headers.delete('authorization');
+        headers.delete('if-none-match');
+        headers.delete('if-modified-since');
+      }
       headers.set('x-africore-gateway-secret', env.AFRICORE_GATEWAY_SECRET);
       headers.set('x-forwarded-proto', 'https');
       headers.set('x-forwarded-host', url.host);
@@ -158,9 +178,23 @@ export async function handle(request, env, upstreamFetch = fetch) {
           ),
           { privateResponse: true },
         );
-      // Never turn a sleeping backend's HTML loading page into an API success.
-      if ((response.headers.get('Content-Type') || '').includes('text/html')) return unavailable();
+      const html = (response.headers.get('Content-Type') || '').includes('text/html');
+      if (publicWebsite) {
+        if (response.headers.get('X-AfriCore-Website-Response') !== '1') return unavailable();
+        if (response.status >= 300 && response.status < 400) {
+          const location = response.headers.get('Location') || '';
+          const expectedStatus = websitePath?.[1] ? 307 : 308;
+          if (response.status !== expectedStatus || !/^\/sites\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(location) || location === url.pathname.replace(/\/$/, ''))
+            return unavailable();
+        }
+        const result = secured(response, { privateResponse: true, html });
+        result.headers.delete('X-AfriCore-Website-Response');
+        result.headers.delete('Set-Cookie');
+        return result;
+      }
       if (response.status >= 300 && response.status < 400) return unavailable();
+      // Never turn a sleeping backend's HTML loading page into an API success.
+      if (html) return unavailable();
       return secured(response, { privateResponse: true });
     } catch {
       return unavailable();
@@ -172,10 +206,10 @@ export async function handle(request, env, upstreamFetch = fetch) {
     return new Response('Method not allowed', { status: 405, headers: { Allow: 'GET, HEAD' } });
   const normalized = url.pathname.replace(/\/+$/, '') || '/';
   const storefront = /^\/s\/(?:sandbox|production)\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalized);
-  const publicWebsite = /^\/sites\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalized);
+  const publicAppointment = /^\/calendar\/(?:book|manage)\/[A-Za-z0-9_-]{40,60}$/.test(normalized);
   const application =
     storefront ||
-    publicWebsite ||
+    publicAppointment ||
     /^(?:\/app(?:\/|$)|\/checkout\/|\/buyer\/|\/trust\/share\/|\/passport\/|\/sign-up\/)/.test(
       normalized,
     ) ||

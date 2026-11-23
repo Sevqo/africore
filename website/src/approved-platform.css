@@ -1875,6 +1875,8 @@ html:has([data-platform-density]) {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 4px 12px;
+  min-width: 0;
+  text-align: left;
 }
 .business-shell[data-platform-density]
   .apps-workspace:not([data-app-selected='true'])
@@ -1893,9 +1895,16 @@ html:has([data-platform-density]) {
   p {
   grid-column: 1/-1;
   grid-row: 2;
+  max-width: none;
   margin: 0;
   font-size: 12px;
   color: var(--muted);
+}
+.business-shell[data-platform-density]
+  .apps-workspace:not([data-app-selected='true'])
+  .app-directory-card
+  .app-directory-requirements {
+  grid-row: 3;
 }
 .business-shell[data-platform-density]
   .apps-workspace:not([data-app-selected='true'])

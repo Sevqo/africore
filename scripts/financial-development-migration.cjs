@@ -3,7 +3,8 @@ const fs = require('node:fs'),
   crypto = require('node:crypto'),
   { parseEnv } = require('node:util');
 const { neon } = require('../.tmp/security/neon-runtime/node_modules/@neondatabase/serverless');
-let stage = 'configuration';
+let stage = 'configuration',
+  safeFailureDetails = {};
 const deadline = setTimeout(() => {
   console.error(
     JSON.stringify({
@@ -76,10 +77,13 @@ const deadline = setTimeout(() => {
     throw Error('Backup readback');
   const wave3 = process.argv.includes('--wave3'),
     phase3 = process.argv.includes('--phase3'),
+    phase3Calendar = process.argv.includes('--phase3-calendar'),
     erp = process.argv.includes('--erp'),
     apps = process.argv.includes('--apps'),
     connected = process.argv.includes('--connected'),
-    migration = phase3
+    migration = phase3Calendar
+      ? '028-calendar-appointments'
+      : phase3
       ? '027-website-forms'
       : wave3
       ? '019-point-of-sale'
@@ -91,11 +95,25 @@ const deadline = setTimeout(() => {
             ? '009-connected-platform'
             : '008-financial-operations';
   const versions = await sql.query('SELECT version FROM platform_migrations');
+  const migrationMode = phase3Calendar ? 'phase3-calendar' : phase3 ? 'phase3' : undefined;
+  if (migrationMode) {
+    const missing = require('./phase3-migration-preflight.cjs').missingPrerequisites(
+      migrationMode,
+      versions.map((v) => v.version),
+    );
+    if (missing.length) {
+      stage = 'migration_preflight';
+      safeFailureDetails = { missingMigrations: missing };
+      throw Error('Migration prerequisites are incomplete');
+    }
+  }
   if (
     !versions.some(
       (v) =>
         v.version ===
-        (phase3
+        (phase3Calendar
+          ? '027-website-forms'
+          : phase3
           ? '026-app15-16'
           : wave3
           ? '016-procurement'
@@ -111,7 +129,7 @@ const deadline = setTimeout(() => {
     throw Error('Foundation missing');
   if (process.argv.includes('--apply') && !versions.some((v) => v.version === migration)) {
     stage = 'additive_migration';
-    if (apps || erp || wave3 || phase3) {
+    if (apps || erp || wave3 || phase3 || phase3Calendar) {
       const commands = [],
         known = new Set(versions.map((v) => v.version));
       const database = {
@@ -128,7 +146,7 @@ const deadline = setTimeout(() => {
           return { changes: 1 };
         },
       };
-      if (wave3 || phase3) {
+      if (wave3 || phase3 || phase3Calendar) {
         process.env.DATABASE_URL = 'postgresql://maintenance_plan@127.0.0.1:1/never_connect';
         commands.push(
           ...(await require('./wave3-migration-plan.cjs').wave3MigrationPlan([...known])),
@@ -205,8 +223,10 @@ const deadline = setTimeout(() => {
   const applied =
     (await sql.query('SELECT version FROM platform_migrations WHERE version=$1', [migration]))
       .length === 1;
-  if (apps || erp || wave3 || phase3) {
-    const required = phase3
+  if (apps || erp || wave3 || phase3 || phase3Calendar) {
+    const required = phase3Calendar
+      ? ['021-people-expansion', '026-app15-16', '027-website-forms', '028-calendar-appointments']
+      : phase3
       ? ['021-people-expansion', '026-app15-16', '027-website-forms']
       : wave3
       ? ['017-commerce-foundation', '018-public-media', '019-point-of-sale']
@@ -262,7 +282,7 @@ const deadline = setTimeout(() => {
       }
     }
   }
-  if (wave3 && applied) {
+  if ((wave3 || phase3 || phase3Calendar) && applied) {
     process.env.DATABASE_URL = 'postgresql://maintenance_plan@127.0.0.1:1/never_connect';
     await require('../dist/deployment-database').prepareDatabase('verify', {
       isPostgres: true,
@@ -276,14 +296,18 @@ const deadline = setTimeout(() => {
     branch: e.NEON_BRANCH_ID,
     backup: file.split('/').pop(),
     encryptedReadbackVerified: true,
-    originalPublicRowsRetained: erp || wave3 ? true : undefined,
+    originalPublicRowsRetained: erp || wave3 || phase3 || phase3Calendar ? true : undefined,
     inventory: { tables: tables.length, rows: rows.reduce((n, r) => n + r.length, 0) },
     migration,
     migrationApplied: applied,
     fullRestoreTested: false,
   };
   fs.writeFileSync(
-    wave3
+    phase3Calendar
+      ? '.tmp/security/phase3-calendar-migration-result.json'
+      : phase3
+        ? '.tmp/security/phase3-migration-result.json'
+        : wave3
       ? '.tmp/security/wave3-migration-result.json'
       : erp
         ? '.tmp/security/erp-migration-result.json'
@@ -298,7 +322,7 @@ const deadline = setTimeout(() => {
 })()
   .catch(() => {
     console.error(
-      JSON.stringify({ maintenanceFailed: true, stage, privateDetailsSuppressed: true }),
+      JSON.stringify({ maintenanceFailed: true, stage, ...safeFailureDetails, privateDetailsSuppressed: true }),
     );
     process.exitCode = 1;
   })

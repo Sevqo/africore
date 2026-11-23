@@ -13,3 +13,7 @@ export const appPolicies = Object.fromEntries(
 );
 appRouteKinds['GET /organizations/:org/website/forms'] = ['business'];
 appPolicies['GET /organizations/:org/website/forms'] = { services: ['website'] };
+appRouteKinds['POST /organizations/:org/website/forms/:submission/convert-to-crm'] = ['business'];
+appPolicies['POST /organizations/:org/website/forms/:submission/convert-to-crm'] = {
+  services: ['website', 'crm'],
+};

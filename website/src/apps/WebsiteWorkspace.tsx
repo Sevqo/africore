@@ -2,7 +2,14 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Overlay } from '../components/Overlay';
 import { Field, type API } from '../operations/UI';
 import { appNavigationEvent } from './AppNavigation';
+import { publicWebsiteCtaHref } from './public-website-links';
+import { moveWebsiteBlock, moveWebsiteBlockSelection } from './website-editor';
 import './phase3-apps.css';
+const websiteBlockTypes = [
+  'hero', 'heading', 'text', 'image', 'gallery', 'columns', 'features', 'cta',
+  'testimonial', 'pricing', 'faq', 'contact', 'contact_form', 'footer', 'commerce_showcase',
+] as const;
+const blockDragType = 'application/x-africore-website-block';
 const templates: any = {
   'Blank Page': [],
   About: [
@@ -215,6 +222,7 @@ export function WebsiteWorkspace({
     [showTemplates, setShowTemplates] = useState(false),
     [preview, setPreview] = useState(false),
     [query, setQuery] = useState(''),
+    [pageStatus, setPageStatus] = useState<'all' | 'published' | 'draft'>('all'),
     [media, setMedia] = useState<any[]>([]),
     [mediaPreviews, setMediaPreviews] = useState<Record<string, string>>({}),
     [mediaLabel, setMediaLabel] = useState(''),
@@ -225,6 +233,8 @@ export function WebsiteWorkspace({
     [formSubmissions, setFormSubmissions] = useState<any[]>([]),
     [identity, setIdentity] = useState<any>(null),
     [publicationHistory, setPublicationHistory] = useState<any>(null),
+    [draggedSection, setDraggedSection] = useState<number | null>(null),
+    [dropTargetSection, setDropTargetSection] = useState<number | null>(null),
     [, setEditorHistoryRevision] = useState(0);
   const editorHistory = useRef<{ pageId: string | null; version: number | null; entries: string[]; cursor: number }>({
     pageId: null,
@@ -377,6 +387,7 @@ export function WebsiteWorkspace({
         title: `${source.title} (copy)`.slice(0, 180),
         slug,
         meta_title: '',
+        canonical_path: '',
       }, { 'Idempotency-Key': crypto.randomUUID() });
       await load();
       selectPage(copy);
@@ -402,7 +413,7 @@ export function WebsiteWorkspace({
           ? `Published snapshot ${r.version}. ${r.url} is available on the production environment.`
           : `Published snapshot ${r.version} in this sandbox. It has no public production URL.`,
       );
-      await load();
+      await Promise.all([load(), loadIdentity()]);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -420,7 +431,7 @@ export function WebsiteWorkspace({
         { 'Idempotency-Key': crypto.randomUUID() },
       );
       setNotice('The public snapshot is now withdrawn.');
-      await load();
+      await Promise.all([load(), loadIdentity()]);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -441,6 +452,25 @@ export function WebsiteWorkspace({
       setFormSubmissions(response.data || []);
     } catch (e) {
       setError((e as Error).message);
+    }
+  }
+  async function convertFormToLead(entry: any) {
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      const response = await api(
+        `/website/forms/${encodeURIComponent(entry.id)}/convert-to-crm`,
+        'POST',
+        {},
+      );
+      setNotice(`CRM lead created for inquiry ${entry.id}.`);
+      await loadFormSubmissions();
+      return response;
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
     }
   }
   async function loadIdentity() {
@@ -497,7 +527,7 @@ export function WebsiteWorkspace({
       );
       setNotice(`Restored publication ${version} as new version ${response.version}.`);
       await loadPublicationHistory();
-      await load();
+      await Promise.all([load(), loadIdentity()]);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -521,18 +551,35 @@ export function WebsiteWorkspace({
       setError('Choose an image, gallery or hero block before attaching media.');
       return;
     }
+    const galleryIds: string[] = current.image_ids || (current.image_id ? [current.image_id] : []);
+    if (current.type === 'gallery' && !galleryIds.includes(asset.id) && galleryIds.length >= 12) {
+      setError('A gallery can contain up to 12 reviewed images. Remove one before adding another.');
+      return;
+    }
     setSelected({
       ...selected,
       data: {
         ...selected.data,
         sections: selected.data.sections.map((item: any, i: number) =>
-          i === index ? { ...item, image_id: asset.id, image_url: '', alt: asset.alt } : item,
+          i === index
+            ? current.type === 'gallery'
+              ? {
+                  ...item,
+                  image_ids: [...new Set([...(item.image_ids || (item.image_id ? [item.image_id] : [])), asset.id])],
+                  image_id: null,
+                  image_url: '',
+                  alt: asset.alt,
+                }
+              : { ...item, image_id: asset.id, image_url: '', alt: asset.alt }
+            : item,
         ),
       },
     });
     if (previewUrl) setMediaPreviews((current) => ({ ...current, [asset.id]: previewUrl }));
     setError('');
-    setNotice(`Image attached to ${current.type} block. Save the page draft to keep the change.`);
+    setNotice(current.type === 'gallery'
+      ? `Image added to the gallery (${Math.min(12, galleryIds.length + (galleryIds.includes(asset.id) ? 0 : 1))} of 12). Save the page draft to keep the change.`
+      : `Image attached to ${current.type} block. Save the page draft to keep the change.`);
   }
   async function uploadMedia() {
     if (!mediaBase64 || !mediaLabel.trim() || !mediaAlt.trim() || !ackPublicUse || !ackRights)
@@ -634,13 +681,27 @@ export function WebsiteWorkspace({
     dispatchEvent(new Event(appNavigationEvent));
   }
   const data = selected?.data,
-    filtered = pages.filter((p) =>
-      (p.data.title + ' ' + p.data.slug).toLowerCase().includes(query.toLowerCase()),
-    ),
+    defaultPageSlug = pages.find((page) => page.id === identity?.data?.default_page_id)?.data?.slug,
+    filtered = pages.filter((page) => {
+      const status = page.data.published_version ? 'published' : 'draft';
+      return (pageStatus === 'all' || pageStatus === status) &&
+        (page.data.title + ' ' + page.data.slug).toLowerCase().includes(query.trim().toLowerCase());
+    }),
     selectedMediaIds = (data?.sections || [])
-      .map((item: any) => item.image_id)
+      .flatMap((item: any) => [item.image_id, ...(item.image_ids || [])])
       .filter(Boolean)
       .join(',');
+  const siteAddressField = identity?.data && (
+    <Field label="Website address">
+      <input
+        value={identity.data.site_slug || ''}
+        maxLength={63}
+        placeholder="your-business"
+        onChange={(event) => setIdentity({ ...identity, data: { ...identity.data, site_slug: event.target.value } })}
+      />
+      <small>Publish the default page to activate /sites/{identity.data.site_slug || 'your-business'}/home.</small>
+    </Field>
+  );
   function updateSelectedBlock(key: string, value: string) {
     if (!selected || selected.editingSection === undefined) return;
     const index = Number(selected.editingSection);
@@ -651,6 +712,23 @@ export function WebsiteWorkspace({
         sections: selected.data.sections.map((item: any, i: number) =>
           i === index ? { ...item, [key]: value } : item,
         ),
+      },
+    });
+  }
+  function insertBlock(type: string, position: number) {
+    if (preview || busy || !selected || !websiteBlockTypes.some((item) => item === type) || data.sections.length >= 60)
+      return;
+    setSelected({
+      ...selected,
+      editingSection: position,
+      data: {
+        ...data,
+        sections: data.sections.toSpliced(position, 0, {
+          type,
+          title: type.replaceAll('_', ' '),
+          body: '',
+          background: '#ffffff',
+        }),
       },
     });
   }
@@ -711,6 +789,11 @@ export function WebsiteWorkspace({
           {data?.public_url && (
             <a className="secondary-button" href={data.public_url} target="_blank" rel="noreferrer">
               View Website ↗
+            </a>
+          )}
+          {identity?.public_home_url && (
+            <a className="secondary-button" href={identity.public_home_url} target="_blank" rel="noreferrer">
+              Open site home ↗
             </a>
           )}
         </div>
@@ -898,6 +981,42 @@ export function WebsiteWorkspace({
                   <option value="wide">Wide</option>
                 </select>
               </Field>
+              <Field label="Typography">
+                <select value={data.theme?.typography || 'system'} onChange={(e) => setSelected({ ...selected, data: { ...data, theme: { ...(data.theme || {}), typography: e.target.value } } })}>
+                  <option value="system">System sans serif</option>
+                  <option value="modern">Modern sans serif</option>
+                  <option value="serif">Editorial serif</option>
+                </select>
+              </Field>
+              <Field label="Page background">
+                <input type="color" value={data.theme?.background || '#ffffff'} onChange={(e) => setSelected({ ...selected, data: { ...data, theme: { ...(data.theme || {}), background: e.target.value } } })} />
+              </Field>
+              <Field label="Section spacing">
+                <select value={data.theme?.section_spacing || 'standard'} onChange={(e) => setSelected({ ...selected, data: { ...data, theme: { ...(data.theme || {}), section_spacing: e.target.value } } })}>
+                  <option value="compact">Compact</option>
+                  <option value="standard">Standard</option>
+                  <option value="relaxed">Relaxed</option>
+                </select>
+              </Field>
+              <Field label="Header style">
+                <select value={data.theme?.header_style || 'plain'} onChange={(e) => setSelected({ ...selected, data: { ...data, theme: { ...(data.theme || {}), header_style: e.target.value } } })}>
+                  <option value="plain">Plain</option>
+                  <option value="sticky">Sticky</option>
+                  <option value="contrast">Brand contrast</option>
+                </select>
+              </Field>
+              <Field label="Footer style">
+                <select value={data.theme?.footer_style || 'light'} onChange={(e) => setSelected({ ...selected, data: { ...data, theme: { ...(data.theme || {}), footer_style: e.target.value } } })}>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                </select>
+              </Field>
+              <Field label="Buttons">
+                <select value={data.theme?.button_style || 'rounded'} onChange={(e) => setSelected({ ...selected, data: { ...data, theme: { ...(data.theme || {}), button_style: e.target.value } } })}>
+                  <option value="rounded">Rounded</option>
+                  <option value="square">Square</option>
+                </select>
+              </Field>
               <button className="button" onClick={() => void save()} disabled={busy}>
                 Save theme draft
               </button>
@@ -925,6 +1044,20 @@ export function WebsiteWorkspace({
                     })
                   }
                 />
+              </Field>
+              <Field label="Canonical page">
+                <select
+                  value={data.canonical_path || ''}
+                  onChange={(e) => setSelected({ ...selected, data: { ...data, canonical_path: e.target.value } })}
+                >
+                  <option value="">Use this page’s published URL</option>
+                  {!!data.canonical_path && !pages.some((page) => page.id !== selected.id && page.data.public_url === data.canonical_path) && (
+                    <option value={data.canonical_path}>{data.canonical_path}</option>
+                  )}
+                  {pages.filter((page) => page.id !== selected.id && page.data.public_url && !page.data.noindex).map((page) => (
+                    <option key={page.id} value={page.data.public_url}>{page.data.title} · {page.data.public_url}</option>
+                  ))}
+                </select>
               </Field>
               <label className="checkbox-field">
                 <input
@@ -1013,7 +1146,7 @@ export function WebsiteWorkspace({
                     <small>{asset.alt}</small>
                     <button
                       className="secondary-button"
-                      disabled={asset.status !== 'active'}
+                      disabled={asset.status !== 'active' || (selected?.editingSection !== undefined && selected.data.sections[selected.editingSection]?.type === 'gallery' && (selected.data.sections[selected.editingSection]?.image_ids || []).length >= 12 && !(selected.data.sections[selected.editingSection]?.image_ids || []).includes(asset.id))}
                       onClick={() =>
                         void previewMedia(asset.id).then((url) => attachMedia(asset, url))
                       }
@@ -1046,6 +1179,7 @@ export function WebsiteWorkspace({
                         <th>Company</th>
                         <th>Message</th>
                         <th>Status</th>
+                        <th>CRM</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1057,6 +1191,13 @@ export function WebsiteWorkspace({
                           <td>{entry.company || ''}</td>
                           <td>{entry.message || ''}</td>
                           <td>{entry.status}</td>
+                          <td>
+                            {entry.status === 'new' ? (
+                              <button className="secondary-button" disabled={busy} onClick={() => void convertFormToLead(entry)}>
+                                Create CRM lead
+                              </button>
+                            ) : entry.status === 'converted' ? 'Lead created' : 'Unavailable'}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -1226,6 +1367,7 @@ export function WebsiteWorkspace({
                     </select>
                     <small>Only reviewed active Website media can be selected.</small>
                   </Field>
+                  {siteAddressField}
                   <label className="checkbox-field">
                     <input
                       type="checkbox"
@@ -1261,10 +1403,14 @@ export function WebsiteWorkspace({
                 {
                   '--website-primary': data.theme?.primary || '#087e78',
                   '--website-content-width': data.theme?.width === 'wide' ? '1120px' : '900px',
+                  '--website-font': data.theme?.typography === 'serif' ? 'Georgia, serif' : data.theme?.typography === 'modern' ? 'Arial, Helvetica, sans-serif' : 'system-ui, sans-serif',
+                  '--website-background': data.theme?.background || '#ffffff',
+                  '--website-section-spacing': data.theme?.section_spacing === 'compact' ? '28px' : data.theme?.section_spacing === 'relaxed' ? '64px' : '46px',
+                  '--website-button-radius': data.theme?.button_style === 'square' ? '2px' : '8px',
                 } as CSSProperties
               }
             >
-              <header className="website-preview-header">
+              <header className={'website-preview-header website-header-' + (data.theme?.header_style || 'plain')}>
                 <strong>{identity?.data?.name || 'AfriCore Website'}</strong>
                 <nav aria-label="Draft website navigation">
                   {renderDraftMenus(data.menus || [], () => setNotice('Draft navigation preview. Links become active when published.'))}
@@ -1273,12 +1419,62 @@ export function WebsiteWorkspace({
               {data.sections.map((s: any, i: number) => (
                 <article
                   key={i}
-                  className={'website-section website-block-' + s.type}
+                  draggable={!preview}
+                  className={'website-section website-block-' + s.type + (dropTargetSection === i ? ' website-section-drop-target' : '')}
+                  data-content-width={s.content_width}
+                  data-alignment={s.alignment}
+                  data-layout-columns={s.layout_columns}
                   style={{ background: s.background || '#fff' }}
                   onClick={() => setSelected({ ...selected, editingSection: i })}
+                  onDragStart={(event) => {
+                    if (preview) return;
+                    setDraggedSection(i);
+                    setDropTargetSection(null);
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', String(i));
+                    event.currentTarget.classList.add('website-section-dragging');
+                  }}
+                  onDragEnter={(event) => {
+                    event.preventDefault();
+                    if (!preview) setDropTargetSection(i);
+                  }}
+                  onDragOver={(event) => {
+                    if (preview || (!event.dataTransfer.types.includes(blockDragType) && draggedSection === null)) return;
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = event.dataTransfer.types.includes(blockDragType) ? 'copy' : 'move';
+                  }}
+                  onDrop={(event) => {
+                    if (preview) return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const type = event.dataTransfer.getData(blockDragType);
+                    if (type) insertBlock(type, i);
+                    else if (draggedSection !== null) {
+                      setSelected({
+                        ...selected,
+                        editingSection: moveWebsiteBlockSelection(selected.editingSection, draggedSection, i),
+                        data: { ...data, sections: moveWebsiteBlock(data.sections, draggedSection, i) },
+                      });
+                    }
+                    setDraggedSection(null);
+                    setDropTargetSection(null);
+                  }}
+                  onDragEnd={(event) => {
+                    event.currentTarget.classList.remove('website-section-dragging');
+                    setDraggedSection(null);
+                    setDropTargetSection(null);
+                  }}
                 >
                   <div>
-                    {s.image_id && mediaPreviews[s.image_id] ? (
+                    {s.type === 'gallery' && (s.image_ids || []).length ? (
+                      <div className="website-draft-gallery">
+                        {(s.image_ids || []).map((id: string, imageIndex: number) =>
+                          mediaPreviews[id] ? (
+                            <img key={id} className="website-draft-image" src={mediaPreviews[id]} alt={s.alt || `Gallery image ${imageIndex + 1}`} />
+                          ) : <div key={id} className="website-image-placeholder">Loading image {imageIndex + 1}</div>,
+                        )}
+                      </div>
+                    ) : s.image_id && mediaPreviews[s.image_id] ? (
                       <img
                         className="website-draft-image"
                         src={mediaPreviews[s.image_id]}
@@ -1315,7 +1511,27 @@ export function WebsiteWorkspace({
                         })
                       }
                     />
-                    {s.button_label && <button className="button">{s.button_label}</button>}
+                    {(() => {
+                      const ctaHref = publicWebsiteCtaHref(
+                        s.button_label,
+                        s.button_url,
+                        data.slug,
+                        defaultPageSlug,
+                      );
+                      return s.button_label ? (
+                        preview && ctaHref ? (
+                          <a className="button" href={ctaHref}>{s.button_label}</a>
+                        ) : (
+                          <span
+                            className="button"
+                            aria-disabled="true"
+                            title={ctaHref ? 'Switch to preview to follow this link.' : 'Add a valid link to enable this call to action.'}
+                          >
+                            {s.button_label}
+                          </span>
+                        )
+                      ) : null;
+                    })()}
                   </div>
                   {!preview && (
                     <div className="website-block-actions">
@@ -1370,77 +1586,42 @@ export function WebsiteWorkspace({
                   )}
                 </article>
               ))}
-              <footer className="website-footer">
+              {!preview && data.sections.length < 60 && (
+                <div className="website-block-drop"
+                  onDragOver={(event) => {
+                    if (!event.dataTransfer.types.includes(blockDragType)) return;
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = 'copy';
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    insertBlock(event.dataTransfer.getData(blockDragType), data.sections.length);
+                    setDropTargetSection(null);
+                  }}
+                >Drop a block here</div>
+              )}
+              <footer className={'website-footer website-footer-' + (data.theme?.footer_style || 'light')}>
                 {identity?.data?.name || data.title} · Public content preview
               </footer>
             </section>
             <aside className="website-editor-sidebar">
               <div className="phase3-tabs">
-                <button className="active">Blocks</button>
-                <button
-                  onClick={() =>
-                    setSelected({
-                      ...selected,
-                      data: { ...data, theme: { ...(data.theme || {}), primary: '#087e78' } },
-                    })
-                  }
-                >
-                  Style
-                </button>
-                <button
-                  onClick={() =>
-                    setSelected({
-                      ...selected,
-                      data: { ...data, theme: { ...(data.theme || {}), width: 'wide' } },
-                    })
-                  }
-                >
-                  Theme
-                </button>
+                <button type="button" onClick={() => choosePanel('Theme')}>Edit theme</button>
               </div>
               <h3>Insert a block</h3>
-              {[
-                'hero',
-                'heading',
-                'text',
-                'image',
-                'gallery',
-                'columns',
-                'features',
-                'cta',
-                'testimonial',
-                'pricing',
-                'faq',
-                'contact',
-                'contact_form',
-                'footer',
-                'commerce_showcase',
-              ].map((type) => (
+              {websiteBlockTypes.map((type) => (
                 <button
                   className="website-block-choice"
                   key={type}
-                  onClick={() =>
-                    setSelected({
-                      ...selected,
-                      data: {
-                        ...data,
-                        sections: [
-                          ...data.sections,
-                          {
-                            type,
-                            title: type.replaceAll('_', ' '),
-                            body: 'Edit this content',
-                            image_url: '',
-                            image_id: null,
-                            alt: '',
-                            button_label: '',
-                            button_url: '',
-                            background: '#ffffff',
-                          },
-                        ],
-                      },
-                    })
-                  }
+                  type="button"
+                  draggable={!preview && !busy && data.sections.length < 60}
+                  disabled={preview || busy || data.sections.length >= 60}
+                  onDragStart={(event) => {
+                    event.dataTransfer.effectAllowed = 'copy';
+                    event.dataTransfer.setData(blockDragType, type);
+                  }}
+                  onDragEnd={() => setDropTargetSection(null)}
+                  onClick={() => insertBlock(type, data.sections.length)}
                 >
                   <strong>{type.replaceAll('_', ' ')}</strong>
                   <small>Insert editable {type.replaceAll('_', ' ')} block</small>
@@ -1468,6 +1649,28 @@ export function WebsiteWorkspace({
                       onChange={(e) => updateSelectedBlock('background', e.target.value)}
                     />
                   </Field>
+                  <Field label="Content width">
+                    <select value={data.sections[selected.editingSection].content_width || 'theme'} onChange={(event) => updateSelectedBlock('content_width', event.target.value)}>
+                      <option value="theme">Use theme width</option>
+                      <option value="narrow">Narrow</option>
+                      <option value="wide">Wide</option>
+                    </select>
+                  </Field>
+                  <Field label="Content alignment">
+                    <select value={data.sections[selected.editingSection].alignment || 'start'} onChange={(event) => updateSelectedBlock('alignment', event.target.value)}>
+                      <option value="start">Start</option>
+                      <option value="center">Center</option>
+                    </select>
+                  </Field>
+                  {['columns', 'features', 'gallery', 'pricing'].includes(data.sections[selected.editingSection].type) && (
+                    <Field label="Desktop columns">
+                      <select value={data.sections[selected.editingSection].layout_columns || 'auto'} onChange={(event) => updateSelectedBlock('layout_columns', event.target.value)}>
+                        <option value="auto">Fit to content</option>
+                        <option value="two">Two columns</option>
+                        <option value="three">Three columns</option>
+                      </select>
+                    </Field>
+                  )}
                   {['image', 'gallery', 'hero'].includes(
                     data.sections[selected.editingSection].type,
                   ) && (
@@ -1478,6 +1681,17 @@ export function WebsiteWorkspace({
                         onChange={(e) => updateSelectedBlock('alt', e.target.value)}
                       />
                     </Field>
+                  )}
+                  {data.sections[selected.editingSection].type === 'gallery' && (
+                    <div className="website-gallery-editor">
+                      <p className="muted">Choose up to 12 active, reviewed media assets in Media. Gallery images are included in the publication snapshot.</p>
+                      {(data.sections[selected.editingSection].image_ids || []).map((id: string, imageIndex: number) => (
+                        <div key={id} className="website-gallery-item">
+                          <span>Image {imageIndex + 1}</span>
+                          <button className="quiet-button" onClick={() => updateSelectedBlock('image_ids', (data.sections[selected.editingSection].image_ids || []).filter((item: string) => item !== id) as any)}>Remove</button>
+                        </div>
+                      ))}
+                    </div>
                   )}
                   {['hero', 'cta', 'contact', 'commerce_showcase'].includes(
                     data.sections[selected.editingSection].type,
@@ -1568,6 +1782,7 @@ export function WebsiteWorkspace({
                 <Field label="Brand color"><input type="color" value={identity.data.brand_color} onChange={(e) => setIdentity({ ...identity, data: { ...identity.data, brand_color: e.target.value } })} /></Field>
                 <Field label="Content width"><select value={identity.data.content_width} onChange={(e) => setIdentity({ ...identity, data: { ...identity.data, content_width: e.target.value } })}><option value="standard">Standard</option><option value="wide">Wide</option></select></Field>
                 <Field label="Default page"><select value={identity.data.default_page_id || ''} onChange={(e) => setIdentity({ ...identity, data: { ...identity.data, default_page_id: e.target.value || null } })}><option value="">None selected</option>{pages.filter((page: any) => page.status === 'active').map((page: any) => <option key={page.id} value={page.id}>{page.data.title}</option>)}</select></Field>
+                {siteAddressField}
                 <Field label="Public logo"><select value={identity.data.logo_media_id || ''} onChange={(e) => setIdentity({ ...identity, data: { ...identity.data, logo_media_id: e.target.value || null } })}><option value="">No logo</option>{media.filter((asset: any) => asset.status === 'active').map((asset: any) => <option key={asset.id} value={asset.id}>{asset.label}</option>)}</select><small>Only reviewed active Website media can be selected.</small></Field>
                 <label className="checkbox-field"><input type="checkbox" checked={!!identity.data.public_enabled} onChange={(e) => setIdentity({ ...identity, data: { ...identity.data, public_enabled: e.target.checked } })} />Allow published pages on the public production route</label>
                 <p>Public paths use the AfriCore <code>/sites/&lt;page-slug&gt;</code> route. Custom domains and arbitrary hosts are not enabled.</p>
@@ -1587,6 +1802,13 @@ export function WebsiteWorkspace({
             <Field label="Search pages">
               <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
             </Field>
+            <Field label="Publication status">
+              <select value={pageStatus} onChange={(event) => setPageStatus(event.target.value as typeof pageStatus)}>
+                <option value="all">All pages</option>
+                <option value="draft">Drafts</option>
+                <option value="published">Published</option>
+              </select>
+            </Field>
             <button className="button" onClick={() => setShowTemplates(true)}>
               New
             </button>
@@ -1605,6 +1827,7 @@ export function WebsiteWorkspace({
                 </tr>
               </thead>
               <tbody>
+                {!filtered.length && <tr><td colSpan={7}>{pages.length ? 'No pages match these filters.' : 'No pages yet.'}</td></tr>}
                 {filtered.map((p) => (
                   <tr key={p.id}>
                     <td>
@@ -1650,6 +1873,8 @@ export function WebsiteWorkspace({
                         <th>Email</th>
                         <th>Company</th>
                         <th>Message</th>
+                        <th>Status</th>
+                        <th>CRM</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1660,6 +1885,14 @@ export function WebsiteWorkspace({
                           <td>{entry.email || ''}</td>
                           <td>{entry.company || ''}</td>
                           <td>{entry.message || ''}</td>
+                          <td>{entry.status}</td>
+                          <td>
+                            {entry.status === 'new' ? (
+                              <button className="secondary-button" disabled={busy} onClick={() => void convertFormToLead(entry)}>
+                                Create CRM lead
+                              </button>
+                            ) : entry.status === 'converted' ? 'Lead created' : 'Unavailable'}
+                          </td>
                         </tr>
                       ))}
                     </tbody>

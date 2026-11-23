@@ -172,3 +172,73 @@ After the Website Commerce showcase began reading published product cards from C
 After adding Calendar's optional Work task selector/launch action and server-side Work project authorization, typecheck, lint and Website production build/content checks passed (**142/142**). The full backend suite passed **489 tests, 0 failures and 1 PostgreSQL-only skip**. A focused API test installs both apps, creates a synthetic Work project/task, links it to a Calendar event, rejects an unsupported link kind, and confirms an authorized workspace member outside the project receives 404. OpenAPI drift passed 59/59, platform route validation passed 554 operations, Render verifier tests passed 5/5, Cloudflare Worker tests passed 11/11, and `git diff --check` passed. The UI selector/launch action has not been browser exercised. These checks do not qualify Docker, PostgreSQL, live Render or production publication.
 
 The link integration now also includes CRM leads/opportunities. The full backend rerun passed **489 tests, 0 failed, 1 PostgreSQL-only skipped** (490 total), including valid CRM and Work links plus invalid-kind and Work access-denial cases. Typecheck, lint, Website build/content (142/142), OpenAPI (59/59), platform registry (554), Render verifier (5/5), Cloudflare Worker (11/11) and `git diff --check` passed after the UI changes. CRM/Work link selector browser interaction remains outstanding. No Docker/PostgreSQL/hosted deployment check ran.
+
+## Local regression after Calendar/Website workflow additions — 21 November 2026
+
+The permission-filtered People leave overlay and Website draft undo/redo are included in the current tree. Root `npm test` passed **489/490**, with the sole skipped test requiring PostgreSQL; Website production build/content tests passed **144/144**; typecheck, lint/architecture, OpenAPI (59/59), platform route validation (554), Render verifier (5/5), and `git diff --check` passed. The first sandboxed full-suite attempt could not connect its ephemeral local HTTP servers (`EACCES`); rerunning the requested suite with loopback access passed. No hosted Render, PostgreSQL, Docker, production public website, or new browser interaction was verified by this continuation.
+
+## Current GitHub Actions evidence — 21 November 2026
+
+The latest observable repository run is CI run 126 for commit `e061805f57ba8fccfc4afa5adabccf7b96f5079b` ([run 126](https://github.com/Sevqo/africore/actions/runs/44917338258)). Website build, type/lint, local EVM and SQLite jobs passed. The PostgreSQL test job failed. The GitHub connector exposes the run/job status but not the failure log payload, and the sandbox has no Docker engine or usable disposable PostgreSQL service, so the PostgreSQL root cause remains undiagnosed. The current local SQLite suite passes; this is not CI or PostgreSQL verification. Do not cite successful run 125 for this newer SHA.
+
+## Full local regression after Documents links and form throttling — 21 November 2026
+
+npm test passed with 490 passed, 0 failed and 1 PostgreSQL-only skipped (491 total; 21 suites). This run includes the private Calendar-to-Documents permission case and the anonymous Website form rate-control changes. The hardening suite passed 6/6; Website production build/content passed 144/144; typecheck, lint, OpenAPI (59 mounted operations), platform route validation (554 operations), Render verifier (5/5), and diff check passed. Docker/PostgreSQL runtime, the failing PostgreSQL CI job's log, hosted migration ledger/backup status, Render recovery, production Website URL, and full Odoo desktop parity remain unverified. No hosted changes or deployment were made.
+
+### Latest local Phase 3 slices — 21 November 2026
+
+The last full `npm test` run passed 490 tests, failed 0 and skipped one PostgreSQL-only case (491 total), before the gallery-array validation change. After that change, `npm run build`, lint, Website build/content (144/144), and the focused Phase 3 HTTP integration (6/6) passed. The integration includes gallery duplicate/size rejection, active-publication withdrawal protection, and Calendar document authorization. Full PostgreSQL, current-tree CI, production Render, production Website, browser interaction for recent controls, and Odoo desktop comparison remain unverified.
+
+## Local release check — 22 November 2026
+
+Latest `npm test`: 491 passed, 0 failed, 1 PostgreSQL-only skip (492 total, 21 suites). Focused Phase 3 HTTP suite: 7/7. Typecheck/lint/build passed; OpenAPI is 59/59; platform route validation is 554 operations; Render verifier tests are 5/5; Website production build/content checks are 144/144; `git diff --check` passed. Browser-local synthetic acceptance exercised app discovery, install/open, Website draft save/preview/sandbox publish/refresh, Calendar week layout, and Website at mobile width. These do not verify a live production site or Render.
+
+The founder-provided Render log shows deployment `dep-dc08d315efls73b3m2p0` at `f177c55cf2a6d4a1b5276fbb9d86c0cd294dd08e` reached successful image build/push, then backend startup failed in `prepareDatabase()` because required schema migrations were absent from the verified schema. Exact missing migration IDs cannot be proven without the hosted migration ledger; backup/restore readiness was not confirmed. No migration or deployment was executed. Latest observable CI run 126 is for `e061805f57ba8fccfc4afa5adabccf7b96f5079b`; its PostgreSQL job failed, and no step log was exposed. Docker/isolated PostgreSQL, hosted ledger and readiness remain unverified. Do not alter `AFRICORE_MIGRATIONS_MODE`, bypass readiness or fabricate migration entries.
+
+## Local regression after Website CRM handoff — 22 November 2026
+
+The full serial backend suite passed **492 tests, 0 failures, 1 PostgreSQL-only skip** (493 total, 21 suites). The focused Phase 3 HTTP suite passed **8/8**, including Website inquiry conversion, canonical CRM lead contents, payload clearing and replay without duplication. Typecheck, lint, root build, OpenAPI drift (59/59), platform route validation (555 workspace operations), Render verifier (5/5), Website production build/content (144/144), Cloudflare Worker tests (11/11), and `git diff --check` passed. Docker and disposable PostgreSQL are unavailable; current-tree CI still has an unexplained PostgreSQL failure, and hosted Render ledger/backup/readiness remain unverified. No hosted migration or deployment was run.
+
+After adding Website drag reordering, `npm --prefix website run build` passed including 146/146 content tests; `npm run lint` and `git diff --check` passed. Root full regression remains 492/493 with one PostgreSQL-only skip from immediately before this frontend-only change; platform registry remains 555.
+
+### Calendar appointment migration and current checks — 22 November 2026
+
+`028-calendar-appointments` is additive and creates link, booking request, slot-capacity and history tables with PostgreSQL RLS and PUBLIC privileges revoked. The guarded development migration runner now accepts `--phase3-calendar`, requires 027, and verifies 021/026/027/028. It was not pointed at Render or any hosted database. Focused booking API and edge-gateway tests pass. Full backend regression and Website build results are being recorded for the current tree. The founder-provided Render failure remains confirmed only at `prepareDatabase()` schema verification; the missing hosted ledger entries, backup readiness and current readiness are unknown.
+
+### Current complete local regression — 22 November 2026
+
+`npm test` passed **493, failed 0, skipped 1 PostgreSQL-only test** (494 total; 21 suites). New Calendar public booking coverage passed within that suite. Website production build/content passed 146/146, Cloudflare gateway tests 12/12, Render verifier 5/5, and development-config tests 6/6. The PostgreSQL-only skip is not a PostgreSQL pass. Docker and disposable PostgreSQL remain unavailable, the latest GitHub PostgreSQL failure remains unexplained, and no hosted Render migration/readiness action was run.
+
+### Final local checks — 22 November 2026
+
+`npm run lint`, `npm run validate:openapi` (59/59), `npm run validate:platform` (560 workspace operations), `npm run check:chain`, `npm run test:render-deploy` (5/5), `npm run test:dev` (6/6), and `git diff --check` passed. Both migration scripts passed Node syntax checks; the synthetic migration-plan output contains all four tables from `028-calendar-appointments`, with indexes and PostgreSQL RLS/revocation statements. The new public booking page browser attempt timed out against the local disposable demo; no screenshot or browser pass is claimed. Render deployment remains unverified after the confirmed `prepareDatabase()` migration-verification failure because the hosted ledger and backup readiness are unavailable. No hosted migration, deployment, commit or push was performed.
+
+### Disposable PostgreSQL follow-up — 22 November 2026
+
+A local PostgreSQL 17 cluster and database named `africore_phase3_test` were created under `.tmp`; the full 494-test PostgreSQL suite initially passed 493 and failed only the public booking capacity update because `occupied` was ambiguous in PostgreSQL's `ON CONFLICT DO UPDATE`. The statement now qualifies the target table. The focused public booking lifecycle passed, and the full Phase 3 integration file then passed **9/9** against a freshly recreated disposable PostgreSQL database. A complete full-suite rerun after that SQL fix remains outstanding. The isolated cluster was stopped and no hosted database was accessed. The current-tree GitHub PostgreSQL failure remains separately unresolved.
+## Superseding PostgreSQL and Render evidence — 22 November 2026
+
+Full PostgreSQL verification now passes on an isolated local PostgreSQL 17 cluster: 494 passed, 0 failed, 0 skipped, 21 suites, after qualifying the Calendar slot capacity upsert target. The local development database migration ledger was checked read-only and includes 021, 026, 027 and 028. No hosted database access occurred.
+
+The founder-provided Render event for deployment dep-dc08d315efls73b3m2p0 at commit f177c55cf2a6d4a1b5276fbb9d86c0cd294dd08e shows image build/push completed and backend startup stopped in prepareDatabase() with “Deployment schema is incomplete; run reviewed migrations separately.” This confirms schema verification blocked startup, but the hosted ledger and restorable-backup state are still unavailable, so exact missing migration versions and current readiness remain unresolved. No migration, readiness bypass or deployment was performed.
+## Final local regression update — 23 November 2026
+
+After adding the hosted migration prerequisite preflight and correcting a Nairobi-local analytics test date, a fresh disposable PostgreSQL 17 cluster ran npm run test:pg: 497 passed, 0 failed, 0 skipped, 21 suites. Root build was part of that command. Typecheck, lint, migration-runner syntax and diff checks also pass. The isolated cluster was stopped and removed.
+
+The migration runner now checks the full deployment prerequisite chain before Phase 3 DDL and reports all missing versions in dependency order: 016-procurement through 021-people-expansion, then 026-app15-16 and 027-website-forms before target 028-calendar-appointments. This is a local code hardening only; the runner was not pointed at hosted PostgreSQL. Render's actual migration ledger and backup/restore status remain unavailable, and Phase 3 is not closed.
+
+## Public Calendar SPA route — 23 November 2026
+
+The anonymous booking browser check found `/calendar/book/:token` falling through to JSON 404 in Express. Added `/calendar/{*path}` to the SPA route allowlist and tested both booking and manage deep links through the direct-route HTTP suite (20/20 passed). A follow-up browser connection to an isolated demo port timed out, so the browser-rendered page and public API flow are not verified after this routing repair.
+
+### Phase 3 status update — 23 November 2026
+
+Local Render verifier: 5/5. The supplied failure for `dep-dc08d315efls73b3m2p0` at `f177c55cf2a6d4a1b5276fbb9d86c0cd294dd08e` reached image build/push, then failed in `prepareDatabase()` with the schema-incomplete error. This establishes the failing startup phase, not the exact missing hosted migration. Hosted ledger and backup/restore readiness were not available for inspection. Current local HEAD has no GitHub status checks/workflow runs. Docker build and current Render readiness were not run; the Docker Desktop engine is unavailable. Keep `AFRICORE_MIGRATIONS_MODE=verify` and `/v1/readiness`; no bypass, hosted migration, or deployment occurred.
+
+### Cloudflare publication delivery — 23 November 2026
+
+The gateway previously served its static SPA fallback for every valid-looking `/sites/:slug`, so unpublished pages initially returned HTTP 200 and published pages missed Express-generated SEO metadata. The worker now forwards only GET and HEAD on the supported public path. Express checks publication availability and returns a route marker on its response. The worker strips request credentials, response cookies and the marker, sets no-store, preserves an application 404 and rejects unmarked upstream loading pages. A manual release now verifies that the expected Render commit is live before rolling out the Cloudflare frontend and gateway. Render still uses verify mode and its readiness probe.
+
+Local gateway tests passed 12/12, Phase 3 HTTP tests passed 9/9, platform validation checked 560 operations, OpenAPI checked 59 operations, lint passed and Render verifier tests passed 5/5. Wrangler dry run was unavailable because its local dependency install requires packages absent from the offline cache. Hosted routing and deployment readiness still need verification.
+
+Disposable SQLite runtime smoke: `/v1/health` and `/v1/readiness` returned HTTP 200. A missing Website slug returned 404, and a direct synthetic Calendar booking URL served the HTML shell with HTTP 200. The existing browser session's local port was closed when checked. Installing the locked Wrangler dependencies also failed because the package registry could not be resolved.

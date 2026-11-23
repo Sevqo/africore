@@ -17,10 +17,13 @@ import { platform } from './platform/routes';
 import { operations } from './operations/routes';
 import {
   publicWebsiteImage,
+  publicWebsiteHome,
   publicWebsitePage,
+  publicWebsiteRedirect,
   publicWebsiteSitemap,
   submitPublicWebsiteForm,
 } from './apps/phase3';
+import { createPublicAppointmentRequest, publicAppointmentAvailability, publicAppointmentInfo, publicAppointmentManage, updatePublicAppointmentRequest } from './apps/calendar-appointments';
 import express from 'express';
 import { ZodError } from 'zod';
 import path from 'node:path';
@@ -41,7 +44,7 @@ import orbitRoutes from './routes/orbit';
 import businessPaymentsRoutes from './routes/businessPayments';
 import webhookRoutes from './routes/webhooks';
 import sandboxRoutes from './routes/sandbox';
-import { ipRateLimit } from './middleware/rateLimit';
+import { ipRateLimit, publicCalendarRateLimit, publicWebsiteFormRateLimit } from './middleware/rateLimit';
 import { requestContext, RequestWithContext } from './middleware/requestContext';
 import { errorEnvelope, errorHandler } from './middleware/errorHandler';
 import { logger, requestLogger } from './logging';
@@ -170,7 +173,7 @@ export function createApp() {
       return res.status(404).json({ error: 'not_found' });
     }
   });
-  app.post('/api/public/sites/:slug/forms', async (req, res, next) => {
+  app.post('/api/public/sites/:slug/forms', publicWebsiteFormRateLimit, async (req, res, next) => {
     try {
       const result = await submitPublicWebsiteForm(String(req.params.slug), req.body);
       if (!result) return res.status(404).json({ error: 'not_found' });
@@ -180,6 +183,35 @@ export function createApp() {
         return res.status(400).json({ error: 'invalid_submission' });
       return next(err);
     }
+  });
+  app.get('/api/public/calendar/:token', publicCalendarRateLimit, async (req, res, next) => {
+    try {
+      const result = await publicAppointmentInfo(String(req.params.token));
+      return res.setHeader('Cache-Control', 'no-store').json(result);
+    } catch (err) { return next(err); }
+  });
+  app.get('/api/public/calendar/:token/availability', publicCalendarRateLimit, async (req, res, next) => {
+    try {
+      const date = String(req.query.date || '');
+      const result = await publicAppointmentAvailability(String(req.params.token), date);
+      return res.setHeader('Cache-Control', 'no-store').json(result);
+    } catch (err) { return next(err); }
+  });
+  app.post('/api/public/calendar/:token/bookings', publicCalendarRateLimit, async (req, res, next) => {
+    try {
+      const result = await createPublicAppointmentRequest(String(req.params.token), req.body);
+      return res.setHeader('Cache-Control', 'no-store').status(201).json(result);
+    } catch (err) { return next(err); }
+  });
+  app.get('/api/public/calendar/manage/:token', publicCalendarRateLimit, async (req, res, next) => {
+    try {
+      return res.setHeader('Cache-Control', 'no-store').json(await publicAppointmentManage(String(req.params.token)));
+    } catch (err) { return next(err); }
+  });
+  app.post('/api/public/calendar/manage/:token', publicCalendarRateLimit, async (req, res, next) => {
+    try {
+      return res.setHeader('Cache-Control', 'no-store').json(await updatePublicAppointmentRequest(String(req.params.token), req.body));
+    } catch (err) { return next(err); }
   });
 
   // Liveness: process-only, deliberately does NOT touch the database, so a
@@ -251,11 +283,29 @@ export function createApp() {
     }
     next();
   });
+  app.get('/sites/:slug/home', async (req, res, next) => {
+    try {
+      const destination = await publicWebsiteHome(String(req.params.slug));
+      res.setHeader('X-AfriCore-Website-Response', '1');
+      res.setHeader('Cache-Control', 'no-store');
+      return destination
+        ? res.redirect(307, destination)
+        : res.status(404).type('text/plain').send('Website home not found');
+    } catch (error) {
+      return next(error);
+    }
+  });
   app.get('/sites/:slug', async (req, res, next) => {
     try {
       const slug = String(req.params.slug);
       const page = await publicWebsitePage(slug);
-      if (!page) return res.status(404).type('text/plain').send('Website page not found');
+      res.setHeader('X-AfriCore-Website-Response', '1');
+      res.setHeader('Cache-Control', 'no-store');
+      if (!page) {
+        const destination = await publicWebsiteRedirect(slug);
+        if (destination) return res.redirect(308, destination);
+        return res.status(404).type('text/plain').send('Website page not found');
+      }
       const indexHtml = await readFile(path.join(process.cwd(), 'website/dist/index.html'), 'utf8');
       const html = renderWebsiteSeoDocument(
         indexHtml,
@@ -264,7 +314,6 @@ export function createApp() {
         process.env.AFRICORE_PUBLIC_ORIGIN || '',
       );
       if (!html) return res.status(503).type('text/plain').send('Website page unavailable');
-      res.setHeader('Cache-Control', 'no-store');
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('X-Robots-Tag', page.noindex ? 'noindex, nofollow' : 'index, follow');
       return res.type('html').send(html);
@@ -291,6 +340,7 @@ export function createApp() {
       '/app',
       '/app/{*path}',
       '/checkout/{*path}',
+      '/calendar/{*path}',
       '/sites/{*path}',
       '/buyer/{*path}',
       '/signin',
