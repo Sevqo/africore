@@ -1,5 +1,7 @@
 # AfriCore original application expansion closure register
 
+**24 November 2026 — Accounting period closing, opening balances and financial statements.** Checkpoint 6 adds non-overlapping fiscal years (including non-Dec 31 year-ends), a live-record period close checklist with separate-actor review/reopen and stale-approval invalidation, cross-app server-side lock dates (`sales`, `purchases`, `tax`, `all`), Python-validated CSV opening balances, and 8 financial statements (Trial Balance, General Ledger, Balance Sheet, Profit & Loss, Account Balance Register, Journal Audit, Closing Summary, Opening Balances Report) with Odoo F1–F4 aligned UI. Classified Cash Flow Statement, irreversible hard lock, per-user timed lock exceptions, and binary PDF/XLSX export remain open. [Period close & reporting checkpoint](odoo-reverse-engineering/PERIOD_CLOSE_REPORTING.md)
+
 **24 November 2026 — Accounting deferrals.** Checkpoint 5 adds expense and revenue recognition schedules, models, reports and native reviewed journal posting. Automatic invoice and bill reclassification remains open. [Deferrals checkpoint](odoo-reverse-engineering/DEFERRALS.md)
 
 **24 November 2026 — Accounting fixed assets.** Checkpoint 4 adds the source-linked asset register, reusable depreciation models, Python schedule calculation, reviewed journal posting and future-period revisions. Disposal, hybrid methods and matched screenshot acceptance remain separate. See the [fixed assets checkpoint](odoo-reverse-engineering/FIXED_ASSETS.md).

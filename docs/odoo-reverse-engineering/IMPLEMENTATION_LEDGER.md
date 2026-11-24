@@ -1,5 +1,10 @@
 # Source-driven implementation ledger
 
+## Checkpoint 6 — Fiscal period closing, opening balances and financial statements
+
+- AfriCore baseline `a81f7d025831be935f7bdde4370c839345312797` (extending `1749a4c4a25b038eff955e4f4e2efce34a4f9655`). Odoo 20 Community baseline `4968b8772ab96e25471ebbcdcbe32f6049e5b728`. Existing 668-addon inventory reused.
+- Added fiscal-year register (with non-Dec 31 support), reviewed period-closing checklist (`Open → Under Review → Approved for Close → Closed` plus separate-actor reopen review), versioned soft lock dates (`sales`, `purchases`, `tax`, `all`) enforced server-side across all posting/reconciliation paths, Python CSV opening-balance import, and 8 financial statements backed by Python integer-minor-unit verification (`python/africore_accounting/opening.py`, `statements.py`) and Odoo F1–F4 aligned React UI (`AccountingPeriodWorkspace.tsx`). [Period close & reporting checkpoint](PERIOD_CLOSE_REPORTING.md)
+
 ## Checkpoint 5 — Deferred expenses and deferred revenue
 
 - Added expense and revenue registers, reusable models, recognition boards, authorized journal drilldowns and filtered CSV reports inside Accounting.

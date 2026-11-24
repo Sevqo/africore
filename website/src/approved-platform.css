@@ -6381,6 +6381,107 @@ html:has([data-platform-density]) {
 .acc-workspace .acc-deferral-board table :is(th, td):nth-child(-n + 4) {
   white-space: nowrap;
 }
+.acc-lock-panel .acc-lock-subtitle {
+  font-style: italic;
+  color: var(--muted);
+  margin: 0 0 14px;
+}
+.acc-lock-panel form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  max-width: 680px;
+}
+.acc-lock-rows {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.acc-lock-row {
+  display: grid;
+  grid-template-columns: 160px minmax(180px, 240px) minmax(0, 1fr);
+  align-items: center;
+  gap: 8px 14px;
+}
+.acc-lock-label {
+  font-weight: 600;
+  color: var(--ink);
+}
+.acc-lock-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.acc-lock-input-wrap input[type='date'] {
+  min-width: 155px;
+}
+.acc-lock-empty {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.acc-lock-hint {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--muted);
+}
+.acc-lock-hard-warning {
+  grid-column: 1 / -1;
+  background: #f9e6ea;
+  border: 1px solid #ecc6ce;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 4px 0;
+  max-width: 560px;
+  color: #5b2530;
+  font-size: 13px;
+}
+.acc-lock-hard-warning p {
+  margin: 2px 0;
+}
+.acc-statement-tabs {
+  justify-content: center;
+  margin-bottom: 12px;
+}
+.acc-statement-unposted-banner {
+  background: #d8eef4;
+  border: 1px solid #b6dce6;
+  color: #164857;
+  padding: 10px 14px;
+  border-radius: 6px;
+  text-align: center;
+  margin: 10px 0;
+  font-size: 13px;
+}
+.acc-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.acc-num-negative {
+  color: #b42318;
+}
+.acc-statement-table thead th {
+  background: #edf1ee;
+  text-align: left;
+  font-weight: 600;
+}
+.acc-subtotal-row td {
+  font-weight: 600;
+  border-top: 1px solid var(--line);
+}
+.acc-exec-summary {
+  display: grid;
+  gap: 12px;
+}
+@media (max-width: 640px) {
+  .acc-lock-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+
 @media print {
   body:has(.acc-statement-print) * { visibility: hidden; }
   body:has(.acc-statement-print) .acc-statement-print,

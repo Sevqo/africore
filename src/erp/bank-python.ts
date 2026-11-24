@@ -8,7 +8,7 @@ export async function bankPython<T>(input: object, schema: z.ZodType<T>): Promis
 }
 
 export async function accountingPython<T>(
-  script: 'bank' | 'assets' | 'deferrals' | 'opening',
+  script: 'bank' | 'assets' | 'deferrals' | 'opening' | 'statements',
   input: object,
   schema: z.ZodType<T>,
 ): Promise<T> {

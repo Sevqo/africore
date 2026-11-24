@@ -6,6 +6,44 @@ import { unseal } from '../platform/crypto';
 import { currencySchema } from '../platform/domain';
 import { accountingAccess, accountingSettings } from './accounting';
 import { fiscalYears } from './accounting-close';
+import { accountingPython } from './bank-python';
+
+const minor = z.number().int();
+const statementSummarySchema = z
+  .object({
+    categories: z.array(
+      z
+        .object({
+          category: z.string(),
+          balance_minor: minor,
+          profit_minor: minor,
+        })
+        .strict(),
+    ),
+    totals: z
+      .object({
+        debit_minor: minor,
+        credit_minor: minor,
+        balanced: z.boolean(),
+        opening_debit_minor: minor,
+        opening_credit_minor: minor,
+        assets_minor: minor,
+        liabilities_minor: minor,
+        posted_equity_minor: minor,
+        retained_earnings_minor: minor,
+        current_year_result_minor: minor,
+        equity_minor: minor,
+        equation_variance_minor: minor,
+        revenue_minor: minor,
+        cost_of_sales_minor: minor,
+        has_cost_of_sales: z.boolean(),
+        gross_profit_minor: minor,
+        operating_expenses_minor: minor,
+        net_profit_minor: minor,
+      })
+      .strict(),
+  })
+  .strict();
 
 const day = z.iso.date();
 const id = z.uuid();
@@ -100,54 +138,37 @@ async function aggregate(
       (!q.account_id || r.id === q.account_id) &&
       (!q.search || (r.code + ' ' + r.name).toLowerCase().includes(q.search.toLowerCase())),
   );
-  const categories = [...new Set(selected.map((r) => r.category))].map((category) => ({
-    category,
-    balance_minor: sumMinor(
-      selected
-        .filter((r) => r.category === category)
-        .map((r) => (r.type === 'asset' ? r.closing_minor : -r.closing_minor)),
-    ),
-    profit_minor: sumMinor(
-      selected.filter((r) => r.category === category).map((r) => -r.movement_minor),
-    ),
-  }));
-  const typeSum = (type: string) =>
-    sumMinor(rows.filter((r) => r.type === type).map((r) => r.closing_minor));
-  const results = rows.filter((r) => ['revenue', 'expense'].includes(r.type));
-  const assets = typeSum('asset'),
-    liabilities = -typeSum('liability'),
-    postedEquity = -typeSum('equity');
-  const current = sumMinor(results.map((r) => r.fiscal_result_minor));
-  const retained = sumMinor(results.flatMap((r) => [-r.closing_minor, -r.fiscal_result_minor]));
-  const equity = sumMinor([postedEquity, retained, current]);
-  const debit = sumMinor(rows.map((r) => r.debit_minor)),
-    credit = sumMinor(rows.map((r) => r.credit_minor));
+  const selectedIds = new Set(selected.map((r) => r.id));
+  const summary = await accountingPython(
+    'statements',
+    {
+      rows: rows.map((r) => ({
+        type: r.type,
+        category: r.category,
+        selected: selectedIds.has(r.id),
+        opening_debit_minor: r.opening_debit_minor,
+        opening_credit_minor: r.opening_credit_minor,
+        debit_minor: r.debit_minor,
+        credit_minor: r.credit_minor,
+        fiscal_result_minor: r.fiscal_result_minor,
+        closing_minor: r.closing_minor,
+        movement_minor: r.movement_minor,
+      })),
+    },
+    statementSummarySchema,
+  );
   return {
     rows: selected,
-    categories,
-    totals: {
-      debit_minor: debit,
-      credit_minor: credit,
-      balanced: debit === credit,
-      opening_debit_minor: sumMinor(rows.map((r) => r.opening_debit_minor)),
-      opening_credit_minor: sumMinor(rows.map((r) => r.opening_credit_minor)),
-      assets_minor: assets,
-      liabilities_minor: liabilities,
-      posted_equity_minor: postedEquity,
-      retained_earnings_minor: retained,
-      current_year_result_minor: current,
-      equity_minor: equity,
-      equation_variance_minor: sumMinor([assets, -liabilities, -equity]),
-      net_profit_minor: sumMinor(results.map((r) => -r.movement_minor)),
-    },
+    categories: summary.categories,
+    totals: summary.totals,
   };
 }
 
 async function ledger(a: Access, q: Query, range: Range) {
   const where =
-    'entry_on>=?' +
+    'balance.entry_on>=?' +
     (q.search
-      ? " AND (LOWER(reference) LIKE ? ESCAPE '!' OR LOWER(code) LIKE ? ESCAPE '!' OR LOWER(name) LIKE ? ESCAPE '!' OR LOWER(source_id) LIKE ? ESCAPE '!')"
+      ? " AND (LOWER(balance.reference) LIKE ? ESCAPE '!' OR LOWER(balance.code) LIKE ? ESCAPE '!' OR LOWER(balance.name) LIKE ? ESCAPE '!' OR LOWER(balance.source_id) LIKE ? ESCAPE '!')"
       : '');
   const p = searchPattern(q.search);
   const rows = await dbAll(
@@ -157,7 +178,7 @@ async function ledger(a: Access, q: Query, range: Range) {
         SUM(l.debit_minor-l.credit_minor) OVER(PARTITION BY l.account_id ORDER BY e.entry_on,e.id,l.id ROWS UNBOUNDED PRECEDING) AS running
       ${inBook}${journalFilter(q)} AND e.entry_on<=?${q.account_id ? ' AND l.account_id=?' : ''}
     ) SELECT balance.*,j.code AS journal_code FROM balance JOIN ac_accounting_journals j ON j.id=balance.journal_id
-    WHERE ${where} ORDER BY entry_on,entry_id,balance.id LIMIT ? OFFSET ?`,
+    WHERE ${where} ORDER BY balance.entry_on,balance.entry_id,balance.id LIMIT ? OFFSET ?`,
     [
       ...filters(a, q),
       range.to,
@@ -267,11 +288,17 @@ export async function accountingStatements(a: Access, input: unknown) {
         : q.view === 'audit'
           ? await journalAudit(a, q, range)
           : [];
+    const unposted = await dbGet(
+      `SELECT COUNT(*) AS count FROM ac_accounting_entries e
+       WHERE e.org_id=? AND e.environment=? AND e.currency=? AND e.status='draft'${journalFilter(q)} AND e.entry_on<=?`,
+      [...filters(a, q), range.to],
+    );
     return {
       range,
       currency: q.currency,
       fiscal_start: fiscalStart(range.to),
       comparison_range: before,
+      unposted_count: Number(unposted?.count ?? 0),
       totals: current.totals,
       comparison_totals: comparison?.totals ?? null,
       accounts,

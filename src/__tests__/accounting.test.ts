@@ -1876,6 +1876,7 @@ test('opening CSV, reviewed fiscal close, date locks and statements use the same
     const report = (view: string, extra = '') => api(reports + view + extra);
     const trial = await report('trial', '&comparison=previous_period');
     assert.equal(trial.status, 200, JSON.stringify(trial.data));
+    assert.equal(trial.data.unposted_count, 0);
     assert.equal(trial.data.totals.balanced, true);
     assert.equal(trial.data.comparison_totals.net_profit_minor, 20000);
     const cash = trial.data.accounts.find((a: any) => a.code === '1000');
@@ -1886,6 +1887,8 @@ test('opening CSV, reviewed fiscal close, date locks and statements use the same
     assert.equal(balance.totals.retained_earnings_minor, 20000);
     assert.equal(balance.totals.current_year_result_minor, 30000);
     const profit = (await report('profit', '&journal_id=' + journal('SALES'))).data;
+    assert.equal(profit.totals.revenue_minor, 30000);
+    assert.equal(profit.totals.gross_profit_minor, 30000);
     assert.equal(profit.totals.net_profit_minor, 30000);
     const ledger = await report(
       'ledger',

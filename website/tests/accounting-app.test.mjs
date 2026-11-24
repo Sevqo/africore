@@ -28,6 +28,10 @@ const workspaceSource = fs.readFileSync(
   new URL('../src/apps/AccountingAppWorkspace.tsx', import.meta.url),
   'utf8',
 );
+const periodWorkspaceSource = fs.readFileSync(
+  new URL('../src/apps/AccountingPeriodWorkspace.tsx', import.meta.url),
+  'utf8',
+);
 const appsWorkspaceSource = fs.readFileSync(
   new URL('../src/apps/AppsWorkspace.tsx', import.meta.url),
   'utf8',
@@ -123,7 +127,11 @@ test('the installed Accounting app renders the operational workspace, not the se
   assert.match(workspaceSource, /\/accounting\/accounts/);
   assert.match(workspaceSource, /\/accounting\/journals/);
   assert.match(workspaceSource, /\/accounting\/periods/);
-  assert.match(workspaceSource, /\/accounting\/report/);
+  assert.match(workspaceSource, /AccountingPeriodWorkspace/);
+  assert.match(periodWorkspaceSource, /\/accounting\/statements/);
+  assert.match(periodWorkspaceSource, /\/accounting\/fiscal-years/);
+  assert.match(periodWorkspaceSource, /\/accounting\/lock-dates/);
+  assert.match(periodWorkspaceSource, /\/accounting\/opening-balances/);
   assert.ok(workspaceSource.includes('Bank synchronization and statement import are unsupported'));
   assert.ok(workspaceSource.includes('separate reviewer'));
 });

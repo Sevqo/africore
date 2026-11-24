@@ -161,9 +161,10 @@ export async function enforceLockDates(
     [...scope(a), journalId],
   );
   const sales =
-    ['invoice', 'credit_note', 'pos_sale'].includes(source) || journal?.code === 'SALES';
+    ['invoice', 'credit_note', 'pos_sale', 'cash_receipt', 'cash_return'].includes(source) ||
+    journal?.code === 'SALES';
   const purchases =
-    ['supplier_bill', 'supplier_credit', 'expense'].includes(source) ||
+    ['supplier_bill', 'supplier_credit', 'supplier_payment', 'expense'].includes(source) ||
     journal?.code === 'PURCHASE';
   if (sales && dates.sales && date <= dates.sales)
     fail(409, 'Sales entries are locked on this date');

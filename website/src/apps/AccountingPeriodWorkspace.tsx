@@ -3,10 +3,16 @@ import { Field, Form, money, today, type API } from '../operations/UI';
 import type { AccountingView } from './accounting-app-model';
 
 const titles: Record<string, string> = {
-  sales: 'Lock sales',
-  purchases: 'Lock purchases',
-  tax: 'Lock tax-sensitive entries',
-  all: 'Lock all journal entries',
+  sales: 'Lock Sales',
+  purchases: 'Lock Purchases',
+  tax: 'Lock Tax Return',
+  all: 'Lock Everything',
+  asset: 'Assets',
+  liability: 'Liabilities',
+  equity: 'Equity',
+  revenue: 'Revenue',
+  cost_of_sales: 'Cost of Sales',
+  expense: 'Operating Expenses',
   draft_journals: 'Unposted journal entries',
   unbalanced_journals: 'Incomplete or unbalanced journals',
   unreconciled_bank_lines: 'Unreconciled bank lines',
@@ -22,6 +28,12 @@ const titles: Record<string, string> = {
   approved: 'Approved for close',
   closed: 'Closed',
   reopen_review: 'Reopening under review',
+};
+const lockHints: Record<string, string> = {
+  sales: '',
+  purchases: '',
+  tax: 'after a tax closing',
+  all: 'governed by reviewed period close',
 };
 const label = (key: string) => titles[key] || key.replaceAll('_', ' ');
 const flags = ['sales', 'purchases', 'tax', 'all'];
@@ -66,7 +78,7 @@ function exportCsv(filename: string, columns: string[], rows: unknown[][]) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function useData(api: API, path: string, revision: number) {
+function useData(api: API, path: string, revision: number): { data?: any; error?: string } {
   const [state, setState] = useState<{ path: string; data?: any; error?: string }>({ path: '' });
   useEffect(() => {
     if (!path) return;
@@ -148,9 +160,14 @@ function FiscalYears({ api, revision, manager, configuration, refresh, go }: Pro
               </li>
             ))}
           </ul>
-          <button className="acc-secondary" type="button" onClick={() => go('closing')}>
-            Period closing
-          </button>
+          <div className="acc-toolbar">
+            <button className="acc-secondary" type="button" onClick={() => go('closing')}>
+              Period closing
+            </button>
+            <button className="acc-secondary" type="button" onClick={() => go('balance-sheet')}>
+              Financial statements
+            </button>
+          </div>
         </details>
       ))}
     </section>
@@ -162,12 +179,9 @@ function LockDates({ api, revision, manager, configuration, refresh }: Props) {
   const [reset, setReset] = useState(0);
   if (!data) return <p role={error ? 'alert' : 'status'}>{error || 'Loading lock policies…'}</p>;
   return (
-    <section className="acc-panel">
+    <section className="acc-panel acc-lock-panel">
       <h2>Lock Journal Entries</h2>
-      <p>
-        Lock entries dated on or before each selected date. Closing a period also blocks posting and
-        applies independently.
-      </p>
+      <p className="acc-lock-subtitle">Lock transactions up to specific dates, inclusive</p>
       <Form
         key={data.version + ':' + reset}
         disabled={!manager || !configuration.writable}
@@ -180,20 +194,36 @@ function LockDates({ api, revision, manager, configuration, refresh }: Props) {
           refresh('Lock dates updated.');
         }}
       >
-        {flags.map((name) => (
-          <Field label={label(name)} key={name}>
-            <input type="date" name={name} defaultValue={data.dates[name] || ''} />
-          </Field>
-        ))}
+        <div className="acc-lock-rows">
+          {flags.map((name) => (
+            <div className="acc-lock-row" key={name}>
+              <label htmlFor={'acc-lock-' + name} className="acc-lock-label">
+                {label(name)}
+              </label>
+              <div className="acc-lock-input-wrap">
+                <input
+                  id={'acc-lock-' + name}
+                  type="date"
+                  name={name}
+                  defaultValue={data.dates[name] || ''}
+                />
+                {!data.dates[name] && <span className="acc-lock-empty">Not locked</span>}
+              </div>
+              <span className="acc-lock-hint">{lockHints[name]}</span>
+            </div>
+          ))}
+        </div>
+        <div className="acc-lock-hard-warning" role="note">
+          <p>Need an irreversible lock to ensure inalterability, for all users?</p>
+          <p>
+            <strong>Hard Lock</strong> <span>Not enabled — use Period Closing for reviewed locks</span>
+          </p>
+        </div>
         <Field label="Reason for change">
           <input name="reason" required minLength={8} maxLength={1000} />
         </Field>
-        <p role="note">
-          Locking all entries applies to every journal, including reversals dated in the locked
-          range.
-        </p>
         <div className="acc-toolbar">
-          <button className="acc-primary">Save lock dates</button>
+          <button className="acc-primary">Save</button>
           <button type="button" className="acc-secondary" onClick={() => setReset((n) => n + 1)}>
             Discard
           </button>
@@ -597,13 +627,15 @@ function Statements({ api, configuration, revision, view, openEntry, go, openAcc
   }
   return (
     <section className="acc-panel acc-statement-print">
-      <nav className="acc-toolbar" aria-label="Annual statements">
+      <nav className="acc-toolbar acc-statement-tabs" aria-label="Annual statements">
         {(
           [
             ['balance-sheet', 'Balance Sheet'],
             ['profit-loss', 'Profit and Loss'],
             ['trial-balance', 'Trial Balance'],
             ['ledger', 'General Ledger'],
+            ['journal-audit', 'Audit Trail'],
+            ['closing-summary', 'Closing Summary'],
           ] as const
         ).map(([key, name]) => (
           <button
@@ -708,6 +740,12 @@ function Statements({ api, configuration, revision, view, openEntry, go, openAcc
       {error && <p role="alert">{error}</p>}
       {data && (
         <>
+          {data.unposted_count > 0 && (
+            <p className="acc-statement-unposted-banner" role="status">
+              There are <strong>{data.unposted_count} unposted Journal Entries</strong> prior or
+              included in this period.
+            </p>
+          )}
           <p>
             {data.range.from} to {data.range.to} · {data.currency} · Posted entries · Accrual basis
           </p>
@@ -750,47 +788,166 @@ function Statements({ api, configuration, revision, view, openEntry, go, openAcc
               Print statement
             </button>
           </div>
-          {t && (
-            <dl>
-              {(trial || type === 'summary') && (
-                <>
-                  <dt>Posted debits / credits in selected journals</dt>
-                  <dd>
-                    {cash(t.debit_minor)} / {cash(t.credit_minor)} ·{' '}
-                    {t.balanced ? 'Balanced' : 'Review variance'}
-                  </dd>
-                </>
-              )}
-              {(type === 'profit' || type === 'summary') && (
-                <>
-                  <dt>Net profit or loss</dt>
-                  <dd>{cash(t.net_profit_minor)}</dd>
-                </>
-              )}
-              {(type === 'balance' || type === 'summary') && (
-                <>
-                  <dt>Assets</dt>
-                  <dd>{cash(t.assets_minor)}</dd>
-                  <dt>Liabilities</dt>
-                  <dd>{cash(t.liabilities_minor)}</dd>
-                  <dt>Equity</dt>
-                  <dd>{cash(t.equity_minor)}</dd>
-                  <dt>Posted equity</dt>
-                  <dd>{cash(t.posted_equity_minor)}</dd>
-                  <dt>Prior-year earnings carried forward</dt>
-                  <dd>{cash(t.retained_earnings_minor)}</dd>
-                  <dt>Current fiscal year result</dt>
-                  <dd>{cash(t.current_year_result_minor)}</dd>
-                  <dt>Accounting equation variance</dt>
-                  <dd>{cash(t.equation_variance_minor)}</dd>
-                </>
-              )}
-            </dl>
-          )}
-          {type === 'summary' && (
-            <button className="acc-secondary" onClick={() => go('closing')}>
-              Open period close checklist
-            </button>
+          {t && type === 'summary' ? (
+            <div className="acc-exec-summary">
+              <div className="acc-journal-table-scroll">
+                <table className="acc-statement-table">
+                  <thead>
+                    <tr>
+                      <th colSpan={2}>Profitability</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Revenue</td>
+                      <td className={'acc-num' + (t.revenue_minor < 0 ? ' acc-num-negative' : '')}>
+                        {cash(t.revenue_minor)}
+                      </td>
+                    </tr>
+                    {t.has_cost_of_sales && (
+                      <>
+                        <tr>
+                          <td>Cost of Sales</td>
+                          <td className="acc-num">{cash(t.cost_of_sales_minor)}</td>
+                        </tr>
+                        <tr className="acc-subtotal-row">
+                          <td>Gross Profit</td>
+                          <td
+                            className={
+                              'acc-num' + (t.gross_profit_minor < 0 ? ' acc-num-negative' : '')
+                            }
+                          >
+                            {cash(t.gross_profit_minor)}
+                          </td>
+                        </tr>
+                      </>
+                    )}
+                    <tr>
+                      <td>Operating Expenses</td>
+                      <td className="acc-num">{cash(t.operating_expenses_minor)}</td>
+                    </tr>
+                    <tr className="acc-subtotal-row">
+                      <td>Net Profit / Loss</td>
+                      <td
+                        className={'acc-num' + (t.net_profit_minor < 0 ? ' acc-num-negative' : '')}
+                      >
+                        {cash(t.net_profit_minor)}
+                      </td>
+                    </tr>
+                  </tbody>
+                  <thead>
+                    <tr>
+                      <th colSpan={2}>Balance Sheet</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Assets</td>
+                      <td className={'acc-num' + (t.assets_minor < 0 ? ' acc-num-negative' : '')}>
+                        {cash(t.assets_minor)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Liabilities</td>
+                      <td
+                        className={'acc-num' + (t.liabilities_minor < 0 ? ' acc-num-negative' : '')}
+                      >
+                        {cash(t.liabilities_minor)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Posted Equity</td>
+                      <td className="acc-num">{cash(t.posted_equity_minor)}</td>
+                    </tr>
+                    <tr>
+                      <td>Prior-Year Earnings Carried Forward</td>
+                      <td className="acc-num">{cash(t.retained_earnings_minor)}</td>
+                    </tr>
+                    <tr>
+                      <td>Current Fiscal Year Result</td>
+                      <td className="acc-num">{cash(t.current_year_result_minor)}</td>
+                    </tr>
+                    <tr className="acc-subtotal-row">
+                      <td>Total Equity</td>
+                      <td className={'acc-num' + (t.equity_minor < 0 ? ' acc-num-negative' : '')}>
+                        {cash(t.equity_minor)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Accounting Equation Variance</td>
+                      <td className="acc-num">{cash(t.equation_variance_minor)}</td>
+                    </tr>
+                  </tbody>
+                  <thead>
+                    <tr>
+                      <th colSpan={2}>Trial Balance Check</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Posted Debits / Credits</td>
+                      <td className="acc-num">
+                        {cash(t.debit_minor)} / {cash(t.credit_minor)} ·{' '}
+                        {t.balanced ? 'Balanced' : 'Review variance'}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <button className="acc-secondary" onClick={() => go('closing')}>
+                Open period close checklist
+              </button>
+            </div>
+          ) : (
+            t && (
+              <dl>
+                {trial && (
+                  <>
+                    <dt>Posted debits / credits in selected journals</dt>
+                    <dd>
+                      {cash(t.debit_minor)} / {cash(t.credit_minor)} ·{' '}
+                      {t.balanced ? 'Balanced' : 'Review variance'}
+                    </dd>
+                  </>
+                )}
+                {type === 'profit' && (
+                  <>
+                    <dt>Revenue</dt>
+                    <dd>{cash(t.revenue_minor)}</dd>
+                    {t.has_cost_of_sales && (
+                      <>
+                        <dt>Cost of Sales</dt>
+                        <dd>{cash(t.cost_of_sales_minor)}</dd>
+                        <dt>Gross Profit</dt>
+                        <dd>{cash(t.gross_profit_minor)}</dd>
+                      </>
+                    )}
+                    <dt>Operating Expenses</dt>
+                    <dd>{cash(t.operating_expenses_minor)}</dd>
+                    <dt>Net profit or loss</dt>
+                    <dd>{cash(t.net_profit_minor)}</dd>
+                  </>
+                )}
+                {type === 'balance' && (
+                  <>
+                    <dt>Total Assets</dt>
+                    <dd>{cash(t.assets_minor)}</dd>
+                    <dt>Total Liabilities</dt>
+                    <dd>{cash(t.liabilities_minor)}</dd>
+                    <dt>Total Equity</dt>
+                    <dd>{cash(t.equity_minor)}</dd>
+                    <dt>Posted equity</dt>
+                    <dd>{cash(t.posted_equity_minor)}</dd>
+                    <dt>Prior-year earnings carried forward</dt>
+                    <dd>{cash(t.retained_earnings_minor)}</dd>
+                    <dt>Current fiscal year result</dt>
+                    <dd>{cash(t.current_year_result_minor)}</dd>
+                    <dt>Accounting equation variance</dt>
+                    <dd>{cash(t.equation_variance_minor)}</dd>
+                  </>
+                )}
+              </dl>
+            )
           )}
           {tableLines ? (
             <>
@@ -875,10 +1032,24 @@ function Statements({ api, configuration, revision, view, openEntry, go, openAcc
                             </button>
                           </td>
                           {values(row).map((amount, index) => (
-                            <td key={index}>{cash(amount)}</td>
+                            <td
+                              key={index}
+                              className={'acc-num' + (amount < 0 ? ' acc-num-negative' : '')}
+                            >
+                              {cash(amount)}
+                            </td>
                           ))}
                           {data.comparison_totals && (
-                            <td>{row.comparison ? cash(values(row.comparison).at(-1)!) : '—'}</td>
+                            <td
+                              className={
+                                'acc-num' +
+                                (row.comparison && values(row.comparison).at(-1)! < 0
+                                  ? ' acc-num-negative'
+                                  : '')
+                              }
+                            >
+                              {row.comparison ? cash(values(row.comparison).at(-1)!) : '—'}
+                            </td>
                           )}
                         </tr>
                       ))}
