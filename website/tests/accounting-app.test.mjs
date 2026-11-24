@@ -55,6 +55,31 @@ test('fixed assets keep the register, model and board deep links inside Accounti
   assert.match(routesSource, /\/accounting\/assets\/:id\/action/);
 });
 
+test('deferrals provide Accounting registers, report views and native journal drilldowns', () => {
+  for (const view of ['deferred-expenses', 'deferred-revenue', 'deferral-models']) {
+    assert.equal(sectionForView(view), 'accounting');
+  }
+  for (const view of ['deferred-expense-report', 'deferred-revenue-report']) {
+    assert.equal(sectionForView(view), 'reporting');
+  }
+  const component = fs.readFileSync(
+    new URL('../src/apps/AccountingDeferrals.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(workspaceSource, /<AccountingDeferrals/);
+  assert.match(component, /searchParams\.set\('deferral'/);
+  assert.match(component, /\/accounting\/entries\//);
+  assert.match(component, /deferral-report\.csv/);
+  for (const field of ['start_on', 'end_on']) {
+    assert.ok(component.includes(`name="${field}"`));
+    assert.ok(component.includes(`${field}: d.${field}`));
+  }
+  assert.match(workspaceSource, /approval_id: String\(data\.approval\)/);
+  assert.match(workspaceSource, /entry_on: String\(data\.date\)/);
+  assert.match(workspaceSource, /\/accounting\/entries\/' \+ encodeURIComponent\(selected\.id\)/);
+  assert.match(routesSource, /\/accounting\/deferrals\/:id\/action/);
+});
+
 test('the Accounting app has Odoo accounting navigation while the service keeps its own interface', () => {
   assert.ok(accounting, 'accounting app is registered');
   assert.deepEqual(

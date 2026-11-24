@@ -42,6 +42,16 @@ erpRouteKinds['GET /organizations/:org/accounting/sources'] = ['business'];
 erpPolicies['GET /organizations/:org/accounting/sources'] = { services: ['accounting'] };
 for (const suffix of [
   'GET /accounting/tax-codes',
+  'GET /accounting/deferrals',
+  'GET /accounting/deferrals/:id',
+  'GET /accounting/deferral-sources',
+  'GET /accounting/deferral-report',
+  'POST /accounting/deferrals',
+  'PUT /accounting/deferrals/:id',
+  'POST /accounting/deferrals/:id/action',
+  'GET /accounting/deferral-models',
+  'POST /accounting/deferral-models',
+  'PUT /accounting/deferral-models/:id',
   'GET /accounting/assets',
   'GET /accounting/assets/:id',
   'GET /accounting/asset-sources',

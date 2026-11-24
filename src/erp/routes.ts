@@ -8,6 +8,16 @@ import {
 import { taxCodes, saveTaxCode, previewTaxEntry, prepareTaxEntry } from './accounting-tax';
 import { accountingAging } from './accounting-aging';
 import {
+  actOnDeferral,
+  deferralDetail,
+  deferralReport,
+  deferralSources,
+  listDeferralModels,
+  listDeferrals,
+  saveDeferral,
+  saveDeferralModel,
+} from './deferrals';
+import {
   actOnAsset,
   assetDetail,
   assetSources,
@@ -1441,6 +1451,74 @@ erp.put(
   route(async (req, res) =>
     res.json(
       await saveAssetModel(await access(req, 'finance'), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+
+erp.get(
+  '/organizations/:org/accounting/deferrals',
+  route(async (req, res) => res.json(await listDeferrals(await access(req), req.query))),
+);
+erp.get(
+  '/organizations/:org/accounting/deferral-sources',
+  route(async (req, res) => res.json(await deferralSources(await access(req), req.query))),
+);
+erp.get(
+  '/organizations/:org/accounting/deferral-report',
+  route(async (req, res) => res.json(await deferralReport(await access(req), req.query))),
+);
+erp.get(
+  '/organizations/:org/accounting/deferrals/:id',
+  route(async (req, res) =>
+    res.json(await deferralDetail(await access(req), String(req.params.id))),
+  ),
+);
+erp.post(
+  '/organizations/:org/accounting/deferrals',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await saveDeferral(await access(req, 'finance'), null, req.body, key(req))),
+  ),
+);
+erp.put(
+  '/organizations/:org/accounting/deferrals/:id',
+  route(async (req, res) =>
+    res.json(
+      await saveDeferral(await access(req, 'finance'), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+erp.post(
+  '/organizations/:org/accounting/deferrals/:id/action',
+  route(async (req, res) =>
+    res.json(
+      await actOnDeferral(await access(req, 'finance'), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/accounting/deferral-models',
+  route(async (req, res) => res.json(await listDeferralModels(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/accounting/deferral-models',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await saveDeferralModel(await access(req, 'finance'), null, req.body, key(req))),
+  ),
+);
+erp.put(
+  '/organizations/:org/accounting/deferral-models/:id',
+  route(async (req, res) =>
+    res.json(
+      await saveDeferralModel(
+        await access(req, 'finance'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
     ),
   ),
 );

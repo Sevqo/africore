@@ -156,9 +156,17 @@ async function acquisition(a: Access, d: Asset) {
     entry.entry_on !== d.acquisition_on ||
     entry.reverses_id ||
     entry.source_type === 'asset_depreciation' ||
+    entry.source_type === 'deferral_recognition' ||
     (await isReversed(a, entry.id))
   )
     fail(409, 'Choose an unreversed posted acquisition on the same date and in the same currency');
+  if (
+    await dbGet(
+      "SELECT id FROM ac_erp_objects WHERE org_id=? AND environment=? AND kind='deferral' AND parent_id=? AND stage=? AND status<>'archived'",
+      [...scope(a), entry.id, d.accounts.asset_account_id],
+    )
+  )
+    fail(409, 'This acquisition balance is already assigned to a deferral');
   const byAccount = (account: string) =>
     sumMinor(
       entry.lines

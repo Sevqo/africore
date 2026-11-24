@@ -1438,6 +1438,209 @@ test('fixed asset board uses posted acquisition evidence and the native journal 
   );
 });
 
+test('expense and revenue deferrals recognize existing balances through separate review and retain reversal history', async () => {
+  const p = root() + '/accounting';
+  async function accountId(code: string, name: string, type: string) {
+    const r = await api(p + '/accounts', 'POST', { code, name, type, expected_version: 0 });
+    assert.equal(r.status, 201, JSON.stringify(r.data));
+    return r.data.id;
+  }
+  const prepaid = await accountId('1320', 'Synthetic prepaid insurance', 'asset');
+  const liability = await accountId('2310', 'Synthetic deferred annual service', 'liability');
+  const expense = await accountId('5320', 'Synthetic insurance recognition', 'expense');
+  const revenue = await accountId('4310', 'Synthetic service recognition', 'revenue');
+  const journal_id = config.journals[0].id;
+  const policy = { frequency: 'monthly', method: 'equal' };
+  const posted = (e: any, approved: string) =>
+    api(p + '/entries/' + e.id + '/post', 'POST', {
+      expected_version: e.version,
+      approval_id: approved,
+    });
+  const ledger = (id: string, debit: number, credit: number) => ({
+    account_id: id,
+    debit_minor: debit,
+    credit_minor: credit,
+  });
+  async function source(lines: any[]) {
+    const draftEntry = await api(p + '/entries', 'POST', draft(120000, 'KES', { lines }));
+    assert.equal(draftEntry.status, 201, JSON.stringify(draftEntry.data));
+    assert.equal((await posted(draftEntry.data, await review(draftEntry.data))).status, 200);
+    return draftEntry.data.id;
+  }
+  const expenseSource = await source([
+    ledger(prepaid, 120000, 0),
+    ledger(account('1000'), 0, 120000),
+  ]);
+  const revenueSource = await source([
+    ledger(account('1100'), 120000, 0),
+    ledger(liability, 0, 120000),
+  ]);
+  const approve = async (journal: any) => {
+    const approval = await review(journal);
+    const r = await posted(journal, approval);
+    assert.equal(r.status, 200, JSON.stringify(r.data));
+    assert.equal((await posted(journal, approval)).status, 409);
+  };
+  const createPlan = async (
+    type: string,
+    sourceId: string,
+    deferred: string,
+    recognition: string,
+  ) => {
+    const setup = {
+      kind: type,
+      name: 'Synthetic ' + type,
+      expected_version: 0,
+      deferred_account_id: deferred,
+      recognition_account_id: recognition,
+      journal_id,
+      policy,
+    };
+    const model = await api(p + '/deferral-models', 'POST', {
+      ...setup,
+      active: true,
+      duration_months: 12,
+    });
+    assert.equal(model.status, 201, JSON.stringify(model.data));
+    const available = await api(
+      p + '/deferral-sources?account=' + deferred + '&currency=KES&kind=' + type,
+    );
+    assert.equal(available.data.data[0].id, sourceId);
+    const value = {
+      ...setup,
+      source_entry_id: sourceId,
+      model_id: model.data.id,
+      currency: 'KES',
+      amount_minor: 120000,
+      start_on: '2026-11-04',
+      end_on: '2027-10-31',
+    };
+    assert.equal(
+      (await api(p + '/deferrals', 'POST', { ...value, amount_minor: 119999 })).status,
+      409,
+    );
+    const created = await api(p + '/deferrals', 'POST', value);
+    assert.equal(created.status, 201, JSON.stringify(created.data));
+    assert.equal((await api(p + '/deferrals', 'POST', value)).status, 409);
+    const path = p + '/deferrals/' + created.data.id;
+    const act = (record: any, action: string, extra: object = {}) =>
+      api(path + '/action', 'POST', { action, expected_version: record.version, ...extra });
+    assert.equal((await api(path, 'GET', undefined, operationsCookie)).status, 403);
+    const computed = await act(created.data, 'compute');
+    assert.equal(computed.status, 200, JSON.stringify(computed.data));
+    const board = (await api(path)).data;
+    assert.equal(board.rows.length, 12);
+    assert.equal(
+      board.rows.reduce((total: number, row: any) => total + row.amount_minor, 0),
+      120000,
+    );
+    const running = await act(computed.data, 'confirm');
+    assert.equal(running.status, 200, JSON.stringify(running.data));
+    const journal = await act(running.data, 'prepare', { date: '2026-11-30' });
+    assert.equal(journal.status, 200, JSON.stringify(journal.data));
+    assert.equal(
+      journal.data.lines.find((line: any) => line.debit_minor).account_id,
+      type === 'expense' ? recognition : deferred,
+    );
+    assert.equal(
+      journal.data.lines.find((line: any) => line.credit_minor).account_id,
+      type === 'expense' ? deferred : recognition,
+    );
+    await approve(journal.data);
+    const reopened = (await api(path)).data;
+    assert.equal(reopened.recognized_minor, 10000);
+    assert.equal(reopened.remaining_minor, 110000);
+    assert.equal(reopened.rows.filter((row: any) => row.posting === 'posted').length, 1);
+    assert.equal(
+      (
+        await api(p + '/entries/' + sourceId + '/reverse', 'POST', {
+          entry_on: '2026-11-30',
+          reason: 'Synthetic source dependency check',
+        })
+      ).status,
+      409,
+    );
+    return { path, journal: journal.data, act, record: reopened.record };
+  };
+  const insurance = await createPlan('expense', expenseSource, prepaid, expense);
+  const agreement = await createPlan('revenue', revenueSource, liability, revenue);
+  const trial = (await api(p + '/report?from=2026-11-01&to=2026-11-30&currency=KES')).data
+    .trial_balance;
+  for (const [code, amount] of [
+    ['1320', 110000],
+    ['5320', 10000],
+    ['2310', -110000],
+    ['4310', -10000],
+  ])
+    assert.equal(trial.find((line: any) => line.code === code).net_debit_minor, amount);
+  const december = (await api(p + '/configuration')).data.periods.find(
+    (row: any) => row.starts_on === '2026-12-01',
+  );
+  const lock = (state: string, expected_version: number) =>
+    api(p + '/periods/' + december.id + '/state', 'PUT', {
+      status: state,
+      expected_version,
+      reason: 'Synthetic deferral period test',
+    });
+  assert.equal((await lock('locked', december.version)).status, 200);
+  assert.equal(
+    (await insurance.act(insurance.record, 'prepare', { date: '2026-12-31' })).status,
+    409,
+  );
+  assert.equal((await lock('open', december.version + 1)).status, 200);
+  const revised = await insurance.act(insurance.record, 'revise', {
+    start_on: '2026-12-01',
+    end_on: '2027-04-30',
+    policy,
+    reason: 'Synthetic remaining insurance revision',
+  });
+  assert.equal(revised.status, 200, JSON.stringify(revised.data));
+  const changed = (await api(insurance.path)).data;
+  assert.equal(changed.rows[0].journal_entry_id, insurance.journal.id);
+  assert.equal(changed.rows[1].amount_minor, 22000);
+  assert.equal(changed.rows.at(-1).remaining_minor, 0);
+  const reversal = await api(p + '/entries/' + agreement.journal.id + '/reverse', 'POST', {
+    entry_on: '2026-12-01',
+    reason: 'Synthetic service correction',
+  });
+  assert.equal(reversal.status, 201, JSON.stringify(reversal.data));
+  await approve(reversal.data);
+  const corrected = (await api(agreement.path)).data;
+  assert.equal(corrected.recognized_minor, 0);
+  assert.ok(corrected.history.some((row: any) => row.action === 'recognition_reversed'));
+  const revisedRevenue = await agreement.act(corrected.record, 'revise', {
+    start_on: '2026-12-01',
+    end_on: '2027-11-30',
+    policy,
+    reason: 'Synthetic service begins in December',
+  });
+  assert.equal(revisedRevenue.status, 200, JSON.stringify(revisedRevenue.data));
+  const report = (
+    await api(
+      p + '/deferral-report?kind=revenue&period_id=' + december.id + '&account=' + liability,
+    )
+  ).data.data[0];
+  assert.equal(report.before_minor, 10000);
+  assert.equal(report.period_minor, -10000);
+  assert.equal(report.balance_minor, 120000);
+  assert.equal(
+    (await insurance.act(changed.record, 'retire', { reason: 'Synthetic dependency correction' }))
+      .status,
+    409,
+  );
+  const retired = await agreement.act(revisedRevenue.data, 'retire', {
+    reason: 'Synthetic source cancellation after recognition reversal',
+  });
+  assert.equal(retired.status, 200, JSON.stringify(retired.data));
+  assert.equal(retired.data.status, 'archived');
+  const sourceReversal = await api(p + '/entries/' + revenueSource + '/reverse', 'POST', {
+    entry_on: '2026-12-01',
+    reason: 'Synthetic source cancellation',
+  });
+  assert.equal(sourceReversal.status, 201, JSON.stringify(sourceReversal.data));
+  await approve(sourceReversal.data);
+});
+
 test('Accounting deactivation retains posted history while new draft and configuration writes stop', async () => {
   assert.equal(
     (await api(root() + '/services/accounting/deactivate', 'POST', { confirm: true })).status,

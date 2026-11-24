@@ -6378,6 +6378,14 @@ html:has([data-platform-density]) {
   border: 1px solid var(--acc-line);
   margin: 10px 0;
 }
+.acc-workspace .acc-deferral-board table :is(th, td):nth-child(-n + 4) {
+  white-space: nowrap;
+}
+@media (min-width: 1024px) {
+  .business-shell[data-platform-density] .acc-deferral-filters .form-fieldset {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
 .acc-journal-lines {
   width: 100%;
   min-width: 920px;

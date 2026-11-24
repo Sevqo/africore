@@ -8,6 +8,7 @@ import { AccountingAging } from './AccountingAging';
 import { AccountingTax } from './AccountingTax';
 import { AccountingBankStatements } from './AccountingBankStatements';
 import { AccountingAssets } from './AccountingAssets';
+import { AccountingDeferrals } from './AccountingDeferrals';
 import { DocumentAttachments } from './DocumentAttachments';
 import {
   AccountingSourceRegister,
@@ -75,12 +76,13 @@ export function AccountingAppWorkspace({
   const [notice, setNotice] = useState('');
 
   useEffect(() => {
-    const next =
-      defaultViewForSection[section] ||
-      (viewsForSection[section]?.[0] as AccountingView) ||
-      'dashboard';
-    setView(next);
     const url = new URL(location.href);
+    const requestedView = url.searchParams.get('view') as AccountingView | null;
+    const next =
+      requestedView && viewsForSection[section]?.includes(requestedView)
+        ? requestedView
+        : defaultViewForSection[section] || viewsForSection[section]?.[0] || 'dashboard';
+    setView(next);
     if (url.searchParams.get('view') !== next) {
       url.searchParams.set('app', 'accounting');
       url.searchParams.set('section', section);
@@ -138,11 +140,13 @@ export function AccountingAppWorkspace({
     };
   }, [section]);
 
-  function go(next: AccountingView) {
+  function go(next: AccountingView, deferralId?: string) {
     const url = new URL(location.href);
     url.searchParams.set('app', 'accounting');
     url.searchParams.set('section', sectionForView(next));
     url.searchParams.set('view', next);
+    if (deferralId) url.searchParams.set('deferral', deferralId);
+    else url.searchParams.delete('deferral');
     url.hash = 'Apps';
     history.pushState(history.state, '', url);
     dispatchEvent(new Event('africore:app-navigation'));
@@ -154,6 +158,25 @@ export function AccountingAppWorkspace({
     setQuery('');
     setStatus('');
   }
+
+  useEffect(() => {
+    if (!selected?.id || Array.isArray(selected.lines)) return;
+    let live = true;
+    setError('');
+    api('/accounting/entries/' + encodeURIComponent(selected.id)).then(
+      (entry) => {
+        if (live) setSelected(entry);
+      },
+      (failure) => {
+        if (!live) return;
+        setSelected(null);
+        setError(failure.message || 'Journal entry could not be loaded.');
+      },
+    );
+    return () => {
+      live = false;
+    };
+  }, [api, scope, selected]);
 
   function refresh(message: string) {
     setRevision((value) => value + 1);
@@ -354,6 +377,7 @@ export function AccountingAppWorkspace({
 
           {['entries', 'items'].includes(view) && (
             <EntriesView
+              key={revision}
               entries={entries}
               accounts={accounts}
               journals={journals}
@@ -407,6 +431,26 @@ export function AccountingAppWorkspace({
               configuration={configuration}
               manager={manager}
               onOpenEntry={setSelected}
+            />
+          )}
+          {[
+            'deferred-expenses',
+            'deferred-revenue',
+            'deferral-models',
+            'deferred-expense-report',
+            'deferred-revenue-report',
+          ].includes(view) && (
+            <AccountingDeferrals
+              key={scope + ':' + view}
+              api={api}
+              configuration={configuration}
+              manager={manager}
+              revision={revision}
+              view={view}
+              go={go}
+              onOpenEntry={setSelected}
+              onOpenInvoice={setInvoiceDetail}
+              onOpenBill={setBillDetail}
             />
           )}
           {view === 'bank' && <Bank events={events} navigate={navigate} go={go} />}
@@ -478,7 +522,7 @@ export function AccountingAppWorkspace({
             />
           )}
 
-          {selected && (
+          {selected && Array.isArray(selected.lines) && (
             <EntryDocument
               entry={selected}
               configuration={configuration}
@@ -1933,11 +1977,9 @@ function EntryDocument({
               Edit draft
             </button>
           )}
-          {entry.status === 'posted' && (
-            <button className="acc-secondary" onClick={() => navigate('Approvals')}>
-              Approval Center
-            </button>
-          )}
+          <button className="acc-secondary" onClick={() => navigate('Approvals')}>
+            Approval Center
+          </button>
         </div>
       </div>
       <div className="acc-doc-facts">
@@ -2062,7 +2104,7 @@ function EntryDocument({
               submit={async (data: any) => {
                 await api('/accounting/entries/' + entry.id + '/post', 'POST', {
                   expected_version: entry.version,
-                  approval_id: String(data.get('approval')),
+                  approval_id: String(data.approval),
                 });
                 onChanged('Balanced journal posted. History is immutable; no funds were moved.');
               }}
@@ -2096,8 +2138,8 @@ function EntryDocument({
           <Form
             submit={async (data: any) => {
               await api('/accounting/entries/' + entry.id + '/reverse', 'POST', {
-                entry_on: String(data.get('date')),
-                reason: String(data.get('reason')),
+                entry_on: String(data.date),
+                reason: String(data.reason),
               });
               onChanged('Reversal draft prepared.');
             }}

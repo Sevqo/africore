@@ -67,6 +67,10 @@ The Apps API is deployed in evaluation source8ccd42e with migrations010/011 appl
 
 `GET /inventory/replenishment-suggestions` filters before pagination. `POST /inventory/replenishment-suggestions/:id/review` binds the current suggestion version and records reviewed/dismissed status or one explicitly selected incoming plan. It never places supplier orders, receives physical stock or makes payments. Physical Inventory usage is committed atomically once per successful operation, including paired transfers and multi-line dispatches. Cached durable replays return the original result even at the hard cap; genuinely new operations still enforce the limit. Product, CRM and quotation creation use the same transaction-bound metering.
 
+## Accounting deferrals
+
+Under `/api/v1/organizations/:org/accounting`, `GET /deferrals` lists the scoped register, `GET /deferral-sources` lists eligible posted journal lines, and `GET /deferral-report` calculates date- or period-filtered totals. `GET /deferrals/:id` includes the schedule and journal status. Create with `POST /deferrals`, edit with `PUT /deferrals/:id`, and compute, confirm, revise or prepare recognition with `POST /deferrals/:id/action`. List and create models at `/deferral-models`, and edit with `PUT /deferral-models/:id`. Writes use scoped idempotency and existing record versions where applicable. Approval, posting and reversal use the existing journal endpoints. [Workflow and request details](odoo-reverse-engineering/DEFERRALS.md)
+
 ## Calendar and Website API — Phase 3 local checkpoint
 
 Calendar routes are under `/api/v1/organizations/{org}/calendar/events`: `GET` list, `POST` create, `PUT /{id}` versioned update, `POST /{id}/respond`, and `POST /{id}/cancel`. Writes require the operations capability and idempotency key; responses are limited to invited current workspace members. Private details are redacted in the list projection. Invitation notices use existing in-app Notifications only.

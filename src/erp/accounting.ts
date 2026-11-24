@@ -639,7 +639,11 @@ export async function prepareDerivedEntry(
       source.type,
       source.id,
       plan.source_hash,
-      source.facts.invoice_id || source.facts.bill_id || source.facts.asset_id || null,
+      source.facts.invoice_id ||
+        source.facts.bill_id ||
+        source.facts.asset_id ||
+        source.facts.deferral_id ||
+        null,
       Math.abs(source.amount_minor),
       plan.book_tax_minor,
       a.actor,
@@ -877,9 +881,14 @@ export async function postJournalEntry(a: Access, entryId: string, input: unknow
       if (e.reverses_id) {
         await requireBankEntryUnmatched(a, e.reverses_id);
         await (await import('./fixed-assets')).validateAssetReversal(a, e.reverses_id);
+        await (
+          await import('./deferrals')
+        ).validateDeferralReversal(a, await entry(a, e.reverses_id));
       }
       if (e.source_type === 'asset_depreciation')
         await (await import('./fixed-assets')).validateAssetPosting(a, e);
+      if (e.source_type === 'deferral_recognition')
+        await (await import('./deferrals')).validateDeferralPosting(a, e);
       await openPeriod(a, e.entry_on);
       const lines = e.lines.map((l) => ({
         account_id: l.account_id,
@@ -938,6 +947,8 @@ export async function postJournalEntry(a: Access, entryId: string, input: unknow
       const posted = await entry(a, entryId);
       if (posted.reverses_id || posted.source_type === 'asset_depreciation')
         await (await import('./fixed-assets')).recordAssetJournalPosting(a, posted);
+      if (posted.reverses_id || posted.source_type === 'deferral_recognition')
+        await (await import('./deferrals')).recordDeferralPosting(a, posted);
       return posted;
     },
   );
@@ -955,6 +966,7 @@ export async function reverseJournalEntry(a: Access, entryId: string, input: unk
       if (old.status !== 'posted') fail(409, 'Only a posted entry can be reversed');
       await requireBankEntryUnmatched(a, old.id);
       await (await import('./fixed-assets')).validateAssetReversal(a, old.id);
+      await (await import('./deferrals')).validateDeferralReversal(a, old);
       await openPeriod(a, d.entry_on);
       if (d.entry_on < old.entry_on)
         fail(400, 'A reversal cannot precede its original posting date');
