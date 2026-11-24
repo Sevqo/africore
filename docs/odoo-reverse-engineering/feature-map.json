@@ -62,6 +62,34 @@
       "tests": ["python/tests/test_tax.py", "src/__tests__/accounting.test.ts"],
       "screenshot": null,
       "verification": "IMPLEMENTATION_LEDGER.md"
+    },
+    {
+      "id": "accounting.bank-statement-reconciliation",
+      "app": "Accounting",
+      "africore_baseline": "d70e55b3292211f50048e47fc188f167c2086554",
+      "odoo_addon": "account",
+      "odoo_models": ["account.bank.statement", "account.bank.statement.line", "account.partial.reconcile", "account.full.reconcile"],
+      "odoo_sources": {
+        "models": {
+          "addons/account/models/account_bank_statement.py": ["_compute_balance_end", "_compute_is_complete"],
+          "addons/account/models/account_bank_statement_line.py": ["_get_default_amls_matching_domain", "_get_statement_line_residual_amounts", "action_undo_reconciliation"]
+        },
+        "views": ["addons/account/views/account_bank_statement_views.xml"],
+        "security": ["addons/account/security/ir.access.csv"],
+        "tests": ["addons/account/tests/test_account_bank_statement.py", "addons/account/tests/test_account_move_reconcile.py"]
+      },
+      "africore_files": [
+        "python/africore_accounting/bank.py",
+        "src/erp/bank-python.ts",
+        "src/erp/bank-reconciliation.ts",
+        "website/src/apps/AccountingBankStatements.tsx"
+      ],
+      "method": "C",
+      "scope": "Same-currency CSV statement evidence and reviewed links to existing posted bank-account lines",
+      "migration": null,
+      "tests": ["python/tests/test_bank.py", "src/__tests__/accounting.test.ts"],
+      "screenshot": null,
+      "verification": "BANK_RECONCILIATION.md"
     }
   ]
 }

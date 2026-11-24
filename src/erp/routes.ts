@@ -7,6 +7,17 @@ import {
 } from './work-templates';
 import { taxCodes, saveTaxCode, previewTaxEntry, prepareTaxEntry } from './accounting-tax';
 import { accountingAging } from './accounting-aging';
+import {
+  bankLine,
+  bankStatement,
+  createBankJournal,
+  decideBankMatch,
+  importBankStatement,
+  listBankJournals,
+  listBankStatements,
+  proposeBankMatch,
+  unmatchedBankLines,
+} from './bank-reconciliation';
 import { requestProjectReview } from './work-reviews';
 import { prepareOnboardingProject } from './people-onboarding';
 import { organizationChart, peopleReport } from './people-reports';
@@ -132,7 +143,13 @@ import { Router } from 'express';
 import { prepareAccountingSource } from './accounting-sources';
 import { accountingSourceList } from './accounting-source-list';
 import { z } from 'zod';
-import { calendarAppointmentRequestHistory, createPublicCalendarLink, listCalendarAppointmentRequests, reviewCalendarAppointmentRequest, revokePublicCalendarLink } from '../apps/calendar-appointments';
+import {
+  calendarAppointmentRequestHistory,
+  createPublicCalendarLink,
+  listCalendarAppointmentRequests,
+  reviewCalendarAppointmentRequest,
+  revokePublicCalendarLink,
+} from '../apps/calendar-appointments';
 import { route, access } from '../platform/auth';
 import {
   myWork,
@@ -1368,6 +1385,75 @@ erp.get(
 );
 
 erp.get(
+  '/organizations/:org/accounting/bank-journals',
+  route(async (req, res) => res.json(await listBankJournals(await access(req)))),
+);
+erp.get(
+  '/organizations/:org/accounting/bank-journals/:id/unmatched',
+  route(async (req, res) =>
+    res.json(await unmatchedBankLines(await access(req), String(req.params.id), req.query)),
+  ),
+);
+erp.post(
+  '/organizations/:org/accounting/bank-journals',
+  route(async (req, res) =>
+    res.status(201).json(await createBankJournal(await access(req, 'finance'), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/accounting/bank-statements',
+  route(async (req, res) => res.json(await listBankStatements(await access(req), req.query))),
+);
+erp.post(
+  '/organizations/:org/accounting/bank-statements',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await importBankStatement(await access(req, 'finance'), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/accounting/bank-statements/:id',
+  route(async (req, res) =>
+    res.json(await bankStatement(await access(req), String(req.params.id), req.query)),
+  ),
+);
+erp.get(
+  '/organizations/:org/accounting/bank-lines/:id',
+  route(async (req, res) =>
+    res.json(await bankLine(await access(req), String(req.params.id), req.query)),
+  ),
+);
+erp.post(
+  '/organizations/:org/accounting/bank-lines/:id/matches',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(
+        await proposeBankMatch(
+          await access(req, 'finance'),
+          String(req.params.id),
+          req.body,
+          key(req),
+        ),
+      ),
+  ),
+);
+erp.post(
+  '/organizations/:org/accounting/bank-matches/:id/decision',
+  route(async (req, res) =>
+    res.json(
+      await decideBankMatch(
+        await access(req, 'finance'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+
+erp.get(
   '/organizations/:org/accounting/tax-codes',
   route(async (req, res) => res.json(await taxCodes(await access(req)))),
 );
@@ -1573,9 +1659,11 @@ erp.get(
 erp.post(
   '/organizations/:org/calendar/appointment-types',
   route(async (req, res) =>
-    res.status(201).json(
-      await createCalendarAppointmentType(await access(req, 'operations'), req.body, key(req)),
-    ),
+    res
+      .status(201)
+      .json(
+        await createCalendarAppointmentType(await access(req, 'operations'), req.body, key(req)),
+      ),
   ),
 );
 erp.put(
@@ -1594,39 +1682,67 @@ erp.put(
 erp.post(
   '/organizations/:org/calendar/appointment-types/:id/bookings',
   route(async (req, res) =>
-    res.status(201).json(
-      await bookCalendarAppointment(
-        await access(req),
-        String(req.params.id),
-        req.body,
-        key(req),
+    res
+      .status(201)
+      .json(
+        await bookCalendarAppointment(await access(req), String(req.params.id), req.body, key(req)),
       ),
-    ),
   ),
 );
 erp.post(
   '/organizations/:org/calendar/appointment-types/:id/public-link',
   route(async (req, res) =>
-    res.status(201).json(await createPublicCalendarLink(await access(req, 'operations'), String(req.params.id), req.body)),
+    res
+      .status(201)
+      .json(
+        await createPublicCalendarLink(
+          await access(req, 'operations'),
+          String(req.params.id),
+          req.body,
+        ),
+      ),
   ),
 );
 erp.delete(
   '/organizations/:org/calendar/appointment-types/:id/public-link',
   route(async (req, res) =>
-    res.json(await revokePublicCalendarLink(await access(req, 'operations'), String(req.params.id))),
+    res.json(
+      await revokePublicCalendarLink(await access(req, 'operations'), String(req.params.id)),
+    ),
   ),
 );
 erp.get(
   '/organizations/:org/calendar/appointment-types/:id/requests',
-  route(async (req, res) => res.json(await listCalendarAppointmentRequests(await access(req, 'admin'), String(req.params.id)))),
+  route(async (req, res) =>
+    res.json(
+      await listCalendarAppointmentRequests(await access(req, 'admin'), String(req.params.id)),
+    ),
+  ),
 );
 erp.post(
   '/organizations/:org/calendar/appointment-types/:id/requests/:booking/review',
-  route(async (req, res) => res.json(await reviewCalendarAppointmentRequest(await access(req, 'operations'), String(req.params.id), String(req.params.booking), req.body))),
+  route(async (req, res) =>
+    res.json(
+      await reviewCalendarAppointmentRequest(
+        await access(req, 'operations'),
+        String(req.params.id),
+        String(req.params.booking),
+        req.body,
+      ),
+    ),
+  ),
 );
 erp.get(
   '/organizations/:org/calendar/appointment-types/:id/requests/:booking/history',
-  route(async (req, res) => res.json(await calendarAppointmentRequestHistory(await access(req, 'admin'), String(req.params.id), String(req.params.booking)))),
+  route(async (req, res) =>
+    res.json(
+      await calendarAppointmentRequestHistory(
+        await access(req, 'admin'),
+        String(req.params.id),
+        String(req.params.booking),
+      ),
+    ),
+  ),
 );
 erp.get(
   '/organizations/:org/website/settings',

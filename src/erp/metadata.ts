@@ -42,6 +42,15 @@ erpRouteKinds['GET /organizations/:org/accounting/sources'] = ['business'];
 erpPolicies['GET /organizations/:org/accounting/sources'] = { services: ['accounting'] };
 for (const suffix of [
   'GET /accounting/tax-codes',
+  'GET /accounting/bank-journals',
+  'GET /accounting/bank-journals/:id/unmatched',
+  'POST /accounting/bank-journals',
+  'GET /accounting/bank-statements',
+  'POST /accounting/bank-statements',
+  'GET /accounting/bank-statements/:id',
+  'GET /accounting/bank-lines/:id',
+  'POST /accounting/bank-lines/:id/matches',
+  'POST /accounting/bank-matches/:id/decision',
   'POST /accounting/tax-codes',
   'PUT /accounting/tax-codes/:id',
   'POST /accounting/tax-preview',

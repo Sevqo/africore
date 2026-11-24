@@ -1,5 +1,10 @@
 # Source-driven implementation ledger
 
+## Checkpoint 3 — Bank statement import and reconciliation
+
+- AfriCore baseline d70e55b3292211f50048e47fc188f167c2086554. Odoo 20 Community baseline 4968b8772ab96e25471ebbcdcbe32f6049e5b728. The existing 668-addon index was reused.
+- Source trace, APIs, local storage, performance, verification and outstanding acceptance are recorded in [Bank reconciliation checkpoint](BANK_RECONCILIATION.md).
+
 ## Checkpoint 2 — Cash rounding for manual Accounting adjustments
 
 Source pin 4968b8772ab96e25471ebbcdcbe32f6049e5b728. REA inspected the

@@ -71,7 +71,9 @@ for (const [name, schema] of Object.entries({
   crm_entryInput: require('../dist/operations/crm').crmEntryInput,
   crm_leadConversionInput: require('../dist/operations/crm').crmLeadConversionInput,
   crm_activityPlanInput: require('../dist/operations/crm-expansion').crmActivityPlanInput,
-  crm_activityPlanUpdateInput: require('../dist/operations/crm-expansion').crmActivityPlanInput.extend({ expected_version: z.number().int().positive() }).strict(),
+  crm_activityPlanUpdateInput: require('../dist/operations/crm-expansion')
+    .crmActivityPlanInput.extend({ expected_version: z.number().int().positive() })
+    .strict(),
   crm_activityPlanApplyInput: require('../dist/operations/crm-expansion').crmActivityPlanApplyInput,
   crm_mergeInput: require('../dist/operations/crm-expansion').crmMergeInput,
   crm_importPreviewInput: require('../dist/operations/crm-expansion').crmImportPreviewInput,
@@ -129,6 +131,16 @@ schemas.accounting_agingQuery = z.toJSONSchema(require('../dist/erp/accounting-a
   target: 'openapi-3.0',
   unrepresentable: 'any',
 });
+for (const name of [
+  'bankJournalInput',
+  'bankStatementInput',
+  'bankMatchInput',
+  'bankDecisionInput',
+])
+  schemas['accounting_' + name] = z.toJSONSchema(require('../dist/erp/bank-reconciliation')[name], {
+    target: 'openapi-3.0',
+    unrepresentable: 'any',
+  });
 schemas.accounting_sourceInput = z.toJSONSchema(
   require('../dist/erp/accounting-sources').accountingSourceInput,
   { target: 'openapi-3.0', unrepresentable: 'any' },
@@ -390,43 +402,43 @@ for (const op of operations) {
               ? 'crm_configurationInput'
               : method === 'put' && /\/crm\/activity-plans\/\{id\}$/.test(path)
                 ? 'crm_activityPlanUpdateInput'
-              : method === 'post'
-                ? path.endsWith('/crm/import')
-                  ? 'crm_importInput'
-                  : path.endsWith('/crm/import/preview')
-                    ? 'crm_importPreviewInput'
-                    : path.endsWith('/crm/merge')
-                      ? 'crm_mergeInput'
-                      : path.endsWith('/crm/activity-plans/apply')
-                        ? 'crm_activityPlanApplyInput'
-                        : path.endsWith('/crm/activity-plans')
-                          ? 'crm_activityPlanInput'
-                  : path.endsWith('/inventory/stock-counts')
-                    ? 'inventory_stockCountInput'
-                    : path.endsWith('/install')
-                      ? 'app_installInput'
-                      : path.endsWith('/uninstall')
-                        ? 'app_uninstallInput'
-                        : path.endsWith('/products')
-                          ? 'inventory_productInput'
-                          : path.endsWith('/inventory/warehouses')
-                            ? 'inventory_warehouseInput'
-                            : path.endsWith('/locations')
-                              ? 'inventory_locationInput'
-                              : path.endsWith('/inventory/movements')
-                                ? 'inventory_movementInput'
-                                : path.endsWith('/inventory/incoming')
-                                  ? 'inventory_incomingInput'
-                                  : /\/crm\/entries\/\{id\}\/convert$/.test(path)
-                                    ? 'crm_leadConversionInput'
-                                    : path.endsWith('/crm/entries')
-                                      ? 'crm_entryInput'
-                                      : path.endsWith('/sales/quotations')
-                                        ? 'sales_documentInput'
-                                        : path.endsWith('/business/saved-reports')
-                                          ? 'analytics_savedReportInput'
-                                          : null
-                : null;
+                : method === 'post'
+                  ? path.endsWith('/crm/import')
+                    ? 'crm_importInput'
+                    : path.endsWith('/crm/import/preview')
+                      ? 'crm_importPreviewInput'
+                      : path.endsWith('/crm/merge')
+                        ? 'crm_mergeInput'
+                        : path.endsWith('/crm/activity-plans/apply')
+                          ? 'crm_activityPlanApplyInput'
+                          : path.endsWith('/crm/activity-plans')
+                            ? 'crm_activityPlanInput'
+                            : path.endsWith('/inventory/stock-counts')
+                              ? 'inventory_stockCountInput'
+                              : path.endsWith('/install')
+                                ? 'app_installInput'
+                                : path.endsWith('/uninstall')
+                                  ? 'app_uninstallInput'
+                                  : path.endsWith('/products')
+                                    ? 'inventory_productInput'
+                                    : path.endsWith('/inventory/warehouses')
+                                      ? 'inventory_warehouseInput'
+                                      : path.endsWith('/locations')
+                                        ? 'inventory_locationInput'
+                                        : path.endsWith('/inventory/movements')
+                                          ? 'inventory_movementInput'
+                                          : path.endsWith('/inventory/incoming')
+                                            ? 'inventory_incomingInput'
+                                            : /\/crm\/entries\/\{id\}\/convert$/.test(path)
+                                              ? 'crm_leadConversionInput'
+                                              : path.endsWith('/crm/entries')
+                                                ? 'crm_entryInput'
+                                                : path.endsWith('/sales/quotations')
+                                                  ? 'sales_documentInput'
+                                                  : path.endsWith('/business/saved-reports')
+                                                    ? 'analytics_savedReportInput'
+                                                    : null
+                  : null;
   if (businessSchema)
     operation.requestBody.content['application/json'].schema = {
       $ref: '#/components/schemas/' + businessSchema,
@@ -475,27 +487,35 @@ for (const op of operations) {
           required: true,
           schema: { type: 'string', minLength: 8, maxLength: 200 },
         });
-      const schema = path.includes('/tax-codes')
-        ? 'taxCodeInput'
-        : path.endsWith('/tax-preview') || path.endsWith('/tax-entries')
-          ? 'taxEntryInput'
-          : path.endsWith('/setup')
-            ? 'accountingSetupInput'
-            : path.includes('/accounts')
-              ? 'accountInput'
-              : path.endsWith('/state')
-                ? 'periodStateInput'
-                : path.endsWith('/periods')
-                  ? 'periodInput'
-                  : path.endsWith('/review')
-                    ? 'journalReviewInput'
-                    : path.endsWith('/post')
-                      ? 'postJournalInput'
-                      : path.endsWith('/reverse')
-                        ? 'reverseJournalInput'
-                        : path.endsWith('/sources')
-                          ? 'sourceInput'
-                          : 'journalEntryInput';
+      const bankSchema = {
+        'bank-journals': 'bankJournalInput',
+        'bank-statements': 'bankStatementInput',
+        matches: 'bankMatchInput',
+        decision: 'bankDecisionInput',
+      };
+      const schema = path.includes('/accounting/bank-')
+        ? bankSchema[path.split('/').at(-1)]
+        : path.includes('/tax-codes')
+          ? 'taxCodeInput'
+          : path.endsWith('/tax-preview') || path.endsWith('/tax-entries')
+            ? 'taxEntryInput'
+            : path.endsWith('/setup')
+              ? 'accountingSetupInput'
+              : path.includes('/accounts')
+                ? 'accountInput'
+                : path.endsWith('/state')
+                  ? 'periodStateInput'
+                  : path.endsWith('/periods')
+                    ? 'periodInput'
+                    : path.endsWith('/review')
+                      ? 'journalReviewInput'
+                      : path.endsWith('/post')
+                        ? 'postJournalInput'
+                        : path.endsWith('/reverse')
+                          ? 'reverseJournalInput'
+                          : path.endsWith('/sources')
+                            ? 'sourceInput'
+                            : 'journalEntryInput';
       operation.requestBody.content['application/json'].schema = {
         $ref: '#/components/schemas/accounting_' + schema,
       };

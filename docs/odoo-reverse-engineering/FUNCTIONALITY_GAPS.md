@@ -12,7 +12,7 @@ This is a prioritized first pass, not a feature-level parity audit. See the JSON
 
 | App/workflow | Odoo modules to trace | AfriCore evidence | Gap | Method | Status |
 |---|---|---|---|---|---|
-| Accounting: bank statements and reconciliation | account, account_accountant if present, account_payment | src/erp/accounting*, src/finance/* | No bank statement lifecycle parity claimed; keep imported evidence separate from provider settlement and canonical journal | Python for pure rules; TypeScript ledger/API | Source inventory only |
+| Accounting: bank statements and reconciliation | Community account, with move lines and the bank statement views in the same addon | src/erp/bank-reconciliation.ts, src/erp/bank-python.ts, python/africore_accounting/bank.py | CSV and posted-line reconciliation integrated. Unallocated payments, suspense posting, FX and cross-statement continuity remain open | Python parsing and matching, TypeScript journal/API | Checkpoint 3 |
 | Accounting: assets, depreciation, deferrals, close | account, account_asset if present, account_reports if present | Accounting periods/entries/approvals | Source-linked asset schedules and reviewed posting workflow remain | Python compatibility where pure; TS owns books | Gap |
 | Inventory: transfer, replenishment, lots, forecasting | stock, stock_account, stock_barcode, purchase_stock, sale_stock | src/inventory/service.ts | Transfers, serial/lot, multiwarehouse and valuation boundaries need source-level workflow mapping | preserve canonical TS stock movements | Gap |
 | POS/Commerce | point_of_sale, stock, account, payment | POS registers and settlement; Commerce catalog | session lifecycle, returns, cash close, offline and hardware integration | native TS with provider boundaries | Gap |

@@ -38,5 +38,6 @@ App grouping below is a heuristic by addon technical name/category. It is an inv
 | Source | Behavior inspected | AfriCore target | Method | Current boundary |
 |---|---|---|---|---|
 | addons/account/models/account_tax.py: _get_tax_details, compute_all | Ordered tax computation and per-line rounding; richer than AfriCore's single configured percentage | src/erp/accounting-tax.ts preview | C: isolated Python calculation through TypeScript | Single percentage only; no tax groups, price-included taxes, fiscal positions, localization or statutory certification |
+| addons/account/models/account_bank_statement_line.py, account_bank_statement.py, account_partial_reconcile.py | Bank statement balances, posted candidates, residuals and undo | src/erp/bank-reconciliation.ts, python/africore_accounting/bank.py | C: batched Python CSV and scoring, scoped TypeScript reconciliation | Same-currency evidence links to posted journal lines. The pinned Community tree contains the account models and statement views. It contains no account_accountant or standalone bank statement import addon. |
 
 TypeScript remains the authority for tenant access, tax-code configuration, accounts, approvals, audit, idempotency and journal persistence. No Odoo source was copied.

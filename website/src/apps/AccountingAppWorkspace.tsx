@@ -6,6 +6,7 @@ import { JournalEditor } from './JournalEditor';
 import { AccountingConfiguration } from './AccountingConfiguration';
 import { AccountingAging } from './AccountingAging';
 import { AccountingTax } from './AccountingTax';
+import { AccountingBankStatements } from './AccountingBankStatements';
 import { DocumentAttachments } from './DocumentAttachments';
 import {
   AccountingSourceRegister,
@@ -398,6 +399,15 @@ export function AccountingAppWorkspace({
             />
           )}
 
+          {(view === 'bank' || view === 'reconciliation') && (
+            <AccountingBankStatements
+              key={scope}
+              api={api}
+              configuration={configuration}
+              manager={manager}
+              onOpenEntry={setSelected}
+            />
+          )}
           {view === 'bank' && <Bank events={events} navigate={navigate} go={go} />}
 
           {view === 'reconciliation' && <Reconciliation events={events} navigate={navigate} />}
@@ -2142,18 +2152,27 @@ function Reports({ view, api, scope, start, initialCurrency, revision, accounts 
           <input
             type="date"
             value={from}
-            onChange={(event) => { setFrom(event.target.value); setLedgerOffset(0); }}
+            onChange={(event) => {
+              setFrom(event.target.value);
+              setLedgerOffset(0);
+            }}
             aria-label="From date"
           />
           <input
             type="date"
             value={to}
-            onChange={(event) => { setTo(event.target.value); setLedgerOffset(0); }}
+            onChange={(event) => {
+              setTo(event.target.value);
+              setLedgerOffset(0);
+            }}
             aria-label="To date"
           />
           <select
             value={currency}
-            onChange={(event) => { setCurrency(event.target.value); setLedgerOffset(0); }}
+            onChange={(event) => {
+              setCurrency(event.target.value);
+              setLedgerOffset(0);
+            }}
             aria-label="Report currency"
           >
             {['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF'].map((code) => (
@@ -2171,7 +2190,9 @@ function Reports({ view, api, scope, start, initialCurrency, revision, accounts 
         </div>
       )}
       {!report && !error && (
-        <p role="status">Loading report for {from} through {to} in {currency}…</p>
+        <p role="status">
+          Loading report for {from} through {to} in {currency}…
+        </p>
       )}
       {report && (
         <>
@@ -2238,7 +2259,7 @@ function Reports({ view, api, scope, start, initialCurrency, revision, accounts 
                             <span>
                               {line.code} {line.name}
                             </span>
-                        <strong>{money(value, report.currency)}</strong>
+                            <strong>{money(value, report.currency)}</strong>
                           </div>
                         );
                       })}
@@ -2293,12 +2314,17 @@ function Reports({ view, api, scope, start, initialCurrency, revision, accounts 
             <>
               <div className="acc-report-head">
                 <span>General Ledger</span>
-                <span>{report.period?.from} → {report.period?.to} · {report.currency}</span>
+                <span>
+                  {report.period?.from} → {report.period?.to} · {report.currency}
+                </span>
               </div>
               <div className="acc-toolbar">
                 <select
                   value={accountId}
-                  onChange={(event) => { setAccountId(event.target.value); setLedgerOffset(0); }}
+                  onChange={(event) => {
+                    setAccountId(event.target.value);
+                    setLedgerOffset(0);
+                  }}
                   aria-label="Account filter"
                 >
                   <option value="">All accounts</option>
@@ -2310,7 +2336,10 @@ function Reports({ view, api, scope, start, initialCurrency, revision, accounts 
                 </select>
                 <input
                   value={ledgerSearch}
-                  onChange={(event) => { setLedgerSearch(event.target.value); setLedgerOffset(0); }}
+                  onChange={(event) => {
+                    setLedgerSearch(event.target.value);
+                    setLedgerOffset(0);
+                  }}
                   placeholder="Search reference or account…"
                   aria-label="Search general ledger"
                 />
@@ -2331,7 +2360,9 @@ function Reports({ view, api, scope, start, initialCurrency, revision, accounts 
                     <tr key={line.id}>
                       <td>{line.entry_on}</td>
                       <td>{line.reference}</td>
-                      <td>{line.account_code} · {line.account_name}</td>
+                      <td>
+                        {line.account_code} · {line.account_name}
+                      </td>
                       <td>{line.data?.memo}</td>
                       <td className="num">{money(line.debit_minor, report.currency)}</td>
                       <td className="num">{money(line.credit_minor, report.currency)}</td>
@@ -2341,14 +2372,28 @@ function Reports({ view, api, scope, start, initialCurrency, revision, accounts 
               </DataTable>
               {report.has_more && (
                 <p className="acc-hint">
-                  Showing {report.offset + 1}–{Math.min(report.offset + report.general_ledger.length, report.total)} of {report.total} posted lines.
+                  Showing {report.offset + 1}–
+                  {Math.min(report.offset + report.general_ledger.length, report.total)} of{' '}
+                  {report.total} posted lines.
                 </p>
               )}
               {report.total > report.limit && (
                 <footer className="acc-register-pager">
                   <span>{report.total} posted lines</span>
-                  <button className="acc-secondary" disabled={report.offset === 0} onClick={() => setLedgerOffset(Math.max(0, ledgerOffset - report.limit))}>Previous</button>
-                  <button className="acc-secondary" disabled={!report.has_more} onClick={() => setLedgerOffset(ledgerOffset + report.limit)}>Next</button>
+                  <button
+                    className="acc-secondary"
+                    disabled={report.offset === 0}
+                    onClick={() => setLedgerOffset(Math.max(0, ledgerOffset - report.limit))}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    className="acc-secondary"
+                    disabled={!report.has_more}
+                    onClick={() => setLedgerOffset(ledgerOffset + report.limit)}
+                  >
+                    Next
+                  </button>
                 </footer>
               )}
             </>

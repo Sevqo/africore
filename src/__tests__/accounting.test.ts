@@ -13,6 +13,8 @@ let server: any,
   reviewer: string,
   reviewerCookie: string,
   operationsCookie: string,
+  postedPaymentId: string,
+  postedPaymentReference: string,
   config: any,
   periodId: string,
   postedId: string;
@@ -533,8 +535,9 @@ test('canonical issued invoices, partial confirmed allocations and credits post 
     amount_minor: 40000,
   });
   assert.equal(request.status, 201, JSON.stringify(request.data));
+  postedPaymentReference = 'synthetic-books-' + randomUUID();
   await processProviderResult(request.data.id, {
-    reference: 'synthetic-books-' + randomUUID(),
+    reference: postedPaymentReference,
     status: 'succeeded',
     amount_minor: 40000,
     currency: 'KES',
@@ -543,7 +546,7 @@ test('canonical issued invoices, partial confirmed allocations and credits post 
     org,
     invoice.data.id,
   ]);
-  await postSource('allocation', allocation.id);
+  postedPaymentId = (await postSource('allocation', allocation.id)).id;
   const credited = await api(root() + '/invoices/' + invoice.data.id + '/credits', 'POST', {
     amount_minor: 10000,
     reason: 'Synthetic agreed service adjustment',
@@ -1054,6 +1057,221 @@ test('configured tax codes prepare exact integer manual adjustments and changed 
     409,
   );
 });
+test('bank statement review matches posted bank items and reverses links without changing the books', async () => {
+  const bankRoot = root() + '/accounting';
+  const journal = await api(bankRoot + '/journals', 'POST', {
+    expected_version: 0,
+    code: 'BANKQA',
+    name: 'Synthetic bank journal',
+  });
+  assert.equal(journal.status, 201, JSON.stringify(journal.data));
+  const profile = await api(bankRoot + '/bank-journals', 'POST', {
+    journal_id: journal.data.id,
+    account_id: account('1000'),
+    currency: 'KES',
+  });
+  assert.equal(profile.status, 201, JSON.stringify(profile.data));
+
+  async function post(amount: number, currency = 'KES') {
+    const entry = await api(
+      bankRoot + '/entries',
+      'POST',
+      draft(amount, currency, {
+        journal_id: journal.data.id,
+        lines: [
+          { account_id: account('1000'), debit_minor: amount, credit_minor: 0 },
+          { account_id: account('4000'), debit_minor: 0, credit_minor: amount },
+        ],
+      }),
+    );
+    assert.equal(entry.status, 201, JSON.stringify(entry.data));
+    const result = await api(bankRoot + '/entries/' + entry.data.id + '/post', 'POST', {
+      expected_version: entry.data.version,
+      approval_id: await review(entry.data),
+    });
+    assert.equal(result.status, 200, JSON.stringify(result.data));
+    return result.data;
+  }
+  const correct = await post(10000),
+    incorrect = await post(9000),
+    otherCurrency = await post(10000, 'USD');
+  const postedPayment = (await api(bankRoot + '/entries/' + postedPaymentId)).data;
+  const reviewerName = 'Synthetic separate review';
+  const csv =
+    'date,reference,description,amount,currency\n' +
+    '2026-11-04,' +
+    correct.reference +
+    ',"Synthetic incoming, booked",100.00,KES\n' +
+    '2026-11-05,OUT-UNMATCHED,Unmatched debit,-25.00,KES\n' +
+    postedPayment.entry_on +
+    ',' +
+    postedPaymentReference +
+    ',Confirmed allocation,400.00,KES\n';
+  const statementInput = {
+    bank_journal_id: profile.data.id,
+    name: 'Synthetic November statement',
+    opening_minor: 1000,
+    closing_minor: 48500,
+    csv,
+  };
+  const importPath = bankRoot + '/bank-statements';
+  assert.equal(
+    (await api(importPath, 'POST', { ...statementInput, closing_minor: 8000 })).status,
+    400,
+  );
+  assert.equal(
+    (await api(importPath, 'POST', { ...statementInput, csv: csv.replace('KES', 'USD') })).status,
+    400,
+  );
+  const importKey = randomUUID();
+  const imported = await api(importPath, 'POST', statementInput, cookie, importKey);
+  assert.equal(imported.status, 201, JSON.stringify(imported.data));
+  assert.equal(
+    (await api(importPath, 'POST', statementInput, cookie, importKey)).data.id,
+    imported.data.id,
+  );
+  assert.equal((await api(importPath, 'POST', statementInput)).data.id, imported.data.id);
+  assert.equal(
+    (
+      await api(importPath, 'POST', {
+        ...statementInput,
+        csv: csv.replace('Unmatched debit', 'Edited memo'),
+      })
+    ).status,
+    409,
+  );
+  assert.equal((await api(importPath, 'GET', undefined, operationsCookie)).status, 403);
+  assert.equal((await api(importPath + '?bank_journal_id=' + profile.data.id)).data.data.length, 1);
+  const detailsPath = importPath + '/' + imported.data.id;
+  const details = (await api(detailsPath)).data;
+  assert.deepEqual(details.counts, { unmatched: 3, partial: 0, reconciled: 0 });
+  assert.equal(details.outstanding_out_minor, 2500);
+  const incoming = details.lines[0];
+  const payment = (await api(bankRoot + '/bank-lines/' + details.lines[2].id)).data.candidates.find(
+    (row: any) => row.entry_id === postedPaymentId,
+  );
+  assert.equal(payment.source_type, 'allocation');
+  assert.equal(payment.provider_reference, postedPaymentReference);
+  const linePath = bankRoot + '/bank-lines/' + incoming.id;
+  const candidates = (await api(linePath)).data.candidates;
+  assert.equal(candidates[0].entry_id, correct.id);
+  assert.equal(candidates[0].score, 100);
+  assert.equal(
+    candidates.some((row: any) => row.entry_id === otherCurrency.id),
+    false,
+  );
+  const wrongId = candidates.find((row: any) => row.entry_id === incorrect.id).id;
+  const correctId = candidates[0].id;
+  const propose = (candidate_id: string, amount_minor: number) =>
+    api(linePath + '/matches', 'POST', {
+      candidate_id,
+      amount_minor,
+      reason: 'Review bank evidence',
+    });
+  const decide = (match: any, action: string, session = cookie) =>
+    api(
+      bankRoot + '/bank-matches/' + match.id + '/decision',
+      'POST',
+      { action, expected_version: match.version, reason: reviewerName },
+      session,
+    );
+  const wrong = await propose(wrongId, 9000);
+  assert.equal(wrong.status, 201, JSON.stringify(wrong.data));
+  assert.equal((await decide(wrong.data, 'approve')).status, 403);
+  assert.equal((await decide(wrong.data, 'apply')).status, 409);
+  assert.equal((await decide(wrong.data, 'reject', reviewerCookie)).data.status, 'rejected');
+  assert.equal(
+    (await api(linePath)).data.candidates.some((row: any) => row.id === wrongId),
+    false,
+  );
+
+  const partial = await propose(correctId, 4000);
+  const approval = await decide(partial.data, 'approve', reviewerCookie);
+  assert.equal(approval.status, 200, JSON.stringify(approval.data));
+  assert.equal((await decide(approval.data, 'apply')).data.status, 'applied');
+  const remaining = (await api(linePath)).data;
+  assert.equal(remaining.line.status, 'partial');
+  assert.equal(remaining.candidates[0].available_minor, 6000);
+  assert.equal((await propose(correctId, 6001)).status, 409);
+  const finalMatch = await propose(correctId, 6000);
+  const finalApproval = await decide(finalMatch.data, 'approve', reviewerCookie);
+  const applied = await decide(finalApproval.data, 'apply');
+  assert.equal(applied.data.status, 'applied');
+  const reconciled = (await api(detailsPath + '?status=unmatched&search=debit')).data;
+  assert.equal(reconciled.lines.length, 1);
+  assert.equal(reconciled.counts.reconciled, 1);
+  assert.equal(reconciled.outstanding_in_minor, 40000);
+  const outstanding = (await api(bankRoot + '/bank-journals/' + profile.data.id + '/unmatched'))
+    .data;
+  assert.equal(outstanding.currency, 'KES');
+  assert.deepEqual(
+    outstanding.data.map((row: any) => row.id).sort(),
+    [details.lines[1].id, details.lines[2].id].sort(),
+  );
+  assert.equal(
+    (
+      await api(bankRoot + '/entries/' + correct.id + '/reverse', 'POST', {
+        entry_on: '2026-11-05',
+        reason: 'Synthetic journal reversal',
+      })
+    ).status,
+    409,
+  );
+  const reversal = await decide(applied.data, 'request_reversal');
+  assert.equal((await decide(reversal.data, 'apply')).status, 409);
+  const reverseApproval = await decide(reversal.data, 'approve', reviewerCookie);
+  assert.equal((await decide(reverseApproval.data, 'apply')).data.status, 'reversed');
+  const reopened = (await api(linePath)).data;
+  assert.equal(reopened.line.status, 'partial');
+  assert.equal(reopened.line.data.matched_minor, 4000);
+  assert.ok(reopened.history.some((row: any) => row.action === 'apply_reversal'));
+  const unchanged = (await api(bankRoot + '/entries/' + correct.id)).data;
+  assert.equal(unchanged.version, correct.version);
+  assert.deepEqual(unchanged.lines, correct.lines);
+
+  const other = await api('/api/auth/workspaces', 'POST', {
+    kind: 'business',
+    name: 'Synthetic second books',
+    display_name: 'Synthetic owner',
+    services: ['accounting'],
+  });
+  assert.equal(other.status, 201, JSON.stringify(other.data));
+  const otherBank = '/api/v1/organizations/' + other.data.id + '/accounting';
+  assert.equal((await api(otherBank + '/bank-statements/' + imported.data.id)).status, 404);
+  assert.equal((await api(otherBank + '/bank-lines/' + incoming.id)).status, 404);
+
+  const second = await api(importPath, 'POST', {
+    ...statementInput,
+    name: 'Synthetic competing statement',
+    opening_minor: 48500,
+    closing_minor: 54500,
+    csv: 'date,reference,description,amount,currency\n2026-11-07,COMPETING,Separate bank row,60.00,KES\n',
+  });
+  assert.equal(second.status, 201, JSON.stringify(second.data));
+  const secondLine = (await api(importPath + '/' + second.data.id)).data.lines[0];
+  const requests = await Promise.all([
+    propose(correctId, 6000),
+    api(bankRoot + '/bank-lines/' + secondLine.id + '/matches', 'POST', {
+      candidate_id: correctId,
+      amount_minor: 6000,
+      reason: 'Competing capacity request',
+    }),
+  ]);
+  assert.deepEqual(
+    requests.map((row) => row.status),
+    [201, 201],
+  );
+  const approvals = await Promise.all(
+    requests.map((row) => decide(row.data, 'approve', reviewerCookie)),
+  );
+  assert.deepEqual(
+    approvals.map((row) => row.status),
+    [200, 200],
+  );
+  const raced = await Promise.all(approvals.map((row) => decide(row.data, 'apply')));
+  assert.deepEqual(raced.map((row) => row.status).sort(), [200, 409]);
+});
+
 test('Accounting deactivation retains posted history while new draft and configuration writes stop', async () => {
   assert.equal(
     (await api(root() + '/services/accounting/deactivate', 'POST', { confirm: true })).status,

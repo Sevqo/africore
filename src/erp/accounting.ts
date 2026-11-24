@@ -670,7 +670,7 @@ export async function accountingEntries(a: Access, input: unknown) {
       (q.currency ? ' AND currency=?' : '') +
       (q.journal_id ? ' AND journal_id=?' : '') +
       (q.partner
-        ? ' AND EXISTS(SELECT 1 FROM ac_accounting_lines partner_line WHERE partner_line.entry_id=ac_accounting_entries.id AND partner_line.org_id=ac_accounting_entries.org_id AND partner_line.environment=ac_accounting_entries.environment AND LOWER(COALESCE(partner_line.contact_id,\'\')) LIKE ?)'
+        ? " AND EXISTS(SELECT 1 FROM ac_accounting_lines partner_line WHERE partner_line.entry_id=ac_accounting_entries.id AND partner_line.org_id=ac_accounting_entries.org_id AND partner_line.environment=ac_accounting_entries.environment AND LOWER(COALESCE(partner_line.contact_id,'')) LIKE ?)"
         : '') +
       (q.from ? ' AND entry_on>=?' : '') +
       (q.to ? ' AND entry_on<=?' : '') +
@@ -688,7 +688,10 @@ export async function accountingEntries(a: Access, input: unknown) {
       ...(q.to ? [q.to] : []),
       ...(q.search ? Array(4).fill('%' + q.search.toLowerCase() + '%') : []),
     ];
-  const total = await dbGet('SELECT COUNT(*) AS total FROM ac_accounting_entries WHERE ' + where, args);
+  const total = await dbGet(
+    'SELECT COUNT(*) AS total FROM ac_accounting_entries WHERE ' + where,
+    args,
+  );
   const rows = await dbAll(
     'SELECT id FROM ac_accounting_entries WHERE ' +
       where +
@@ -727,11 +730,11 @@ export async function accountingItems(a: Access, input: unknown) {
       (q.currency ? ' AND e.currency=?' : '') +
       (q.account_id ? ' AND l.account_id=?' : '') +
       (q.journal_id ? ' AND e.journal_id=?' : '') +
-      (q.partner ? ' AND LOWER(COALESCE(l.contact_id,\'\')) LIKE ?' : '') +
+      (q.partner ? " AND LOWER(COALESCE(l.contact_id,'')) LIKE ?" : '') +
       (q.from ? ' AND e.entry_on>=?' : '') +
       (q.to ? ' AND e.entry_on<=?' : '') +
       (q.search
-        ? ' AND (LOWER(e.reference) LIKE ? OR LOWER(e.id) LIKE ? OR LOWER(e.source_id) LIKE ? OR LOWER(a.code) LIKE ? OR LOWER(a.name) LIKE ? OR LOWER(COALESCE(l.contact_id,\'\')) LIKE ? OR LOWER(j.code) LIKE ? OR LOWER(j.name) LIKE ?)'
+        ? " AND (LOWER(e.reference) LIKE ? OR LOWER(e.id) LIKE ? OR LOWER(e.source_id) LIKE ? OR LOWER(a.code) LIKE ? OR LOWER(a.name) LIKE ? OR LOWER(COALESCE(l.contact_id,'')) LIKE ? OR LOWER(j.code) LIKE ? OR LOWER(j.name) LIKE ?)"
         : ''),
     args = [
       a.org,
@@ -845,6 +848,17 @@ export async function accountingReviewResource(a: Access, entryId: string) {
     updated_at: value.updated_at,
   };
 }
+async function requireBankEntryUnmatched(a: Access, entryId: string) {
+  const linked = await dbGet(
+    `SELECT m.id FROM ac_erp_objects m JOIN ac_accounting_lines l ON l.id=m.parent_id
+       AND l.org_id=m.org_id AND l.environment=m.environment
+     WHERE m.org_id=? AND m.environment=? AND l.entry_id=? AND m.kind='bank_match'
+       AND m.status IN ('applied','reversal_pending','reversal_approved') LIMIT 1`,
+    [a.org, a.environment, entryId],
+  );
+  if (linked) fail(409, 'Reverse the bank reconciliation before reversing this journal entry');
+}
+
 export async function postJournalEntry(a: Access, entryId: string, input: unknown, key: string) {
   const d = postJournalInput.parse(input);
   return operation(
@@ -857,6 +871,7 @@ export async function postJournalEntry(a: Access, entryId: string, input: unknow
       const e = await entry(a, entryId);
       if (e.version !== d.expected_version || e.status !== 'draft')
         fail(409, 'Only the exact reviewed draft can be posted');
+      if (e.reverses_id) await requireBankEntryUnmatched(a, e.reverses_id);
       await openPeriod(a, e.entry_on);
       const lines = e.lines.map((l) => ({
         account_id: l.account_id,
@@ -927,6 +942,7 @@ export async function reverseJournalEntry(a: Access, entryId: string, input: unk
     async () => {
       const old = await entry(a, entryId);
       if (old.status !== 'posted') fail(409, 'Only a posted entry can be reversed');
+      await requireBankEntryUnmatched(a, old.id);
       await openPeriod(a, d.entry_on);
       if (d.entry_on < old.entry_on)
         fail(400, 'A reversal cannot precede its original posting date');
