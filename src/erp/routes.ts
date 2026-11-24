@@ -8,6 +8,16 @@ import {
 import { taxCodes, saveTaxCode, previewTaxEntry, prepareTaxEntry } from './accounting-tax';
 import { accountingAging } from './accounting-aging';
 import {
+  actOnPeriodClose,
+  createFiscalYear,
+  fiscalYears,
+  lockDates,
+  periodCloseDetail,
+  saveLockDates,
+} from './accounting-close';
+import { importOpening, openingRegister } from './accounting-opening';
+import { accountingStatements } from './accounting-statements';
+import {
   actOnDeferral,
   deferralDetail,
   deferralReport,
@@ -286,6 +296,54 @@ erp.get(
 erp.get(
   '/organizations/:org/accounting/items',
   route(async (req, res) => res.json(await accountingItems(await access(req), req.query))),
+);
+erp.get(
+  '/organizations/:org/accounting/fiscal-years',
+  route(async (req, res) => res.json(await fiscalYears(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/accounting/fiscal-years',
+  route(async (req, res) =>
+    res.status(201).json(await createFiscalYear(await access(req, 'admin'), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/accounting/lock-dates',
+  route(async (req, res) => res.json(await lockDates(await access(req)))),
+);
+erp.put(
+  '/organizations/:org/accounting/lock-dates',
+  route(async (req, res) =>
+    res.json(await saveLockDates(await access(req, 'admin'), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/accounting/periods/:id/close',
+  route(async (req, res) =>
+    res.json(await periodCloseDetail(await access(req), String(req.params.id))),
+  ),
+);
+erp.post(
+  '/organizations/:org/accounting/periods/:id/close',
+  route(async (req, res) =>
+    res.json(
+      await actOnPeriodClose(await access(req, 'admin'), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/accounting/opening-balances',
+  route(async (req, res) => res.json(await openingRegister(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/accounting/opening-balances/import',
+  route(async (req, res) =>
+    res.status(201).json(await importOpening(await access(req, 'finance'), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/accounting/statements',
+  route(async (req, res) => res.json(await accountingStatements(await access(req), req.query))),
 );
 erp.get(
   '/organizations/:org/accounting/entries/:id',

@@ -8,12 +8,14 @@ export function JournalEditor({
   api,
   onSaved,
   onClose,
+  opening = false,
 }: {
   entry?: any;
   configuration: any;
   api: API;
   onSaved: (entry: any) => void;
   onClose: () => void;
+  opening?: boolean;
 }) {
   const [currency, setCurrency] = useState(e?.currency || c.settings.currency),
     [lines, setLines] = useState<any[]>(
@@ -75,7 +77,7 @@ export function JournalEditor({
         aria-modal="true"
         aria-labelledby="journal-editor-title"
       >
-        <h2 id="journal-editor-title">{e ? 'Edit manual draft' : 'Prepare a journal draft'}</h2>
+        <h2 id="journal-editor-title">{e ? 'Edit manual draft' : opening ? 'Prepare opening balances' : 'Prepare a journal draft'}</h2>
         <p>
           Drafts may be incomplete. Posting requires balanced lines, an open period and an exact
           approval from a different owner or administrator. This ledger operation does not move
@@ -93,7 +95,8 @@ export function JournalEditor({
                 entry_on: d.date,
                 currency,
                 description: d.description,
-                opening_entry: d.opening === 'on',
+                opening_entry: opening || d.opening === 'on',
+                ...(d.opening_reference ? { opening_reference: d.opening_reference } : {}),
                 lines: lines.map((l) => ({
                   account_id: l.account_id,
                   contact_id: l.contact_id || null,
@@ -113,7 +116,8 @@ export function JournalEditor({
                 type="date"
                 required
                 min={c.settings.start_on}
-                defaultValue={e?.entry_on || today()}
+                defaultValue={e?.entry_on || (opening ? c.settings.start_on : today())}
+                readOnly={opening || e?.data.opening_entry}
               />
             </Field>
             <Field label="Journal">
@@ -157,9 +161,14 @@ export function JournalEditor({
           </Field>
           {c.settings.opening_policy === 'reviewed_opening_entry_required' && (
             <label className="checkbox-field">
-              <input name="opening" type="checkbox" defaultChecked={e?.data.opening_entry} />
+              <input name="opening" type="checkbox" defaultChecked={opening || e?.data.opening_entry} disabled={opening} />
               Reviewed opening entry on {c.settings.start_on}
             </label>
+          )}
+          {(opening || e?.data.opening_entry) && (
+            <Field label="Opening balance evidence reference">
+              <input name="opening_reference" required maxLength={250} defaultValue={e?.data.opening_reference || ''} />
+            </Field>
           )}
           <div className="acc-journal-table-scroll">
             <table className="acc-journal-lines">

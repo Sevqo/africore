@@ -39,11 +39,13 @@ interface BookEntry {
   source_type: string;
   source_id: string;
   source_hash: string | null;
+  source_tax_minor: number | null;
   reverses_id: string | null;
   updated_at: string;
   data: {
     description: string;
     opening_entry: boolean;
+    opening_reference?: string;
     source_snapshot?: any;
     book_tax_minor?: number;
   };
@@ -108,6 +110,7 @@ export const journalEntryInput = z
     description: z.string().trim().min(3).max(3000),
     lines: z.array(journalLineInput).min(2).max(200),
     opening_entry: z.boolean().default(false),
+    opening_reference: z.string().trim().max(250).optional(),
   })
   .strict();
 export const postJournalInput = z
@@ -376,6 +379,9 @@ export async function createPeriod(a: Access, input: unknown, key: string) {
       const s = await accountingSettings(a);
       if (d.ends_on < d.starts_on || d.starts_on < s.start_on)
         fail(400, 'Period dates must follow the reviewed accounting start');
+      await (
+        await import('./accounting-close')
+      ).enforceFiscalPeriodBoundary(a, d.starts_on, d.ends_on);
       if (
         await dbGet(
           'SELECT id FROM ac_accounting_periods WHERE org_id=? AND environment=? AND starts_on<=? AND ends_on>=?',
@@ -407,6 +413,7 @@ export async function setPeriodState(a: Access, periodId: string, input: unknown
       );
       if (!p) fail(404, 'Period not found');
       if (Number(p.version) !== d.expected_version) fail(409, 'Period changed; reload');
+      await (await import('./accounting-close')).ensureDirectPeriodStateAllowed(a, periodId);
       await dbRun(
         'UPDATE ac_accounting_periods SET status=?,version=version+1,updated_at=? WHERE id=? AND org_id=? AND environment=? AND version=?',
         [d.status, now(), periodId, a.org, a.environment, d.expected_version],
@@ -510,6 +517,16 @@ export async function saveJournalEntry(
       const s = await accountingSettings(a);
       await openPeriod(a, d.entry_on);
       await validateLines(a, d);
+      await (
+        await import('./accounting-close')
+      ).enforceLockDates(
+        a,
+        d.entry_on,
+        d.journal_id,
+        'manual',
+        0,
+        d.lines.map((line) => line.account_id),
+      );
       if (
         d.opening_entry &&
         (d.entry_on !== s.start_on || s.opening_policy !== 'reviewed_opening_entry_required')
@@ -523,8 +540,51 @@ export async function saveJournalEntry(
       if (old && old.source_type !== 'manual')
         fail(409, 'Source-derived drafts cannot be overwritten with manual lines');
       if ((old?.version || 0) !== d.expected_version) fail(409, 'Journal entry changed; reload');
+      if (d.opening_entry) {
+        if (s.data.opening_entries?.[d.currency])
+          fail(409, 'An opening journal already posted for this currency');
+        const candidates = await dbAll(
+          "SELECT id,data FROM ac_accounting_entries WHERE org_id=? AND environment=? AND currency=? AND entry_on=? AND status='draft'",
+          [a.org, a.environment, d.currency, s.start_on],
+        );
+        if (
+          candidates.some((row) => row.id !== entryId && decode(a, 'entry', row).data.opening_entry)
+        )
+          fail(409, 'An opening draft already exists for this currency');
+        const accounts = await dbAll(
+          'SELECT id,type FROM ac_accounting_accounts WHERE org_id=? AND environment=?',
+          [a.org, a.environment],
+        );
+        const types = new Map(accounts.map((account) => [account.id, account.type]));
+        const controls = [s.data.accounts['1100'], s.data.accounts['2000']];
+        if (
+          d.lines.some(
+            (line) =>
+              controls.includes(line.account_id) ||
+              !['asset', 'liability', 'equity'].includes(types.get(line.account_id)),
+          )
+        )
+          fail(
+            400,
+            'Opening journals accept permanent accounts and exclude receivable and payable control accounts',
+          );
+        if (
+          sumMinor(d.lines.map((line) => line.debit_minor)) !==
+          sumMinor(d.lines.map((line) => line.credit_minor))
+        )
+          fail(400, 'Opening debits and credits must balance');
+      }
       const nextId = entryId || randomUUID(),
-        data = { description: d.description, opening_entry: d.opening_entry };
+        data = {
+          description: d.description,
+          opening_entry: d.opening_entry,
+          ...(d.opening_entry
+            ? {
+                opening_reference:
+                  d.opening_reference || old?.data.opening_reference || d.description,
+              }
+            : {}),
+        };
       if (old) {
         await dbRun(
           'DELETE FROM ac_accounting_lines WHERE entry_id=? AND org_id=? AND environment=?',
@@ -574,6 +634,25 @@ export async function accountingEntry(a: Access, entryId: string) {
   await accountingAccess(a);
   return entry(a, entryId);
 }
+
+export async function openingJournalRegister(a: Access, start: string) {
+  await accountingAccess(a);
+  const candidates = await dbAll(
+    'SELECT * FROM ac_accounting_entries WHERE org_id=? AND environment=? AND entry_on=? ORDER BY currency,reference',
+    [a.org, a.environment, start],
+  );
+  const result = [];
+  for (const value of candidates.map((r) => decode(a, 'entry', r))) {
+    if (!value.data.opening_entry) continue;
+    const opening = await entry(a, value.id);
+    const correction = await dbGet(
+      'SELECT id,reference,status,entry_on FROM ac_accounting_entries WHERE org_id=? AND environment=? AND reverses_id=?',
+      [a.org, a.environment, value.id],
+    );
+    result.push({ ...opening, correction: correction ?? null });
+  }
+  return result;
+}
 /** Internal source builder. Its caller holds the ERP operation transaction and
  * constructs lines from authoritative shared evidence, never client line JSON. */
 export async function prepareDerivedEntry(
@@ -616,6 +695,16 @@ export async function prepareDerivedEntry(
     lines: plan.lines,
   });
   await validateLines(a, document);
+  await (
+    await import('./accounting-close')
+  ).enforceLockDates(
+    a,
+    plan.posting_on,
+    journal.id,
+    source.type,
+    plan.book_tax_minor,
+    document.lines.map((line) => line.account_id),
+  );
   const nextId = randomUUID();
   await dbRun(
     'INSERT INTO ac_accounting_entries(id,org_id,environment,journal_id,reference,entry_on,currency,status,data,source_type,source_id,source_hash,source_parent_id,source_gross_minor,source_tax_minor,created_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
@@ -890,6 +979,17 @@ export async function postJournalEntry(a: Access, entryId: string, input: unknow
       if (e.source_type === 'deferral_recognition')
         await (await import('./deferrals')).validateDeferralPosting(a, e);
       await openPeriod(a, e.entry_on);
+      const lockSource = e.reverses_id ? await entry(a, e.reverses_id) : e;
+      await (
+        await import('./accounting-close')
+      ).enforceLockDates(
+        a,
+        e.entry_on,
+        e.journal_id,
+        lockSource.source_type,
+        Number(lockSource.source_tax_minor ?? 0),
+        e.lines.map((line) => line.account_id),
+      );
       const lines = e.lines.map((l) => ({
         account_id: l.account_id,
         contact_id: l.contact_id,
@@ -968,6 +1068,16 @@ export async function reverseJournalEntry(a: Access, entryId: string, input: unk
       await (await import('./fixed-assets')).validateAssetReversal(a, old.id);
       await (await import('./deferrals')).validateDeferralReversal(a, old);
       await openPeriod(a, d.entry_on);
+      await (
+        await import('./accounting-close')
+      ).enforceLockDates(
+        a,
+        d.entry_on,
+        old.journal_id,
+        old.source_type,
+        Number(old.source_tax_minor ?? 0),
+        old.lines.map((line) => line.account_id),
+      );
       if (d.entry_on < old.entry_on)
         fail(400, 'A reversal cannot precede its original posting date');
       const existing = await dbGet(

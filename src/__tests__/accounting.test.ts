@@ -1641,6 +1641,278 @@ test('expense and revenue deferrals recognize existing balances through separate
   await approve(sourceReversal.data);
 });
 
+test('opening CSV, reviewed fiscal close, date locks and statements use the same posted ledger', async () => {
+  const previousOrg = org,
+    previousConfig = config;
+  try {
+    const workspace = await api('/api/auth/workspaces', 'POST', {
+      kind: 'business',
+      name: 'Synthetic fiscal close',
+      display_name: 'Synthetic owner',
+      services: ['accounting', 'invoicing', 'customers'],
+    });
+    assert.equal(workspace.status, 201, JSON.stringify(workspace.data));
+    org = workspace.data.id;
+    await dbRun("INSERT INTO ac_memberships(org_id,user_id,role) VALUES (?,?,'admin')", [
+      org,
+      reviewer,
+    ]);
+    const p = root() + '/accounting';
+    const setup = await api(p + '/setup', 'POST', {
+      start_on: '2026-10-01',
+      currency: 'KES',
+      opening_policy: 'reviewed_opening_entry_required',
+      acknowledge_history_boundary: true,
+    });
+    assert.equal(setup.status, 200);
+    config = setup.data;
+    const year = await api(p + '/fiscal-years', 'POST', {
+      name: 'FY through October',
+      starts_on: '2025-11-01',
+      ends_on: '2026-10-31',
+    });
+    assert.equal(year.status, 201, JSON.stringify(year.data));
+    assert.equal(
+      (
+        await api(p + '/fiscal-years', 'POST', {
+          name: 'Conflict',
+          starts_on: '2026-10-01',
+          ends_on: '2027-09-30',
+        })
+      ).status,
+      409,
+    );
+    const fy = await api(p + '/fiscal-years', 'POST', {
+      name: 'FY from November',
+      starts_on: '2026-11-01',
+      ends_on: '2027-10-31',
+    });
+    assert.equal(fy.status, 201);
+    assert.equal(
+      (
+        await api(p + '/periods', 'POST', {
+          name: 'Invalid boundary',
+          starts_on: '2026-10-25',
+          ends_on: '2026-11-05',
+        })
+      ).status,
+      409,
+    );
+    for (const month of ['10', '11', '12']) {
+      const created = await api(p + '/periods', 'POST', {
+        name: 'Month ' + month,
+        starts_on: '2026-' + month + '-01',
+        ends_on: '2026-' + month + (month === '11' ? '-30' : '-31'),
+      });
+      assert.equal(created.status, 201, JSON.stringify(created.data));
+    }
+    const journal = (code: string) => config.journals.find((j: any) => j.code === code).id;
+    const openingInput = {
+      entry_on: '2026-10-01',
+      currency: 'KES',
+      journal_id: journal('GENERAL'),
+      opening_reference: 'Synthetic migration worksheet',
+      csv: 'account_code,debit_minor,credit_minor\n1000,100000,0\n3000,0,100000',
+    };
+    assert.equal(
+      (
+        await api(p + '/opening-balances/import', 'POST', {
+          ...openingInput,
+          csv: openingInput.csv.replace('1000,', '1100,'),
+        })
+      ).status,
+      400,
+    );
+    const opening = await api(p + '/opening-balances/import', 'POST', openingInput);
+    assert.equal(opening.status, 201, JSON.stringify(opening.data));
+    assert.equal((await api(p + '/opening-balances/import', 'POST', openingInput)).status, 409);
+    const post = async (entry: any) => {
+      const result = await api(p + '/entries/' + entry.id + '/post', 'POST', {
+        expected_version: entry.version,
+        approval_id: await review(entry),
+      });
+      assert.equal(result.status, 200, JSON.stringify(result.data));
+      return result.data;
+    };
+    await post(opening.data);
+    assert.equal((await api(p + '/opening-balances')).data.data.length, 1);
+    assert.equal((await api(p + '/opening-balances/import', 'POST', openingInput)).status, 409);
+    const entryOn = (date: string, amount: number, journalCode = 'GENERAL') =>
+      draft(amount, 'KES', {
+        entry_on: date,
+        journal_id: journal(journalCode),
+        lines: [
+          { account_id: account('1000'), debit_minor: amount, credit_minor: 0 },
+          { account_id: account('4000'), debit_minor: 0, credit_minor: amount },
+        ],
+      });
+    const october = await post(
+      (await api(p + '/entries', 'POST', entryOn('2026-10-21', 20000))).data,
+    );
+    const november = await api(p + '/entries', 'POST', entryOn('2026-11-07', 30000, 'SALES'));
+    assert.equal(november.status, 201);
+    const lock = (expected_version: number, changes: object) =>
+      api(p + '/lock-dates', 'PUT', {
+        expected_version,
+        sales: null,
+        purchases: null,
+        tax: null,
+        all: null,
+        reason: 'Synthetic policy review',
+        ...changes,
+      });
+    assert.equal(
+      (await lock(0, { sales: '2026-11-07', purchases: '2026-11-05', tax: '2026-11-05' })).status,
+      200,
+    );
+    assert.equal(
+      (await api(p + '/entries', 'POST', entryOn('2026-11-07', 100, 'SALES'))).status,
+      409,
+    );
+    assert.equal(
+      (await api(p + '/entries', 'POST', entryOn('2026-11-05', 100, 'PURCHASE'))).status,
+      409,
+    );
+    assert.equal(
+      (
+        await api(p + '/entries', 'POST', {
+          ...entryOn('2026-11-05', 100),
+          lines: [
+            { account_id: account('1000'), debit_minor: 100, credit_minor: 0 },
+            { account_id: account('2100'), debit_minor: 0, credit_minor: 100 },
+          ],
+        })
+      ).status,
+      409,
+    );
+    const lockedApproval = await review(november.data);
+    assert.equal(
+      (
+        await api(p + '/entries/' + november.data.id + '/post', 'POST', {
+          expected_version: november.data.version,
+          approval_id: lockedApproval,
+        })
+      ).status,
+      409,
+    );
+    assert.equal((await lock(1, {})).status, 200);
+    const period = (await api(p + '/configuration')).data.periods.find(
+      (r: any) => r.starts_on === '2026-11-01',
+    );
+    const close = p + '/periods/' + period.id + '/close';
+    const step = async (action: string, who?: string) => {
+      const detail = (await api(close)).data;
+      return api(
+        close,
+        'POST',
+        {
+          action,
+          expected_version: detail.review?.version ?? 0,
+          expected_period_version: detail.period.version,
+          reason: 'Synthetic closing review',
+        },
+        who,
+      );
+    };
+    const blocked = await api(close);
+    assert.equal(blocked.status, 200, JSON.stringify(blocked.data));
+    assert.equal(blocked.data.checks.find((r: any) => r.code === 'draft_journals').count, 1);
+    assert.equal((await step('request')).status, 200);
+    assert.equal((await step('approve', reviewerCookie)).status, 409);
+    const posted = await api(p + '/entries/' + november.data.id + '/post', 'POST', {
+      expected_version: november.data.version,
+      approval_id: lockedApproval,
+    });
+    assert.equal(posted.status, 200, JSON.stringify(posted.data));
+    assert.equal((await api(close)).data.stale, true);
+    assert.equal((await step('approve', reviewerCookie)).status, 409);
+    assert.equal((await step('request')).status, 200);
+    assert.equal((await step('approve')).status, 403);
+    assert.equal((await step('approve', reviewerCookie)).status, 200);
+    const closed = await step('close');
+    assert.equal(closed.status, 200, JSON.stringify(closed.data));
+    assert.equal((await api(p + '/entries', 'POST', entryOn('2026-11-07', 100))).status, 409);
+    assert.equal(
+      (
+        await api(p + '/entries/' + posted.data.id + '/reverse', 'POST', {
+          entry_on: '2026-11-08',
+          reason: 'Protected date test',
+        })
+      ).status,
+      409,
+    );
+    assert.equal(
+      (
+        await api(p + '/periods/' + period.id + '/state', 'PUT', {
+          status: 'open',
+          expected_version: 2,
+          reason: 'Attempt bypass of reviewed close',
+        })
+      ).status,
+      409,
+    );
+    const contact = await api(root() + '/records/customers', 'POST', {
+      name: 'Synthetic close customer',
+    });
+    const invoice = await api(root() + '/records/invoices', 'POST', {
+      customer_id: contact.data.id,
+      currency: 'KES',
+      issue_date: '2026-11-12',
+      due_date: '2026-11-30',
+      items: [{ description: 'Synthetic sale', quantity: 1, unit_price_minor: 10000 }],
+    });
+    assert.equal(invoice.status, 201);
+    assert.equal(
+      (await api(root() + '/records/invoices/' + invoice.data.id, 'PATCH', { status: 'issued' }))
+        .status,
+      200,
+    );
+    assert.equal(
+      (await api(p + '/sources', 'POST', { source_type: 'invoice', source_id: invoice.data.id }))
+        .status,
+      409,
+    );
+    const reports = p + '/statements?currency=KES&from=2026-11-01&to=2026-11-30&view=';
+    const report = (view: string, extra = '') => api(reports + view + extra);
+    const trial = await report('trial', '&comparison=previous_period');
+    assert.equal(trial.status, 200, JSON.stringify(trial.data));
+    assert.equal(trial.data.totals.balanced, true);
+    assert.equal(trial.data.comparison_totals.net_profit_minor, 20000);
+    const cash = trial.data.accounts.find((a: any) => a.code === '1000');
+    assert.equal(cash.opening_debit_minor, 120000);
+    assert.equal(cash.closing_minor, 150000);
+    const balance = (await report('balance')).data;
+    assert.equal(balance.totals.equation_variance_minor, 0);
+    assert.equal(balance.totals.retained_earnings_minor, 20000);
+    assert.equal(balance.totals.current_year_result_minor, 30000);
+    const profit = (await report('profit', '&journal_id=' + journal('SALES'))).data;
+    assert.equal(profit.totals.net_profit_minor, 30000);
+    const ledger = await report(
+      'ledger',
+      '&account_id=' + account('1000') + '&search=' + posted.data.reference,
+    );
+    assert.equal(ledger.status, 200, JSON.stringify(ledger.data));
+    assert.equal(ledger.data.data[0].running_minor, 150000);
+    const audit = await report('audit');
+    assert.equal(audit.status, 200, JSON.stringify(audit.data));
+    assert.equal(audit.data.data[0].approver, reviewer);
+    const reversal = await api(p + '/entries/' + posted.data.id + '/reverse', 'POST', {
+      entry_on: '2026-12-01',
+      reason: 'Correction in next open period',
+    });
+    assert.equal(reversal.status, 201, JSON.stringify(reversal.data));
+    await post(reversal.data);
+    assert.equal((await api(p + '/entries/' + october.id)).data.status, 'posted');
+    assert.equal((await step('request_reopen')).status, 200);
+    assert.equal((await step('reopen')).status, 403);
+    assert.equal((await step('reopen', reviewerCookie)).status, 200);
+    assert.ok((await api(close)).data.history.some((r: any) => r.action === 'reopen'));
+  } finally {
+    org = previousOrg;
+    config = previousConfig;
+  }
+});
+
 test('Accounting deactivation retains posted history while new draft and configuration writes stop', async () => {
   assert.equal(
     (await api(root() + '/services/accounting/deactivate', 'POST', { confirm: true })).status,

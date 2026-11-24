@@ -141,6 +141,16 @@ schemas.accounting_agingQuery = z.toJSONSchema(require('../dist/erp/accounting-a
   target: 'openapi-3.0',
   unrepresentable: 'any',
 });
+for (const [module, names] of [
+  ['accounting-close', ['fiscalYearInput', 'lockDatesInput', 'periodReviewInput']],
+  ['accounting-opening', ['openingImportInput']],
+  ['accounting-statements', ['statementQuery']],
+])
+  for (const name of names)
+    schemas['accounting_' + name] = z.toJSONSchema(require('../dist/erp/' + module)[name], {
+      target: 'openapi-3.0',
+      unrepresentable: 'any',
+    });
 for (const name of [
   'bankJournalInput',
   'bankStatementInput',
@@ -503,44 +513,57 @@ for (const op of operations) {
         matches: 'bankMatchInput',
         decision: 'bankDecisionInput',
       };
-      const schema = path.includes('/accounting/deferral-models')
-        ? 'deferralModelInput'
-        : path.includes('/accounting/deferrals')
-          ? path.endsWith('/action')
-            ? 'deferralActionInput'
-            : 'deferralInput'
-          : path.includes('/accounting/asset-models')
-            ? 'assetModelInput'
-            : path.includes('/accounting/assets')
-              ? path.endsWith('/action')
-                ? 'assetActionInput'
-                : 'fixedAssetInput'
-              : path.includes('/accounting/bank-')
-                ? bankSchema[path.split('/').at(-1)]
-                : path.includes('/tax-codes')
-                  ? 'taxCodeInput'
-                  : path.endsWith('/tax-preview') || path.endsWith('/tax-entries')
-                    ? 'taxEntryInput'
-                    : path.endsWith('/setup')
-                      ? 'accountingSetupInput'
-                      : path.includes('/accounts')
-                        ? 'accountInput'
-                        : path.endsWith('/state')
-                          ? 'periodStateInput'
-                          : path.endsWith('/periods')
-                            ? 'periodInput'
-                            : path.endsWith('/review')
-                              ? 'journalReviewInput'
-                              : path.endsWith('/post')
-                                ? 'postJournalInput'
-                                : path.endsWith('/reverse')
-                                  ? 'reverseJournalInput'
-                                  : path.endsWith('/sources')
-                                    ? 'sourceInput'
-                                    : 'journalEntryInput';
+      const checkpoint = {
+        '/fiscal-years': 'fiscalYearInput',
+        '/lock-dates': 'lockDatesInput',
+        '/close': 'periodReviewInput',
+        '/opening-balances/import': 'openingImportInput',
+      };
+      const checkpointMatch = Object.keys(checkpoint).find((suffix) => path.endsWith(suffix));
+      const schema = checkpointMatch
+        ? checkpoint[checkpointMatch]
+        : path.includes('/accounting/deferral-models')
+          ? 'deferralModelInput'
+          : path.includes('/accounting/deferrals')
+            ? path.endsWith('/action')
+              ? 'deferralActionInput'
+              : 'deferralInput'
+            : path.includes('/accounting/asset-models')
+              ? 'assetModelInput'
+              : path.includes('/accounting/assets')
+                ? path.endsWith('/action')
+                  ? 'assetActionInput'
+                  : 'fixedAssetInput'
+                : path.includes('/accounting/bank-')
+                  ? bankSchema[path.split('/').at(-1)]
+                  : path.includes('/tax-codes')
+                    ? 'taxCodeInput'
+                    : path.endsWith('/tax-preview') || path.endsWith('/tax-entries')
+                      ? 'taxEntryInput'
+                      : path.endsWith('/setup')
+                        ? 'accountingSetupInput'
+                        : path.includes('/accounts')
+                          ? 'accountInput'
+                          : path.endsWith('/state')
+                            ? 'periodStateInput'
+                            : path.endsWith('/periods')
+                              ? 'periodInput'
+                              : path.endsWith('/review')
+                                ? 'journalReviewInput'
+                                : path.endsWith('/post')
+                                  ? 'postJournalInput'
+                                  : path.endsWith('/reverse')
+                                    ? 'reverseJournalInput'
+                                    : path.endsWith('/sources')
+                                      ? 'sourceInput'
+                                      : 'journalEntryInput';
       operation.requestBody.content['application/json'].schema = {
         $ref: '#/components/schemas/accounting_' + schema,
       };
+    } else if (path.endsWith('/accounting/statements')) {
+      const query = schemas.accounting_statementQuery;
+      for (const [name, schema] of Object.entries(query.properties))
+        parameters.push({ name, in: 'query', required: query.required.includes(name), schema });
     }
   }
   if (path.includes('/procurement')) {

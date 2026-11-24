@@ -171,6 +171,12 @@ export async function importBankStatement(a: Access, input: unknown, key: string
         return existing[0];
       }
       const settings = await accountingSettings(a);
+      await (
+        await import('./accounting-close')
+      ).enforceBankDates(
+        a,
+        lines.map((line) => line.date),
+      );
       if (lines.some((line) => line.date < settings.start_on))
         fail(400, 'Statement contains transactions before the reviewed books');
       const duplicates = await dbGet(
@@ -452,6 +458,9 @@ export async function proposeBankMatch(a: Access, lineId: string, input: unknown
       )
         fail(409, 'Resolve the current review first');
       const candidate = await checkCapacity(a, line, d.candidate_id, d.amount_minor);
+      await (
+        await import('./accounting-close')
+      ).enforceBankDates(a, [line.data.date, candidate.date]);
       const match = await insert(
         a,
         'bank_match',
@@ -487,6 +496,10 @@ export async function decideBankMatch(a: Access, matchId: string, input: unknown
     async () => {
       const match = await read(a, matchId, 'bank_match');
       const line = await read(a, match.root_id, 'bank_statement_line');
+      if (!['cancel', 'reject'].includes(d.action))
+        await (
+          await import('./accounting-close')
+        ).enforceBankDates(a, [line.data.date, match.data.candidate.date]);
       if (match.version !== d.expected_version) fail(409, 'Match changed; reload before deciding');
       const reversing = match.status.startsWith('reversal_');
       let next: string;

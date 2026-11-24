@@ -9,6 +9,7 @@ import { AccountingTax } from './AccountingTax';
 import { AccountingBankStatements } from './AccountingBankStatements';
 import { AccountingAssets } from './AccountingAssets';
 import { AccountingDeferrals } from './AccountingDeferrals';
+import { AccountingPeriodWorkspace } from './AccountingPeriodWorkspace';
 import { DocumentAttachments } from './DocumentAttachments';
 import {
   AccountingSourceRegister,
@@ -17,7 +18,6 @@ import {
 } from './AccountingRegisters';
 import {
   accountingSections,
-  balanceTotals,
   billCurrency,
   billStatus,
   billTotal,
@@ -31,7 +31,6 @@ import {
   invoiceTotal,
   journalLabel,
   journalType,
-  profitLines,
   recordData,
   sectionForView,
   viewTitles,
@@ -140,13 +139,15 @@ export function AccountingAppWorkspace({
     };
   }, [section]);
 
-  function go(next: AccountingView, deferralId?: string) {
+  function go(next: AccountingView, deferralId?: string, statementAccount?: string) {
     const url = new URL(location.href);
     url.searchParams.set('app', 'accounting');
     url.searchParams.set('section', sectionForView(next));
     url.searchParams.set('view', next);
     if (deferralId) url.searchParams.set('deferral', deferralId);
     else url.searchParams.delete('deferral');
+    if (statementAccount) url.searchParams.set('statementAccount', statementAccount);
+    else url.searchParams.delete('statementAccount');
     url.hash = 'Apps';
     history.pushState(history.state, '', url);
     dispatchEvent(new Event('africore:app-navigation'));
@@ -482,19 +483,38 @@ export function AccountingAppWorkspace({
             />
           )}
 
-          {view === 'closing' && (
-            <Closing drafts={drafts} events={events} periods={periods} accounts={accounts} />
-          )}
-
-          {['profit-loss', 'balance-sheet', 'trial-balance', 'ledger'].includes(view) && (
-            <Reports
+          {[
+            'periods',
+            'closing',
+            'fiscal-years',
+            'opening-balances',
+            'opening-report',
+            'profit-loss',
+            'balance-sheet',
+            'trial-balance',
+            'ledger',
+            'account-balances',
+            'journal-audit',
+            'closing-summary',
+          ].includes(view) && (
+            <AccountingPeriodWorkspace
+              key={
+                scope +
+                ':' +
+                view +
+                ':' +
+                (new URL(location.href).searchParams.get('statementAccount') || '')
+              }
               view={view}
               api={api}
-              scope={scope}
-              start={configuration.settings.start_on}
-              initialCurrency={configuration.settings.currency}
+              configuration={configuration}
+              manager={manager}
               revision={revision}
-              accounts={accounts}
+              openEntry={setSelected}
+              newOpening={() => setEditor({ new: true, opening: true })}
+              refresh={refresh}
+              go={go}
+              openAccount={(id) => go('ledger', undefined, id)}
             />
           )}
 
@@ -554,12 +574,13 @@ export function AccountingAppWorkspace({
           {editor && configuration.writable && (
             <JournalEditor
               entry={editor.new ? undefined : editor}
+              opening={Boolean(editor.opening)}
               configuration={configuration}
               api={api}
               onSaved={(saved: any) => {
                 setEditor(null);
                 setSelected(saved);
-                setView('entries');
+                if (!saved.data.opening_entry) setView('entries');
                 refresh('Journal draft saved. Posting requires a separate approval.');
               }}
               onClose={() => setEditor(null)}
@@ -1678,46 +1699,6 @@ function Review({ drafts, reviews, events, periods, accounts, onOpen, go }: any)
   );
 }
 
-function Closing({ drafts, events, periods, accounts }: any) {
-  const checks = [
-    ['Draft journal entries', drafts.length, 'Post or reverse drafts before closing.'],
-    [
-      'Unmatched payment evidence',
-      events.filter((event: any) => event.status === 'succeeded' && !event.allocated_at).length,
-      'Reconcile authorized payment evidence.',
-    ],
-    [
-      'Open periods',
-      periods.filter((period: any) => period.status === 'open').length,
-      'Lock reviewed periods after close.',
-    ],
-    [
-      'Active ledger accounts',
-      accounts.filter((account: any) => account.active).length,
-      'Confirm the chart of accounts is complete.',
-    ],
-  ];
-  return (
-    <section className="acc-panel">
-      <h2>Closing checklist</h2>
-      <p className="acc-hint">
-        These are readiness checks from loaded records, not an automated period-close statement.
-      </p>
-      <div className="acc-check-list">
-        {checks.map(([label, value, hint]: any) => (
-          <div key={label} className={value ? 'warn' : 'ok'}>
-            <span>{value}</span>
-            <div>
-              <strong>{label}</strong>
-              <p>{hint}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function InvoiceDetail({ invoice, api, writable, navigate, onClose }: any) {
   const data = recordData(invoice);
   const items = Array.isArray(data.items) ? data.items : [];
@@ -2153,308 +2134,6 @@ function EntryDocument({
             <button className="acc-secondary">Prepare reversal</button>
           </Form>
         </section>
-      )}
-    </section>
-  );
-}
-
-function Reports({ view, api, scope, start, initialCurrency, revision, accounts }: any) {
-  const [from, setFrom] = useState(start);
-  const [to, setTo] = useState(today());
-  const [currency, setCurrency] = useState(initialCurrency);
-  const [accountId, setAccountId] = useState('');
-  const [ledgerSearch, setLedgerSearch] = useState('');
-  const [ledgerOffset, setLedgerOffset] = useState(0);
-  const [attempt, setAttempt] = useState(0);
-  const [requestState, setRequestState] = useState<any>({ key: '', status: 'loading' });
-  const requested = new URLSearchParams({
-    from,
-    to,
-    currency,
-    ...(view === 'ledger' && accountId ? { account_id: accountId } : {}),
-    offset: String(view === 'ledger' ? ledgerOffset : 0),
-    ...(view === 'ledger' && ledgerSearch.trim() ? { search: ledgerSearch.trim() } : {}),
-  });
-  const requestKey = `${scope}:${revision}:${attempt}:${view}:${requested.toString()}`;
-  useEffect(() => {
-    let live = true;
-    setRequestState({ key: requestKey, status: 'loading' });
-    api('/accounting/report?' + requested)
-      .then((data: any) => {
-        if (live) setRequestState({ key: requestKey, status: 'ready', data });
-      })
-      .catch((reason: any) => {
-        if (live)
-          setRequestState({
-            key: requestKey,
-            status: 'error',
-            error: reason?.message || 'The requested financial report could not be loaded.',
-          });
-      });
-    return () => {
-      live = false;
-    };
-  }, [api, requestKey]);
-  const requestStatus = requestState.key === requestKey ? requestState.status : 'loading';
-  const report = requestStatus === 'ready' ? requestState.data : null;
-  const error = requestStatus === 'error' ? requestState.error : '';
-  const pnl = profitLines(report);
-  const balance = balanceTotals(report);
-  return (
-    <section className="acc-panel">
-      <header>
-        <h2>{viewTitles[view as AccountingView]}</h2>
-        <div className="acc-report-controls">
-          <input
-            type="date"
-            value={from}
-            onChange={(event) => {
-              setFrom(event.target.value);
-              setLedgerOffset(0);
-            }}
-            aria-label="From date"
-          />
-          <input
-            type="date"
-            value={to}
-            onChange={(event) => {
-              setTo(event.target.value);
-              setLedgerOffset(0);
-            }}
-            aria-label="To date"
-          />
-          <select
-            value={currency}
-            onChange={(event) => {
-              setCurrency(event.target.value);
-              setLedgerOffset(0);
-            }}
-            aria-label="Report currency"
-          >
-            {['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF'].map((code) => (
-              <option key={code}>{code}</option>
-            ))}
-          </select>
-        </div>
-      </header>
-      {error && (
-        <div className="alert error" role="alert">
-          <span>{error}</span>{' '}
-          <button className="acc-secondary" onClick={() => setAttempt((value) => value + 1)}>
-            Retry report
-          </button>
-        </div>
-      )}
-      {!report && !error && (
-        <p role="status">
-          Loading report for {from} through {to} in {currency}…
-        </p>
-      )}
-      {report && (
-        <>
-          <p className="acc-hint">{report.notice}</p>
-          {view === 'profit-loss' && (
-            <>
-              <div className="acc-report-head">
-                <span>Profit and Loss</span>
-                <span>
-                  {report.period?.from} → {report.period?.to} · {report.currency}
-                </span>
-              </div>
-              <div className="acc-statement">
-                {[
-                  { label: 'Revenue', rows: pnl.revenue, invert: true },
-                  { label: 'Cost of Sales and Expenses', rows: pnl.expenses, invert: false },
-                ].map((group) => (
-                  <div key={group.label}>
-                    <h3>{group.label}</h3>
-                    {group.rows.map((line: any) => {
-                      const value = group.invert
-                        ? line.credit_minor - line.debit_minor
-                        : line.debit_minor - line.credit_minor;
-                      return (
-                        <div className="acc-statement-row" key={line.id}>
-                          <span>
-                            {line.code} {line.name}
-                          </span>
-                          <strong>{money(value, currency)}</strong>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
-                <div className="acc-statement-row total">
-                  <span>Net Profit / Loss</span>
-                  <strong>{money(pnl.net, currency)}</strong>
-                </div>
-              </div>
-            </>
-          )}
-          {view === 'balance-sheet' && (
-            <>
-              <div className="acc-report-head">
-                <span>Balance Sheet</span>
-                <span>
-                  Cumulative through {report.period?.to} · {report.currency}
-                </span>
-              </div>
-              <div className="acc-statement">
-                {[
-                  { label: 'Assets', key: 'asset', invert: false },
-                  { label: 'Liabilities', key: 'liability', invert: true },
-                  { label: 'Equity', key: 'equity', invert: true },
-                ].map((group) => (
-                  <div key={group.label}>
-                    <h3>{group.label}</h3>
-                    {(report.balance_sheet || [])
-                      .filter((line: any) => line.type === group.key)
-                      .map((line: any) => {
-                        const value = group.invert ? -line.net_debit_minor : line.net_debit_minor;
-                        return (
-                          <div className="acc-statement-row" key={line.id}>
-                            <span>
-                              {line.code} {line.name}
-                            </span>
-                            <strong>{money(value, report.currency)}</strong>
-                          </div>
-                        );
-                      })}
-                  </div>
-                ))}
-                <div className="acc-statement-row total">
-                  <span>Assets = Liabilities + Equity</span>
-                  <strong>{money(balance.difference, currency)}</strong>
-                </div>
-              </div>
-            </>
-          )}
-          {view === 'trial-balance' && (
-            <>
-              <div className="acc-report-head">
-                <span>Trial Balance</span>
-                <span>
-                  {report.period?.from} → {report.period?.to} · {report.currency}
-                </span>
-              </div>
-              <DataTable>
-                <thead>
-                  <tr>
-                    <th>Account</th>
-                    <th className="num">Debit</th>
-                    <th className="num">Credit</th>
-                    <th className="num">Balance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(report.trial_balance || []).map((line: any) => (
-                    <tr key={line.id}>
-                      <td>
-                        {line.code} · {line.name}
-                      </td>
-                      <td className="num">{money(line.debit_minor, report.currency)}</td>
-                      <td className="num">{money(line.credit_minor, report.currency)}</td>
-                      <td className="num">{money(line.net_debit_minor, report.currency)}</td>
-                    </tr>
-                  ))}
-                  <tr className="acc-total-row">
-                    <td>Total</td>
-                    <td className="num">{money(report.total_debit_minor, report.currency)}</td>
-                    <td className="num">{money(report.total_credit_minor, report.currency)}</td>
-                    <td className="num">{report.balanced ? 'Balanced' : 'Review'}</td>
-                  </tr>
-                </tbody>
-              </DataTable>
-            </>
-          )}
-          {view === 'ledger' && (
-            <>
-              <div className="acc-report-head">
-                <span>General Ledger</span>
-                <span>
-                  {report.period?.from} → {report.period?.to} · {report.currency}
-                </span>
-              </div>
-              <div className="acc-toolbar">
-                <select
-                  value={accountId}
-                  onChange={(event) => {
-                    setAccountId(event.target.value);
-                    setLedgerOffset(0);
-                  }}
-                  aria-label="Account filter"
-                >
-                  <option value="">All accounts</option>
-                  {accounts.map((account: any) => (
-                    <option key={account.id} value={account.id}>
-                      {account.code} · {account.name}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  value={ledgerSearch}
-                  onChange={(event) => {
-                    setLedgerSearch(event.target.value);
-                    setLedgerOffset(0);
-                  }}
-                  placeholder="Search reference or account…"
-                  aria-label="Search general ledger"
-                />
-              </div>
-              <DataTable>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Entry</th>
-                    <th>Account</th>
-                    <th>Memo</th>
-                    <th className="num">Debit</th>
-                    <th className="num">Credit</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(report.general_ledger || []).map((line: any) => (
-                    <tr key={line.id}>
-                      <td>{line.entry_on}</td>
-                      <td>{line.reference}</td>
-                      <td>
-                        {line.account_code} · {line.account_name}
-                      </td>
-                      <td>{line.data?.memo}</td>
-                      <td className="num">{money(line.debit_minor, report.currency)}</td>
-                      <td className="num">{money(line.credit_minor, report.currency)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </DataTable>
-              {report.has_more && (
-                <p className="acc-hint">
-                  Showing {report.offset + 1}–
-                  {Math.min(report.offset + report.general_ledger.length, report.total)} of{' '}
-                  {report.total} posted lines.
-                </p>
-              )}
-              {report.total > report.limit && (
-                <footer className="acc-register-pager">
-                  <span>{report.total} posted lines</span>
-                  <button
-                    className="acc-secondary"
-                    disabled={report.offset === 0}
-                    onClick={() => setLedgerOffset(Math.max(0, ledgerOffset - report.limit))}
-                  >
-                    Previous
-                  </button>
-                  <button
-                    className="acc-secondary"
-                    disabled={!report.has_more}
-                    onClick={() => setLedgerOffset(ledgerOffset + report.limit)}
-                  >
-                    Next
-                  </button>
-                </footer>
-              )}
-            </>
-          )}
-        </>
       )}
     </section>
   );

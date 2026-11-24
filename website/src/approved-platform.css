@@ -6381,6 +6381,18 @@ html:has([data-platform-density]) {
 .acc-workspace .acc-deferral-board table :is(th, td):nth-child(-n + 4) {
   white-space: nowrap;
 }
+@media print {
+  body:has(.acc-statement-print) * { visibility: hidden; }
+  body:has(.acc-statement-print) .acc-statement-print,
+  body:has(.acc-statement-print) .acc-statement-print * { visibility: visible; }
+  body:has(.acc-statement-print) .acc-statement-print {
+    position: absolute;
+    inset: 0;
+    color: #000;
+    border: none;
+  }
+  body:has(.acc-statement-print) .acc-statement-print :is(form, nav, .acc-toolbar) { display: none; }
+}
 @media (min-width: 1024px) {
   .business-shell[data-platform-density] .acc-deferral-filters .form-fieldset {
     grid-template-columns: repeat(4, minmax(0, 1fr));
