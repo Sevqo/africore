@@ -8,6 +8,15 @@ import {
 import { taxCodes, saveTaxCode, previewTaxEntry, prepareTaxEntry } from './accounting-tax';
 import { accountingAging } from './accounting-aging';
 import {
+  actOnAsset,
+  assetDetail,
+  assetSources,
+  listAssetModels,
+  listAssets,
+  saveAssetModel,
+  saveFixedAsset,
+} from './fixed-assets';
+import {
   bankLine,
   bankStatement,
   createBankJournal,
@@ -1375,6 +1384,63 @@ erp.post(
         req.body,
         key(req),
       ),
+    ),
+  ),
+);
+
+erp.get(
+  '/organizations/:org/accounting/assets',
+  route(async (req, res) => res.json(await listAssets(await access(req)))),
+);
+erp.get(
+  '/organizations/:org/accounting/asset-sources',
+  route(async (req, res) => res.json(await assetSources(await access(req), req.query))),
+);
+erp.get(
+  '/organizations/:org/accounting/assets/:id',
+  route(async (req, res) => res.json(await assetDetail(await access(req), String(req.params.id)))),
+);
+erp.post(
+  '/organizations/:org/accounting/assets',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await saveFixedAsset(await access(req, 'finance'), null, req.body, key(req))),
+  ),
+);
+erp.put(
+  '/organizations/:org/accounting/assets/:id',
+  route(async (req, res) =>
+    res.json(
+      await saveFixedAsset(await access(req, 'finance'), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+erp.post(
+  '/organizations/:org/accounting/assets/:id/action',
+  route(async (req, res) =>
+    res.json(
+      await actOnAsset(await access(req, 'finance'), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/accounting/asset-models',
+  route(async (req, res) => res.json(await listAssetModels(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/accounting/asset-models',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await saveAssetModel(await access(req, 'finance'), null, req.body, key(req))),
+  ),
+);
+erp.put(
+  '/organizations/:org/accounting/asset-models/:id',
+  route(async (req, res) =>
+    res.json(
+      await saveAssetModel(await access(req, 'finance'), String(req.params.id), req.body, key(req)),
     ),
   ),
 );

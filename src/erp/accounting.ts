@@ -582,6 +582,7 @@ export async function prepareDerivedEntry(
     source: any;
     source_hash: string;
     posting_on: string;
+    journal_id?: string;
     adjustment_reason: string;
     book_tax_minor: number;
     lines: z.infer<typeof journalLineInput>[];
@@ -590,17 +591,19 @@ export async function prepareDerivedEntry(
   const source = plan.source;
   await openPeriod(a, plan.posting_on);
   const journal = await dbGet(
-    'SELECT id FROM ac_accounting_journals WHERE org_id=? AND environment=? AND code=? AND active=1',
+    'SELECT id FROM ac_accounting_journals WHERE org_id=? AND environment=? AND active=1 AND ' +
+      (plan.journal_id ? 'id=?' : 'code=?'),
     [
       a.org,
       a.environment,
-      source.type === 'configured_tax_entry'
-        ? 'GENERAL'
-        : ['invoice', 'credit_note'].includes(source.type)
-          ? 'SALES'
-          : ['allocation', 'supplier_payment'].includes(source.type)
-            ? 'CASH'
-            : 'PURCHASE',
+      plan.journal_id ??
+        (source.type === 'configured_tax_entry'
+          ? 'GENERAL'
+          : ['invoice', 'credit_note'].includes(source.type)
+            ? 'SALES'
+            : ['allocation', 'supplier_payment'].includes(source.type)
+              ? 'CASH'
+              : 'PURCHASE'),
     ],
   );
   if (!journal) fail(409, 'Source journal is unavailable');
@@ -636,7 +639,7 @@ export async function prepareDerivedEntry(
       source.type,
       source.id,
       plan.source_hash,
-      source.facts.invoice_id || source.facts.bill_id || null,
+      source.facts.invoice_id || source.facts.bill_id || source.facts.asset_id || null,
       Math.abs(source.amount_minor),
       plan.book_tax_minor,
       a.actor,
@@ -871,7 +874,12 @@ export async function postJournalEntry(a: Access, entryId: string, input: unknow
       const e = await entry(a, entryId);
       if (e.version !== d.expected_version || e.status !== 'draft')
         fail(409, 'Only the exact reviewed draft can be posted');
-      if (e.reverses_id) await requireBankEntryUnmatched(a, e.reverses_id);
+      if (e.reverses_id) {
+        await requireBankEntryUnmatched(a, e.reverses_id);
+        await (await import('./fixed-assets')).validateAssetReversal(a, e.reverses_id);
+      }
+      if (e.source_type === 'asset_depreciation')
+        await (await import('./fixed-assets')).validateAssetPosting(a, e);
       await openPeriod(a, e.entry_on);
       const lines = e.lines.map((l) => ({
         account_id: l.account_id,
@@ -927,7 +935,10 @@ export async function postJournalEntry(a: Access, entryId: string, input: unknow
           ],
         );
       await audit(a.org, a.actor, 'accounting.entry_posted', entryId);
-      return entry(a, entryId);
+      const posted = await entry(a, entryId);
+      if (posted.reverses_id || posted.source_type === 'asset_depreciation')
+        await (await import('./fixed-assets')).recordAssetJournalPosting(a, posted);
+      return posted;
     },
   );
 }
@@ -943,6 +954,7 @@ export async function reverseJournalEntry(a: Access, entryId: string, input: unk
       const old = await entry(a, entryId);
       if (old.status !== 'posted') fail(409, 'Only a posted entry can be reversed');
       await requireBankEntryUnmatched(a, old.id);
+      await (await import('./fixed-assets')).validateAssetReversal(a, old.id);
       await openPeriod(a, d.entry_on);
       if (d.entry_on < old.entry_on)
         fail(400, 'A reversal cannot precede its original posting date');

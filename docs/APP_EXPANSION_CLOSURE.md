@@ -1,5 +1,7 @@
 # AfriCore original application expansion closure register
 
+**24 November 2026 — Accounting fixed assets.** Checkpoint 4 adds the source-linked asset register, reusable depreciation models, Python schedule calculation, reviewed journal posting and future-period revisions. Disposal, hybrid methods and matched screenshot acceptance remain separate. See the [fixed assets checkpoint](odoo-reverse-engineering/FIXED_ASSETS.md).
+
 Updated 2026-11-20 against local `main` source at `cdfa55f77e17843eb2b4e166e9cdeaee4310e24a` plus the current Commerce working-tree changes. This is an implementation register, not founder acceptance or a production-readiness claim.
 
 ## Status vocabulary

@@ -7,6 +7,7 @@ import { AccountingConfiguration } from './AccountingConfiguration';
 import { AccountingAging } from './AccountingAging';
 import { AccountingTax } from './AccountingTax';
 import { AccountingBankStatements } from './AccountingBankStatements';
+import { AccountingAssets } from './AccountingAssets';
 import { DocumentAttachments } from './DocumentAttachments';
 import {
   AccountingSourceRegister,
@@ -409,6 +410,19 @@ export function AccountingAppWorkspace({
             />
           )}
           {view === 'bank' && <Bank events={events} navigate={navigate} go={go} />}
+
+          {['assets', 'asset-models', 'depreciation-board'].includes(view) && (
+            <AccountingAssets
+              key={scope}
+              view={view}
+              api={api}
+              configuration={configuration}
+              manager={manager}
+              revision={revision}
+              go={go}
+              onOpenEntry={setSelected}
+            />
+          )}
 
           {view === 'reconciliation' && <Reconciliation events={events} navigate={navigate} />}
 

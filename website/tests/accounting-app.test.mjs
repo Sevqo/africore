@@ -38,6 +38,23 @@ const accountingSource = fs.readFileSync(
   'utf8',
 );
 
+test('fixed assets keep the register, model and board deep links inside Accounting', () => {
+  for (const view of ['assets', 'asset-models', 'depreciation-board']) {
+    assert.ok(accountingViews.includes(view));
+    assert.ok(viewsForSection.accounting.includes(view));
+    assert.equal(sectionForView(view), 'accounting');
+  }
+  assert.match(workspaceSource, /<AccountingAssets/);
+  const assetSource = fs.readFileSync(
+    new URL('../src/apps/AccountingAssets.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(assetSource, /searchParams\.set\('asset'/);
+  assert.match(assetSource, /periods|Depreciation board/);
+  assert.match(assetSource, /\/accounting\/entries\//);
+  assert.match(routesSource, /\/accounting\/assets\/:id\/action/);
+});
+
 test('the Accounting app has Odoo accounting navigation while the service keeps its own interface', () => {
   assert.ok(accounting, 'accounting app is registered');
   assert.deepEqual(
@@ -109,7 +126,7 @@ test('every accounting section resolves to reachable views', () => {
         `${view} is reachable from its owning section`,
       );
   }
-  assert.equal(accountingViews.length, 28);
+  assert.deepEqual(new Set(Object.values(viewsForSection).flat()), new Set(accountingViews));
 });
 
 test('journal and reporting projections use real codes and posted ledger shapes', () => {

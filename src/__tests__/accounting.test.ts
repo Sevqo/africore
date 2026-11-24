@@ -1272,6 +1272,172 @@ test('bank statement review matches posted bank items and reverses links without
   assert.deepEqual(raced.map((row) => row.status).sort(), [200, 409]);
 });
 
+test('fixed asset board uses posted acquisition evidence and the native journal review, lock and reversal controls', async () => {
+  const base = root() + '/accounting';
+  const makeAccount = async (code: string, name: string, type: string) => {
+    const result = await api(base + '/accounts', 'POST', { expected_version: 0, code, name, type });
+    assert.equal(result.status, 201, JSON.stringify(result.data));
+    return result.data.id;
+  };
+  const bankAccounts = {
+    asset_account_id: await makeAccount('1510', 'Laptop cost', 'asset'),
+    accumulated_account_id: await makeAccount('1519', 'Laptop accumulated depreciation', 'asset'),
+    expense_account_id: await makeAccount('5510', 'Laptop depreciation expense', 'expense'),
+    journal_id: config.journals[0].id,
+  };
+  const plan = {
+    method: 'straight_line',
+    frequency: 'monthly',
+    periods: 4,
+    rate_bps: 0,
+    prorata: false,
+  };
+  const model = await api(base + '/asset-models', 'POST', {
+    expected_version: 0,
+    name: 'Synthetic IT equipment',
+    accounts: bankAccounts,
+    terms: plan,
+  });
+  assert.equal(model.status, 201, JSON.stringify(model.data));
+  assert.equal((await api(base + '/asset-models')).data.data.length, 1);
+  const acquisition = await api(
+    base + '/entries',
+    'POST',
+    draft(120000, 'KES', {
+      lines: [
+        { account_id: bankAccounts.asset_account_id, debit_minor: 120000, credit_minor: 0 },
+        { account_id: account('1000'), debit_minor: 0, credit_minor: 120000 },
+      ],
+    }),
+  );
+  assert.equal(acquisition.status, 201, JSON.stringify(acquisition.data));
+  const post = async (entry: any, approval_id?: string) =>
+    api(base + '/entries/' + entry.id + '/post', 'POST', {
+      expected_version: entry.version,
+      approval_id: approval_id || (await review(entry)),
+    });
+  assert.equal((await post(acquisition.data)).status, 200);
+  const eligible = await api(
+    base + '/asset-sources?currency=KES&account=' + bankAccounts.asset_account_id,
+  );
+  assert.equal(eligible.data.data[0].id, acquisition.data.id);
+  const input = {
+    expected_version: 0,
+    name: 'Synthetic laptop',
+    model_id: model.data.id,
+    accounts: bankAccounts,
+    terms: plan,
+    acquisition_entry_id: acquisition.data.id,
+    acquisition_on: '2026-11-04',
+    start_on: '2026-11-04',
+    currency: 'KES',
+    gross_minor: 120000,
+    salvage_minor: 20000,
+    prior_minor: 0,
+  };
+  assert.equal((await api(base + '/assets', 'POST', { ...input, prior_minor: 5000 })).status, 409);
+  assert.equal((await api(base + '/assets', 'POST', { ...input, currency: 'USD' })).status, 409);
+  const created = await api(base + '/assets', 'POST', input);
+  assert.equal(created.status, 201, JSON.stringify(created.data));
+  assert.equal((await api(base + '/assets', 'POST', input)).status, 409);
+  const path = base + '/assets/' + created.data.id;
+  assert.equal((await api(path, 'GET', undefined, operationsCookie)).status, 403);
+  const act = (asset: any, action: string, body: object = {}) =>
+    api(path + '/action', 'POST', { action, expected_version: asset.version, ...body });
+  assert.equal((await act(created.data, 'confirm')).status, 409);
+  const computed = await act(created.data, 'compute');
+  assert.equal(computed.status, 200, JSON.stringify(computed.data));
+  const computedBoard = (await api(path)).data;
+  assert.equal(
+    computedBoard.rows.reduce((n: number, row: any) => n + row.amount_minor, 0),
+    100000,
+  );
+  assert.equal(computedBoard.rows[0].posting, 'proposed');
+  assert.equal(computedBoard.book_minor, 120000);
+  const running = await act(computed.data, 'confirm');
+  const period = { date: '2026-11-30' };
+  assert.equal((await act(computed.data, 'prepare', period)).status, 409);
+  const first = await act(running.data, 'prepare', period);
+  assert.equal(first.status, 200, JSON.stringify(first.data));
+  assert.equal(
+    first.data.lines.find((line: any) => line.account_id === bankAccounts.expense_account_id)
+      .debit_minor,
+    25000,
+  );
+  assert.equal(
+    first.data.lines.find((line: any) => line.account_id === bankAccounts.accumulated_account_id)
+      .credit_minor,
+    25000,
+  );
+  const approval = await review(first.data);
+  assert.equal((await api(path)).data.rows[0].posting, 'approved');
+  assert.equal((await post(first.data, approval)).status, 200);
+  assert.equal((await post(first.data, approval)).status, 409);
+  const after = (await api(path)).data;
+  assert.equal(after.book_minor, 95000);
+  const report = (await api(base + '/report?from=2026-11-01&to=2026-11-30&currency=KES')).data;
+  assert.equal(report.balanced, true);
+  assert.equal(report.trial_balance.find((row: any) => row.code === '5510').net_debit_minor, 25000);
+  assert.equal(
+    report.trial_balance.find((row: any) => row.code === '1519').net_debit_minor,
+    -25000,
+  );
+  const dec = await api(base + '/periods', 'POST', {
+    name: 'Synthetic asset December',
+    starts_on: '2026-12-01',
+    ends_on: '2026-12-31',
+  });
+  assert.equal(dec.status, 201, JSON.stringify(dec.data));
+  const second = await act(after.asset, 'prepare', { date: '2026-12-31' });
+  assert.equal(second.status, 200, JSON.stringify(second.data));
+  const decApproval = await review(second.data);
+  const lock = (status: string, expected_version: number) =>
+    api(base + '/periods/' + dec.data.id + '/state', 'PUT', {
+      status,
+      expected_version,
+      reason: 'Synthetic asset period lock',
+    });
+  assert.equal((await lock('locked', dec.data.version)).status, 200);
+  assert.equal((await post(second.data, decApproval)).status, 409);
+  assert.equal((await lock('open', dec.data.version + 1)).status, 200);
+  const withdrawn = await act((await api(path)).data.asset, 'withdraw', { date: '2026-12-31' });
+  assert.equal(withdrawn.status, 200, JSON.stringify(withdrawn.data));
+  assert.equal((await post(second.data, decApproval)).status, 409);
+  const revised = await act(withdrawn.data, 'revise', {
+    reason: 'Synthetic revised remaining life',
+    terms: { ...plan, periods: 2 },
+  });
+  assert.equal(revised.status, 200, JSON.stringify(revised.data));
+  const revisedBoard = (await api(path)).data;
+  assert.deepEqual(
+    revisedBoard.rows.map((row: any) => row.amount_minor),
+    [25000, 37500, 37500],
+  );
+  assert.equal(revisedBoard.rows[0].journal_entry_id, first.data.id);
+  assert.equal(revisedBoard.rows[0].posting, 'posted');
+  const reversal = await api(base + '/entries/' + first.data.id + '/reverse', 'POST', {
+    entry_on: '2026-12-01',
+    reason: 'Synthetic depreciation correction',
+  });
+  assert.equal(reversal.status, 201, JSON.stringify(reversal.data));
+  assert.equal((await post(reversal.data)).status, 200);
+  const reversed = (await api(path)).data;
+  assert.equal(reversed.book_minor, 120000);
+  assert.equal(reversed.rows[0].posting, 'reversed');
+  assert.ok(reversed.history.some((event: any) => event.action === 'board_revised'));
+  assert.ok(reversed.history.some((event: any) => event.action === 'depreciation_posted'));
+  assert.ok(reversed.history.some((event: any) => event.action === 'depreciation_reversed'));
+  assert.equal(
+    (
+      await api(base + '/entries/' + acquisition.data.id + '/reverse', 'POST', {
+        entry_on: '2026-12-01',
+        reason: 'Synthetic blocked acquisition reversal',
+      })
+    ).status,
+    409,
+  );
+});
+
 test('Accounting deactivation retains posted history while new draft and configuration writes stop', async () => {
   assert.equal(
     (await api(root() + '/services/accounting/deactivate', 'POST', { confirm: true })).status,

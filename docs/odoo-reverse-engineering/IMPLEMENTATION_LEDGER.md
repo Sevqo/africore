@@ -1,5 +1,10 @@
 # Source-driven implementation ledger
 
+## Checkpoint 4 — Fixed assets and depreciation
+
+- AfriCore baseline 9b4dc358f5a7ff9283e417cddbcb0ec543ff0331. Odoo 20 Community baseline 4968b8772ab96e25471ebbcdcbe32f6049e5b728. The existing 668-addon inventory was reused.
+- See [Fixed assets checkpoint](FIXED_ASSETS.md) for source provenance, native journal controls, exact depreciation rules, APIs and acceptance evidence.
+
 ## Checkpoint 3 — Bank statement import and reconciliation
 
 - AfriCore baseline d70e55b3292211f50048e47fc188f167c2086554. Odoo 20 Community baseline 4968b8772ab96e25471ebbcdcbe32f6049e5b728. The existing 668-addon index was reused.
