@@ -12,6 +12,7 @@ import {
   workspaceKind,
 } from '../marketplace/engine';
 import { appCatalog } from './catalog';
+import { roleAllowsApp } from '../platform/domain';
 
 const optionalInput = z.array(z.string().max(60)).max(12).default([]);
 export const installInput = z
@@ -47,10 +48,11 @@ export async function appsFor(a: Access) {
   const services = await catalogFor(a);
   return {
     kind,
+    role: a.role,
     environment: a.environment,
     installation_fee_minor: 0,
     apps: appCatalog
-      .filter((app) => app.kinds.includes(kind))
+      .filter((app) => app.kinds.includes(kind) && roleAllowsApp(a.role, app.id, kind))
       .map((app) => {
         const row = rows.find((r) => r.app_id === app.id);
         const required = app.required[kind as 'business' | 'personal'] || [];

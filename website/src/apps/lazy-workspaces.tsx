@@ -1,4 +1,5 @@
 import { Component, lazy, Suspense, type ComponentType, type ReactNode } from 'react';
+import { WorkspaceSkeleton } from '../components/Skeleton';
 
 class WorkspaceLoadBoundary extends Component<
   { children: ReactNode; scope: string },
@@ -31,15 +32,7 @@ function workspace<P extends object>(load: () => Promise<{ default: ComponentTyp
   return function Workspace(props: P) {
     return (
       <WorkspaceLoadBoundary scope={'scope' in props ? String(props.scope) : ''}>
-        <Suspense
-          fallback={
-            <section className="panel workspace-loading" role="status">
-              <span className="workspace-loading-mark" aria-hidden="true" />
-              <strong>Opening workspace…</strong>
-              <p>Your authorized records will appear here.</p>
-            </section>
-          }
-        >
+        <Suspense fallback={<WorkspaceSkeleton label="Opening workspace…" />}>
           <Screen {...props} />
         </Suspense>
       </WorkspaceLoadBoundary>

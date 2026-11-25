@@ -184,6 +184,20 @@ export async function applyWorkSchedule(a: Access, projectId: string, input: unk
           applied.push(result);
         }
         const project = await update(a, p, p.data, {}, 'dependency_schedule');
+        const { notify } = await import('../operations/automation');
+        for (const task of applied) {
+          if (task.data.assignee_id && task.data.assignee_id !== a.actor) {
+            await notify(a, {
+              category: 'work',
+              title: 'Task schedule updated',
+              body: `"${task.data.title}" in "${p.data.name}" was rescheduled (${task.data.starts_on || 'no start'} → ${task.due_on || 'no due date'}).`,
+              user_id: task.data.assignee_id,
+              resource_id: task.id,
+              key: 'work-schedule:' + task.id + ':' + task.version + ':' + task.data.assignee_id,
+              action_data: { app_id: 'work', section: 'work_task', record_id: task.id },
+            });
+          }
+        }
         return { project_version: project.version, changed: applied.length, tasks: applied };
       }),
   );

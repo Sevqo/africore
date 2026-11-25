@@ -534,12 +534,22 @@ export async function editCalendarEvent(a: Access, id: string, input: unknown, k
           fail(409, 'A selected staff member is no longer available at that time');
       }
       const { expected_version: _, ...data } = d;
+      const workspaceMembers =
+        d.visibility === 'private'
+          ? []
+          : ((await dbAll('SELECT user_id FROM ac_memberships WHERE org_id=?', [a.org])) as {
+              user_id: string;
+            }[]);
+      const grantTargets = new Map<string, { user_id: string }>();
+      for (const m of [...d.attendees, ...workspaceMembers, { user_id: old.data.organizer_id }, { user_id: a.actor }]) {
+        grantTargets.set(m.user_id, { user_id: m.user_id });
+      }
       await dbRun('DELETE FROM ac_erp_grants WHERE org_id=? AND environment=? AND resource_id=?', [
         a.org,
         a.environment,
         id,
       ]);
-      await calendarGrant(a, id, [...d.attendees, { user_id: a.actor }]);
+      await calendarGrant(a, id, [...grantTargets.values()]);
       const updated = await update(a, old, {
         ...data,
         recurrence_rule: rule,
@@ -547,19 +557,29 @@ export async function editCalendarEvent(a: Access, id: string, input: unknown, k
         organizer_id: old.data.organizer_id,
         cancelled_at: null,
       });
-      for (const invite of [
-        ...new Set([...old.data.attendees, ...d.attendees].map((x: any) => x.user_id)),
-      ].map((user_id) => ({ user_id })))
+      const recipientIds = new Set<string>([
+        ...old.data.attendees.map((x: any) => x.user_id),
+        ...d.attendees.map((x: any) => x.user_id),
+        ...workspaceMembers.map((x) => x.user_id),
+      ]);
+      for (const userId of recipientIds) {
+        if (userId === a.actor) continue;
+        const isAttendee = d.attendees.some((x: any) => x.user_id === userId);
         await notify(a, {
           category: 'calendar',
-          title: 'Meeting updated',
-          body: 'A workspace meeting you are invited to has changed. Open Calendar to review the current details.',
+          title: isAttendee ? 'Meeting updated' : 'Workspace schedule updated',
+          body: `"${d.title}" has been updated on the workspace schedule. Open Calendar or Work to review the latest time and details.`,
           resource_id: id,
-          key: 'calendar-update:' + id + ':' + (old.version + 1),
-          user_id: invite.user_id,
+          key: 'calendar-update:' + id + ':' + (old.version + 1) + ':' + userId,
+          user_id: userId,
           capability: 'read',
-          action_data: { app_id: 'calendar', section: 'invitations', record_id: id },
+          action_data: {
+            app_id: 'calendar',
+            section: isAttendee ? 'invitations' : 'calendar',
+            record_id: id,
+          },
         });
+      }
       return updated;
     },
   );

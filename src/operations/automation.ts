@@ -446,6 +446,8 @@ export async function notificationPreferences(a: Access, input: unknown) {
             'inventory',
             'crm',
             'sales',
+            'calendar',
+            'work',
           ]),
         )
         .max(16),

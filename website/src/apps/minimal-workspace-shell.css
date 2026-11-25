@@ -663,7 +663,8 @@
  * Universal Clean Button, Dropdown Menu, Input & Form Normalization
  * Eliminates raw native browser 3D button borders across all 26 apps.
  * ========================================================================== */
-.business-shell button:not(.button):not(.primary):not(.sales-primary):not(.sales-new):not(.ac-pill):not(.icon-button) {
+:where(.business-shell)
+  button:not(.sidebar *):not(.ac-app-menubar *):not(.sales-nav *):not(.sales-module-nav *):not(.proc-app-nav *):not(.acc-module-nav *):not(.inventory-module-nav *):not(.crm-section-nav *):not(.pos-app-module *):not(.app-section-tabs *):not(.button):not(.primary):not(.sales-primary):not(.sales-new):not(.ac-pill):not(.icon-button):not(.quiet-button):not(.text-button):not(.link-button) {
   appearance: none;
   background: #ffffff;
   color: #111827;
@@ -679,7 +680,8 @@
   transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
-.business-shell button:not(.button):not(.primary):not(.sales-primary):not(.sales-new):not(.ac-pill):not(.icon-button):hover:not(:disabled) {
+:where(.business-shell)
+  button:not(.sidebar *):not(.ac-app-menubar *):not(.sales-nav *):not(.sales-module-nav *):not(.proc-app-nav *):not(.acc-module-nav *):not(.inventory-module-nav *):not(.crm-section-nav *):not(.pos-app-module *):not(.app-section-tabs *):not(.button):not(.primary):not(.sales-primary):not(.sales-new):not(.ac-pill):not(.icon-button):not(.quiet-button):not(.text-button):not(.link-button):hover:not(:disabled) {
   background: #f9fafb;
   border-color: #9ca3af;
 }
@@ -689,7 +691,8 @@
   cursor: not-allowed;
 }
 
-/* Clean Top Module Menu Bar (Sales, Accounting, Inventory dropdowns) */
+/* Clean Top Module Menu Bar (Unified Sales-style bar across all 26 apps) */
+.business-shell .ac-app-menubar,
 .business-shell .sales-nav,
 .business-shell .sales-module-nav {
   display: flex !important;
@@ -702,23 +705,87 @@
   padding: 6px 12px !important;
   margin-bottom: 14px !important;
   position: relative;
-  z-index: 20;
+  z-index: 25;
 }
 
+.business-shell .ac-app-menubar .ac-menubar-pill,
+.business-shell .ac-app-menubar .ac-menubar-trigger,
 .business-shell .sales-nav > button:not(.sales-new),
 .business-shell .sales-module-nav > button:not(.sales-new) {
+  appearance: none;
   border: 0 !important;
   background: transparent !important;
   color: #374151 !important;
+  font-size: 13px !important;
   font-weight: 500 !important;
-  padding: 6px 10px !important;
-  border-radius: 6px !important;
+  padding: 6px 11px !important;
+  border-radius: 7px !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  line-height: 1.35;
 }
 
+.business-shell .ac-app-menubar .ac-menubar-caret {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.business-shell .ac-app-menubar .ac-menubar-pill:hover,
+.business-shell .ac-app-menubar .ac-menubar-pill.active,
+.business-shell .ac-app-menubar .ac-menubar-trigger:hover,
+.business-shell .ac-app-menubar .ac-menubar-trigger.active,
 .business-shell .sales-nav > button:not(.sales-new):hover,
 .business-shell .sales-nav > button.active:not(.sales-new),
 .business-shell .sales-module-nav > button:not(.sales-new):hover,
 .business-shell .sales-module-nav > button.active:not(.sales-new) {
+  background: #ecfdf5 !important;
+  color: #166534 !important;
+  font-weight: 600 !important;
+}
+
+.business-shell .ac-menubar-dropdown {
+  position: relative;
+}
+
+.business-shell .ac-menubar-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 215px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.11);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 60;
+}
+
+.business-shell .ac-menubar-popover.align-right {
+  left: auto;
+  right: 0;
+}
+
+.business-shell .ac-menubar-popover > button {
+  appearance: none;
+  width: 100%;
+  text-align: left;
+  border: 0 !important;
+  background: transparent !important;
+  color: #1f2937 !important;
+  padding: 7px 11px !important;
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  cursor: pointer;
+}
+
+.business-shell .ac-menubar-popover > button:hover,
+.business-shell .ac-menubar-popover > button.active {
   background: #ecfdf5 !important;
   color: #166534 !important;
   font-weight: 600 !important;

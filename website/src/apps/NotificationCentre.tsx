@@ -114,6 +114,8 @@ export function NotificationCentre({
             'inventory',
             'crm',
             'sales',
+            'calendar',
+            'work',
           ];
   return (
     <div className="apps-workspace notifications-page">

@@ -22,9 +22,13 @@ const templates: any = {
       title: 'A better way to work',
       body: 'Introduce your offer and invite visitors to take the next step.',
       button_label: 'Contact us',
-      button_url: '/contact',
+      button_url: 'https://example.com',
     },
-    { type: 'features', title: 'What we offer', body: 'Add your key services and benefits.' },
+    {
+      type: 'features',
+      title: 'What we offer',
+      body: 'Fast Onboarding :: Launch in minutes with clear workflows\nConnected Operations :: Keep customer inquiries and orders in sync\nTrusted Security :: Built-in review and audit trails',
+    },
     { type: 'cta', title: 'Ready to get started?', body: 'Talk with our team.' },
   ],
   Services: [
@@ -221,6 +225,8 @@ export function WebsiteWorkspace({
     [busy, setBusy] = useState(false),
     [showTemplates, setShowTemplates] = useState(false),
     [preview, setPreview] = useState(false),
+    [fullPreviewOpen, setFullPreviewOpen] = useState(false),
+    [previewViewport, setPreviewViewport] = useState<'desktop' | 'tablet' | 'mobile'>('desktop'),
     [query, setQuery] = useState(''),
     [pageStatus, setPageStatus] = useState<'all' | 'published' | 'draft'>('all'),
     [media, setMedia] = useState<any[]>([]),
@@ -310,7 +316,9 @@ export function WebsiteWorkspace({
         if (latest) setSelected(latest);
       } else {
         const requestedPage = new URLSearchParams(location.search).get('page');
-        const match = (r.data || []).find((x: any) => x.id === requestedPage);
+        const match =
+          (r.data || []).find((x: any) => x.id === requestedPage) ||
+          (section !== 'pages' ? (r.data || [])[0] : null);
         if (match) setSelected(match);
       }
     } catch (e) {
@@ -371,6 +379,11 @@ export function WebsiteWorkspace({
       // Refreshing the register while the old page is still selected would
       // overwrite the just-created page from the component's stale closure.
       selectPage(r);
+      const url = new URL(location.href);
+      url.searchParams.set('section', 'editor');
+      if (r?.id) url.searchParams.set('page', r.id);
+      history.pushState(null, '', url.pathname + url.search + url.hash);
+      dispatchEvent(new Event(appNavigationEvent));
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -401,17 +414,30 @@ export function WebsiteWorkspace({
   async function publish() {
     if (!selected) return;
     setBusy(true);
+    setError('');
     try {
+      let currentRecord = selected;
+      const savedPage = pages.find((p: any) => p.id === selected.id);
+      if (!savedPage || JSON.stringify(savedPage.data) !== JSON.stringify(selected.data)) {
+        const { published_version, public_url, published_at, ...draft } = selected.data;
+        currentRecord = await api(
+          `/website/pages/${selected.id}`,
+          'PUT',
+          { ...draft, expected_version: selected.version },
+          { 'Idempotency-Key': crypto.randomUUID() },
+        );
+        setSelected(currentRecord);
+      }
       const r = await api(
-        `/website/pages/${selected.id}/publish`,
+        `/website/pages/${currentRecord.id}/publish`,
         'POST',
-        { expected_version: selected.version },
+        { expected_version: currentRecord.version },
         { 'Idempotency-Key': crypto.randomUUID() },
       );
       setNotice(
         r.url
-          ? `Published snapshot ${r.version}. ${r.url} is available on the production environment.`
-          : `Published snapshot ${r.version} in this sandbox. It has no public production URL.`,
+          ? `Saved & published snapshot v${r.version}. Live at ${r.url}.`
+          : `Saved & published snapshot v${r.version}! Click "Live Site Preview" to view your full website.`,
       );
       await Promise.all([load(), loadIdentity()]);
     } catch (e) {
@@ -675,8 +701,14 @@ export function WebsiteWorkspace({
       setShowTemplates(true);
       return;
     }
+    const mapped =
+      label === 'Website Editor' ? 'editor' : label.toLowerCase().replaceAll(' ', '-');
+    if (!selected && pages.length > 0 && ['editor', 'menus', 'theme', 'seo', 'publication'].includes(mapped)) {
+      const fallback = pages.find((p) => p.id === identity?.data?.default_page_id) || pages[0];
+      if (fallback) setSelected(fallback);
+    }
     const url = new URL(location.href);
-    url.searchParams.set('section', label.toLowerCase().replaceAll(' ', '-'));
+    url.searchParams.set('section', mapped);
     history.pushState(null, '', url.pathname + url.search + url.hash);
     dispatchEvent(new Event(appNavigationEvent));
   }
@@ -736,7 +768,11 @@ export function WebsiteWorkspace({
     if (section === 'media' || section === 'settings') void loadMedia();
     if (section === 'forms') void loadFormSubmissions();
     if (section === 'publication' && selected) void loadPublicationHistory();
-  }, [section, scope, selected?.id]);
+    if (!selected && pages.length > 0 && ['editor', 'menus', 'theme', 'seo', 'publication'].includes(section)) {
+      const fallback = pages.find((p) => p.id === identity?.data?.default_page_id) || pages[0];
+      if (fallback) setSelected(fallback);
+    }
+  }, [section, scope, selected?.id, pages.length]);
   useEffect(() => {
     let active = true;
     const ids = selectedMediaIds ? selectedMediaIds.split(',') : [];
@@ -758,28 +794,57 @@ export function WebsiteWorkspace({
     <main className="phase3-workspace website-workspace">
       <header className="phase3-toolbar">
         <div>
-          <h2>{section === 'editor' ? data?.title || 'Website Editor' : 'Website'}</h2>
-          <p>Pages and public content · Commerce owns products, cart, checkout and orders</p>
+          <h2>{selected ? data?.title || 'Website Editor' : 'AfriCore Website Builder'}</h2>
+          <p>Click any text on the canvas to edit inline · Preview across devices · 1-click Save &amp; Publish</p>
         </div>
         <div className="phase3-actions">
+          {pages.length > 0 && (
+            <select
+              aria-label="Switch active page"
+              value={selected?.id || ''}
+              onChange={(e) => {
+                const match = pages.find((p) => p.id === e.target.value);
+                if (match) selectPage(match);
+                else choosePanel('Pages');
+              }}
+            >
+              <option value="">All Pages ({pages.length})</option>
+              {pages.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.data.title} (/{p.data.slug})
+                </option>
+              ))}
+            </select>
+          )}
           <button className="secondary-button" onClick={() => setShowTemplates(true)}>
-            New Page
+            + New Page
           </button>
           <button
             className="secondary-button"
             disabled={!selected}
             onClick={() => setPreview((v) => !v)}
           >
-            {preview ? 'Edit draft' : 'Preview'}
+            {preview ? 'Edit Canvas' : 'Inline Preview'}
           </button>
-          {section === 'editor' && (
+          <button
+            type="button"
+            className="secondary-button"
+            disabled={!selected}
+            onClick={() => setFullPreviewOpen(true)}
+          >
+            Live Site Preview
+          </button>
+          {selected && (
             <>
               <button className="secondary-button" aria-label="Undo draft change" title="Undo (Ctrl+Z)" disabled={editorHistory.current.cursor <= 0} onClick={undoEditor}>↶ Undo</button>
               <button className="secondary-button" aria-label="Redo draft change" title="Redo (Ctrl+Y)" disabled={editorHistory.current.cursor >= editorHistory.current.entries.length - 1} onClick={redoEditor}>↷ Redo</button>
+              <button className="secondary-button" disabled={busy} onClick={() => void save()}>
+                Save Draft
+              </button>
             </>
           )}
           <button className="button" disabled={!selected || busy} onClick={() => void publish()}>
-            Publish
+            {busy ? 'Publishing…' : 'Save & Publish'}
           </button>
           {data?.published_version && (
             <button className="secondary-button" disabled={busy} onClick={() => void unpublish()}>
@@ -808,31 +873,8 @@ export function WebsiteWorkspace({
           {notice}
         </p>
       )}
-      {selected ? (
+      {selected && section !== 'pages' ? (
         <>
-          <nav className="phase3-tabs" aria-label="Website sections">
-            {[
-              'Overview',
-              'Pages',
-              'Website Editor',
-              'Templates',
-              'Menus',
-              'Theme',
-              'Media',
-              'Forms',
-              'SEO',
-              'Publication',
-              'Settings',
-            ].map((x) => (
-              <button
-                key={x}
-                aria-current={section === x.toLowerCase().replaceAll(' ', '-') ? 'page' : undefined}
-                onClick={() => choosePanel(x)}
-              >
-                {x}
-              </button>
-            ))}
-          </nav>
           {section === 'menus' && (
             <section className="panel website-management-panel">
               <header>
@@ -1943,6 +1985,159 @@ export function WebsiteWorkspace({
             </div>
           )}
         </>
+      )}
+      {fullPreviewOpen && selected && (
+        <Overlay portal onClose={() => setFullPreviewOpen(false)}>
+          <section
+            className="panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="website-live-preview-title"
+            style={{
+              width: 'min(1140px, 96vw)',
+              maxHeight: '92vh',
+              overflow: 'auto',
+              padding: 0,
+            }}
+          >
+            <div
+              style={{
+                padding: '12px 20px',
+                background: '#0f172a',
+                color: '#ffffff',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '10px',
+              }}
+            >
+              <div>
+                <strong id="website-live-preview-title">
+                  {identity?.data?.name || 'Website'} — /{data.slug}
+                </strong>
+                <small style={{ display: 'block', color: '#94a3b8' }}>
+                  {data.published_version
+                    ? `Published v${data.published_version} · Live Interactive Preview`
+                    : 'Draft Preview · Works immediately in Sandbox & Production'}
+                </small>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setPreviewViewport('desktop')}
+                >
+                  Desktop
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setPreviewViewport('tablet')}
+                >
+                  Tablet
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setPreviewViewport('mobile')}
+                >
+                  Mobile
+                </button>
+                <button
+                  type="button"
+                  className="button"
+                  disabled={busy}
+                  onClick={() => void publish()}
+                >
+                  {busy ? 'Publishing…' : 'Save & Publish'}
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setFullPreviewOpen(false)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+
+            <div
+              style={{
+                background: '#e2e8f0',
+                padding: previewViewport === 'desktop' ? '0' : '20px',
+              }}
+            >
+              <div
+                className="website-canvas website-preview"
+                style={
+                  {
+                    maxWidth:
+                      previewViewport === 'mobile'
+                        ? '390px'
+                        : previewViewport === 'tablet'
+                          ? '768px'
+                          : '100%',
+                    margin: '0 auto',
+                    '--website-primary': data.theme?.primary || '#087e78',
+                    '--website-content-width': data.theme?.width === 'wide' ? '1120px' : '900px',
+                    '--website-font':
+                      data.theme?.typography === 'serif'
+                        ? 'Georgia, serif'
+                        : data.theme?.typography === 'modern'
+                          ? 'Arial, Helvetica, sans-serif'
+                          : 'system-ui, sans-serif',
+                    '--website-background': data.theme?.background || '#ffffff',
+                    '--website-section-spacing':
+                      data.theme?.section_spacing === 'compact'
+                        ? '28px'
+                        : data.theme?.section_spacing === 'relaxed'
+                          ? '64px'
+                          : '46px',
+                    '--website-button-radius': data.theme?.button_style === 'square' ? '2px' : '8px',
+                  } as CSSProperties
+                }
+              >
+                <header
+                  className={
+                    'website-preview-header website-header-' + (data.theme?.header_style || 'plain')
+                  }
+                >
+                  <strong>{identity?.data?.name || 'AfriCore Website'}</strong>
+                  <nav aria-label="Full website preview navigation">
+                    {renderDraftMenus(data.menus || [], () => {})}
+                  </nav>
+                </header>
+                {(data.sections || []).map((s: any, idx: number) => (
+                  <article
+                    key={idx}
+                    className={'website-section website-block-' + s.type}
+                    style={{ background: s.background || '#fff' }}
+                  >
+                    <div>
+                      <DraftBlockContent
+                        block={s}
+                        editable={false}
+                        onTitle={() => {}}
+                        onBody={() => {}}
+                      />
+                      {s.button_label && (
+                        <span className="button" style={{ marginTop: '12px', display: 'inline-block' }}>
+                          {s.button_label}
+                        </span>
+                      )}
+                    </div>
+                  </article>
+                ))}
+                <footer
+                  className={'website-footer website-footer-' + (data.theme?.footer_style || 'light')}
+                >
+                  {identity?.data?.name || data.title}
+                </footer>
+              </div>
+            </div>
+          </section>
+        </Overlay>
       )}
       {showTemplates && (
         <Overlay portal onClose={() => setShowTemplates(false)}>

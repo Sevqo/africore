@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { api, apiFetch } from '../lib/api-client';
+import { peekQuery } from '../lib/query-cache';
 import { Overlay } from '../components/Overlay';
-import { Icon } from '../components/Icon';
+import { Icon, type IconName } from '../components/Icon';
+import { CardGridSkeleton } from '../components/Skeleton';
 import { serviceCatalog, serviceForTab, foundationTabs } from '../../../src/marketplace/catalog';
 import { serviceFamilies, serviceFamilyFor } from '../../../src/marketplace/families';
 import './services.css';
@@ -9,6 +11,68 @@ import { allowanceLabel, formatUnits, planLabel, selectUsage } from './usage-pre
 import { serviceOpenDestination } from './service-open-destination';
 import { marketTabs, type WorkspaceKind } from '../workspace-navigation';
 export { marketTabs };
+
+/** Reference commercial schedule in KES minor units (cents) so users can compare realistic service tiers while evaluation charging stays off. */
+const COMMERCIAL_TIERS_KES: Record<
+  string,
+  { tier: 'Foundation' | 'Core' | 'Growth' | 'Enterprise'; monthlyMinor: number; summary: string; bundle?: string }
+> = {
+  invoicing: { tier: 'Foundation', monthlyMinor: 0, summary: 'Included free · up to 50 invoices/mo, then Ksh 15/invoice' },
+  customers: { tier: 'Foundation', monthlyMinor: 0, summary: 'Included free · shared canonical customer directory', bundle: 'crm' },
+  products: { tier: 'Foundation', monthlyMinor: 0, summary: 'Included free · shared product & SKU catalog' },
+  calendar: { tier: 'Foundation', monthlyMinor: 0, summary: 'Included free · team scheduling & invitations' },
+  documents: { tier: 'Core', monthlyMinor: 90000, summary: 'Ksh 900 / mo · encrypted vault & version control' },
+  expenses: { tier: 'Core', monthlyMinor: 80000, summary: 'Ksh 800 / mo · cost tracking & approvals', bundle: 'cash_flow' },
+  income: { tier: 'Foundation', monthlyMinor: 0, summary: 'Included free · personal income register' },
+  cash_flow: { tier: 'Core', monthlyMinor: 120000, summary: 'Ksh 1,200 / mo · cash movement, expenses & obligations' },
+  orders: { tier: 'Core', monthlyMinor: 120000, summary: 'Ksh 1,200 / mo · order lifecycle & fulfillment status', bundle: 'sales' },
+  sales: { tier: 'Core', monthlyMinor: 180000, summary: 'Ksh 1,800 / mo · quotations, price lists & sales orders' },
+  crm: { tier: 'Core', monthlyMinor: 180000, summary: 'Ksh 1,800 / mo · pipeline, leads & follow-up activities' },
+  pos: { tier: 'Growth', monthlyMinor: 220000, summary: 'Ksh 2,200 / mo per active counter register' },
+  inventory: { tier: 'Growth', monthlyMinor: 250000, summary: 'Ksh 2,500 / mo · multi-warehouse stock, lots & valuation' },
+  procurement: { tier: 'Growth', monthlyMinor: 240000, summary: 'Ksh 2,400 / mo · purchase requests, RFQs, POs & 3-way match' },
+  fulfillment: { tier: 'Core', monthlyMinor: 150000, summary: 'Ksh 1,500 / mo · dispatch shipments & delivery proof', bundle: 'inventory' },
+  accounting: { tier: 'Growth', monthlyMinor: 350000, summary: 'Ksh 3,500 / mo · double-entry ledger, tax, assets & close' },
+  payments: { tier: 'Growth', monthlyMinor: 150000, summary: 'Ksh 1,500 / mo + 1.2% per settled collection' },
+  reconciliation: { tier: 'Growth', monthlyMinor: 190000, summary: 'Ksh 1,900 / mo · automated bank & mobile-money matching' },
+  protected_payments: { tier: 'Enterprise', monthlyMinor: 290000, summary: 'Ksh 2,900 / mo · milestone escrow & dispute protection' },
+  people: { tier: 'Growth', monthlyMinor: 280000, summary: 'Ksh 2,800 / mo · HR records, leave, attendance & payroll' },
+  work: { tier: 'Core', monthlyMinor: 160000, summary: 'Ksh 1,600 / mo · projects, Kanban boards, Gantt & timesheets' },
+  commerce: { tier: 'Growth', monthlyMinor: 290000, summary: 'Ksh 2,900 / mo · online storefront, catalog & checkout' },
+  website: { tier: 'Core', monthlyMinor: 140000, summary: 'Ksh 1,400 / mo · public website pages, forms & SEO' },
+  intelligence: { tier: 'Core', monthlyMinor: 190000, summary: 'Ksh 1,900 / mo · cross-app analytics & executive KPIs' },
+  forecasting: { tier: 'Growth', monthlyMinor: 210000, summary: 'Ksh 2,100 / mo · cash & demand projections', bundle: 'intelligence' },
+  assistant: { tier: 'Growth', monthlyMinor: 200000, summary: 'Ksh 2,000 / mo · grounded AI explanations (100 queries inc.)' },
+  automations: { tier: 'Growth', monthlyMinor: 220000, summary: 'Ksh 2,200 / mo · workflow rules, schedules & approvals' },
+  passport: { tier: 'Core', monthlyMinor: 150000, summary: 'Ksh 1,500 / mo · Business Passport, verification & trust suite' },
+  verification: { tier: 'Core', monthlyMinor: 0, summary: 'Bundled with Business Passport · KRA/CR12 review', bundle: 'passport' },
+  credentials: { tier: 'Core', monthlyMinor: 0, summary: 'Bundled with Business Passport · signed W3C credentials', bundle: 'passport' },
+  trust_network: { tier: 'Core', monthlyMinor: 0, summary: 'Bundled with Business Passport · partner trust sharing', bundle: 'passport' },
+  blockchain: { tier: 'Enterprise', monthlyMinor: 250000, summary: 'Ksh 2,500 / mo · tamper-evident credential anchoring', bundle: 'passport' },
+  data: { tier: 'Core', monthlyMinor: 150000, summary: 'Ksh 1,500 / mo · structured CSV/JSON normalization & imports' },
+  connect: { tier: 'Growth', monthlyMinor: 240000, summary: 'Ksh 2,400 / mo · external ERP/bank data sync connectors', bundle: 'data' },
+  developer_api: { tier: 'Growth', monthlyMinor: 250000, summary: 'Ksh 2,500 / mo · 25,000 scoped REST API calls included' },
+  webhooks: { tier: 'Core', monthlyMinor: 120000, summary: 'Ksh 1,200 / mo · 10,000 signed HTTPS event deliveries' },
+  verification_api: { tier: 'Enterprise', monthlyMinor: 320000, summary: 'Ksh 3,200 / mo · programmatic KYB & credential checks' },
+};
+
+function serviceIconFor(id: string): IconName {
+  if (/payment|reconciliation|protected/.test(id)) return 'payment';
+  if (/accounting/.test(id)) return 'calculator';
+  if (/report|cash|intelligence|forecast|income|expense/.test(id)) return 'chart';
+  if (/customer|crm|people/.test(id)) return 'users';
+  if (/product|inventory/.test(id)) return 'box';
+  if (/procurement/.test(id)) return 'network';
+  if (/fulfillment/.test(id)) return 'truck';
+  if (/commerce|order|sale|pos/.test(id)) return 'bag';
+  if (/calendar/.test(id)) return 'calendar';
+  if (/website/.test(id)) return 'globe';
+  if (/passport|verification|credential|trust|blockchain/.test(id)) return 'shield';
+  if (/automation|assistant/.test(id)) return 'bolt';
+  if (/webhook|connect|developer|data/.test(id)) return 'plug';
+  if (/work/.test(id)) return 'grid';
+  return 'document';
+}
 export function useMarketplace(
   org: string,
   environment: string,
@@ -17,11 +81,18 @@ export function useMarketplace(
   demo = false,
 ) {
   const scope = org + '\0' + environment;
+  const cached = org
+    ? peekQuery<any>('/api/v1/organizations/' + org + '/services', environment, demo)
+    : undefined;
   const [state, setState] = useState<{ scope: string; catalog: any; error: string; busy: boolean }>(
     {
       scope,
       catalog:
-        initial?.workspace_id === org && initial?.environment === environment ? initial : null,
+        initial?.workspace_id === org && initial?.environment === environment
+          ? initial
+          : cached?.workspace_id === org
+            ? cached
+            : null,
       error: '',
       busy: false,
     },
@@ -114,7 +185,7 @@ export function favoriteTabs(m: MarketplaceState): string[] {
 export function visibleServiceTab(m: MarketplaceState, tab: string) {
   if (tab === 'Apps' || foundationTabs.includes(tab) || marketTabs.includes(tab)) return true;
   return !!m.catalog?.services.some(
-    (s: any) => tabServices(tab).includes(s.id) && s.status === 'active',
+    (s: any) => tabServices(tab).includes(s.id) && ['active', 'requires_setup'].includes(s.status),
   );
 }
 export function canReadServiceTab(m: MarketplaceState, tab: string) {
@@ -126,7 +197,8 @@ export function canReadServiceTab(m: MarketplaceState, tab: string) {
   )
     return true;
   return !!m.catalog?.services.some(
-    (s: any) => tabServices(tab).includes(s.id) && ['active', 'disabled'].includes(s.status),
+    (s: any) =>
+      tabServices(tab).includes(s.id) && ['active', 'requires_setup', 'disabled'].includes(s.status),
   );
 }
 export function ServiceGate({
@@ -204,9 +276,9 @@ export function Services({
   navigate: (tab: string) => void;
   manager: boolean;
 }) {
-  const [serviceLayout, setServiceLayout] = useState<'grid' | 'list'>('list');
+  const [serviceLayout, setServiceLayout] = useState<'grid' | 'list'>('grid');
+  const [consolidateSuites, setConsolidateSuites] = useState(true);
   const [search, setSearch] = useState(''),
-    [category, setCategory] = useState('all'),
     [family, setFamily] = useState('all'),
     [pricing, setPricing] = useState('all'),
     [detail, setDetail] = useState<string | null>(
@@ -285,23 +357,69 @@ export function Services({
     dispatchEvent(new Event('africore:app-navigation'));
     navigate(destination.tab);
   };
+  const activateFluent = async (targetService: any) => {
+    const orderedDeps: any[] = [];
+    const seen = new Set<string>();
+    const visit = (svcId: string) => {
+      if (seen.has(svcId)) return;
+      seen.add(svcId);
+      const found = all.find((x: any) => x.id === svcId);
+      if (!found) return;
+      for (const dep of found.dependencies || []) visit(dep);
+      orderedDeps.push(found);
+    };
+    visit(targetService.id);
+    // Also activate bundled sub-services when activating Business Passport
+    if (targetService.id === 'passport' && consolidateSuites) {
+      for (const subId of ['verification', 'credentials', 'trust_network']) {
+        const sub = all.find((x: any) => x.id === subId);
+        if (sub && sub.price?.model === 'free') orderedDeps.push(sub);
+      }
+    }
+    let lastResult: any = null;
+    for (const item of orderedDeps) {
+      if (item.status === 'active' && item.id !== targetService.id) continue;
+      lastResult = await call('/services/' + item.id + '/activate', 'POST', {
+        confirm_price_version: item.price?.version,
+      });
+    }
+    setNotice(
+      lastResult?.status === 'active'
+        ? `${targetService.name} is now active and ready to use.`
+        : `${targetService.name} saved (${status(lastResult?.status || 'requires_setup')}).`,
+    );
+  };
+
   const items = all
-    .filter(
-      (s: any) =>
+    .filter((s: any) => {
+      const tierInfo = COMMERCIAL_TIERS_KES[s.id];
+      const isFreeTier = s.price?.model === 'free' && (!tierInfo || tierInfo.monthlyMinor === 0);
+      if (
+        consolidateSuites &&
+        view === 'Explore Services' &&
+        !search.trim() &&
+        tierInfo?.bundle &&
+        !['active', 'requires_setup'].includes(s.status)
+      ) {
+        return false;
+      }
+      return (
         (view === 'Explore Services' || s.entitlement) &&
-        [s.name, s.description, s.detail].join(' ').toLowerCase().includes(search.toLowerCase()) &&
-        (category === 'all' || s.category === category) &&
+        [s.name, s.description, s.detail, tierInfo?.summary || '']
+          .join(' ')
+          .toLowerCase()
+          .includes(search.toLowerCase()) &&
         (family === 'all' || serviceFamilyFor(s.id)?.id === family) &&
         (pricing === 'all' ||
-          (pricing === 'free' && s.price?.model === 'free') ||
-          (pricing === 'paid' && s.price?.model !== 'free') ||
-          (pricing === 'usage' &&
-            ['metered', 'allowance', 'tiered', 'hybrid'].includes(s.price?.model))),
-    )
+          (pricing === 'free' && isFreeTier) ||
+          (pricing === 'paid' && !isFreeTier) ||
+          (pricing === 'active' && s.status === 'active'))
+      );
+    })
     .sort(
       (a: any, b: any) =>
         Number(b.entitlement?.favorite || 0) - Number(a.entitlement?.favorite || 0) ||
-        (a.entitlement?.position || 0) - (b.entitlement?.position || 0) ||
+        (serviceFamilyFor(a.id)?.order || 99) - (serviceFamilyFor(b.id)?.order || 99) ||
         a.name.localeCompare(b.name),
     );
   if (view === 'Usage & Billing') return <UsageBilling market={market} manager={manager} />;
@@ -435,50 +553,80 @@ export function Services({
           </button>
         </section>
       )}
-      <div className="service-filters">
+      <div className="service-filters" style={{ alignItems: 'end' }}>
         <label className="field">
-          <span>Find a service</span>
+          <span>Search services</span>
           <input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Invoices, cash flow…"
+            placeholder="Invoices, webhooks, inventory, payroll…"
           />
         </label>
         <label className="field">
-          <span>Service family</span>
+          <span>Domain family</span>
           <select value={family} onChange={(e) => setFamily(e.target.value)}>
-            <option value="all">All families</option>
-            {serviceFamilies.filter((f) => f.kinds.includes((market.catalog?.kind || market.kind) as any)).map((f) => (
-              <option value={f.id} key={f.id}>{f.name}</option>
-            ))}
+            <option value="all">All domains ({serviceFamilies.filter((f) => f.kinds.includes((market.catalog?.kind || market.kind) as any)).length})</option>
+            {serviceFamilies
+              .filter((f) => f.kinds.includes((market.catalog?.kind || market.kind) as any))
+              .map((f) => (
+                <option value={f.id} key={f.id}>
+                  {f.name}
+                </option>
+              ))}
           </select>
         </label>
         <label className="field">
-          <span>Category</span>
-          <select value={category} onChange={(e) => setCategory(e.target.value)}>
-            <option value="all">All categories</option>
-            {[...new Set(all.map((s: any) => s.category))].map((c: any) => (
-              <option key={c}>{c}</option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          <span>Pricing</span>
+          <span>Tier &amp; status</span>
           <select value={pricing} onChange={(e) => setPricing(e.target.value)}>
-            <option value="all">All models</option>
-            <option value="free">Free</option>
-            <option value="paid">Paid estimates</option>
-            <option value="usage">Usage based</option>
+            <option value="all">All tiers</option>
+            <option value="free">Included Free Foundation</option>
+            <option value="paid">Commercial Tiers (Free in Sandbox)</option>
+            <option value="active">Active in Workspace</option>
           </select>
         </label>
+        {view === 'Explore Services' && (
+          <label className="checkbox-field" style={{ paddingBottom: 8 }}>
+            <input
+              type="checkbox"
+              checked={consolidateSuites}
+              onChange={(e) => setConsolidateSuites(e.target.checked)}
+            />
+            Group bundled add-ons into suites
+          </label>
+        )}
+      </div>
+      <div className="ac-filter-pills" style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+        <button
+          type="button"
+          className="ac-pill"
+          aria-pressed={family === 'all'}
+          onClick={() => setFamily('all')}
+        >
+          All domains
+        </button>
+        {serviceFamilies
+          .filter((f) => f.kinds.includes((market.catalog?.kind || market.kind) as any))
+          .map((f) => (
+            <button
+              type="button"
+              key={f.id}
+              className="ac-pill"
+              aria-pressed={family === f.id}
+              onClick={() => setFamily(f.id)}
+            >
+              {f.name}
+            </button>
+          ))}
       </div>
       {market.busy && !market.catalog ? (
-        <p role="status">Loading service catalog…</p>
+        <CardGridSkeleton count={6} label="Loading service catalog…" />
       ) : (
         <>
           <div className="service-results-toolbar">
-            <p role="status">{items.length} matching services</p>
+            <p role="status">
+              {items.length} services · Apps are free; sandbox evaluation never charges your account
+            </p>
             <div className="segmented-control" role="group" aria-label="Service layout">
               <button
                 type="button"
@@ -499,125 +647,127 @@ export function Services({
           <div
             className={'service-grid' + (serviceLayout === 'list' ? ' service-list-layout' : '')}
           >
-            {items.map((s: any) => (
-              <article className="service-card" key={s.id}>
-                <span className="service-icon">
-                  <Icon
-                    name={
-                      /payment/.test(s.id)
-                        ? 'payment'
-                        : /report|cash|intelligence/.test(s.id)
-                          ? 'chart'
-                          : /customer|crm|people/.test(s.id)
-                            ? 'users'
-                            : /product|inventory/.test(s.id)
-                              ? 'box'
-                              : 'document'
-                    }
-                  />
-                </span>
-                <div className="service-card-meta">
-                  <span>{serviceFamilyFor(s.id)?.name || s.category}</span>
-                  <span className="badge">{status(s.status)}</span>
-                </div>
-                <h2>{s.name}</h2>
-                <p>{s.description}</p>
-                <p className="service-price">
-                  {s.price?.model === 'free'
-                    ? 'Free evaluation'
-                    : s.price?.description || 'Pricing not published'}
-                  {s.availability === 'evaluation' && ' · test workflow'}
-                </p>
-                {usage && (
-                  <p className="service-price">
-                    Usage this month:{' '}
-                    {formatUnits(
-                      usage.lines
-                        .filter((l: any) => l.service_id === s.id)
-                        .reduce((n: number, l: any) => n + l.quantity, 0),
-                    )}{' '}
-                    {s.unit}
-                  </p>
-                )}
-                <div className="service-actions">
-                  <button
-                    className="secondary-button"
-                    onClick={() => {
-                      setDetail(s.id);
-                      setConfirmed(false);
-                    }}
-                  >
-                    Manage
-                  </button>
-                  {s.status === 'active' && (
-                    <button className="button" onClick={() => open(s)}>
-                      Open Service <Icon name="right" />
+            {items.map((s: any) => {
+              const tierInfo = COMMERCIAL_TIERS_KES[s.id];
+              const bundledChildren = consolidateSuites
+                ? all.filter((child: any) => COMMERCIAL_TIERS_KES[child.id]?.bundle === s.id)
+                : [];
+              return (
+                <article className="service-card" key={s.id}>
+                  <span className="service-icon">
+                    <Icon name={serviceIconFor(s.id)} />
+                  </span>
+                  <div>
+                    <div className="service-card-meta" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
+                      <span style={{ fontSize: 11.5, fontWeight: 600, color: '#475569' }}>
+                        {serviceFamilyFor(s.id)?.name || s.category}
+                      </span>
+                      <span className="badge">{status(s.status)}</span>
+                      {tierInfo && (
+                        <span
+                          className="badge"
+                          style={{
+                            background: tierInfo.monthlyMinor === 0 ? '#ecfdf5' : '#eff6ff',
+                            color: tierInfo.monthlyMinor === 0 ? '#166534' : '#1d4ed8',
+                          }}
+                        >
+                          {tierInfo.tier}
+                        </span>
+                      )}
+                    </div>
+                    <h2 style={{ margin: '2px 0 4px', fontSize: 16 }}>{s.name}</h2>
+                    <p className="service-price" style={{ margin: 0, fontWeight: 600, color: '#0f172a', fontSize: 12.5 }}>
+                      {s.price?.model !== 'free'
+                        ? s.price?.description
+                        : tierInfo?.summary || 'Included free'}
+                    </p>
+                    <small style={{ color: '#64748b', display: 'block', marginTop: 2 }}>
+                      {market.environment === 'sandbox'
+                        ? 'Ksh 0.00 in Sandbox evaluation'
+                        : 'Billing collection disabled'}
+                      {usage
+                        ? ` · ${formatUnits(
+                            usage.lines
+                              .filter((l: any) => l.service_id === s.id)
+                              .reduce((n: number, l: any) => n + l.quantity, 0),
+                          )} ${s.unit}`
+                        : ''}
+                    </small>
+                  </div>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 13, color: '#334155' }}>{s.description}</p>
+                    {bundledChildren.length > 0 && (
+                      <small style={{ display: 'block', marginTop: 6, color: '#0f766e', fontWeight: 500 }}>
+                        Suite includes: {bundledChildren.map((c: any) => c.name).join(' · ')}
+                      </small>
+                    )}
+                    {s.dependencies?.length > 0 && s.status !== 'active' && (
+                      <small style={{ display: 'block', marginTop: 4, color: '#64748b' }}>
+                        Auto-enables prerequisite:{' '}
+                        {s.dependencies
+                          .map((depId: string) => all.find((x: any) => x.id === depId)?.name || depId)
+                          .join(', ')}
+                      </small>
+                    )}
+                  </div>
+                  <div className="service-actions">
+                    {s.status !== 'active' && manager && !market.demo && s.price?.model === 'free' && (
+                      <button
+                        className="button"
+                        disabled={busy || ['suspended', 'unavailable'].includes(s.status)}
+                        onClick={() => action(() => activateFluent(s))}
+                      >
+                        {s.status === 'requires_setup' ? 'Enable now' : 'Activate'}
+                      </button>
+                    )}
+                    {s.status === 'active' && (
+                      <button className="button" onClick={() => open(s)}>
+                        Open Service <Icon name="right" />
+                      </button>
+                    )}
+                    <button
+                      className="secondary-button"
+                      onClick={() => {
+                        setDetail(s.id);
+                        setConfirmed(false);
+                      }}
+                    >
+                      {s.status === 'active' ? 'Manage' : 'Details'}
                     </button>
-                  )}
-                  {view === 'My Services' && manager && s.entitlement && (
-                    <details className="service-overflow">
-                      <summary aria-label={'More actions for ' + s.name}>•••</summary>
-                      <div className="service-overflow-actions">
-                        <button className="quiet-button" onClick={() => setDetail(s.id)}>
-                          View details
-                        </button>
-                        <button
-                          className="quiet-button"
-                          disabled={busy || market.demo}
-                          aria-pressed={s.entitlement.favorite}
-                          onClick={() =>
-                            action(() =>
-                              call('/services/' + s.id + '/preferences', 'PATCH', {
-                                favorite: !s.entitlement.favorite,
-                                position: s.entitlement.position || 0,
-                              }),
-                            )
-                          }
-                        >
-                          {s.entitlement.favorite ? 'Unpin' : 'Pin'}
-                        </button>
-                        <button
-                          className="quiet-button"
-                          disabled={busy || market.demo}
-                          onClick={() =>
-                            action(() =>
-                              call('/services/' + s.id + '/preferences', 'PATCH', {
-                                favorite: !!s.entitlement.favorite,
-                                position: Math.max(0, (s.entitlement.position || 0) - 1),
-                              }),
-                            )
-                          }
-                        >
-                          Move earlier
-                        </button>
-                        {['active', 'requires_setup'].includes(s.status) && (
-                          <button className="quiet-button" onClick={() => setCancel(s.id)}>
-                            Deactivate
+                    {view === 'My Services' && manager && s.entitlement && (
+                      <details className="service-overflow">
+                        <summary aria-label={'More actions for ' + s.name}>•••</summary>
+                        <div className="service-overflow-actions">
+                          <button className="quiet-button" onClick={() => setDetail(s.id)}>
+                            View details
                           </button>
-                        )}
-                      </div>
-                    </details>
-                  )}
-                  {!active.length && view === 'Explore Services' && (
-                    <label className="service-select">
-                      <input
-                        type="checkbox"
-                        aria-label={'Select ' + s.name}
-                        checked={selected.includes(s.id)}
-                        onChange={(e) =>
-                          setSelected((current) =>
-                            e.target.checked
-                              ? [...current, s.id]
-                              : current.filter((id) => id !== s.id),
-                          )
-                        }
-                      />
-                      Select
-                    </label>
-                  )}
-                </div>
-              </article>
-            ))}
+                          <button
+                            className="quiet-button"
+                            disabled={busy || market.demo}
+                            aria-pressed={s.entitlement.favorite}
+                            onClick={() =>
+                              action(() =>
+                                call('/services/' + s.id + '/preferences', 'PATCH', {
+                                  favorite: !s.entitlement.favorite,
+                                  position: s.entitlement.position || 0,
+                                }),
+                              )
+                            }
+                          >
+                            {s.entitlement.favorite ? 'Unpin' : 'Pin'}
+                          </button>
+                          {['active', 'requires_setup'].includes(s.status) && (
+                            <button className="quiet-button" onClick={() => setCancel(s.id)}>
+                              Deactivate
+                            </button>
+                          )}
+                        </div>
+                      </details>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </>
       )}
@@ -714,14 +864,7 @@ export function Services({
                 }
                 onClick={() =>
                   action(async () => {
-                    const result = await call('/services/' + service.id + '/activate', 'POST', {
-                      confirm_price_version: service.price?.version,
-                    });
-                    setNotice(
-                      result.status === 'active'
-                        ? 'Service activated.'
-                        : 'Activation saved; complete the listed setup before use.',
-                    );
+                    await activateFluent(service);
                     setDetail(null);
                   })
                 }

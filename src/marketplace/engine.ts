@@ -64,10 +64,11 @@ export async function entitlement(a: Pick<Access, 'org' | 'environment'>, id: st
 }
 export function setupReady(id: string) {
   if (id === 'assistant') return true; // Private history/computed evidence work without an external provider; each explanation has a separate runtime gate.
-  if (id === 'webhooks')
-    return !!(process.env.AFRISCORE_WEBHOOK_ALLOWED_HOSTS || '')
-      .split(',')
-      .find((h) => h.trim() && h.trim() !== 'disabled.invalid');
+  if (id === 'webhooks') {
+    const raw = (process.env.AFRISCORE_WEBHOOK_ALLOWED_HOSTS || '').trim();
+    if (!raw) return process.env.NODE_ENV !== 'production';
+    return !!raw.split(',').find((h) => h.trim() && h.trim() !== 'disabled.invalid');
+  }
   return true;
 }
 async function eligiblePrice(id: string, at = stamp()) {

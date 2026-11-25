@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Field, Form, money, today, type API } from '../operations/UI';
 import { DataTable } from '../components/DataTable';
+import { AppModuleMenuBar } from './MinimalAppChrome';
 import { useIdempotentAPI } from './useIdempotentAPI';
 import { JournalEditor } from './JournalEditor';
 import { AccountingConfiguration } from './AccountingConfiguration';
@@ -227,43 +228,26 @@ export function AccountingAppWorkspace({
         </div>
       </header>
 
-      <nav className="acc-module-nav" aria-label="Accounting modules">
-        {accountingSections.map((item) => (
-          <div className="acc-menu" key={item.section}>
-            <button
-              className={section === item.section ? 'active' : ''}
-              aria-current={section === item.section ? 'page' : undefined}
-              onClick={() => {
-                if (item.section === section) go(defaultViewForSection[item.section]);
-                else {
-                  const url = new URL(location.href);
-                  url.searchParams.set('app', 'accounting');
-                  url.searchParams.set('section', item.section);
-                  url.searchParams.delete('view');
-                  url.hash = 'Apps';
-                  history.pushState(history.state, '', url);
-                  dispatchEvent(new Event('africore:app-navigation'));
-                }
-              }}
-            >
-              {item.label}
-            </button>
-            {section === item.section && (
-              <div className="acc-subnav">
-                {viewsForSection[item.section].map((key) => (
-                  <button
-                    key={key}
-                    className={view === key ? 'active' : ''}
-                    onClick={() => go(key)}
-                  >
-                    {viewTitles[key]}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </nav>
+      <AppModuleMenuBar
+        className="acc-module-nav"
+        ariaLabel="Accounting modules"
+        brandLabel="Accounting"
+        brandActive={section === 'dashboard' && view === 'dashboard'}
+        onBrandClick={() => go('dashboard')}
+        menus={accountingSections
+          .filter((item) => item.section !== 'dashboard')
+          .map((item) => ({
+            id: item.section,
+            label: item.label,
+            active: section === item.section,
+            children: viewsForSection[item.section].map((key) => ({
+              id: key,
+              label: viewTitles[key],
+              active: view === key,
+              onSelect: () => go(key),
+            })),
+          }))}
+      />
 
       {error && (
         <p className="alert error" role="alert">

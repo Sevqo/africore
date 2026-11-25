@@ -3,6 +3,7 @@ import { Field, Form, money, type API } from '../operations/UI';
 import { parseMoney } from '../../../src/finance/money';
 import { useIdempotentAPI } from '../apps/useIdempotentAPI';
 import { appNavigationEvent } from '../apps/AppNavigation';
+import { AppModuleMenuBar } from '../apps/MinimalAppChrome';
 import { POSAppDashboard } from './POSAppDashboard';
 import { POSAppOrders } from './POSAppOrders';
 import { POSAppProducts } from './POSAppProducts';
@@ -370,83 +371,71 @@ export function POSAppWorkspace({
   const activeSession = shift?.session?.id === sessionId ? shift.session : null;
   return (
     <div className="pos-app-shell">
-      <header className="pos-app-module">
-        <div className="pos-app-brand">
-          <span className="pos-app-mark">POS</span>
-          <strong>Point of Sale</strong>
-        </div>
-        <nav aria-label="Point of Sale sections">
-          {registers.length > 0 && (
-            <button
-              type="button"
-              className={view === 'dashboard' && !receipt ? 'active' : ''}
-              onClick={() => {
-                setReceipt(null);
-                go('dashboard');
-              }}
-            >
-              Dashboard
-            </button>
-          )}
-          {registers.length > 0 && (
-            <button
-              type="button"
-              className={view === 'orders' ? 'active' : ''}
-              onClick={() => {
-                setReceipt(null);
-                go('orders');
-              }}
-            >
-              Orders
-            </button>
-          )}
-          {registers.length > 0 && (
-            <button
-              type="button"
-              className={view === 'products' ? 'active' : ''}
-              onClick={() => {
-                setReceipt(null);
-                go('products');
-              }}
-            >
-              Products
-            </button>
-          )}
-          {registers.length > 0 && (
-            <button
-              type="button"
-              className={view === 'reporting' ? 'active' : ''}
-              onClick={() => {
-                setReceipt(null);
-                go('reporting');
-              }}
-            >
-              Reporting
-            </button>
-          )}
-          <button
-            type="button"
-            className={view === 'configuration' ? 'active' : ''}
-            onClick={() => {
+      <AppModuleMenuBar
+        className="pos-app-module"
+        ariaLabel="Point of Sale sections"
+        brandLabel="Point of Sale"
+        brandActive={view === 'dashboard' && !receipt}
+        onBrandClick={() => {
+          setReceipt(null);
+          go('dashboard');
+        }}
+        menus={[
+          ...(registers.length > 0
+            ? [
+                {
+                  id: 'orders',
+                  label: 'Orders',
+                  active: view === 'orders',
+                  onSelect: () => {
+                    setReceipt(null);
+                    go('orders');
+                  },
+                },
+                {
+                  id: 'products',
+                  label: 'Products',
+                  active: view === 'products',
+                  onSelect: () => {
+                    setReceipt(null);
+                    go('products');
+                  },
+                },
+                {
+                  id: 'reporting',
+                  label: 'Reporting',
+                  active: view === 'reporting',
+                  onSelect: () => {
+                    setReceipt(null);
+                    go('reporting');
+                  },
+                },
+              ]
+            : []),
+          {
+            id: 'configuration',
+            label: 'Configuration',
+            active: view === 'configuration',
+            onSelect: () => {
               setReceipt(null);
               go('configuration');
-            }}
-          >
-            Configuration
-          </button>
-        </nav>
-        <div className="pos-app-module-context">
-          {selectedRegister && (
-            <>
-              <span>{selectedRegister.data.name}</span>
-              <span className="badge">{selectedRegister.data.currency}</span>
-            </>
-          )}
-          <span className={online ? 'pos-online' : 'pos-offline'}>
-            {online ? 'Online' : 'Offline'}
-          </span>
-        </div>
-      </header>
+            },
+          },
+        ]}
+        rightContent={
+          <div className="pos-app-module-context" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {selectedRegister && (
+              <>
+                <span>{selectedRegister.data.name}</span>
+                <span className="badge">{selectedRegister.data.currency}</span>
+              </>
+            )}
+            <span className={online ? 'pos-online' : 'pos-offline'}>
+              {online ? 'Online' : 'Offline'}
+            </span>
+          </div>
+        }
+      />
       {error && (
         <p role="alert" className="alert error pos-app-alert">
           {error}
@@ -531,6 +520,7 @@ export function POSAppWorkspace({
           mutate={mutate}
           onExit={() => go('dashboard')}
           onCloseShift={() => setClosing(true)}
+          onRegisterUpdated={() => setRevision((v) => v + 1)}
         />
       )}
       {view === 'cashier' && !receipt && !activeSession && (

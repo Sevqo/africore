@@ -17,6 +17,9 @@ import { InventoryAppWorkspace } from './lazy-workspaces';
 import { useEffect, useState } from 'react';
 import { Icon } from '../components/Icon';
 import { Overlay } from '../components/Overlay';
+import { CardGridSkeleton } from '../components/Skeleton';
+import { peekQuery } from '../lib/query-cache';
+import { isDemo } from '../demo/transport';
 import { money, type API } from '../operations/UI';
 import {
   ExtendedAppWorkspace,
@@ -51,9 +54,23 @@ export function AppsWorkspace({
   timezone,
 }: Props) {
   const api = useIdempotentAPI(providedApi, scope),
-    writable = ['owner', 'admin', 'finance', 'operations'].includes(role || ''),
-    financeWritable = ['owner', 'admin', 'finance'].includes(role || '');
-  const [catalog, setCatalog] = useState<any>(null),
+    [orgId = '', env = 'sandbox'] = scope.split('\0'),
+    writable = [
+      'owner',
+      'admin',
+      'finance',
+      'accountant',
+      'hr',
+      'sales',
+      'operations',
+      'inventory_manager',
+      'support_agent',
+      'marketing_manager',
+    ].includes(role || ''),
+    financeWritable = ['owner', 'admin', 'finance', 'accountant'].includes(role || '');
+  const [catalog, setCatalog] = useState<any>(() =>
+      orgId ? peekQuery<any>('/api/v1/organizations/' + orgId + '/apps', env, isDemo()) || null : null,
+    ),
     [selected, setSelectedState] = useState(
       () => new URLSearchParams(location.search).get('app') || '',
     ),
@@ -69,7 +86,11 @@ export function AppsWorkspace({
     [serviceAction, setServiceAction] = useState('keep');
   useEffect(() => {
     let current = true;
-    setCatalog(null);
+    const warm = orgId
+      ? peekQuery<any>('/api/v1/organizations/' + orgId + '/apps', env, isDemo())
+      : null;
+    if (warm) setCatalog(warm);
+    else setCatalog(null);
     setError('');
     api('/apps')
       .then((r) => {
@@ -177,7 +198,7 @@ export function AppsWorkspace({
           {error}
         </p>
       )}
-      {!catalog && !error && <p role="status">Loading workspace apps…</p>}
+      {!catalog && !error && <CardGridSkeleton count={8} label="Loading workspace apps…" />}
       {!app && catalog && (
         <>
           <p>
@@ -383,7 +404,9 @@ export function AppsWorkspace({
             </section>
           ) : (
             <>
-              {!['crm', 'accounting', 'pos'].includes(app.id) &&
+              {!['crm', 'accounting', 'pos', 'procurement', 'sales', 'inventory'].includes(
+                app.id,
+              ) &&
                 app.navigation?.length > 1 && (
                   <AppSectionTabs app={app} section={activeSection} navigate={navigate} />
                 )}

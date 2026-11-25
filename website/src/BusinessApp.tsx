@@ -10,6 +10,7 @@ import { NotificationCentre } from './apps/NotificationCentre';
 import { WorkspaceSearch } from './apps/WorkspaceSearch';
 import { WorkspaceAppLauncher } from './apps/WorkspaceAppLauncher';
 import { WorkspaceAccountMenu } from './apps/WorkspaceAccountMenu';
+import { WorkspaceHelpModal } from './apps/WorkspaceHelpModal';
 import { OrderDraftEditor } from './apps/OrderDraftEditor';
 import {
   useAppContext,
@@ -283,7 +284,8 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
     [urlRevision, setUrlRevision] = useState(0);
   const passportInitialTab = new URLSearchParams(location.search).get('section') || undefined;
   const [navOpen, setNavOpen] = useState(false),
-    [appInfoOpen, setAppInfoOpen] = useState(false);
+    [appInfoOpen, setAppInfoOpen] = useState(false),
+    [helpOpen, setHelpOpen] = useState(false);
   const market = useMarketplace(org, environment, 'business', account?.service_catalog, isDemo());
   const [offset, setOffset] = useState(0),
     [search, setSearch] = useState('');
@@ -496,6 +498,8 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
       tab === 'Apps' ||
       directAppTabs.includes(tab) ||
       tab === 'Expenses' ||
+      tab === 'Webhooks' ||
+      tab === 'Verification APIs' ||
       marketTabs.includes(tab) ||
       !canReadServiceTab(market, tab) ||
       tab === 'Business Passport' ||
@@ -1084,6 +1088,10 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
               <span>Workspace management</span>
             </a>
           )}
+          <button type="button" onClick={() => setHelpOpen(true)}>
+            <Icon name="lifebuoy" />
+            <span>Help &amp; Guides</span>
+          </button>
           <a href="/docs">
             <span>Developer docs</span> <Icon name="right" />
           </a>
@@ -1187,6 +1195,17 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
               </select>
             )}
             {org && !isDemo() && (
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Open Help and Guides"
+                title="Help & Guides"
+                onClick={() => setHelpOpen(true)}
+              >
+                <Icon name="lifebuoy" />
+              </button>
+            )}
+            {org && !isDemo() && (
               <NotificationBell
                 key={org + '\0' + environment}
                 api={call}
@@ -1206,6 +1225,11 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
             )}
           </div>
         </header>
+        <WorkspaceHelpModal
+          open={helpOpen}
+          onClose={() => setHelpOpen(false)}
+          activeAppId={appContext.app?.id}
+        />
         {appInfoOpen && appContext.app && (
           <Overlay portal onClose={() => setAppInfoOpen(false)}>
             <section
@@ -2080,17 +2104,17 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
                     {tab === 'Developers' && (
                       <DeveloperTools key={org + environment} call={call} onNotice={setNotice} />
                     )}
-                    {tab === 'Webhooks' && (
-                      <WebhooksConsole
-                        key={org + environment}
-                        call={call}
-                        manager={['owner', 'admin'].includes(organization?.role)}
-                      />
-                    )}
-                    {tab === 'Verification APIs' && (
-                      <VerificationConsole key={org + environment} call={call} />
-                    )}
                   </>
+                )}
+                {tab === 'Webhooks' && (
+                  <WebhooksConsole
+                    key={org + environment}
+                    call={call}
+                    manager={['owner', 'admin'].includes(organization?.role)}
+                  />
+                )}
+                {tab === 'Verification APIs' && (
+                  <VerificationConsole key={org + environment} call={call} />
                 )}
                 {recordTabs.includes(tab) && (
                   <nav className="record-pagination" aria-label="Record pages">

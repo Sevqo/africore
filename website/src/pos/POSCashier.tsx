@@ -17,6 +17,7 @@ type Props = {
   mutate: (work: () => Promise<any>) => Promise<any>;
   onExit?: () => void;
   onCloseShift?: () => void;
+  onRegisterUpdated?: () => void;
 };
 type KeyMode = 'qty' | 'discount';
 export function POSCashier({
@@ -32,6 +33,7 @@ export function POSCashier({
   mutate,
   onExit,
   onCloseShift,
+  onRegisterUpdated,
 }: Props) {
   const c = r.data,
     [query, setQuery] = useState(''),
@@ -546,9 +548,66 @@ export function POSCashier({
         </div>
       </header>
       {error && (
-        <p role="alert" className="alert error">
-          {error}
-        </p>
+        <div role="alert" className="alert error" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+          <span>{error}</span>
+          {(/configured warehouse|Inventory/i.test(error) || !c.warehouse_id) && manager && (
+            <button
+              type="button"
+              className="button"
+              onClick={() =>
+                void mutate(async () => {
+                  try {
+                    await api('/services/inventory/activate', 'POST', {});
+                  } catch {
+                    /* already active or managed */
+                  }
+                  const whList = await api('/inventory/warehouses');
+                  let targetWh = (whList.data || []).find((w: any) => w.status === 'active');
+                  if (!targetWh) {
+                    targetWh = await api(
+                      '/inventory/warehouses',
+                      'POST',
+                      {
+                        code: 'MAIN-' + String(Date.now()).slice(-4),
+                        name: 'Main Store Warehouse',
+                        address: 'POS Counter Stock',
+                        status: 'active',
+                      },
+                      { 'Idempotency-Key': crypto.randomUUID() },
+                    );
+                  }
+                  await api('/pos/registers/' + r.id, 'PUT', {
+                    expected_version: r.version,
+                    name: c.name,
+                    currency: c.currency,
+                    tax_bps: c.tax_bps,
+                    timezone: c.timezone,
+                    default_customer_id: c.default_customer_id,
+                    warehouse_id: targetWh.id,
+                    location_id: null,
+                    cashier_ids: c.cashier_ids,
+                    manager_ids: c.manager_ids,
+                    cashier_discount_bps: c.cashier_discount_bps,
+                    manager_discount_bps: c.manager_discount_bps,
+                    allow_cash: c.allow_cash,
+                    electronic_method: c.electronic_method,
+                    allow_pending_orders: c.allow_pending_orders,
+                    active: r.status === 'active',
+                    acknowledge_automated_invoicing: true,
+                    acknowledge_recorded_cash: true,
+                  });
+                  r.data.warehouse_id = targetWh.id;
+                  r.version += 1;
+                  setError('');
+                  setNotice(`Linked "${targetWh.name}" to ${c.name}. Click Review or Payment to continue your order.`);
+                  onRegisterUpdated?.();
+                }).catch((e) => setError((e as Error).message))
+              }
+            >
+              Link Default Warehouse &amp; Continue
+            </button>
+          )}
+        </div>
       )}
       {notice && (
         <p role="status" className="alert">

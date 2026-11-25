@@ -611,9 +611,10 @@ html:has([data-platform-density]) {
   border-bottom: 2px solid #64a400;
   color: #3d7609;
 }
+/* Installed apps display the unified Sales-style AppModuleMenuBar */
 .business-shell[data-platform-density]
   .apps-workspace[data-app-installed='true']
-  > .app-section-tabs {
+  > .app-section-tabs:not(.ac-app-menubar) {
   display: none;
 }
 .business-shell[data-platform-density] .apps-workspace .app-service-details {

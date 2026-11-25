@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { BarChart } from '../charts/BarChart';
+import { AppModuleMenuBar } from './MinimalAppChrome';
 import { Icon } from '../components/Icon';
 import { Overlay } from '../components/Overlay';
 import { Field, money, today, type API } from '../operations/UI';
@@ -531,74 +532,64 @@ function SalesModuleNav({
   onOrdersFilter: (filter: string) => void;
 }) {
   return (
-    <div className="sales-module-nav" role="navigation" aria-label="Sales application">
-      <button className={view === 'quotations' ? 'active' : ''} onClick={() => go('quotations')}>
-        Sales
-      </button>
-      <details className="sales-menu">
-        <summary className={view === 'orders' ? 'active' : ''}>Orders</summary>
-        <div>
-          <button onClick={() => go('quotations')}>Quotations</button>
-          <button onClick={() => go('orders')}>Sales Orders</button>
-          <button onClick={() => onOrdersFilter('to_deliver')}>Orders to Deliver</button>
-          <button onClick={() => onOrdersFilter('to_invoice')}>Orders to Invoice</button>
-          <button onClick={() => go('down-payments')}>Down Payments</button>
-          <button onClick={() => go('optional-products')}>Optional Upsells</button>
-          <button onClick={() => go('signatures')}>Quote E-Signatures</button>
-        </div>
-      </details>
-      <details className="sales-menu">
-        <summary
-          className={
-            view === 'catalog' || view === 'promos' || view === 'matrix' ? 'active' : ''
-          }
-        >
-          Products
-        </summary>
-        <div>
-          <button onClick={() => go('catalog')}>Products</button>
-          <button onClick={() => go('promos')}>Promotions & Discounts</button>
-          <button onClick={() => go('matrix')}>Variant Matrix</button>
-          <button onClick={() => go('configuration')}>Price Lists</button>
-        </div>
-      </details>
-      <details className="sales-menu">
-        <summary
-          className={
-            view === 'reporting' || view === 'margins' || view === 'commissions' ? 'active' : ''
-          }
-        >
-          Reporting
-        </summary>
-        <div>
-          <button onClick={() => go('reporting')}>Sales Analysis</button>
-          <button onClick={() => go('margins')}>Margin Analysis</button>
-          <button onClick={() => go('commissions')}>Sales Commissions</button>
-          <button onClick={() => go('reporting')}>Sales by Customer</button>
-          <button onClick={() => go('reporting')}>Sales by Product</button>
-        </div>
-      </details>
-      <details className="sales-menu">
-        <summary
-          className={
-            view === 'configuration' || view === 'shipping' || view === 'warnings' ? 'active' : ''
-          }
-        >
-          Configuration
-        </summary>
-        <div>
-          <button onClick={() => go('configuration')}>Sales Settings</button>
-          <button onClick={() => go('configuration')}>Price Lists</button>
-          <button onClick={() => go('shipping')}>Shipping Methods</button>
-          <button onClick={() => go('warnings')}>Order Warnings</button>
-          <button onClick={() => go('configuration')}>Templates</button>
-        </div>
-      </details>
-      <span className="sales-nav-spacer" />
-      <button className="sales-new" onClick={onNew}>
-        New
-      </button>
-    </div>
+    <AppModuleMenuBar
+      ariaLabel="Sales application"
+      brandLabel="Sales"
+      brandActive={view === 'quotations'}
+      onBrandClick={() => go('quotations')}
+      menus={[
+        {
+          id: 'orders',
+          label: 'Orders',
+          active: ['orders', 'down-payments', 'optional-products', 'signatures'].includes(view),
+          children: [
+            { id: 'quotations', label: 'Quotations', active: view === 'quotations', onSelect: () => go('quotations') },
+            { id: 'orders', label: 'Sales Orders', active: view === 'orders', onSelect: () => go('orders') },
+            { id: 'to_deliver', label: 'Orders to Deliver', onSelect: () => onOrdersFilter('to_deliver') },
+            { id: 'to_invoice', label: 'Orders to Invoice', onSelect: () => onOrdersFilter('to_invoice') },
+            { id: 'down-payments', label: 'Down Payments', active: view === 'down-payments', onSelect: () => go('down-payments') },
+            { id: 'optional-products', label: 'Optional Upsells', active: view === 'optional-products', onSelect: () => go('optional-products') },
+            { id: 'signatures', label: 'Quote E-Signatures', active: view === 'signatures', onSelect: () => go('signatures') },
+          ],
+        },
+        {
+          id: 'products',
+          label: 'Products',
+          active: ['catalog', 'promos', 'matrix'].includes(view),
+          children: [
+            { id: 'catalog', label: 'Products', active: view === 'catalog', onSelect: () => go('catalog') },
+            { id: 'promos', label: 'Promotions & Discounts', active: view === 'promos', onSelect: () => go('promos') },
+            { id: 'matrix', label: 'Variant Matrix', active: view === 'matrix', onSelect: () => go('matrix') },
+            { id: 'pricelists', label: 'Price Lists', onSelect: () => go('configuration') },
+          ],
+        },
+        {
+          id: 'reporting',
+          label: 'Reporting',
+          active: ['reporting', 'margins', 'commissions'].includes(view),
+          children: [
+            { id: 'reporting', label: 'Sales Analysis', active: view === 'reporting', onSelect: () => go('reporting') },
+            { id: 'margins', label: 'Margin Analysis', active: view === 'margins', onSelect: () => go('margins') },
+            { id: 'commissions', label: 'Sales Commissions', active: view === 'commissions', onSelect: () => go('commissions') },
+            { id: 'by-customer', label: 'Sales by Customer', onSelect: () => go('reporting') },
+            { id: 'by-product', label: 'Sales by Product', onSelect: () => go('reporting') },
+          ],
+        },
+        {
+          id: 'configuration',
+          label: 'Configuration',
+          active: ['configuration', 'shipping', 'warnings'].includes(view),
+          children: [
+            { id: 'settings', label: 'Sales Settings', active: view === 'configuration', onSelect: () => go('configuration') },
+            { id: 'config-pricelists', label: 'Price Lists', onSelect: () => go('configuration') },
+            { id: 'shipping', label: 'Shipping Methods', active: view === 'shipping', onSelect: () => go('shipping') },
+            { id: 'warnings', label: 'Order Warnings', active: view === 'warnings', onSelect: () => go('warnings') },
+            { id: 'templates', label: 'Templates', onSelect: () => go('configuration') },
+          ],
+        },
+      ]}
+      primaryAction={{ label: 'New', onClick: onNew }}
+    />
   );
 }
 

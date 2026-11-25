@@ -64,18 +64,35 @@ export function ProcurementEditor({
       ),
     ])
       .then(([c, p, w, s, prices, agreements, templates, r]) => {
-        if (live)
-          setChoices({
-            contacts: c.data,
-            products: p.data,
-            warehouses: w.data,
-            suppliers: s,
-            prices,
-            agreements,
-            templates,
-            warehouseError: w.error || '',
-            sources: r,
-          });
+        if (!live) return;
+        const activeProducts = (p.data || []).filter((prod: any) => prod.status === 'active');
+        const activeWarehouses = (w.data || []).filter((wh: any) => wh.status === 'active');
+        setChoices({
+          contacts: c.data,
+          products: p.data,
+          warehouses: w.data,
+          suppliers: s,
+          prices,
+          agreements,
+          templates,
+          warehouseError: w.error || '',
+          sources: r,
+        });
+        if (!record && type === 'request' && activeProducts.length > 0) {
+          setLines((current) =>
+            current.length > 0
+              ? current
+              : [
+                  {
+                    ...blankLine(),
+                    product_id: activeProducts[0].id,
+                    warehouse_id: activeProducts[0].track_inventory
+                      ? activeWarehouses[0]?.id || null
+                      : null,
+                  },
+                ],
+          );
+        }
       })
       .catch((e) => {
         if (live) setError(e.message);
@@ -108,17 +125,19 @@ export function ProcurementEditor({
     }
   }
   function lineValues() {
-    return lines.map((line) => {
-      const { quantity_input, price_input, ...rest } = line;
-      return {
-        ...rest,
-        quantity_milli: quantityMilli(quantity_input ?? displayQuantity(line.quantity_milli)),
-        unit_price_minor: parseMoney(
-          price_input ?? String((line.unit_price_minor || 0) / factor(currency)),
-          currency,
-        ),
-      };
-    });
+    return lines
+      .filter((line) => !!line.product_id)
+      .map((line) => {
+        const { quantity_input, price_input, ...rest } = line;
+        return {
+          ...rest,
+          quantity_milli: quantityMilli(quantity_input ?? displayQuantity(line.quantity_milli)),
+          unit_price_minor: parseMoney(
+            price_input ?? String((line.unit_price_minor || 0) / factor(currency)),
+            currency,
+          ),
+        };
+      });
   }
   async function applySupplierDefaults(productId: string, supplierId = selectedSupplier, quantity = 1000) {
     if (!supplierId) return;
@@ -595,8 +614,17 @@ export function ProcurementEditor({
                           disabled={!['request', 'agreement', 'template'].includes(type)}
                           onChange={(e) => {
                             const productId = e.target.value;
-                            setLines((v) => v.map((n) => n.id === l.id ? { ...n, product_id: productId, warehouse_id: null } : n));
-                            if (productId && ['rfq', 'agreement', 'template'].includes(type)) applySupplierDefaults(productId);
+                            const chosenProduct = choices.products?.find((p: any) => p.id === productId);
+                            const defaultWh = chosenProduct?.track_inventory
+                              ? choices.warehouses?.find((w: any) => w.status === 'active')?.id || null
+                              : null;
+                            setLines((v) =>
+                              v.map((n) =>
+                                n.id === l.id ? { ...n, product_id: productId, warehouse_id: defaultWh } : n,
+                              ),
+                            );
+                            if (productId && ['rfq', 'agreement', 'template'].includes(type))
+                              applySupplierDefaults(productId);
                           }}
                         >
                           <option value="">Choose product</option>

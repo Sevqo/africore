@@ -13,7 +13,7 @@ import { z } from 'zod';
 import { dbAll, dbGet, dbRun, dbTransaction } from '../db';
 import { isPostgres } from '../db/adapter';
 import { access, audit, fail, route, user } from './auth';
-import { currencySchema, documentSchema, roles, totals } from './domain';
+import { currencySchema, documentSchema, invitableRoles, roles, totals } from './domain';
 import { hash, now, seal, secret } from './crypto';
 import {
   deliverWebhooks,
@@ -298,7 +298,7 @@ platform.post(
             .string()
             .email()
             .transform((v) => v.toLowerCase()),
-          role: z.enum(['admin', 'finance', 'operations', 'viewer']),
+          role: z.enum(invitableRoles),
         })
         .parse(req.body),
       token = secret(),

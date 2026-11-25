@@ -54,11 +54,19 @@ export function WebhooksConsole({ call, manager }: { call: Call; manager?: boole
     );
   return (
     <div className="service-marketplace">
-      <p>
-        Receive signed event notifications at an approved public HTTPS receiver. Delivery is
-        at-least-once, so receivers must deduplicate. Hosted delivery is disabled unless the backend
-        allowlist is configured.
-      </p>
+      <section className="panel" style={{ marginBottom: 14 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+          <div>
+            <h2 style={{ margin: 0 }}>Webhooks &amp; Event Delivery</h2>
+            <p style={{ margin: '4px 0 0', color: '#475569', fontSize: 13 }}>
+              Receive HMAC-SHA256 signed event notifications at any public HTTPS endpoint. Deliveries retry automatically; deduplicate using event IDs.
+            </p>
+          </div>
+          <span className="badge" style={{ background: '#ecfdf5', color: '#166534' }}>
+            {data.data.length} active endpoint{data.data.length === 1 ? '' : 's'}
+          </span>
+        </div>
+      </section>
       {error && (
         <p className="alert error" role="alert">
           {error}

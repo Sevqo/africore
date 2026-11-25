@@ -11,7 +11,7 @@ export class QueryCache {
   private generation = 0;
   private now: () => number;
   private ttl: number;
-  constructor(now = () => Date.now(), ttl = 15000) {
+  constructor(now = () => Date.now(), ttl = 30000) {
     this.now = now;
     this.ttl = ttl;
   }
@@ -39,7 +39,7 @@ export class QueryCache {
         throw error;
       });
     this.entries.set(key, entry);
-    if (this.entries.size > 100) this.entries.delete(this.entries.keys().next().value!);
+    if (this.entries.size > 350) this.entries.delete(this.entries.keys().next().value!);
     return entry.pending as Promise<T>;
   }
   clear() {
@@ -104,9 +104,17 @@ export function peekQuery<T = unknown>(path: string, environment: string, demo =
     : undefined;
 }
 export function cacheable(path: string) {
-  return (
-    /^\/api\/v1\/organizations\/[a-zA-Z0-9-]+\/(?:report|intelligence|payments|reconciliation|team|expenses|obligations|personal-summary|personal-income|automations|automation-runs|notifications|shipments|risk-signals|records\/(?:customers|orders|invoices|transactions|applications))(?:\?|$)/.test(
+  if (path.includes('format=csv')) return false;
+  if (!/^\/api\/v1\/organizations\/[a-zA-Z0-9-]+\//.test(path)) return false;
+  // Security & strict live-recheck exclusions enforced by query-cache.test.mjs
+  if (
+    /^\/api\/v1\/organizations\/[a-zA-Z0-9-]+\/(?:credentials|approvals|business\/approvals|documents|document-requests|document-attachments|people\/employees|accounting\/entries|work\/projects\/[^/?]+)(?:\/|\?|$)/.test(
       path,
-    ) && !path.includes('format=csv')
+    )
+  ) {
+    return false;
+  }
+  return /^\/api\/v1\/organizations\/[a-zA-Z0-9-]+\/(?:apps|services|usage|overview|report|intelligence|financial-summary|business\/(?:analytics|policy)|payments|payment-events|reconciliation|team|expenses|obligations|personal-summary|personal-income|automations|automation-runs|notifications|shipments|risk-signals|products|inventory(?:\/(?:warehouses|movements|incoming|reservations|replenishment-suggestions|lots|scraps|landed-costs|valuation|reordering-rules|putaway-rules|packages|barcode-scans))?|procurement(?:-report|\/three-way-matches|\/blanket-orders|\/vendor-price-tiers|\/dropship-orders)?|sales\/(?:quotations|templates|price-lists|down-payments|optional-products|promo-codes|signatures|commissions|shipping-methods|warning-rules)|crm(?:\/(?:entries|activities|routing-rules|lost-reasons|quotas|enrichments))?|pos\/(?:registers|report|floors|tables|kds-tickets|self-order-sessions|loyalty-programs)|commerce\/stores|calendar\/(?:events|settings|appointment-types)|website\/(?:settings|pages)|work\/(?:projects|my-work|templates|timesheets)|accounting\/(?:configuration|tax-codes|bank-journals|bank-statements|assets|deferrals|fiscal-years|lock-dates|analytic-accounts|budgets|followup-levels|batch-payments|debit-notes|fx-revaluations)|marketing\/|support\/|subscriptions\/|mrp\/|field-ops\/|maintenance\/|fleet\/|logistics\/|property\/|learning\/|studio\/|integrations-hub\/|records\/(?:customers|orders|invoices|transactions|applications))(?:\?|$)/.test(
+    path,
   );
 }

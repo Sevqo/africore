@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Icon } from '../components/Icon';
+import { AppModuleMenuBar } from './MinimalAppChrome';
 import { Field, Form, money, today, type API } from '../operations/UI';
 import { DocumentAttachments } from './DocumentAttachments';
 import { ProcurementEditor } from './ProcurementEditor';
@@ -329,71 +330,82 @@ export function ProcurementAppWorkspace({
 
   return (
     <div className="proc-app">
-      <nav className="proc-app-nav" aria-label="Procurement sections">
-        <button
-          className={'proc-app-brand' + (view === 'dashboard' ? ' active' : '')}
-          onClick={() => go('dashboard')}
-        >
-          <Icon name="bag" />
-          <span>Purchase</span>
-        </button>
-        <details className="proc-app-menu">
-          <summary className={viewsForSection.orders.includes(view) ? 'active' : ''}>
-            Orders
-            <Icon name="down" />
-          </summary>
-          <div>
-            <button onClick={() => go('requests')}>Purchase Requests</button>
-            <button onClick={() => go('rfqs')}>Requests for Quotation</button>
-            <button onClick={() => go('orders')}>Purchase Orders</button>
-            <button onClick={() => go('agreements')}>Purchase Agreements</button>
-            <button onClick={() => go('approvals')}>Orders Awaiting Approval</button>
-            <button onClick={() => go('receipts')}>Receipts</button>
-            <button onClick={() => go('bills')}>Vendor Bills</button>
-            <button onClick={() => go('payments')}>Payment Observations</button>
-            <button onClick={() => go('credits')}>Supplier Credits</button>
-            <button onClick={() => go('vendors')}>Vendors</button>
-          </div>
-        </details>
-        <details className="proc-app-menu">
-          <summary className={viewsForSection.products.includes(view) ? 'active' : ''}>
-            Products
-            <Icon name="down" />
-          </summary>
-          <div>
-            <button onClick={() => go('products')}>Products</button>
-            <button onClick={() => go('pricelists')}>Vendor Pricelists</button>
-            <button onClick={() => go('replenishment')}>Replenishment Requirements</button>
-          </div>
-        </details>
-        <details className="proc-app-menu">
-          <summary className={viewsForSection.reporting.includes(view) ? 'active' : ''}>
-            Reporting
-            <Icon name="down" />
-          </summary>
-          <div>
-            <button onClick={() => go('analysis')}>Purchase Analysis</button>
-            <button onClick={() => go('vendor-report')}>Purchases by Vendor</button>
-            <button onClick={() => go('product-report')}>Purchases by Product</button>
-            <button onClick={() => go('approval-report')}>Approval Performance</button>
-            <button onClick={() => go('receipt-report')}>Receipt Performance</button>
-          </div>
-        </details>
-        <details className="proc-app-menu">
-          <summary className={view === 'settings' ? 'active' : ''}>
-            Configuration
-            <Icon name="down" />
-          </summary>
-          <div>
-            <button onClick={() => go('settings')}>Purchasing Settings</button>
-            <button onClick={() => go('templates')}>Purchase Templates</button>
-            <button onClick={() => go('approvals')}>Approval Rules</button>
-          </div>
-        </details>
-        <span className="proc-app-sandbox">
-          Manual purchasing records · no automatic orders, emails or bank payments
-        </span>
-      </nav>
+      <AppModuleMenuBar
+        className="proc-app-nav"
+        ariaLabel="Procurement sections"
+        brandLabel="Purchase"
+        brandActive={view === 'dashboard'}
+        onBrandClick={() => go('dashboard')}
+        menus={[
+          {
+            id: 'orders',
+            label: 'Orders',
+            active: viewsForSection.orders.includes(view),
+            children: [
+              { id: 'requests', label: 'Purchase Requests', active: view === 'requests', onSelect: () => go('requests') },
+              { id: 'rfqs', label: 'Requests for Quotation', active: view === 'rfqs', onSelect: () => go('rfqs') },
+              { id: 'orders', label: 'Purchase Orders', active: view === 'orders', onSelect: () => go('orders') },
+              { id: 'agreements', label: 'Purchase Agreements', active: view === 'agreements', onSelect: () => go('agreements') },
+              { id: 'approvals', label: 'Orders Awaiting Approval', active: view === 'approvals', onSelect: () => go('approvals') },
+              { id: 'receipts', label: 'Receipts', active: view === 'receipts', onSelect: () => go('receipts') },
+              { id: 'bills', label: 'Vendor Bills', active: view === 'bills', onSelect: () => go('bills') },
+              { id: 'payments', label: 'Payment Observations', active: view === 'payments', onSelect: () => go('payments') },
+              { id: 'credits', label: 'Supplier Credits', active: view === 'credits', onSelect: () => go('credits') },
+              { id: 'vendors', label: 'Vendors', active: view === 'vendors', onSelect: () => go('vendors') },
+            ],
+          },
+          {
+            id: 'products',
+            label: 'Products',
+            active: viewsForSection.products.includes(view),
+            children: [
+              { id: 'products', label: 'Products', active: view === 'products', onSelect: () => go('products') },
+              { id: 'pricelists', label: 'Vendor Pricelists', active: view === 'pricelists', onSelect: () => go('pricelists') },
+              { id: 'replenishment', label: 'Replenishment Requirements', active: view === 'replenishment', onSelect: () => go('replenishment') },
+            ],
+          },
+          {
+            id: 'reporting',
+            label: 'Reporting',
+            active: viewsForSection.reporting.includes(view),
+            children: [
+              { id: 'analysis', label: 'Purchase Analysis', active: view === 'analysis', onSelect: () => go('analysis') },
+              { id: 'vendor-report', label: 'Purchases by Vendor', active: view === 'vendor-report', onSelect: () => go('vendor-report') },
+              { id: 'product-report', label: 'Purchases by Product', active: view === 'product-report', onSelect: () => go('product-report') },
+              { id: 'approval-report', label: 'Approval Performance', active: view === 'approval-report', onSelect: () => go('approval-report') },
+              { id: 'receipt-report', label: 'Receipt Performance', active: view === 'receipt-report', onSelect: () => go('receipt-report') },
+            ],
+          },
+          {
+            id: 'configuration',
+            label: 'Configuration',
+            active: view === 'settings' || view === 'templates',
+            children: [
+              { id: 'settings', label: 'Purchasing Settings', active: view === 'settings', onSelect: () => go('settings') },
+              { id: 'templates', label: 'Purchase Templates', active: view === 'templates', onSelect: () => go('templates') },
+              { id: 'approval-rules', label: 'Approval Rules', onSelect: () => go('approvals') },
+            ],
+          },
+        ]}
+        rightContent={
+          <span className="proc-app-sandbox" style={{ fontSize: 12, color: '#6b7280' }}>
+            Manual purchasing records · no automatic orders, emails or bank payments
+          </span>
+        }
+        primaryAction={
+          writable
+            ? {
+                label: 'New',
+                onClick: () => setEditor({ type: 'request' }),
+                items: [
+                  { label: 'Purchase request', onClick: () => setEditor({ type: 'request' }) },
+                  { label: 'Supplier offer', onClick: () => setEditor({ type: 'rfq' }) },
+                  { label: 'Vendor profile', onClick: () => setEditor({ type: 'supplier' }) },
+                ],
+              }
+            : undefined
+        }
+      />
 
       {error && (
         <p className="alert error" role="alert">
@@ -2888,18 +2900,49 @@ function ReceiptReport({
 }
 
 function NewMenu({ onCreate }: { onCreate: (type: string) => void }) {
+  const [open, setOpen] = useState(false);
   return (
-    <details className="proc-new">
-      <summary className="button">
-        New
-        <Icon name="down" />
-      </summary>
-      <div>
-        <button onClick={() => onCreate('request')}>Purchase request</button>
-        <button onClick={() => onCreate('rfq')}>Supplier offer</button>
-        <button onClick={() => onCreate('supplier')}>Vendor profile</button>
-      </div>
-    </details>
+    <div className={`ac-menubar-dropdown${open ? ' is-open' : ''}`}>
+      <button
+        type="button"
+        className="sales-new"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        New ▾
+      </button>
+      {open && (
+        <div className="ac-menubar-popover align-right" role="menu">
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              onCreate('request');
+            }}
+          >
+            Purchase request
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              onCreate('rfq');
+            }}
+          >
+            Supplier offer
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              onCreate('supplier');
+            }}
+          >
+            Vendor profile
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 

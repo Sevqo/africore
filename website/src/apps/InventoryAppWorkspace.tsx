@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../components/Icon';
+import { AppModuleMenuBar } from './MinimalAppChrome';
 import { Field, Form, today, type API } from '../operations/UI';
 import { ReplenishmentReview } from './ReplenishmentReview';
 import { ReviewFields } from './ReviewFields';
@@ -270,22 +271,6 @@ export function InventoryAppWorkspace({
       </nav>
     );
   };
-
-  function SectionTabs({ views }: { views: InventoryView[] }) {
-    return (
-      <nav className="inventory-view-tabs" aria-label="Inventory section views">
-        {views.map((value) => (
-          <button
-            key={value}
-            aria-current={view === value ? 'page' : undefined}
-            onClick={() => go(value)}
-          >
-            {title[value]}
-          </button>
-        ))}
-      </nav>
-    );
-  }
 
   function StockTable({ rows, showLow = true }: { rows: any[]; showLow?: boolean }) {
     const filtered = filterProducts(rows, filter, query);
@@ -2357,9 +2342,6 @@ export function InventoryAppWorkspace({
     );
   }
 
-  const sectionViews = viewsForSection[section] || [];
-  const showSectionTabs = sectionViews.length > 1;
-
   return (
     <div className="inventory-app">
       <header className="inventory-app-head">
@@ -2379,24 +2361,29 @@ export function InventoryAppWorkspace({
           </span>
         </div>
       </header>
-      <nav className="inventory-module-nav" aria-label="Inventory modules">
-        {[
-          ['dashboard', 'Overview', 'home'],
-          ['operations', 'Operations', 'box'],
-          ['products', 'Products', 'tag'],
-          ['reporting', 'Reporting', 'chart'],
-          ['configuration', 'Configuration', 'settings'],
-        ].map(([value, label, icon]) => (
-          <button
-            key={value}
-            aria-current={section === value ? 'page' : undefined}
-            onClick={() => go(defaultViewForSection[value])}
-          >
-            <Icon name={icon as any} /> {label}
-          </button>
-        ))}
-      </nav>
-      {showSectionTabs && <SectionTabs views={sectionViews} />}
+      <AppModuleMenuBar
+        className="inventory-module-nav"
+        ariaLabel="Inventory modules"
+        brandLabel="Inventory"
+        brandActive={section === 'dashboard' && view === 'overview'}
+        onBrandClick={() => go('overview')}
+        menus={[
+          ['operations', 'Operations'],
+          ['products', 'Products'],
+          ['reporting', 'Reporting'],
+          ['configuration', 'Configuration'],
+        ].map(([secKey, label]) => ({
+          id: secKey,
+          label,
+          active: section === secKey,
+          children: (viewsForSection[secKey] || []).map((v) => ({
+            id: v,
+            label: title[v] || v,
+            active: view === v,
+            onSelect: () => go(v),
+          })),
+        }))}
+      />
       {notice && (
         <p className="alert" role="status">
           {notice}

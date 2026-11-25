@@ -14,14 +14,30 @@ export const supportedNotificationSections = [
   'document_requests',
   'people_leave',
   'work_task',
+  'work_project',
+  'calendar',
+  'invitations',
 ];
 export function openNotification(
   target: any,
   navigate: (tab: string) => void,
   openRecord?: (tab: string, id: string) => void,
 ) {
+  if (target.app_id === 'calendar' || ['calendar', 'invitations'].includes(target.section)) {
+    const url = new URL(location.href);
+    url.searchParams.set('app', 'calendar');
+    url.searchParams.set('section', target.section === 'invitations' ? 'invitations' : 'calendar');
+    if (target.record_id) url.searchParams.set('event', target.record_id);
+    url.hash = 'Apps';
+    history.pushState(null, '', url.pathname + url.search + url.hash);
+    dispatchEvent(new Event(appNavigationEvent));
+    navigate('Apps');
+    return;
+  }
   if (
-    ['document_review', 'document_requests', 'people_leave', 'work_task'].includes(target.section)
+    ['document_review', 'document_requests', 'people_leave', 'work_task', 'work_project'].includes(
+      target.section,
+    )
   ) {
     const url = new URL(location.href);
     const app = target.section.startsWith('document_')
@@ -43,7 +59,10 @@ export function openNotification(
     if (target.section === 'document_review' && /^[0-9a-f-]{36}$/i.test(target.record_id || ''))
       url.searchParams.set('document', target.record_id);
     else url.searchParams.delete('document');
-    if (target.section === 'work_task' && /^[0-9a-f-]{36}$/i.test(target.record_id || ''))
+    if (
+      ['work_task', 'work_project'].includes(target.section) &&
+      /^[0-9a-f-]{36}$/i.test(target.record_id || '')
+    )
       url.searchParams.set('work_target', target.record_id);
     else url.searchParams.delete('work_target');
     url.hash = 'Apps';

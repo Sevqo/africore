@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Field, type API } from '../operations/UI';
+import { appNavigationEvent } from './AppNavigation';
+
 export function MyWork({
   api,
   scope,
@@ -30,9 +32,20 @@ export function MyWork({
       live = false;
     };
   }, [scope, revision, offset, status]);
+
+  function openAppSection(appId: string, section: string, param?: [string, string]) {
+    const url = new URL(location.href);
+    url.searchParams.set('app', appId);
+    url.searchParams.set('section', section);
+    if (param) url.searchParams.set(param[0], param[1]);
+    url.hash = 'Apps';
+    history.pushState(null, '', url.pathname + url.search + url.hash);
+    dispatchEvent(new Event(appNavigationEvent));
+  }
+
   return (
     <section className="panel">
-      <h2>My work across projects</h2>
+      <h2>My work, meetings &amp; assigned activities</h2>
       <Field label="My task status">
         <select
           value={status}
@@ -50,9 +63,74 @@ export function MyWork({
       {!data && !error && <p role="status">Loading currently authorized assignments…</p>}
       {data && (
         <>
-          <p>
-            {data.total} matching assignments. {data.definition}
-          </p>
+          {Array.isArray(data.meetings) && data.meetings.length > 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <h3 style={{ marginBottom: 8 }}>Upcoming calendar meetings &amp; workspace schedule</h3>
+              <div className="app-directory">
+                {data.meetings.map((m: any) => (
+                  <article className="panel" key={m.id}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                      <strong>{m.title}</strong>
+                      <span className="badge">
+                        {m.invited ? `Invited (${m.my_response})` : m.my_response}
+                      </span>
+                    </div>
+                    <p style={{ margin: '6px 0', fontSize: 13 }}>
+                      {new Date(m.start).toLocaleString('en-KE', {
+                        timeZone: m.timezone || 'Africa/Nairobi',
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                      })}
+                      {m.location ? ` · ${m.location}` : ''}
+                    </p>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() =>
+                        openAppSection(
+                          'calendar',
+                          m.invited ? 'invitations' : 'calendar',
+                          ['event', m.event_id],
+                        )
+                      }
+                    >
+                      Open in Calendar
+                    </button>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {Array.isArray(data.activities) && data.activities.length > 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <h3 style={{ marginBottom: 8 }}>Assigned cross-app activities &amp; approvals</h3>
+              <div className="app-directory">
+                {data.activities.map((act: any) => (
+                  <article className="panel" key={act.kind + ':' + act.id}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                      <strong>{act.title}</strong>
+                      <span className="badge">{act.kind.replaceAll('_', ' ')}</span>
+                    </div>
+                    <p style={{ margin: '6px 0', fontSize: 13 }}>
+                      Status: {act.status}
+                      {act.due_on ? ` · Due ${act.due_on}` : ''}
+                    </p>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => openAppSection(act.app_id, act.section)}
+                    >
+                      Open in {act.app_id.replaceAll('_', ' ')}
+                    </button>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <h3 style={{ marginBottom: 8 }}>Project tasks assigned to me ({data.total})</h3>
+          <p>{data.definition}</p>
           {data.truncated && (
             <p role="status">
               Candidate limit reached; open individual projects to inspect additional tasks.

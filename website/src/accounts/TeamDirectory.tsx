@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { invitableRoles, roleAppAccess } from '../../../src/platform/domain';
+
 type Member = { id: string; email: string; role: string; display_name?: string };
 type Invitation = {
   id: string;
@@ -9,6 +11,65 @@ type Invitation = {
   revoked?: number | string;
 };
 type Call = (path: string, method?: string, body?: unknown) => Promise<any>;
+
+const roleLabels: Record<string, { label: string; summary: string }> = {
+  owner: {
+    label: 'Owner',
+    summary: 'Full workspace ownership, billing, team administration, and all 26 apps.',
+  },
+  admin: {
+    label: 'Administrator',
+    summary: 'Team management, app/service installation, and access across all apps.',
+  },
+  finance: {
+    label: 'Finance Manager',
+    summary: 'Finance, Accounting, Subscriptions, Procurement bills, Property billing & Analytics.',
+  },
+  accountant: {
+    label: 'Accountant',
+    summary: 'Accounting books, Finance, Subscriptions billing, Analytics & Documents (no HR/People).',
+  },
+  hr: {
+    label: 'HR & People Manager',
+    summary: 'People, Recruitment, Leave, Attendance, Knowledge & Learning, Work & Calendar.',
+  },
+  sales: {
+    label: 'Sales Representative',
+    summary: 'CRM, Sales quotations & orders, POS shifts, Commerce storefront & Subscriptions.',
+  },
+  operations: {
+    label: 'Operations Member',
+    summary: 'Inventory, Procurement, Manufacturing, Field Ops, Logistics, Support & Work.',
+  },
+  inventory_manager: {
+    label: 'Inventory & Supply Manager',
+    summary: 'Inventory warehouses, Procurement, Manufacturing, Logistics & POS stock.',
+  },
+  support_agent: {
+    label: 'Support Specialist',
+    summary: 'Support tickets & SLA queue, Knowledge Base, CRM context & Field escalations.',
+  },
+  marketing_manager: {
+    label: 'Marketing & Growth',
+    summary: 'Marketing campaigns, Website builder, Commerce promotions, CRM leads & Analytics.',
+  },
+  viewer: {
+    label: 'Read-Only Viewer',
+    summary: 'Read-only access to Analytics, Finance reports, Calendar, Work & Documents.',
+  },
+};
+
+function formatRoleName(role: string) {
+  return roleLabels[role]?.label || role.replaceAll('_', ' ');
+}
+
+function formatRoleApps(role: string) {
+  const apps = roleAppAccess[role];
+  if (!apps) return 'Standard read access';
+  if (apps === '*') return 'All workspace apps';
+  return apps.map((id) => id.replaceAll('_', ' ')).join(', ');
+}
+
 export function TeamDirectory({
   data,
   call,
@@ -23,10 +84,11 @@ export function TeamDirectory({
   actor: string;
 }) {
   const [search, setSearch] = useState(''),
+    [selectedInviteRole, setSelectedInviteRole] = useState<string>('accountant'),
     [token, setToken] = useState(''),
     [pending, setPending] = useState(false);
   const admin = ['owner', 'admin'].includes(role),
-    roles = ['admin', 'finance', 'operations', 'viewer'];
+    roles = [...invitableRoles];
   async function run(fn: () => Promise<any>) {
     setPending(true);
     setToken('');
@@ -63,7 +125,10 @@ export function TeamDirectory({
                 <strong>{m.display_name || m.email}</strong>
                 {m.display_name && <p>{m.email}</p>}
                 <small>
-                  {m.role} · Active{m.id === actor ? ' · You' : ''}
+                  {formatRoleName(m.role)} · Active{m.id === actor ? ' · You' : ''}
+                </small>
+                <small style={{ display: 'block', color: '#6b7280', marginTop: 2 }}>
+                  Apps: {formatRoleApps(m.role)}
                 </small>
               </div>
               {admin && (
@@ -81,8 +146,8 @@ export function TeamDirectory({
                       }
                     >
                       {['owner', ...roles].map((r) => (
-                        <option key={r} disabled={r === 'owner' && role !== 'owner'}>
-                          {r}
+                        <option key={r} value={r} disabled={r === 'owner' && role !== 'owner'}>
+                          {formatRoleName(r)}
                         </option>
                       ))}
                     </select>
@@ -127,12 +192,36 @@ export function TeamDirectory({
             </label>
             <label className="field">
               <span>Role</span>
-              <select name="role">
+              <select
+                name="role"
+                value={selectedInviteRole}
+                onChange={(e) => setSelectedInviteRole(e.target.value)}
+              >
                 {roles.map((r) => (
-                  <option key={r}>{r}</option>
+                  <option key={r} value={r}>
+                    {formatRoleName(r)}
+                  </option>
                 ))}
               </select>
             </label>
+            <div
+              className="panel"
+              style={{
+                gridColumn: '1 / -1',
+                padding: '10px 12px',
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: 8,
+              }}
+            >
+              <strong style={{ fontSize: 13 }}>{formatRoleName(selectedInviteRole)} access</strong>
+              <p style={{ margin: '4px 0', fontSize: 12.5, color: '#475569' }}>
+                {roleLabels[selectedInviteRole]?.summary}
+              </p>
+              <small style={{ color: '#0f766e', fontWeight: 500 }}>
+                Permitted apps: {formatRoleApps(selectedInviteRole)}
+              </small>
+            </div>
             <button className="button" disabled={pending}>
               {pending ? 'Saving…' : 'Invite member'}
             </button>

@@ -165,7 +165,18 @@ export async function saveRegister(a: Access, id: string | null, input: unknown,
           "SELECT session_id FROM ac_pos_sessions WHERE register_id=? AND org_id=? AND environment=? AND status='open'",
           [previous.id, a.org, a.environment],
         );
-        if (open) fail(409, 'Close the current session before changing register configuration');
+        const onlyInitialWarehouseBinding =
+          !previous.data.warehouse_id &&
+          !!d.warehouse_id &&
+          previous.data.currency === d.currency &&
+          previous.data.timezone === d.timezone &&
+          previous.data.tax_bps === d.tax_bps &&
+          previous.data.default_customer_id === d.default_customer_id &&
+          previous.data.allow_cash === d.allow_cash &&
+          previous.data.electronic_method === d.electronic_method &&
+          previous.data.allow_pending_orders === d.allow_pending_orders;
+        if (open && !onlyInitialWarehouseBinding)
+          fail(409, 'Close the current session before changing register configuration');
       }
       const { expected_version: _version, ...configuration } = d,
         data = { ...configuration, policy_authorized_by: a.actor, policy_authorized_at: now() };

@@ -23,17 +23,25 @@ export const managedClient = singleFlight(async () => {
   });
 });
 let identityFlight: Promise<Record<string, string>> | undefined;
+let cachedIdentity: { headers: Record<string, string>; until: number; epoch: number } | undefined;
 let identityEpoch = 0;
 export async function identityHeaders(): Promise<Record<string, string>> {
+  if (cachedIdentity && cachedIdentity.epoch === identityEpoch && cachedIdentity.until > Date.now()) {
+    return cachedIdentity.headers;
+  }
   if (identityFlight) return identityFlight;
   const epoch = identityEpoch;
   const pending = (async () => {
     const client = await managedClient();
-    if (!client) return {};
+    if (!client) {
+      cachedIdentity = { headers: {}, until: Date.now() + 20000, epoch };
+      return {};
+    }
     const headers = await sessionIdentity(client, (identity) => {
       if (epoch === identityEpoch) setQueryIdentity(identity);
     });
     if (epoch !== identityEpoch) throw new Error('Your session changed. Please sign in again.');
+    cachedIdentity = { headers, until: Date.now() + 20000, epoch };
     return headers;
   })();
   identityFlight = pending;
@@ -46,6 +54,7 @@ export async function identityHeaders(): Promise<Record<string, string>> {
 export function invalidateIdentity() {
   identityEpoch++;
   identityFlight = undefined;
+  cachedIdentity = undefined;
   clearPrivateQueries();
 }
 export async function managedSignOut(all = false) {

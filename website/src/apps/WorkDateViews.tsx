@@ -3,11 +3,13 @@ import { Field, today } from '../operations/UI';
 export function WorkDateViews({
   tasks,
   milestones,
+  meetings = [],
   view,
   onOpen,
 }: {
   tasks: any[];
   milestones: any[];
+  meetings?: any[];
   view: string;
   onOpen: (task: any) => void;
 }) {
@@ -196,6 +198,24 @@ export function WorkDateViews({
                   .map((m) => (
                     <p key={m.id}>
                       Milestone: {m.name} · {m.completed ? 'Completed' : 'Planned'}
+                    </p>
+                  ))}
+                {meetings
+                  .filter((ev) => String(ev.starts_at || '').slice(0, 10) === date)
+                  .map((ev) => (
+                    <p
+                      key={`${ev.event_id || ev.id}:${ev.starts_at}`}
+                      style={{
+                        margin: '4px 0 0',
+                        padding: '3px 6px',
+                        borderRadius: '6px',
+                        background: '#ecfdf5',
+                        color: '#065f46',
+                        fontSize: '12px',
+                        fontWeight: 500,
+                      }}
+                    >
+                      Meeting: {ev.title}
                     </p>
                   ))}
               </>

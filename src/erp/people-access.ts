@@ -30,6 +30,7 @@ export async function peopleContext(a: Access, write = false) {
     settings = row ? await read(a, row.id, 'people_settings') : null,
     policy = { ...defaultPeoplePolicy, ...(settings?.data || {}) },
     admin = ['owner', 'admin'].includes(role),
+    hrRole = role === 'hr',
     grant = policy.hr_members.find((m: any) => m.user_id === a.actor)?.permission,
     comp = policy.compensation_members.find((m: any) => m.user_id === a.actor)?.permission,
     recruiter = policy.recruitment_members.find((m: any) => m.user_id === a.actor)?.permission,
@@ -40,19 +41,21 @@ export async function peopleContext(a: Access, write = false) {
     settings,
     policy,
     service_active: (await entitlement(a, 'people'))?.status === 'active',
-    hr_view: admin || !!grant,
-    hr_write: admin || (permitted(role, 'operations') && ['edit', 'manage'].includes(grant)),
-    hr_manage: admin || (permitted(role, 'operations') && grant === 'manage'),
+    hr_view: admin || hrRole || !!grant,
+    hr_write: admin || hrRole || (permitted(role, 'operations') && ['edit', 'manage'].includes(grant)),
+    hr_manage: admin || hrRole || (permitted(role, 'operations') && grant === 'manage'),
     comp_view: admin || !!comp,
     comp_write: admin || (permitted(role, 'operations') && comp === 'edit'),
-    recruitment_view: admin || !!grant || !!recruiter,
+    recruitment_view: admin || hrRole || !!grant || !!recruiter,
     recruitment_write:
       admin ||
+      hrRole ||
       (permitted(role, 'operations') && ['edit', 'manage'].includes(grant)) ||
       (permitted(role, 'operations') && recruiter === 'edit'),
-    performance_view: admin || !!grant || !!performance,
+    performance_view: admin || hrRole || !!grant || !!performance,
     performance_write:
       admin ||
+      hrRole ||
       (permitted(role, 'operations') && ['edit', 'manage'].includes(grant)) ||
       (permitted(role, 'operations') && performance === 'edit'),
   };

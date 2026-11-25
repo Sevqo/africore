@@ -34,11 +34,17 @@ export function NotificationItems({
                 name={
                   n.severity === 'approval_required'
                     ? 'users'
-                    : ['orders', 'deliveries', 'sales'].includes(n.category)
-                      ? 'bag'
-                      : ['payments', 'invoices', 'cash_flow', 'reconciliation'].includes(n.category)
-                        ? 'document'
-                        : 'settings'
+                    : n.category === 'calendar'
+                      ? 'calendar'
+                      : n.category === 'work'
+                        ? 'grid'
+                        : ['orders', 'deliveries', 'sales'].includes(n.category)
+                          ? 'bag'
+                          : ['payments', 'invoices', 'cash_flow', 'reconciliation'].includes(
+                                n.category,
+                              )
+                            ? 'document'
+                            : 'settings'
                 }
               />
             </span>

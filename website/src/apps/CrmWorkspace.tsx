@@ -12,6 +12,7 @@ import { CrmCustomerSelect } from './CrmCustomerSelect';
 import { useIdempotentAPI } from './useIdempotentAPI';
 import { useEffect, useRef, useState } from 'react';
 import { DataTable } from '../components/DataTable';
+import { AppModuleMenuBar } from './MinimalAppChrome';
 import { Field, Form, money, type API } from '../operations/UI';
 import { parseMoney } from '../../../src/finance/money';
 export function CrmWorkspace({
@@ -336,9 +337,46 @@ export function CrmWorkspace({
       {!data && !error && <p role="status">Loading customer relationships…</p>}
       {data && (
         <>
-          <nav className="crm-section-nav" aria-label="CRM sections">{[
-            ['pipeline','Pipeline'],['leads','Leads'],['followups','Activities'],['forecast','Forecast'],['report','Reporting'],['plans','Activity Plans'],['duplicates','Duplicates'],['import','Import'],['customers','Customers'],['settings','Configuration'],
-          ].map(([id,label])=><button key={id} className={section===id?'is-active':''} aria-current={section===id?'page':undefined} onClick={()=>changeSection(id)}>{label}</button>)}</nav>
+          <AppModuleMenuBar
+            className="crm-section-nav"
+            ariaLabel="CRM sections"
+            brandLabel="CRM"
+            brandActive={section === 'pipeline'}
+            onBrandClick={() => changeSection('pipeline')}
+            menus={[
+              {
+                id: 'sales-Group',
+                label: 'Sales',
+                active: ['pipeline', 'leads', 'followups', 'customers'].includes(section),
+                children: [
+                  { id: 'pipeline', label: 'Pipeline', active: section === 'pipeline', onSelect: () => changeSection('pipeline') },
+                  { id: 'leads', label: 'Leads', active: section === 'leads', onSelect: () => changeSection('leads') },
+                  { id: 'followups', label: 'Activities', active: section === 'followups', onSelect: () => changeSection('followups') },
+                  { id: 'customers', label: 'Customers', active: section === 'customers', onSelect: () => changeSection('customers') },
+                ],
+              },
+              {
+                id: 'reporting-group',
+                label: 'Reporting',
+                active: ['forecast', 'report'].includes(section),
+                children: [
+                  { id: 'forecast', label: 'Forecast', active: section === 'forecast', onSelect: () => changeSection('forecast') },
+                  { id: 'report', label: 'Pipeline Analysis', active: section === 'report', onSelect: () => changeSection('report') },
+                ],
+              },
+              {
+                id: 'config-group',
+                label: 'Configuration',
+                active: ['plans', 'duplicates', 'import', 'settings'].includes(section),
+                children: [
+                  { id: 'settings', label: 'CRM Settings', active: section === 'settings', onSelect: () => changeSection('settings') },
+                  { id: 'plans', label: 'Activity Plans', active: section === 'plans', onSelect: () => changeSection('plans') },
+                  { id: 'duplicates', label: 'Duplicate Review', active: section === 'duplicates', onSelect: () => changeSection('duplicates') },
+                  { id: 'import', label: 'Import Leads', active: section === 'import', onSelect: () => changeSection('import') },
+                ],
+              },
+            ]}
+          />
           {teamError && (
             <p className="alert warning" role="alert">
               Team assignments could not load. CRM records remain available; retry team data before assigning.

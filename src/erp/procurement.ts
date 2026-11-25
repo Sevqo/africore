@@ -472,7 +472,9 @@ export async function savePurchase(a: Access, id: string | null, input: unknown,
         }
       }
       if (type === 'request') {
-        data.lines = await checkedLines(a, d.record.lines, d.record.currency);
+        data.lines = d.record.lines.length
+          ? await checkedLines(a, d.record.lines, d.record.currency)
+          : [];
         if (d.record.suggestion_id) {
           const s = await dbGet(
             "SELECT id FROM ac2_objects WHERE org_id=? AND environment=? AND id=? AND kind='replenishment_suggestions'",
@@ -491,7 +493,7 @@ export async function savePurchase(a: Access, id: string | null, input: unknown,
         )
           fail(409, 'Approved request and active supplier in the same currency required');
         data.lines = await checkedLines(a, d.record.lines, d.record.currency);
-        compareLines(data.lines, request.data.lines, true);
+        if (request.data.lines?.length) compareLines(data.lines, request.data.lines, true);
         if (d.record.template_id) {
           const template = await read(a, d.record.template_id, 'purchase_template');
           if (
@@ -724,15 +726,17 @@ export async function purchaseDecision(
           request.data.budget_minor
         )
           fail(409, 'Issued purchases exceed the approved request budget');
-        for (const line of o.data.lines) {
-          const requested = request.data.lines.find((l: any) => l.id === line.id);
-          const used = sumMinor(
-            committed.flatMap((v) =>
-              v.data.lines.filter((l: any) => l.id === line.id).map((l: any) => l.quantity_milli),
-            ),
-          );
-          if (!requested || used + line.quantity_milli > requested.quantity_milli)
-            fail(409, 'Issued quantities exceed the approved request');
+        if (request.data.lines?.length) {
+          for (const line of o.data.lines) {
+            const requested = request.data.lines.find((l: any) => l.id === line.id);
+            const used = sumMinor(
+              committed.flatMap((v) =>
+                v.data.lines.filter((l: any) => l.id === line.id).map((l: any) => l.quantity_milli),
+              ),
+            );
+            if (!requested || used + line.quantity_milli > requested.quantity_milli)
+              fail(409, 'Issued quantities exceed the approved request');
+          }
         }
         const supplier = await read(a, o.data.supplier_id, 'supplier_profile');
         if (supplier.status !== 'active') fail(409, 'Supplier is archived');

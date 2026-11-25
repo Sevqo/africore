@@ -227,6 +227,20 @@ export async function createProject(a: Access, input: unknown, key: string) {
         due: d.deadline,
       });
       await grants(a, p);
+      const { notify } = await import('../operations/automation');
+      for (const m of d.members) {
+        if (m.user_id === a.actor) continue;
+        await notify(a, {
+          category: 'work',
+          title: 'Added to project',
+          body: `You were added to project "${d.name}". Open Work to see your project tasks and schedule.`,
+          user_id: m.user_id,
+          resource_id: p.id,
+          key: 'work-project-member:' + p.id + ':' + m.user_id,
+          severity: 'informational',
+          action_data: { app_id: 'work', section: 'work_project', record_id: p.id },
+        });
+      }
       return p;
     },
     { authorizeReplay: (p) => authorize(a, 'work', p.id) },
@@ -310,6 +324,21 @@ export async function editProject(a: Access, projectId: string, input: unknown, 
         { owner_id: d.project.owner_id, status: d.project.status, due_on: d.project.deadline },
       );
       await grants(a, result);
+      const { notify } = await import('../operations/automation');
+      const priorMemberIds = new Set((p.data.members || []).map((m: any) => m.user_id));
+      for (const m of d.project.members) {
+        if (m.user_id === a.actor || priorMemberIds.has(m.user_id)) continue;
+        await notify(a, {
+          category: 'work',
+          title: 'Added to project',
+          body: `You were added to project "${d.project.name}". Open Work to review assigned tasks and milestones.`,
+          user_id: m.user_id,
+          resource_id: result.id,
+          key: 'work-project-member:' + result.id + ':' + result.version + ':' + m.user_id,
+          severity: 'informational',
+          action_data: { app_id: 'work', section: 'work_project', record_id: result.id },
+        });
+      }
       return result;
     },
   );
@@ -572,6 +601,48 @@ export async function saveTask(
           status === 'completed' && old?.status !== 'completed'
             ? await (await import('./work-automation')).executeWorkRules(a, updatedProject, value)
             : [];
+      const { notify } = await import('../operations/automation');
+      if (d.task.assignee_id && d.task.assignee_id !== a.actor && d.task.assignee_id !== old?.data.assignee_id) {
+        await notify(a, {
+          category: 'work',
+          title: 'Task assigned to you',
+          body: `You were assigned "${d.task.title}" in project "${p.data.name}"${d.task.due_on ? ' (due ' + d.task.due_on + ')' : ''}.`,
+          user_id: d.task.assignee_id,
+          resource_id: value.id,
+          key: 'work-assign:' + value.id + ':' + value.version + ':' + d.task.assignee_id,
+          severity: 'action_required',
+          action_data: { app_id: 'work', section: 'work_task', record_id: value.id },
+        });
+      } else if (
+        old &&
+        d.task.assignee_id &&
+        d.task.assignee_id !== a.actor &&
+        (old.due_on !== d.task.due_on || old.stage !== d.task.stage || old.status !== status)
+      ) {
+        await notify(a, {
+          category: 'work',
+          title: 'Assigned task updated',
+          body: `"${d.task.title}" in "${p.data.name}" was updated (${d.task.stage}${d.task.due_on ? ', due ' + d.task.due_on : ''}).`,
+          user_id: d.task.assignee_id,
+          resource_id: value.id,
+          key: 'work-task-update:' + value.id + ':' + value.version + ':' + d.task.assignee_id,
+          action_data: { app_id: 'work', section: 'work_task', record_id: value.id },
+        });
+      }
+      const priorFollowers = new Set<string>(old?.data.followers || []);
+      for (const followerId of new Set(d.task.followers || [])) {
+        if (followerId === a.actor || followerId === d.task.assignee_id || priorFollowers.has(followerId))
+          continue;
+        await notify(a, {
+          category: 'work',
+          title: 'Following project task',
+          body: `You were added as a follower on "${d.task.title}" in "${p.data.name}".`,
+          user_id: followerId,
+          resource_id: value.id,
+          key: 'work-follow:' + value.id + ':' + value.version + ':' + followerId,
+          action_data: { app_id: 'work', section: 'work_task', record_id: value.id },
+        });
+      }
       return { ...value, workflow_runs };
     },
   );
@@ -706,15 +777,128 @@ export async function myWork(a: Access, input: unknown) {
     page = matching.slice(q.offset, q.offset + 50);
   for (const t of page)
     if (!projects.has(t.root_id)) projects.set(t.root_id, await project(a, t.root_id));
+
+  // Include upcoming Calendar meetings & workspace events visible to this worker
+  const nowIso = new Date(Date.now() - 12 * 3600 * 1000).toISOString();
+  const horizonIso = new Date(Date.now() + 30 * 86400 * 1000).toISOString();
+  const calRows = await dbAll(
+    "SELECT o.* FROM ac_erp_objects o WHERE o.org_id=? AND o.environment=? AND o.kind='calendar_event' AND o.status='active'" +
+      (!admin
+        ? ' AND (o.owner_id=? OR EXISTS(SELECT 1 FROM ac_erp_grants g WHERE g.org_id=o.org_id AND g.environment=o.environment AND g.resource_id=o.id AND g.user_id=?))'
+        : '') +
+      ' ORDER BY o.created_at DESC LIMIT 200',
+    [a.org, a.environment, ...(!admin ? [a.actor, a.actor] : [])],
+  );
+  const { expandCalendarSeries } = await import('../apps/calendar-recurrence');
+  const meetings = calRows
+    .map((r) => decode(a, r))
+    .filter((ev) => {
+      if (ev.data.cancelled_at) return false;
+      const invited = (ev.data.attendees || []).some((p: any) => p.user_id === a.actor);
+      const isOrganizer = ev.data.organizer_id === a.actor;
+      if (ev.data.visibility === 'private' && !invited && !isOrganizer) return false;
+      return true;
+    })
+    .flatMap((ev) =>
+      expandCalendarSeries(ev, nowIso, horizonIso).map((occ) => {
+        const invited = (ev.data.attendees || []).find((p: any) => p.user_id === a.actor);
+        return {
+          id: occ.id,
+          event_id: ev.id,
+          title: occ.data.title,
+          start: occ.data.start,
+          end: occ.data.end,
+          timezone: occ.data.timezone,
+          location: occ.data.location || '',
+          meeting_url: occ.data.meeting_url || '',
+          organizer_id: ev.data.organizer_id,
+          invited: !!invited,
+          my_response: invited?.response || (ev.data.organizer_id === a.actor ? 'organizer' : 'shared'),
+        };
+      }),
+    )
+    .sort((left, right) => Date.parse(left.start) - Date.parse(right.start))
+    .slice(0, 25);
+
+  // Include assigned CRM follow-ups, pending approvals, and field dispatches for this worker
+  const [crmRows, approvalRows, dispatchRows, actorProfile] = await Promise.all([
+    dbAll(
+      "SELECT id,kind,status,data,updated_at FROM ac_crm_entries WHERE org_id=? AND environment=? AND status NOT IN ('completed','cancelled','archived') ORDER BY updated_at DESC LIMIT 100",
+      [a.org, a.environment],
+    ),
+    dbAll(
+      "SELECT id,action,resource_id,status,expires_at,created_at FROM ac2_approvals WHERE org_id=? AND environment=? AND approver=? AND status='pending' ORDER BY created_at DESC LIMIT 25",
+      [a.org, a.environment, a.actor],
+    ),
+    dbAll(
+      "SELECT * FROM ac_erp_objects WHERE org_id=? AND environment=? AND kind='field_dispatch' AND status NOT IN ('completed','cancelled') ORDER BY created_at DESC LIMIT 50",
+      [a.org, a.environment],
+    ),
+    dbGet(
+      'SELECT u.email,p.display_name FROM ac_users u LEFT JOIN ac_profiles p ON p.user_id=u.id WHERE u.id=?',
+      [a.actor],
+    ),
+  ]);
+  const actorNames = [actorProfile?.display_name, actorProfile?.email]
+    .filter(Boolean)
+    .map((s) => String(s).toLowerCase());
+  const activities: any[] = [];
+  for (const row of crmRows) {
+    try {
+      const parsed = JSON.parse(row.data);
+      if (parsed.assigned_to === a.actor) {
+        activities.push({
+          id: row.id,
+          kind: 'crm_followup',
+          app_id: 'crm',
+          section: row.kind === 'follow_up' ? 'followups' : 'pipeline',
+          title: parsed.title || parsed.subject || 'CRM follow-up',
+          status: row.status,
+          due_on: parsed.due_on || parsed.expected_close_date || null,
+        });
+      }
+    } catch {
+      /* ignore malformed */
+    }
+  }
+  for (const row of approvalRows) {
+    activities.push({
+      id: row.id,
+      kind: 'approval',
+      app_id: 'automations',
+      section: 'Approvals',
+      title: `Approval needed: ${String(row.action).replace(/_/g, ' ')}`,
+      status: row.status,
+      due_on: row.expires_at ? String(row.expires_at).slice(0, 10) : null,
+    });
+  }
+  for (const row of dispatchRows) {
+    const decoded = decode(a, row);
+    const tech = String(decoded.data.technician || '').toLowerCase();
+    if (decoded.owner_id === a.actor || (tech && actorNames.some((n) => n.includes(tech) || tech.includes(n)))) {
+      activities.push({
+        id: decoded.id,
+        kind: 'field_dispatch',
+        app_id: 'field_operations',
+        section: 'dispatches',
+        title: decoded.data.title || 'Field dispatch',
+        status: decoded.status,
+        due_on: decoded.data.scheduled_on || null,
+      });
+    }
+  }
+
   return {
     data: page.map((t) => ({ ...t, project_name: projects.get(t.root_id)!.data.name })),
+    meetings,
+    activities: activities.slice(0, 30),
     total: matching.length,
     offset: q.offset,
     has_more: q.offset + 50 < matching.length,
     truncated: rows.length > 10000,
     limit: 50,
     definition:
-      'Tasks assigned to your current login across currently authorized projects. Up to 10,000 authorized task candidates are inspected before assignment filtering and paging.',
+      'Tasks assigned to your current login across currently authorized projects, plus scheduled workspace meetings and assigned operational activities.',
   };
 }
 export async function workTarget(a: Access, id: string) {

@@ -39,7 +39,14 @@ export const purchaseRecord = z.discriminatedUnion('type', [
       currency: currencySchema,
       budget_minor: minor,
       needed_on: z.string().date(),
-      lines: purchaseLines,
+      lines: z
+        .array(purchaseLine)
+        .max(100)
+        .default([])
+        .refine(
+          (lines) => new Set(lines.map((l) => l.id)).size === lines.length,
+          'Line identifiers must be unique',
+        ),
       suggestion_id: id.nullable().default(null),
     })
     .strict(),

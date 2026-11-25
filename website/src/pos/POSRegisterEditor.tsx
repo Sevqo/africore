@@ -44,7 +44,13 @@ export function POSRegisterEditor({
       });
     api('/inventory/warehouses')
       .then((r) => {
-        if (current) setStock(r);
+        if (current) {
+          setStock(r);
+          const firstActive = r?.data?.find((w: any) => w.status === 'active');
+          if (!record && !settings.warehouse_id && firstActive) {
+            setWarehouse((prev: string) => prev || firstActive.id);
+          }
+        }
       })
       .catch((e) => {
         if (current) setStockError(e.message);
@@ -185,12 +191,38 @@ export function POSRegisterEditor({
             ))}
           </select>
         </Field>
-        <details>
+        <details open>
           <summary>Stock location</summary>
           <p>
             Tracked products require active Inventory and an exact warehouse/location. Untracked
             services can use a register without stock.
           </p>
+          {stock && !(stock.data || []).some((w: any) => w.status === 'active') && !stockError && (
+            <div className="alert" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <span>No active warehouse exists yet for tracked stock.</span>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={async () => {
+                  try {
+                    setError('');
+                    const created = await api(
+                      '/inventory/warehouses',
+                      'POST',
+                      { code: 'MAIN', name: 'Main Warehouse', address: 'Primary counter stock', status: 'active' },
+                      { 'Idempotency-Key': crypto.randomUUID() },
+                    );
+                    setWarehouse(created.id);
+                    setStockRevision((v) => v + 1);
+                  } catch (e) {
+                    setError((e as Error).message);
+                  }
+                }}
+              >
+                Create Main Warehouse
+              </button>
+            </div>
+          )}
           {stockError && (
             <p role="alert" className="alert error">
               Inventory selection is unavailable: {stockError}{' '}

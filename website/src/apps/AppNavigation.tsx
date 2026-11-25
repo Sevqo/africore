@@ -1,8 +1,41 @@
 import { useEffect, useState } from 'react';
-import { Icon } from '../components/Icon';
+import { Icon, type IconName } from '../components/Icon';
+import { peekQuery } from '../lib/query-cache';
+import { isDemo } from '../demo/transport';
 import type { API } from '../operations/UI';
 import { appSectionActive, appSectionTarget } from '../workspace-navigation';
+import { AppModuleMenuBar } from './MinimalAppChrome';
 export const appNavigationEvent = 'africore:app-navigation';
+
+function iconForSection(label: string, section = ''): IconName {
+  const text = `${label} ${section}`;
+  if (/dashboard|overview|home|board/i.test(text)) return 'home';
+  if (/report|analytic|ledger|balance|statement|mrr|forecast|coverage|quality|performance/i.test(text))
+    return 'chart';
+  if (/setting|policy|config|rule|permission|preference/i.test(text)) return 'settings';
+  if (/customer|people|team|supplier|vendor|employee|candidate|lead|recruit|department|org chart/i.test(text))
+    return 'users';
+  if (/product|stock|inventory|warehouse|catalog|bom|lot|package/i.test(text)) return 'box';
+  if (/payment|cash|invoice|bill|price|payroll|compensation|subscription|folio|lease/i.test(text))
+    return 'payment';
+  if (/calendar|schedule|time off|leave|attendance|shift|planning|timeline|appointment/i.test(text))
+    return 'calendar';
+  if (/order|quotation|sale|storefront|commerce|purchase|rfq/i.test(text)) return 'bag';
+  if (/campaign|marketing|promotion|discount/i.test(text)) return 'megaphone';
+  if (/ticket|support|sla|help|inquiry|dispute/i.test(text)) return 'lifebuoy';
+  if (/manufactur|production/i.test(text)) return 'factory';
+  if (/dispatch|maintenance|field|repair/i.test(text)) return 'wrench';
+  if (/shipment|delivery|fulfillment|logistic|fleet|pod/i.test(text)) return 'truck';
+  if (/property|unit|room|reservation|hospitality/i.test(text)) return 'building';
+  if (/wiki|article|course|knowledge|learn|template/i.test(text)) return 'book';
+  if (/studio|custom app|editor|menu|theme|seo|form/i.test(text)) return 'layers';
+  if (/connector|pipeline|webhook|integration|topology|event|automation|workflow/i.test(text))
+    return 'plug';
+  if (/approval|verify|credential|passport|trust|audit/i.test(text)) return 'shield';
+  if (/website|site|publication|domain/i.test(text)) return 'globe';
+  return 'document';
+}
+
 export function AppSectionTabs({
   app,
   section,
@@ -27,32 +60,57 @@ export function AppSectionTabs({
     products: 'Products',
     quotations: 'Quotations',
   };
+  const selectSection = (targetSection: string) => {
+    const url = new URL(location.href);
+    url.searchParams.set('app', app.id);
+    url.searchParams.set('section', targetSection);
+    const target = appSectionTarget(app, targetSection, direct);
+    url.hash = encodeURIComponent(target);
+    history.pushState(null, '', url.pathname + url.search + url.hash);
+    dispatchEvent(new Event(appNavigationEvent));
+    navigate(target);
+  };
+  const navItems: any[] = app.navigation || [];
+  const primary = navItems.slice(0, 6);
+  const overflow = navItems.slice(6);
   return (
-    <nav className="app-section-tabs" aria-label={app.name + ' sections'}>
-      {app.navigation.map((item: any) => (
-        <button
-          type="button"
-          key={item.section}
-          aria-current={section === item.section ? 'page' : undefined}
-          onClick={() => {
-            const url = new URL(location.href);
-            url.searchParams.set('app', app.id);
-            url.searchParams.set('section', item.section);
-            const target = appSectionTarget(app, item.section, direct);
-            url.hash = encodeURIComponent(target);
-            history.pushState(null, '', url.pathname + url.search + url.hash);
-            dispatchEvent(new Event(appNavigationEvent));
-            navigate(target);
-          }}
-        >
-          {item.label}
-        </button>
-      ))}
-    </nav>
+    <AppModuleMenuBar
+      className="app-section-tabs"
+      ariaLabel={app.name + ' sections'}
+      menus={[
+        ...primary.map((item: any) => ({
+          id: item.section,
+          label: item.label,
+          active: section === item.section,
+          onSelect: () => selectSection(item.section),
+        })),
+        ...(overflow.length > 0
+          ? [
+              {
+                id: '__more_sections',
+                label: 'More',
+                active: overflow.some((item: any) => item.section === section),
+                children: overflow.map((item: any) => ({
+                  id: item.section,
+                  label: item.label,
+                  active: section === item.section,
+                  onSelect: () => selectSection(item.section),
+                })),
+              },
+            ]
+          : []),
+      ]}
+    />
   );
 }
 export function useAppContext(api: API, scope: string, enabled = true) {
-  const [catalog, setCatalog] = useState<{ scope: string; apps: any[] }>({ scope: '', apps: [] }),
+  const [orgId = '', env = 'sandbox'] = scope.split('\0');
+  const cachedApps = orgId
+    ? peekQuery<any>('/api/v1/organizations/' + orgId + '/apps', env, isDemo())
+    : undefined;
+  const [catalog, setCatalog] = useState<{ scope: string; apps: any[] }>(() =>
+      cachedApps?.apps ? { scope, apps: cachedApps.apps } : { scope: '', apps: [] },
+    ),
     [selection, setSelection] = useState(() => ({
       id: new URLSearchParams(location.search).get('app'),
       section: new URLSearchParams(location.search).get('section') || '',
@@ -77,7 +135,11 @@ export function useAppContext(api: API, scope: string, enabled = true) {
   useEffect(() => {
     if (!enabled) return;
     let current = true;
-    setCatalog({ scope, apps: [] });
+    const warm = orgId
+      ? peekQuery<any>('/api/v1/organizations/' + orgId + '/apps', env, isDemo())
+      : undefined;
+    if (warm?.apps) setCatalog({ scope, apps: warm.apps });
+    else setCatalog((prev) => (prev.scope === scope ? prev : { scope, apps: [] }));
     api('/apps')
       .then((r) => {
         if (current) setCatalog({ scope, apps: r.apps });
@@ -167,21 +229,7 @@ export function AppContextNavigation({
               aria-current={active ? 'page' : undefined}
               onClick={() => open(n.section)}
             >
-              <Icon
-                name={
-                  /report|analytic|ledger|balance|statement/i.test(label)
-                    ? 'chart'
-                    : /setting|policy/i.test(label)
-                      ? 'settings'
-                      : /customer|people|team|supplier/i.test(label)
-                        ? 'users'
-                        : /product|stock|inventory/i.test(label)
-                          ? 'box'
-                          : /payment|cash/i.test(label)
-                            ? 'payment'
-                            : 'document'
-                }
-              />
+              <Icon name={iconForSection(label, n.section)} />
               <span>{label}</span>
             </button>
           );

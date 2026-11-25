@@ -51,7 +51,8 @@ export function WorkWorkspace({
     [projectGroup, setProjectGroup] = useState('none'),
     [messageOffset, setMessageOffset] = useState(0),
     [statusFilter, setStatusFilter] = useState('all'),
-    [assigneeFilter, setAssigneeFilter] = useState('all');
+    [assigneeFilter, setAssigneeFilter] = useState('all'),
+    [workspaceMeetings, setWorkspaceMeetings] = useState<any[]>([]);
   const targetRequest = useRef(0);
   const [viewing, setViewing] = useState<any>(null),
     [targetTask, setTargetTask] = useState('');
@@ -126,6 +127,13 @@ export function WorkWorkspace({
   useEffect(() => {
     let current = true;
     setTeamError('');
+    api('/work/my-work')
+      .then((res) => {
+        if (current) setWorkspaceMeetings(res?.meetings || []);
+      })
+      .catch(() => {
+        if (current) setWorkspaceMeetings([]);
+      });
     void loadWorkDirectory(
       api,
       (d) => {
@@ -993,6 +1001,7 @@ export function WorkWorkspace({
               <WorkDateViews
                 tasks={filtered}
                 milestones={p.data.milestones}
+                meetings={workspaceMeetings}
                 view={view}
                 onOpen={openTask}
               />

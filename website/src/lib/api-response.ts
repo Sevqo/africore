@@ -64,6 +64,23 @@ function failure(status: number) {
           };
   }
 }
+function formatIssue(issue: any): string {
+  const msg = typeof issue?.message === 'string' ? issue.message : '';
+  const path = Array.isArray(issue?.path) ? issue.path.filter(Boolean).join('.') : '';
+  if (/expected array to have >=1 items/i.test(msg)) {
+    if (path.includes('lines') || path.includes('items'))
+      return 'Add at least one item line before saving.';
+    return 'Select at least one item before saving.';
+  }
+  if (/Too small: expected string to have >=(\d+) characters/i.test(msg)) {
+    const min = msg.match(/>=(\d+)/)?.[1] || 'more';
+    const field = path.split('.').at(-1)?.replaceAll('_', ' ') || 'This field';
+    return `${field.charAt(0).toUpperCase() + field.slice(1)} must be at least ${min} characters.`;
+  }
+  return path && msg && !msg.toLowerCase().includes(path.split('.').at(-1) || '')
+    ? `${path.split('.').at(-1)?.replaceAll('_', ' ')}: ${msg}`
+    : msg;
+}
 export async function readApiResponse(response: Response) {
   let data: any;
   try {
@@ -80,10 +97,7 @@ export async function readApiResponse(response: Response) {
   if (response.ok) return data;
   const detail = failure(response.status),
     issues = Array.isArray(data?.issues)
-      ? data.issues
-          .map((issue: any) => (typeof issue?.message === 'string' ? issue.message : ''))
-          .filter(Boolean)
-          .join(', ')
+      ? data.issues.map(formatIssue).filter(Boolean).join('; ')
       : '';
   const message =
     typeof data?.message === 'string' && !/^request failed[.!]?$/i.test(data.message.trim())

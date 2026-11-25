@@ -56,11 +56,134 @@ export function totals(doc: z.infer<typeof documentSchema>) {
     });
   return { subtotal_minor, tax_minor, total_minor };
 }
-export const roles = ['owner', 'admin', 'finance', 'operations', 'viewer'] as const;
+export const roles = [
+  'owner',
+  'admin',
+  'finance',
+  'accountant',
+  'hr',
+  'sales',
+  'operations',
+  'inventory_manager',
+  'support_agent',
+  'marketing_manager',
+  'viewer',
+] as const;
+
+export const invitableRoles = [
+  'admin',
+  'finance',
+  'accountant',
+  'hr',
+  'sales',
+  'operations',
+  'inventory_manager',
+  'support_agent',
+  'marketing_manager',
+  'viewer',
+] as const;
+
+export const roleAppAccess: Record<string, readonly string[] | '*'> = {
+  owner: '*',
+  admin: '*',
+  finance: [
+    'finance',
+    'accounting',
+    'analytics',
+    'procurement',
+    'subscriptions',
+    'property_hospitality',
+    'documents',
+    'calendar',
+    'work',
+  ],
+  accountant: [
+    'accounting',
+    'finance',
+    'analytics',
+    'subscriptions',
+    'documents',
+    'calendar',
+    'work',
+  ],
+  hr: ['people', 'knowledge_learning', 'work', 'calendar', 'documents'],
+  sales: ['crm', 'sales', 'pos', 'commerce', 'subscriptions', 'calendar', 'work', 'documents'],
+  operations: [
+    'inventory',
+    'procurement',
+    'pos',
+    'sales',
+    'crm',
+    'work',
+    'calendar',
+    'documents',
+    'manufacturing',
+    'field_operations',
+    'logistics',
+    'property_hospitality',
+    'knowledge_learning',
+    'support',
+  ],
+  inventory_manager: [
+    'inventory',
+    'procurement',
+    'manufacturing',
+    'logistics',
+    'field_operations',
+    'pos',
+    'work',
+    'calendar',
+    'documents',
+  ],
+  support_agent: [
+    'support',
+    'crm',
+    'knowledge_learning',
+    'field_operations',
+    'work',
+    'calendar',
+    'documents',
+  ],
+  marketing_manager: [
+    'marketing',
+    'website',
+    'commerce',
+    'crm',
+    'analytics',
+    'calendar',
+    'work',
+    'documents',
+  ],
+  viewer: ['analytics', 'finance', 'work', 'calendar', 'documents', 'knowledge_learning'],
+};
+
+export function roleAllowsApp(role: string | undefined, appId: string, kind = 'business'): boolean {
+  if (kind !== 'business') return true;
+  if (!role || role === 'owner' || role === 'admin') return true;
+  const allowed = roleAppAccess[role];
+  if (!allowed) return false;
+  if (allowed === '*') return true;
+  return allowed.includes(appId);
+}
+
 export function permitted(role: string, capability: string) {
   if (role === 'owner' || role === 'admin') return true;
   if (capability === 'read') return roles.includes(role as any);
-  if (capability === 'finance') return role === 'finance';
-  if (capability === 'operations') return role === 'operations' || role === 'finance';
+  if (capability === 'finance') return role === 'finance' || role === 'accountant';
+  if (capability === 'hr') return role === 'hr';
+  if (capability === 'sales') return role === 'sales' || role === 'operations';
+  if (capability === 'support') return role === 'support_agent' || role === 'operations';
+  if (capability === 'marketing') return role === 'marketing_manager' || role === 'operations';
+  if (capability === 'operations')
+    return [
+      'operations',
+      'finance',
+      'accountant',
+      'hr',
+      'sales',
+      'inventory_manager',
+      'support_agent',
+      'marketing_manager',
+    ].includes(role);
   return false;
 }

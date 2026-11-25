@@ -149,6 +149,16 @@ const appOwnedWorkspaces = new Set([
   'automations',
   'calendar',
   'website',
+  'marketing',
+  'support',
+  'subscriptions',
+  'manufacturing',
+  'field_operations',
+  'logistics',
+  'property_hospitality',
+  'knowledge_learning',
+  'studio',
+  'integrations_hub',
 ]);
 
 export function appSectionTarget(
