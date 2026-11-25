@@ -11,9 +11,9 @@ import {
   type ChartSeries,
 } from './model';
 export const financialSeries: ChartSeries[] = [
-  { key: 'inflows', label: 'Confirmed inflows', color: '#426900' },
-  { key: 'outflows', label: 'Recorded outflows', color: '#595959' },
-  { key: 'net', label: 'Net movement', color: '#985b20', dashed: true },
+  { key: 'inflows', label: 'Confirmed inflows', color: '#166534' },
+  { key: 'outflows', label: 'Recorded outflows', color: '#64748b' },
+  { key: 'net', label: 'Net movement', color: '#0f766e', dashed: true },
 ];
 const format = (n: number, currency?: string) =>
   currency
@@ -65,9 +65,10 @@ export function InteractiveChart({
     [points, range, forecast, series, asOfDate],
   );
   const visible = series.filter((s) => !hidden.includes(s.key));
-  // Sparse observations are shown as individual points. Connecting only two or
-  // three records makes the straight interpolation look like measured trend.
-  const sparse = shown.length < 4;
+  // Connect recorded points whenever at least two dates exist so trends read clearly
+  // like Shopify Analytics, while keeping point markers visible for sparse series.
+  const sparse = shown.length < 2;
+  const showMarkers = shown.length <= 14;
   const prior = useMemo(
     () =>
       forecast
@@ -285,12 +286,11 @@ export function InteractiveChart({
                   </linearGradient>
                 ))}
               </defs>
-              {variant === 'area' &&
-                !sparse &&
-                visible.map((s) => (
+              {!sparse &&
+                visible.slice(0, variant === 'area' ? visible.length : 1).map((s) => (
                   <path
                     key={s.key}
-                    d={`M ${x(0)} ${y(0)} ${shown.map((p, i) => `L ${x(i)} ${y(Number(p[s.key]))}`).join(' ')} L ${x(shown.length - 1)} ${y(0)} Z`}
+                    d={`M ${x(0)} ${y(Math.max(0, min))} ${shown.map((p, i) => `L ${x(i)} ${y(Number(p[s.key]))}`).join(' ')} L ${x(shown.length - 1)} ${y(Math.max(0, min))} Z`}
                     fill={`url(#${id}-${s.key}-fill)`}
                     aria-hidden="true"
                   />
@@ -378,16 +378,16 @@ export function InteractiveChart({
                     strokeDasharray={s.dashed ? '7 5' : undefined}
                     vectorEffect="non-scaling-stroke"
                   />
-                  {sparse &&
+                  {showMarkers &&
                     shown.map((point, i) => (
                       <circle
                         key={point.date}
                         cx={x(i)}
                         cy={y(Number(point[s.key]))}
-                        r={active === i ? 5 : 4}
-                        fill={s.color}
-                        stroke="white"
-                        strokeWidth="1.5"
+                        r={active === i ? 5 : 3.5}
+                        fill="#ffffff"
+                        stroke={s.color}
+                        strokeWidth="2"
                         vectorEffect="non-scaling-stroke"
                       />
                     ))}
@@ -480,8 +480,8 @@ export function InteractiveChart({
         </div>
       )}
       <p className="chart-description">
-        {shown.length > 0 && shown.length < 4
-          ? 'Sparse recorded dates are shown as individual points; no trend line is drawn between them. '
+        {shown.length === 1
+          ? 'Single recorded date shown as a point. '
           : ''}
         {description}{' '}
         {forecast

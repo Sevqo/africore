@@ -427,18 +427,45 @@ export async function createCalendarEvent(a: Access, input: unknown, key: string
         organizer_id: a.actor,
         cancelled_at: null,
       });
-      await calendarGrant(a, event.id, [...d.attendees, { user_id: a.actor }]);
-      for (const invite of d.attendees)
+      const workspaceMembers =
+        d.visibility === 'private'
+          ? []
+          : ((await dbAll('SELECT user_id FROM ac_memberships WHERE org_id=?', [a.org])) as {
+              user_id: string;
+            }[]);
+      const grantTargets = new Map<string, { user_id: string }>();
+      for (const m of [...d.attendees, ...workspaceMembers, { user_id: a.actor }]) {
+        grantTargets.set(m.user_id, { user_id: m.user_id });
+      }
+      await calendarGrant(a, event.id, [...grantTargets.values()]);
+
+      const attendeeIds = new Set(d.attendees.map((x) => x.user_id));
+      for (const invite of d.attendees) {
+        if (invite.user_id === a.actor) continue;
         await notify(a, {
           category: 'calendar',
           title: 'Meeting invitation',
-          body: 'You have a new workspace meeting invitation. Open Calendar to review and respond.',
+          body: `You have a new workspace meeting invitation: "${d.title}". Open Calendar to review and respond.`,
           resource_id: event.id,
-          key: 'calendar-invitation:' + event.id,
+          key: 'calendar-invitation:' + event.id + ':' + invite.user_id,
           user_id: invite.user_id,
           capability: 'read',
           action_data: { app_id: 'calendar', section: 'invitations', record_id: event.id },
         });
+      }
+      for (const member of workspaceMembers) {
+        if (member.user_id === a.actor || attendeeIds.has(member.user_id)) continue;
+        await notify(a, {
+          category: 'calendar',
+          title: 'New workspace schedule',
+          body: `"${d.title}" has been scheduled on the shared workspace calendar. Open Calendar to view details.`,
+          resource_id: event.id,
+          key: 'calendar-schedule:' + event.id + ':' + member.user_id,
+          user_id: member.user_id,
+          capability: 'read',
+          action_data: { app_id: 'calendar', section: 'calendar', record_id: event.id },
+        });
+      }
       return event;
     },
   );
