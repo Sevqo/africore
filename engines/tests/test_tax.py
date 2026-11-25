@@ -1,6 +1,6 @@
 import unittest
 
-from africore_accounting.tax import calculate_tax, round_cash
+from domain.tax import calculate_tax, round_cash
 
 
 class TaxCalculationTests(unittest.TestCase):

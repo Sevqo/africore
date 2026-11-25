@@ -28,7 +28,17 @@ export type IconName =
   | 'calendar'
   | 'globe'
   | 'eye'
-  | 'eye-off';
+  | 'eye-off'
+  | 'megaphone'
+  | 'lifebuoy'
+  | 'repeat'
+  | 'factory'
+  | 'wrench'
+  | 'truck'
+  | 'building'
+  | 'book'
+  | 'layers'
+  | 'plug';
 const paths: Record<IconName, string> = {
   home: 'm3 10 9-8 9 8v11h-6v-7H9v7H3z',
   users:
@@ -61,6 +71,16 @@ const paths: Record<IconName, string> = {
   external: 'M14 3h7v7M21 3 10 14M10 3H3v18h18v-7',
   calendar: 'M4 4h16v17H4zM8 2v4M16 2v4M4 9h16M8 13h3m-3 4h3m3-4h2m-2 4h2',
   globe: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20',
+  megaphone: 'M3 11v2a2 2 0 0 0 2 2h2l5 4V5L7 9H5a2 2 0 0 0-2 2zM16 9a5 5 0 0 1 0 6',
+  lifebuoy: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4.9 4.9l4.2 4.2M14.9 14.9l4.2 4.2M19.1 4.9l-4.2 4.2M9.1 14.9l-4.2 4.2',
+  repeat: 'M17 2l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3',
+  factory: 'M2 20h20M4 20V8l6 4V8l6 4V4h4v16',
+  wrench: 'M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.7-3.7a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z',
+  truck: 'M1 3h15v13H1zM16 8h4l3 3v5h-7zM5.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM18.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
+  building: 'M4 21h16M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M9 7h2m2 0h2M9 11h2m2 0h2M9 15h2m2 0h2',
+  book: 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5V5a2 2 0 0 1 2-2h14v18H6.5a2.5 2.5 0 0 1-2.5-1.5z',
+  layers: 'M12 2 2 7l10 5 10-5zM2 17l10 5 10-5M2 12l10 5 10-5',
+  plug: 'M12 22v-5M9 8V2M15 8V2M6 8h12v4a6 6 0 0 1-12 0z',
 };
 export function Icon({ name, ...props }: SVGProps<SVGSVGElement> & { name: IconName }) {
   return (

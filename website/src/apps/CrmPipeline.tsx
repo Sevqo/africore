@@ -58,7 +58,7 @@ export function CrmPipeline({
   }
   return (
     <>
-      <p className="board-help">
+      <p className="sr-only">
         Drag the move handle to another stage, or open Move stage to use the keyboard.
       </p>
       <p className="sr-only" role="status">
@@ -72,7 +72,11 @@ export function CrmPipeline({
           const summary = stageSummary.find((item) => item.stage === stage),
             amounts = summary?.totals || {},
             matchingTotal = stageSummary.reduce((sum, item) => sum + item.count, 0),
-            share = matchingTotal ? Math.round(((summary?.count || 0) / matchingTotal) * 100) : 0;
+            share = matchingTotal ? Math.round(((summary?.count || 0) / matchingTotal) * 100) : 0,
+            amountText =
+              Object.entries(amounts)
+                .map(([currency, total]) => money(total, currency))
+                .join(' · ') || '0';
           return (
             <section
               className={'crm-board-column' + (drag?.stage === stage ? ' is-drop-target' : '')}
@@ -91,32 +95,34 @@ export function CrmPipeline({
               }}
             >
               <header className="crm-stage-heading">
-                <h4>
-                  {name} <span className="badge">{summary?.count ?? records.length}</span>
+                <div className="crm-stage-top">
+                  <h4>{name}</h4>
                   {writable && (
                     <button
-                      className="quiet-button"
+                      className="quiet-button crm-stage-add"
                       aria-label={'Add opportunity to ' + name}
                       onClick={() => add(stage)}
                     >
                       +
                     </button>
                   )}
-                </h4>
-                <small>
-                  {Object.entries(amounts)
-                    .map(([currency, total]) => money(total, currency))
-                    .join(' · ') || 'No expected value'}
-                </small>
-                <div
-                  className="crm-stage-volume"
-                  role="img"
-                  aria-label={`${summary?.count || 0} matching opportunities, ${share}% of current results`}
-                >
-                  <span style={{ width: `${share}%` }} />
+                </div>
+                <div className="crm-stage-progress-row">
+                  <div
+                    className="crm-stage-volume"
+                    role="img"
+                    aria-label={`${summary?.count || 0} matching opportunities, ${share}% of current results`}
+                  >
+                    <span style={{ width: `${share}%` }} />
+                  </div>
+                  <strong className="crm-stage-total">{amountText}</strong>
                 </div>
               </header>
-              {!records.length && <p className="crm-stage-empty">Drop an opportunity here</p>}
+              {!records.length && (
+                <p className="crm-stage-empty">
+                  {summary?.count ?? 0} opportunities
+                </p>
+              )}
               {records.map((entry) => (
                 <article
                   className={

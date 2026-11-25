@@ -23,7 +23,7 @@ export function calculateTaxWithPython(
 ): Promise<TaxCalculation> {
   const python =
     process.env.AFRICORE_PYTHON_BIN || (process.platform === 'win32' ? 'python' : 'python3');
-  const script = join(__dirname, '..', '..', 'python', 'africore_accounting', 'tax.py');
+  const script = join(__dirname, '..', '..', 'engines', 'domain', 'tax.py');
   return new Promise((resolve, reject) => {
     const child = spawn(python, ['-I', script], {
       stdio: ['pipe', 'pipe', 'pipe'],

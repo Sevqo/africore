@@ -1,6 +1,6 @@
 import unittest
 
-from africore_accounting.assets import calculate
+from domain.assets import calculate
 
 
 class DepreciationTests(unittest.TestCase):

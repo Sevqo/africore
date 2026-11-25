@@ -63,6 +63,211 @@ import {
   procurementReport,
 } from './procurement';
 import {
+  compareTenderBids,
+  createBlanketOrder,
+  createThreeWayMatch,
+  decideThreeWayMatch,
+  evaluateThreeWay,
+  listBlanketOrders,
+  listThreeWayMatches,
+  updateBlanketOrder,
+} from './procurement-phase3';
+import {
+  calculatePosLoyalty,
+  createCrmScheduledActivity,
+  createLeaveAllocation,
+  createPayrollRun,
+  createPosCashCount,
+  createPosLoyaltyProgram,
+  createWorkBillingSummary,
+  createWorkMilestone,
+  decidePayrollRun,
+  evaluateCrmScore,
+  evaluateCrmWeightedForecast,
+  evaluatePosCashCount,
+  evaluateWorkBilling,
+  listCrmScheduledActivities,
+  listLeaveAllocations,
+  listPayrollRuns,
+  listPosCashCounts,
+  listPosLoyaltyPrograms,
+  listWorkBillingSummaries,
+  listWorkMilestones,
+  previewPayroll,
+  updateCrmScheduledActivity,
+  updateWorkMilestone,
+} from './odoo-phases4-7';
+import {
+  calculateComboPrice,
+  calculateSplitBill,
+  createDropship,
+  createKdsTicket,
+  createPosFloor,
+  createPosTable,
+  createSelfOrderSession,
+  createVendorTier,
+  evaluateAgreementCalloff,
+  evaluateVendorScorecard,
+  listDropships,
+  listKdsTickets,
+  listPosFloors,
+  listVendorTiers,
+  selectBestVendorTier,
+  updateKdsTicketStatus,
+} from './procurement-pos-parity';
+import {
+  addWishlistItem,
+  createAnalyticsSnapshot,
+  createSignEnvelope,
+  evaluateAbandonedCarts,
+  evaluateHospitalityRevpar,
+  evaluateMarketingFunnel,
+  evaluateMrpOee,
+  evaluatePeopleOvertime,
+  evaluateRentalPricing,
+  evaluateSubscriptionsNrr,
+  evaluateSupportSla,
+  evaluateTreasuryRunway,
+  evaluateWorkProfitability,
+  gradeLearningQuiz,
+  listAnalyticsSnapshots,
+  listSignEnvelopes,
+  listWishlists,
+  signEnvelope,
+} from './suite-parity';
+import {
+  createPutawayRule,
+  createReorderingRule,
+  createStockPackage,
+  evaluateBackorderSplit,
+  listPutawayRules,
+  listReorderingRules,
+  listStockPackages,
+  planPickingWaves,
+  processBarcodeScan,
+  resolvePutawayLocation,
+  runReplenishment,
+} from './inventory-parity';
+import {
+  computeCrmRecurringRollup,
+  computeCrmWinLoss,
+  createCrmEnrichment,
+  createCrmLostReason,
+  createCrmQuota,
+  createCrmRoutingRule,
+  evaluateCrmLeadRoute,
+  evaluateCrmQuotas,
+  listCrmEnrichments,
+  listCrmLostReasons,
+  listCrmQuotas,
+  listCrmRoutingRules,
+} from './crm-parity';
+import {
+  computeCashFlowStatement,
+  createAnalyticAccount,
+  createBatchPayment,
+  createBudget,
+  createDebitNote,
+  createFollowupLevel,
+  evaluateBudget,
+  evaluateFollowups,
+  listAnalyticAccounts,
+  listBatchPayments,
+  listBudgets,
+  listDebitNotes,
+  listFollowupLevels,
+  listFxRevaluations,
+  runFxRevaluation,
+} from './accounting-parity';
+import {
+  createFleetVehicle,
+  createLogisticsShipment,
+  createMaintenanceRequest,
+  createMarketingCampaign,
+  createMrpBom,
+  createMrpOrder,
+  createSubscriptionContract,
+  createSubscriptionPlan,
+  createSupportTicket,
+  listFleetVehicles,
+  listLogisticsShipments,
+  listMaintenanceRequests,
+  listMarketingCampaigns,
+  listMrpBoms,
+  listMrpOrders,
+  listSubscriptionContracts,
+  listSubscriptionPlans,
+  listSupportTickets,
+  previewMrpBomCost,
+  previewSubscriptionProration,
+  subscriptionMrrReport,
+  supportSlaReport,
+  updateFleetVehicle,
+  updateLogisticsShipment,
+  updateMaintenanceRequest,
+  updateMarketingCampaign,
+  updateMrpOrder,
+  updateSubscriptionContract,
+  updateSupportTicket,
+} from './odoo-phases8-10';
+import {
+  billPropertyLease,
+  billSubscriptionContract,
+  captureMarketingLead,
+  checkoutHospitalityReservation,
+  completeConnectedSale,
+  completeMrpOrderWithStock,
+  createFieldDispatch,
+  createHospitalityReservation,
+  createHubConnector,
+  createHubPipeline,
+  createLearningArticle,
+  createLearningCourse,
+  createLearningEnrollment,
+  createPropertyLease,
+  createPropertyUnit,
+  createStudioApp,
+  createStudioRecord,
+  createSupportKbArticle,
+  escalateSupportTicket,
+  hubTopology,
+  listFieldDispatches,
+  listHospitalityReservations,
+  listHubConnectors,
+  listHubEvents,
+  listHubPipelines,
+  listLearningArticles,
+  listLearningCourses,
+  listLearningEnrollments,
+  listMrpQualityChecks,
+  listPropertyLeases,
+  listPropertyUnits,
+  listStudioApps,
+  listStudioRecords,
+  listSupportKbArticles,
+  recordLogisticsPod,
+  runHubPipeline,
+  submitLearningAssessment,
+} from './apps-17-26';
+import {
+  applySalesPromo,
+  calculateSalesShipping,
+  checkSalesWarnings,
+  createCommissionPlan,
+  createSalesPromo,
+  createSalesWarning,
+  createShippingMethod,
+  evaluateSalesCommission,
+  evaluateSalesInvoicingPolicy,
+  expandSalesVariantMatrix,
+  listCommissionPlans,
+  listQuoteSignatures,
+  listSalesPromos,
+  listSalesWarnings,
+  listShippingMethods,
+  signSalesQuote,
+} from './sales-parity';
+import {
   createDocumentRequest,
   documentRequestAssignees,
   documentRequests,
@@ -1335,6 +1540,64 @@ erp.get(
   route(async (req, res) => res.json(await procurementApprovals(await access(req), req.query))),
 );
 erp.post(
+  '/organizations/:org/procurement/three-way-match/evaluate',
+  route(async (req, res) => res.json(await evaluateThreeWay(await access(req), req.body))),
+);
+erp.get(
+  '/organizations/:org/procurement/three-way-match',
+  route(async (req, res) => res.json(await listThreeWayMatches(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/procurement/three-way-match',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createThreeWayMatch(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.patch(
+  '/organizations/:org/procurement/three-way-match/:id',
+  route(async (req, res) =>
+    res.json(
+      await decideThreeWayMatch(
+        await access(req, 'admin'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/procurement/blanket-orders',
+  route(async (req, res) => res.json(await listBlanketOrders(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/procurement/blanket-orders',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createBlanketOrder(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.patch(
+  '/organizations/:org/procurement/blanket-orders/:id',
+  route(async (req, res) =>
+    res.json(
+      await updateBlanketOrder(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.post(
+  '/organizations/:org/procurement/tenders/compare',
+  route(async (req, res) => res.json(await compareTenderBids(await access(req), req.body))),
+);
+erp.post(
   '/organizations/:org/procurement/orders/:id/amend',
   route(async (req, res) =>
     res.json(
@@ -2025,4 +2288,1147 @@ erp.post(
       ),
     ),
   ),
+);
+
+// Phase 4: POS Cash Drawer Control & Loyalty Programs
+erp.post(
+  '/organizations/:org/pos/cash-count/evaluate',
+  route(async (req, res) =>
+    res.json(await evaluatePosCashCount(await access(req, 'operations'), req.body)),
+  ),
+);
+erp.get(
+  '/organizations/:org/pos/cash-counts',
+  route(async (req, res) => res.json(await listPosCashCounts(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/pos/cash-counts',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createPosCashCount(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/pos/loyalty-programs',
+  route(async (req, res) => res.json(await listPosLoyaltyPrograms(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/pos/loyalty-programs',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createPosLoyaltyProgram(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/pos/loyalty/calculate',
+  route(async (req, res) =>
+    res.json(await calculatePosLoyalty(await access(req, 'operations'), req.body)),
+  ),
+);
+
+// Phase 5: CRM Predictive Lead Scoring, Weighted Forecast & Scheduled Activities
+erp.post(
+  '/organizations/:org/crm/scoring/evaluate',
+  route(async (req, res) => res.json(await evaluateCrmScore(await access(req), req.body))),
+);
+erp.post(
+  '/organizations/:org/crm/weighted-forecast',
+  route(async (req, res) =>
+    res.json(await evaluateCrmWeightedForecast(await access(req), req.body)),
+  ),
+);
+erp.get(
+  '/organizations/:org/crm/scheduled-activities',
+  route(async (req, res) => res.json(await listCrmScheduledActivities(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/crm/scheduled-activities',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createCrmScheduledActivity(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.patch(
+  '/organizations/:org/crm/scheduled-activities/:id',
+  route(async (req, res) =>
+    res.json(
+      await updateCrmScheduledActivity(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+
+// Phase 6: Work Milestones & Billable Timesheet Invoicing
+erp.get(
+  '/organizations/:org/work/milestones',
+  route(async (req, res) => res.json(await listWorkMilestones(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/work/milestones',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createWorkMilestone(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.patch(
+  '/organizations/:org/work/milestones/:id',
+  route(async (req, res) =>
+    res.json(
+      await updateWorkMilestone(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.post(
+  '/organizations/:org/work/billing/evaluate',
+  route(async (req, res) => res.json(await evaluateWorkBilling(await access(req), req.body))),
+);
+erp.get(
+  '/organizations/:org/work/billing-summaries',
+  route(async (req, res) => res.json(await listWorkBillingSummaries(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/work/billing-summaries',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createWorkBillingSummary(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+
+// Phase 7: People Payroll Runs & Leave Allocations
+erp.post(
+  '/organizations/:org/people/payroll/preview',
+  route(async (req, res) => res.json(await previewPayroll(await access(req, 'finance'), req.body))),
+);
+erp.get(
+  '/organizations/:org/people/payroll-runs',
+  route(async (req, res) => res.json(await listPayrollRuns(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/people/payroll-runs',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createPayrollRun(await access(req, 'finance'), req.body, key(req))),
+  ),
+);
+erp.patch(
+  '/organizations/:org/people/payroll-runs/:id',
+  route(async (req, res) =>
+    res.json(
+      await decidePayrollRun(
+        await access(req, 'finance'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/people/leave-allocations',
+  route(async (req, res) => res.json(await listLeaveAllocations(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/people/leave-allocations',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createLeaveAllocation(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+
+// Phase 8: Subscriptions & Recurring Billing
+erp.get(
+  '/organizations/:org/subscriptions/plans',
+  route(async (req, res) => res.json(await listSubscriptionPlans(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/subscriptions/plans',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createSubscriptionPlan(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/subscriptions/contracts',
+  route(async (req, res) => res.json(await listSubscriptionContracts(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/subscriptions/contracts',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createSubscriptionContract(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.patch(
+  '/organizations/:org/subscriptions/contracts/:id',
+  route(async (req, res) =>
+    res.json(
+      await updateSubscriptionContract(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.post(
+  '/organizations/:org/subscriptions/proration/preview',
+  route(async (req, res) =>
+    res.json(await previewSubscriptionProration(await access(req), req.body)),
+  ),
+);
+erp.get(
+  '/organizations/:org/subscriptions/mrr-report',
+  route(async (req, res) => res.json(await subscriptionMrrReport(await access(req)))),
+);
+
+// Phase 9: Support Helpdesk & Marketing Campaigns
+erp.get(
+  '/organizations/:org/support/tickets',
+  route(async (req, res) => res.json(await listSupportTickets(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/support/tickets',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createSupportTicket(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.patch(
+  '/organizations/:org/support/tickets/:id',
+  route(async (req, res) =>
+    res.json(
+      await updateSupportTicket(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/support/sla-report',
+  route(async (req, res) => res.json(await supportSlaReport(await access(req)))),
+);
+erp.get(
+  '/organizations/:org/marketing/campaigns',
+  route(async (req, res) => res.json(await listMarketingCampaigns(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/marketing/campaigns',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createMarketingCampaign(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.patch(
+  '/organizations/:org/marketing/campaigns/:id',
+  route(async (req, res) =>
+    res.json(
+      await updateMarketingCampaign(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+
+// Phase 10: Manufacturing (MRP), Maintenance, Fleet & Logistics
+erp.get(
+  '/organizations/:org/mrp/boms',
+  route(async (req, res) => res.json(await listMrpBoms(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/mrp/boms',
+  route(async (req, res) =>
+    res.status(201).json(await createMrpBom(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/mrp/boms/cost-preview',
+  route(async (req, res) => res.json(await previewMrpBomCost(await access(req), req.body))),
+);
+erp.get(
+  '/organizations/:org/mrp/orders',
+  route(async (req, res) => res.json(await listMrpOrders(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/mrp/orders',
+  route(async (req, res) =>
+    res.status(201).json(await createMrpOrder(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.patch(
+  '/organizations/:org/mrp/orders/:id',
+  route(async (req, res) =>
+    res.json(
+      await updateMrpOrder(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/maintenance/requests',
+  route(async (req, res) => res.json(await listMaintenanceRequests(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/maintenance/requests',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createMaintenanceRequest(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.patch(
+  '/organizations/:org/maintenance/requests/:id',
+  route(async (req, res) =>
+    res.json(
+      await updateMaintenanceRequest(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/fleet/vehicles',
+  route(async (req, res) => res.json(await listFleetVehicles(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/fleet/vehicles',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createFleetVehicle(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.patch(
+  '/organizations/:org/fleet/vehicles/:id',
+  route(async (req, res) =>
+    res.json(
+      await updateFleetVehicle(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/logistics/shipments',
+  route(async (req, res) => res.json(await listLogisticsShipments(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/logistics/shipments',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createLogisticsShipment(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.patch(
+  '/organizations/:org/logistics/shipments/:id',
+  route(async (req, res) =>
+    res.json(
+      await updateLogisticsShipment(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+
+// Cross-App Automatic Connections & Apps 17-26 Expansions
+erp.post(
+  '/organizations/:org/connections/sales/complete-sale',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await completeConnectedSale(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/subscriptions/contracts/:id/bill',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(
+        await billSubscriptionContract(
+          await access(req, 'operations'),
+          String(req.params.id),
+          req.body,
+          key(req),
+        ),
+      ),
+  ),
+);
+erp.post(
+  '/organizations/:org/mrp/orders/:id/complete',
+  route(async (req, res) =>
+    res.json(
+      await completeMrpOrderWithStock(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.get(
+  '/organizations/:org/mrp/quality-checks',
+  route(async (req, res) => res.json(await listMrpQualityChecks(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/support/tickets/:id/escalate',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(
+        await escalateSupportTicket(
+          await access(req, 'operations'),
+          String(req.params.id),
+          req.body,
+          key(req),
+        ),
+      ),
+  ),
+);
+erp.get(
+  '/organizations/:org/support/kb-articles',
+  route(async (req, res) => res.json(await listSupportKbArticles(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/support/kb-articles',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createSupportKbArticle(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/marketing/campaigns/:id/capture-lead',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(
+        await captureMarketingLead(
+          await access(req, 'operations'),
+          String(req.params.id),
+          req.body,
+          key(req),
+        ),
+      ),
+  ),
+);
+erp.get(
+  '/organizations/:org/field-ops/dispatches',
+  route(async (req, res) => res.json(await listFieldDispatches(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/field-ops/dispatches',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createFieldDispatch(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/logistics/shipments/:id/pod',
+  route(async (req, res) =>
+    res.json(
+      await recordLogisticsPod(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+
+// App 23: Property & Hospitality
+erp.get(
+  '/organizations/:org/property/units',
+  route(async (req, res) => res.json(await listPropertyUnits(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/property/units',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createPropertyUnit(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/property/leases',
+  route(async (req, res) => res.json(await listPropertyLeases(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/property/leases',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createPropertyLease(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/property/leases/:id/bill',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(
+        await billPropertyLease(
+          await access(req, 'operations'),
+          String(req.params.id),
+          req.body,
+          key(req),
+        ),
+      ),
+  ),
+);
+erp.get(
+  '/organizations/:org/property/reservations',
+  route(async (req, res) => res.json(await listHospitalityReservations(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/property/reservations',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(
+        await createHospitalityReservation(await access(req, 'operations'), req.body, key(req)),
+      ),
+  ),
+);
+erp.post(
+  '/organizations/:org/property/reservations/:id/checkout',
+  route(async (req, res) =>
+    res.json(
+      await checkoutHospitalityReservation(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+
+// App 24: Knowledge & Learning
+erp.get(
+  '/organizations/:org/learning/articles',
+  route(async (req, res) => res.json(await listLearningArticles(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/learning/articles',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createLearningArticle(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/learning/courses',
+  route(async (req, res) => res.json(await listLearningCourses(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/learning/courses',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createLearningCourse(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/learning/enrollments',
+  route(async (req, res) => res.json(await listLearningEnrollments(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/learning/enrollments',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createLearningEnrollment(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/learning/enrollments/:id/assess',
+  route(async (req, res) =>
+    res.json(
+      await submitLearningAssessment(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+
+// App 25: AfriCore Studio
+erp.get(
+  '/organizations/:org/studio/apps',
+  route(async (req, res) => res.json(await listStudioApps(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/studio/apps',
+  route(async (req, res) =>
+    res.status(201).json(await createStudioApp(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/studio/apps/:id/records',
+  route(async (req, res) =>
+    res.json(await listStudioRecords(await access(req), String(req.params.id))),
+  ),
+);
+erp.post(
+  '/organizations/:org/studio/apps/:id/records',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(
+        await createStudioRecord(
+          await access(req, 'operations'),
+          String(req.params.id),
+          req.body,
+          key(req),
+        ),
+      ),
+  ),
+);
+
+// App 26: Integrations Hub
+erp.get(
+  '/organizations/:org/integrations-hub/connectors',
+  route(async (req, res) => res.json(await listHubConnectors(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/integrations-hub/connectors',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createHubConnector(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/integrations-hub/pipelines',
+  route(async (req, res) => res.json(await listHubPipelines(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/integrations-hub/pipelines',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createHubPipeline(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/integrations-hub/pipelines/:id/run',
+  route(async (req, res) =>
+    res.json(await runHubPipeline(await access(req, 'operations'), String(req.params.id), key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/integrations-hub/events',
+  route(async (req, res) => res.json(await listHubEvents(await access(req)))),
+);
+erp.get(
+  '/organizations/:org/integrations-hub/topology',
+  route(async (req, res) => res.json(await hubTopology(await access(req)))),
+);
+
+// App #1 Odoo Sales Parity (Promos, E-Signature, Commissions, Shipping, Variant Matrix, Invoicing Policy, Warnings)
+erp.get(
+  '/organizations/:org/sales/promos',
+  route(async (req, res) => res.json(await listSalesPromos(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/sales/promos',
+  route(async (req, res) =>
+    res.status(201).json(await createSalesPromo(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/sales/promos/apply',
+  route(async (req, res) =>
+    res.json(await applySalesPromo(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/sales/signatures',
+  route(async (req, res) => res.json(await listQuoteSignatures(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/sales/signatures',
+  route(async (req, res) =>
+    res.status(201).json(await signSalesQuote(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/sales/commissions/plans',
+  route(async (req, res) => res.json(await listCommissionPlans(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/sales/commissions/plans',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createCommissionPlan(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/sales/commissions/evaluate',
+  route(async (req, res) => res.json(await evaluateSalesCommission(await access(req), req.body))),
+);
+erp.get(
+  '/organizations/:org/sales/shipping-methods',
+  route(async (req, res) => res.json(await listShippingMethods(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/sales/shipping-methods',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createShippingMethod(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/sales/shipping-methods/calculate',
+  route(async (req, res) => res.json(await calculateSalesShipping(await access(req), req.body))),
+);
+erp.post(
+  '/organizations/:org/sales/variant-matrix/expand',
+  route(async (req, res) => res.json(await expandSalesVariantMatrix(await access(req), req.body))),
+);
+erp.post(
+  '/organizations/:org/sales/invoicing-policy/evaluate',
+  route(async (req, res) =>
+    res.json(await evaluateSalesInvoicingPolicy(await access(req), req.body)),
+  ),
+);
+erp.get(
+  '/organizations/:org/sales/warnings',
+  route(async (req, res) => res.json(await listSalesWarnings(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/sales/warnings',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createSalesWarning(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/sales/warnings/check',
+  route(async (req, res) => res.json(await checkSalesWarnings(await access(req), req.body))),
+);
+// Accounting parity (Odoo 20: cash flow, FX revaluation, analytic budgets, follow-ups, batch payments, debit notes)
+erp.post(
+  '/organizations/:org/accounting/cash-flow',
+  route(async (req, res) => res.json(await computeCashFlowStatement(await access(req), req.body))),
+);
+erp.get(
+  '/organizations/:org/accounting/fx-revaluations',
+  route(async (req, res) => res.json(await listFxRevaluations(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/accounting/fx-revaluations',
+  route(async (req, res) =>
+    res.status(201).json(await runFxRevaluation(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/accounting/analytic-accounts',
+  route(async (req, res) => res.json(await listAnalyticAccounts(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/accounting/analytic-accounts',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createAnalyticAccount(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/accounting/budgets',
+  route(async (req, res) => res.json(await listBudgets(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/accounting/budgets',
+  route(async (req, res) =>
+    res.status(201).json(await createBudget(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/accounting/budgets/:id/evaluate',
+  route(async (req, res) =>
+    res.json(await evaluateBudget(await access(req), String(req.params.id), req.body)),
+  ),
+);
+erp.get(
+  '/organizations/:org/accounting/followup-levels',
+  route(async (req, res) => res.json(await listFollowupLevels(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/accounting/followup-levels',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createFollowupLevel(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/accounting/followups/evaluate',
+  route(async (req, res) => res.json(await evaluateFollowups(await access(req), req.body))),
+);
+erp.get(
+  '/organizations/:org/accounting/batch-payments',
+  route(async (req, res) => res.json(await listBatchPayments(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/accounting/batch-payments',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createBatchPayment(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/accounting/debit-notes',
+  route(async (req, res) => res.json(await listDebitNotes(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/accounting/debit-notes',
+  route(async (req, res) =>
+    res.status(201).json(await createDebitNote(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+// CRM parity (Odoo 20: lead routing, lost-reason analytics, recurring revenue MRR/ARR, quotas, enrichment)
+erp.get(
+  '/organizations/:org/crm/routing-rules',
+  route(async (req, res) => res.json(await listCrmRoutingRules(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/crm/routing-rules',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createCrmRoutingRule(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/crm/leads/route',
+  route(async (req, res) => res.json(await evaluateCrmLeadRoute(await access(req), req.body))),
+);
+erp.get(
+  '/organizations/:org/crm/lost-reasons',
+  route(async (req, res) => res.json(await listCrmLostReasons(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/crm/lost-reasons',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createCrmLostReason(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/crm/analytics/win-loss',
+  route(async (req, res) => res.json(await computeCrmWinLoss(await access(req), req.body))),
+);
+erp.post(
+  '/organizations/:org/crm/recurring/rollup',
+  route(async (req, res) => res.json(await computeCrmRecurringRollup(await access(req), req.body))),
+);
+erp.get(
+  '/organizations/:org/crm/quotas',
+  route(async (req, res) => res.json(await listCrmQuotas(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/crm/quotas',
+  route(async (req, res) =>
+    res.status(201).json(await createCrmQuota(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/crm/quotas/evaluate',
+  route(async (req, res) => res.json(await evaluateCrmQuotas(await access(req)))),
+);
+erp.get(
+  '/organizations/:org/crm/enrichments',
+  route(async (req, res) => res.json(await listCrmEnrichments(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/crm/enrichments',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createCrmEnrichment(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+// Inventory parity (Odoo 20: min/max reordering, putaway rules, wave picking, packages, barcode scan, backorder split)
+erp.get(
+  '/organizations/:org/inventory/reordering-rules',
+  route(async (req, res) => res.json(await listReorderingRules(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/inventory/reordering-rules',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createReorderingRule(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/inventory/replenishment/run',
+  route(async (req, res) => res.json(await runReplenishment(await access(req), req.body))),
+);
+erp.get(
+  '/organizations/:org/inventory/putaway-rules',
+  route(async (req, res) => res.json(await listPutawayRules(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/inventory/putaway-rules',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createPutawayRule(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/inventory/putaway/resolve',
+  route(async (req, res) => res.json(await resolvePutawayLocation(await access(req), req.body))),
+);
+erp.post(
+  '/organizations/:org/inventory/waves/plan',
+  route(async (req, res) => res.json(await planPickingWaves(await access(req), req.body))),
+);
+erp.get(
+  '/organizations/:org/inventory/packages',
+  route(async (req, res) => res.json(await listStockPackages(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/inventory/packages',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createStockPackage(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/inventory/barcode/scan',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await processBarcodeScan(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/inventory/backorders/split',
+  route(async (req, res) => res.json(await evaluateBackorderSplit(await access(req), req.body))),
+);
+// Procurement (App #5) & POS (App #6) parity
+erp.get(
+  '/organizations/:org/procurement/vendor-tiers',
+  route(async (req, res) => res.json(await listVendorTiers(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/procurement/vendor-tiers',
+  route(async (req, res) =>
+    res.status(201).json(await createVendorTier(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/procurement/vendor-tiers/best',
+  route(async (req, res) => res.json(await selectBestVendorTier(await access(req), req.body))),
+);
+erp.post(
+  '/organizations/:org/procurement/agreements/calloff',
+  route(async (req, res) => res.json(await evaluateAgreementCalloff(await access(req), req.body))),
+);
+erp.post(
+  '/organizations/:org/procurement/vendors/scorecard',
+  route(async (req, res) => res.json(await evaluateVendorScorecard(await access(req), req.body))),
+);
+erp.get(
+  '/organizations/:org/procurement/dropships',
+  route(async (req, res) => res.json(await listDropships(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/procurement/dropships',
+  route(async (req, res) =>
+    res.status(201).json(await createDropship(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/pos/floors',
+  route(async (req, res) => res.json(await listPosFloors(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/pos/floors',
+  route(async (req, res) =>
+    res.status(201).json(await createPosFloor(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/pos/tables',
+  route(async (req, res) =>
+    res.status(201).json(await createPosTable(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/pos/kds/tickets',
+  route(async (req, res) => res.json(await listKdsTickets(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/pos/kds/tickets',
+  route(async (req, res) =>
+    res.status(201).json(await createKdsTicket(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/pos/kds/tickets/:id/status',
+  route(async (req, res) =>
+    res.json(
+      await updateKdsTicketStatus(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.post(
+  '/organizations/:org/pos/bills/split',
+  route(async (req, res) => res.json(await calculateSplitBill(await access(req), req.body))),
+);
+erp.post(
+  '/organizations/:org/pos/combos/price',
+  route(async (req, res) => res.json(await calculateComboPrice(await access(req), req.body))),
+);
+erp.post(
+  '/organizations/:org/pos/self-order/sessions',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createSelfOrderSession(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+// Apps #7-#26 Suite Parity
+erp.post(
+  '/organizations/:org/work/profitability',
+  route(async (req, res) => res.json(await evaluateWorkProfitability(await access(req), req.body))),
+);
+erp.post(
+  '/organizations/:org/people/shifts/overtime',
+  route(async (req, res) => res.json(await evaluatePeopleOvertime(await access(req), req.body))),
+);
+erp.post(
+  '/organizations/:org/commerce/abandoned-carts',
+  route(async (req, res) => res.json(await evaluateAbandonedCarts(await access(req), req.body))),
+);
+erp.get(
+  '/organizations/:org/commerce/wishlists',
+  route(async (req, res) => res.json(await listWishlists(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/commerce/wishlists',
+  route(async (req, res) =>
+    res.status(201).json(await addWishlistItem(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/finance/treasury/runway',
+  route(async (req, res) => res.json(await evaluateTreasuryRunway(await access(req), req.body))),
+);
+erp.get(
+  '/organizations/:org/documents/sign/envelopes',
+  route(async (req, res) => res.json(await listSignEnvelopes(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/documents/sign/envelopes',
+  route(async (req, res) =>
+    res.status(201).json(await createSignEnvelope(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/documents/sign/envelopes/:id/sign',
+  route(async (req, res) =>
+    res.json(await signEnvelope(await access(req, 'operations'), String(req.params.id), req.body, key(req))),
+  ),
+);
+erp.get(
+  '/organizations/:org/analytics/snapshots',
+  route(async (req, res) => res.json(await listAnalyticsSnapshots(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/analytics/snapshots',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createAnalyticsSnapshot(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/marketing/funnel',
+  route(async (req, res) => res.json(await evaluateMarketingFunnel(await access(req), req.body))),
+);
+erp.post(
+  '/organizations/:org/support/sla/evaluate',
+  route(async (req, res) => res.json(await evaluateSupportSla(await access(req), req.body))),
+);
+erp.post(
+  '/organizations/:org/subscriptions/nrr',
+  route(async (req, res) => res.json(await evaluateSubscriptionsNrr(await access(req), req.body))),
+);
+erp.post(
+  '/organizations/:org/mrp/workcenters/oee',
+  route(async (req, res) => res.json(await evaluateMrpOee(await access(req), req.body))),
+);
+erp.post(
+  '/organizations/:org/field-ops/rentals/price',
+  route(async (req, res) => res.json(await evaluateRentalPricing(await access(req), req.body))),
+);
+erp.post(
+  '/organizations/:org/property/revpar',
+  route(async (req, res) => res.json(await evaluateHospitalityRevpar(await access(req), req.body))),
+);
+erp.post(
+  '/organizations/:org/learning/quizzes/grade',
+  route(async (req, res) => res.json(await gradeLearningQuiz(await access(req), req.body))),
 );

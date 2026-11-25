@@ -86,20 +86,34 @@ export async function installationPreview(a: Access, id: string, input: unknown 
   for (const service of optional)
     if (!app.optional.includes(service) || !catalog.services.some((s) => s.id === service))
       fail(400, 'Unsupported optional service');
-  const ids = [...new Set([...(app.required[kind as 'business' | 'personal'] || []), ...optional])];
-  const services = ids.map((id) => {
-    const s = catalog.services.find((s) => s.id === id);
-    if (!s || !s.price || s.status === 'unavailable' || s.availability === 'unavailable')
-      fail(409, 'Required service unavailable: ' + id);
-    return s!;
-  });
-  for (const s of services)
-    for (const dependency of s.dependencies)
-      if (
-        !ids.includes(dependency) &&
-        catalog.services.find((s) => s.id === dependency)?.status !== 'active'
-      )
-        fail(409, 'Review required dependency: ' + dependency);
+  const seedIds = [
+    ...new Set([...(app.required[kind as 'business' | 'personal'] || []), ...optional]),
+  ];
+  // Automatically resolve and include transitive dependencies in topological order so every
+  // disclosed prerequisite is reviewed and activated before any dependent service.
+  const orderedIds: string[] = [];
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  const visit = (serviceId: string) => {
+    if (visited.has(serviceId)) return;
+    if (visiting.has(serviceId)) fail(409, 'Circular service dependency: ' + serviceId);
+    const s = catalog.services.find((item) => item.id === serviceId);
+    if (!s || !s.price || s.status === 'unavailable' || s.availability === 'unavailable') {
+      fail(409, 'Required service unavailable: ' + serviceId);
+      return;
+    }
+    visiting.add(serviceId);
+    for (const dep of s.dependencies) {
+      if (catalog.services.find((item) => item.id === dep)?.status !== 'active') {
+        visit(dep);
+      }
+    }
+    visiting.delete(serviceId);
+    visited.add(serviceId);
+    orderedIds.push(serviceId);
+  };
+  for (const serviceId of seedIds) visit(serviceId);
+  const services = orderedIds.map((serviceId) => catalog.services.find((s) => s.id === serviceId)!);
   const existing = await dbGet(
     'SELECT status,version,configuration,updated_at FROM ac_app_installations WHERE org_id=? AND environment=? AND app_id=?',
     [a.org, a.environment, id],

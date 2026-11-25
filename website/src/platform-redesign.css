@@ -2113,3 +2113,215 @@
     padding: 12px;
   }
 }
+
+/* --------------------------------------------------------------------------
+ * AfriCore Minimalist Design System (PaperMCP Approved Pass)
+ * Disciplined single-accent palette (#166534), crisp white cards on #F8F9FA,
+ * refined Inspora/Seline search & buttons, and Odoo-grade operational density.
+ * -------------------------------------------------------------------------- */
+.business-shell {
+  --workspace-canvas: #f8f9fa;
+  --workspace-surface: #ffffff;
+  --workspace-line: #e5e7eb;
+  --workspace-ink: #111827;
+  --workspace-muted: #6b7280;
+  --workspace-accent: #166534;
+  --workspace-accent-hover: #14532d;
+  --workspace-accent-soft: #ecfdf5;
+  background: var(--workspace-canvas);
+  color: var(--workspace-ink);
+}
+
+.business-shell .panel,
+.business-shell .app-directory-card {
+  background: var(--workspace-surface);
+  border: 1px solid var(--workspace-line);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.03);
+}
+
+.business-shell .app-directory-card {
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.business-shell .app-directory-card:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 4px 12px rgba(17, 24, 39, 0.05);
+}
+
+/* Tactile modern buttons (Inspora / Salezify inspired) */
+.business-shell .button {
+  background: var(--workspace-accent);
+  color: #ffffff;
+  border: 1px solid var(--workspace-accent);
+  border-radius: 8px;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(22, 101, 52, 0.16);
+  transition: background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.business-shell .button:hover:not(:disabled) {
+  background: var(--workspace-accent-hover);
+  border-color: var(--workspace-accent-hover);
+}
+
+.business-shell .secondary-button {
+  background: #ffffff;
+  color: var(--workspace-ink);
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.business-shell .secondary-button:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+/* Crisp faceted search inputs */
+.business-shell input[type='search'],
+.business-shell .app-directory-toolbar input {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--workspace-ink);
+}
+
+.business-shell input[type='search']:focus,
+.business-shell .app-directory-toolbar input:focus {
+  outline: none;
+  border-color: var(--workspace-accent);
+  box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.12);
+}
+
+/* Restrained badges (no loud rainbow fills) */
+.business-shell .badge {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 10px;
+}
+
+/* Tabular numerals across all financial, inventory, and KPI tables */
+.business-shell table td,
+.business-shell .metric-value,
+.business-shell .money {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Unified Minimalist Odoo App Identity Header & Navigation (Apps 1–26) */
+.business-shell .app-identity {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.03);
+}
+
+.business-shell .app-identity h1 {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: #111827;
+  margin: 0;
+}
+
+.business-shell .environment-note {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #4b5563;
+}
+
+/* Clean White Odoo-Style Sidebar & Sub-Navigation across Apps 1–16 */
+.business-shell .app-shell-nav,
+.business-shell .pos-app-nav,
+.business-shell .sales-app-nav,
+.business-shell .inventory-app-nav,
+.business-shell .procurement-app-nav,
+.business-shell .accounting-app-nav,
+.business-shell .finance-app-nav {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.business-shell .app-shell-nav button[aria-current='page'],
+.business-shell .app-shell-nav button.active,
+.business-shell .pos-app-nav button[aria-current='page'],
+.business-shell .sales-app-nav button[aria-current='page'],
+.business-shell .inventory-app-nav button[aria-current='page'],
+.business-shell .procurement-app-nav button[aria-current='page'],
+.business-shell .accounting-app-nav button[aria-current='page'],
+.business-shell .finance-app-nav button[aria-current='page'] {
+  background: #f3f4f6;
+  color: #166534;
+  font-weight: 700;
+  border-radius: 8px;
+}
+
+/* Clean Minimalist Kanban Cards (CRM, Work, Recruitment, Support) */
+.business-shell .crm-stage,
+.business-shell .kanban-column {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.business-shell .crm-card,
+.business-shell .kanban-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-left: 3px solid #166534;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.03);
+}
+
+/* Clean Dense Tables (Accounting, Sales, Inventory, Procurement, People, Documents) */
+.business-shell table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.business-shell table th {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.business-shell table td {
+  border-bottom: 1px solid #f3f4f6;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #111827;
+}
+
+.business-shell table tbody tr:hover {
+  background: #f9fafb;
+}
+
+/* Crisp Metric & Summary Cards (Finance, Analytics, Commerce, POS, Business ID) */
+.business-shell .metric-card,
+.business-shell .kpi-card,
+.business-shell .stat-card,
+.business-shell .summary-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.03);
+}

@@ -1,7 +1,7 @@
 import csv
 import unittest
 
-from africore_accounting.opening import parse_opening
+from domain.opening import parse_opening
 
 
 class OpeningTests(unittest.TestCase):

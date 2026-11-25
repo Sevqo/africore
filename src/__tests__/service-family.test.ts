@@ -14,7 +14,7 @@ test('all legacy service IDs appear in one stable family without changing identi
 });
 
 test('catalog preserves the original fourteen apps and adds Calendar and Website', () => {
-  assert.equal(appCatalog.length,16);
+  assert.equal(appCatalog.length,26);
   assert.deepEqual(appCatalog.slice(0,2).map(a=>a.id),['calendar','website']);
   assert(appCatalog.some(a=>a.id==='calendar'&&a.required.business?.includes('calendar')));
   assert(appCatalog.some(a=>a.id==='website'&&a.required.business?.includes('website')));

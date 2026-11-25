@@ -1,6 +1,6 @@
 import unittest
 
-from africore_accounting.deferrals import schedule
+from domain.deferrals import schedule
 
 
 class RecognitionTests(unittest.TestCase):

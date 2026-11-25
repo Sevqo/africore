@@ -8,13 +8,33 @@ export async function bankPython<T>(input: object, schema: z.ZodType<T>): Promis
 }
 
 export async function accountingPython<T>(
-  script: 'bank' | 'assets' | 'deferrals' | 'opening' | 'statements',
+  script:
+    | 'bank'
+    | 'assets'
+    | 'deferrals'
+    | 'opening'
+    | 'statements'
+    | 'inventory_valuation'
+    | 'sales_pricing'
+    | 'procurement_matching'
+    | 'pos_session'
+    | 'crm_forecast'
+    | 'work_billing'
+    | 'payroll'
+    | 'subscriptions'
+    | 'mrp_costing'
+    | 'sales_promotions_commissions'
+    | 'financial_statements_treasury'
+    | 'crm_routing_analytics'
+    | 'warehouse_replenishment_waves'
+    | 'purchasing_pos_operations'
+    | 'enterprise_operations',
   input: object,
   schema: z.ZodType<T>,
 ): Promise<T> {
   const executable =
     process.env.AFRICORE_PYTHON_BIN || (process.platform === 'win32' ? 'python' : 'python3');
-  const path = join(__dirname, '..', '..', 'python', 'africore_accounting', script + '.py');
+  const path = join(__dirname, '..', '..', 'engines', 'domain', script + '.py');
   const output = await new Promise<string>((resolve, reject) => {
     const child = execFile(
       executable,

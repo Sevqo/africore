@@ -38,8 +38,18 @@ const groups = [
   },
   {
     title: 'Plan & publish',
-    description: 'Coordinate workspace meetings and publish reviewed business pages.',
-    ids: ['calendar', 'website'],
+    description: 'Coordinate workspace meetings, publish pages, and run marketing, support, and recurring billing.',
+    ids: ['calendar', 'website', 'marketing', 'support', 'subscriptions'],
+  },
+  {
+    title: 'Production, field & property',
+    description: 'Run manufacturing, field service, freight logistics, and property or hospitality operations.',
+    ids: ['manufacturing', 'field_operations', 'logistics', 'property_hospitality'],
+  },
+  {
+    title: 'Knowledge, Studio & Hub',
+    description: 'Build internal training, custom no-code apps, and connected platform pipelines.',
+    ids: ['knowledge_learning', 'studio', 'integrations_hub'],
   },
 ] as const;
 

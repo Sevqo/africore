@@ -6,6 +6,8 @@ import { QuotationPreview } from './QuotationPreview';
 import { DocumentAttachments } from './DocumentAttachments';
 import { ReviewFields } from './ReviewFields';
 import { SalesPriceLists } from './SalesPriceLists';
+import { SalesPhase2Workspace } from './SalesPhase2Workspace';
+import { SalesParityPanel } from './SalesParityPanel';
 import {
   confirmedOrdersInRange,
   documentTotals,
@@ -464,6 +466,22 @@ export function SalesAppWorkspace({
         </SalesList>
       ) : view === 'catalog' ? (
         <ProductSection products={products} loading={loading} navigate={navigate} />
+      ) : view === 'margins' || view === 'down-payments' || view === 'optional-products' ? (
+        <SalesPhase2Workspace
+          api={api}
+          view={view}
+          orders={orders}
+          quotations={quotations}
+          products={products}
+          onNotify={setNotice}
+        />
+      ) : view === 'promos' ||
+        view === 'signatures' ||
+        view === 'commissions' ||
+        view === 'shipping' ||
+        view === 'matrix' ||
+        view === 'warnings' ? (
+        <SalesParityPanel api={api} writable={writable} initialTab={view} />
       ) : view === 'reporting' ? (
         <ReportingSection
           orders={orders}
@@ -523,24 +541,55 @@ function SalesModuleNav({
           <button onClick={() => go('orders')}>Sales Orders</button>
           <button onClick={() => onOrdersFilter('to_deliver')}>Orders to Deliver</button>
           <button onClick={() => onOrdersFilter('to_invoice')}>Orders to Invoice</button>
+          <button onClick={() => go('down-payments')}>Down Payments</button>
+          <button onClick={() => go('optional-products')}>Optional Upsells</button>
+          <button onClick={() => go('signatures')}>Quote E-Signatures</button>
         </div>
       </details>
-      <button className={view === 'catalog' ? 'active' : ''} onClick={() => go('catalog')}>
-        Products
-      </button>
       <details className="sales-menu">
-        <summary className={view === 'reporting' ? 'active' : ''}>Reporting</summary>
+        <summary
+          className={
+            view === 'catalog' || view === 'promos' || view === 'matrix' ? 'active' : ''
+          }
+        >
+          Products
+        </summary>
+        <div>
+          <button onClick={() => go('catalog')}>Products</button>
+          <button onClick={() => go('promos')}>Promotions & Discounts</button>
+          <button onClick={() => go('matrix')}>Variant Matrix</button>
+          <button onClick={() => go('configuration')}>Price Lists</button>
+        </div>
+      </details>
+      <details className="sales-menu">
+        <summary
+          className={
+            view === 'reporting' || view === 'margins' || view === 'commissions' ? 'active' : ''
+          }
+        >
+          Reporting
+        </summary>
         <div>
           <button onClick={() => go('reporting')}>Sales Analysis</button>
+          <button onClick={() => go('margins')}>Margin Analysis</button>
+          <button onClick={() => go('commissions')}>Sales Commissions</button>
           <button onClick={() => go('reporting')}>Sales by Customer</button>
           <button onClick={() => go('reporting')}>Sales by Product</button>
         </div>
       </details>
       <details className="sales-menu">
-        <summary className={view === 'configuration' ? 'active' : ''}>Configuration</summary>
+        <summary
+          className={
+            view === 'configuration' || view === 'shipping' || view === 'warnings' ? 'active' : ''
+          }
+        >
+          Configuration
+        </summary>
         <div>
           <button onClick={() => go('configuration')}>Sales Settings</button>
           <button onClick={() => go('configuration')}>Price Lists</button>
+          <button onClick={() => go('shipping')}>Shipping Methods</button>
+          <button onClick={() => go('warnings')}>Order Warnings</button>
           <button onClick={() => go('configuration')}>Templates</button>
         </div>
       </details>

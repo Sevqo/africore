@@ -1,5 +1,25 @@
 # Source-driven implementation ledger
 
+## Phases 4–10 — Complete Odoo Operational Suite Expansion (POS, CRM, Work, People Payroll, Subscriptions, Support, Marketing, Manufacturing MRP, Maintenance, Fleet & Logistics)
+
+- Odoo 20 Community baseline `4968b8772ab96e25471ebbcdcbe32f6049e5b728`. REA MCP `inspect_python_pyc` verified `pos_order.pyc` (`ev_8f80f8d6079019256e11fb954538cb4457767b27b286f805f3a9719101b83146`), `project_milestone.pyc` (`ev_b909f92c8b73efe6208862d2e24094a3e36d4fd29fcf370b42cd4e055e8eb89d`), `hr_leave.pyc` (`ev_191619a2c20a7ed8181d123cbeca2c425cd6f5dae12fc86f4bdc5691f386b6cc`), `mrp_bom.pyc` (`ev_874556d11349995761e22c0d192d524fd88e177961325658177c0ec2a8d6f709`), `mrp_production.pyc` (`ev_638bca2c48005cbdcc2433a8de0b15e01f8d798d9db167286798e3135a77fd92`), `maintenance_request.pyc` (`ev_d9efedebec059a70187701793cbd6eb29549ddd7c13b739f4304e76cbf3c0cfb`), and `fleet_vehicle.pyc` (`ev_ebdd6bda6456ed14eee135ada8e76761c84420103b89975d537f60da10b5e8da`).
+- Added 6 pure-Python exact integer domain engines (`pos_session.py`, `crm_forecast.py`, `work_billing.py`, `payroll.py`, `subscriptions.py`, `mrp_costing.py`; 35/35 Python unit tests passing), TypeScript services (`src/erp/odoo-phases4-7.ts`, `src/erp/odoo-phases8-10.ts`; 52 new endpoints registered in `src/erp/routes.ts`, `src/erp/metadata.ts`, and `platform-openapi.json` — **674 total validated workspace operations**, zero schema migration), lazy-loaded React UI (`OdooSuiteExpansionWorkspace.tsx` wired into `AppsWorkspace.tsx`; 151/151 website content tests passing), and end-to-end integration tests (`src/__tests__/odoo-phases4-10.test.ts`: 7/7 passing on both SQLite and disposable PostgreSQL 17).
+
+## Phase 3 — Procurement: 3-Way Matching, Blanket Orders & Tender Bid Comparison
+
+- Odoo 20 Community baseline `4968b8772ab96e25471ebbcdcbe32f6049e5b728`. REA MCP `inspect_python_pyc` verified `purchase_requisition.pyc` (`ev_32e998c4e900660129f786ac9baa1353b4128c83a515ff4f804ba3f9d3765222`) and `purchase_order_line.pyc` (`ev_218bcf5bf32f0c92ed8d5da0150d0e32f1e66f0cfd6e5386bb7b1417b4905637`).
+- Added Python exact integer 3-way matching & vendor bid ranking engine (`python/africore_accounting/procurement_matching.py`, 29/29 Python unit tests), TypeScript Phase 3 service (`src/erp/procurement-phase3.ts`, 8 new endpoints registered in `platform-openapi.json` — 622 total workspace ops, zero schema migration), React views (`ProcurementPhase3Workspace.tsx` wired into `ProcurementAppWorkspace.tsx`), and SQLite + disposable PostgreSQL 17 integration coverage (`src/__tests__/procurement-phase3.test.ts`).
+
+## Phase 2 — Sales: Margin Analysis, Down Payments & Optional Upsells
+
+- Odoo 20 Community baseline `4968b8772ab96e25471ebbcdcbe32f6049e5b728`. REA MCP `inspect_python_pyc` verified `sale_margin.pyc` (`ev_00950bbb3b425829cf96b29afe65f44e93a7debfbbd6502c3b354d64a9cb431f`), `product_pricelist.pyc` (`ev_b7e328b00c4152edaaaa13d78bfde6a0ec00965cb516bce65b8d0960132ef56c`), and `sale_advance.pyc` (`ev_c60fc0ce9998623fd612e2fdd96a8721e8bec6103cb62e01996723bf22097d06`).
+- Added Python exact integer-minor-unit margin & down-payment engine (`python/africore_accounting/sales_pricing.py`, 27/27 Python unit tests), TypeScript Phase 2 service (`src/operations/sales-phase2.ts`, 7 new endpoints registered in `platform-openapi.json` — 614 total workspace ops, zero schema migration), React views (`SalesPhase2Workspace.tsx` wired into `SalesAppWorkspace.tsx`), and SQLite + disposable PostgreSQL 17 integration tests (`src/__tests__/sales-phase2.test.ts`).
+
+## Phase 1 — Inventory: Lots/Serials, Scrap, Landed Costs & Stock Valuation
+
+- Odoo 20 Community baseline `4968b8772ab96e25471ebbcdcbe32f6049e5b728`. REA MCP `inspect_python_pyc` verified `stock_lot.pyc` (`ev_97de92c1ee77b4eb00c1d2dd717f8f186bad8f20f62f2621c9a817d572ca74d7`), `stock_landed_cost.pyc` (`ev_2301bbad8eb7456e0ff86062bc8123d2d81335163a0644586aeed0ea488d5059`), and `stock_quant.pyc` (`ev_9e4e934689991c2e1c51973baa4e605fc217bc49ebad5289d5630f0ad69b9200`).
+- Added Python exact-integer valuation & landed-cost allocation engine (`python/africore_accounting/inventory_valuation.py`, 25/25 Python unit tests), TypeScript Phase 1 service (`src/inventory/phase1.ts`, 10 new endpoints registered in `platform-openapi.json` — 607 total workspace ops, zero schema migration), React operational views (`InventoryPhase1Workspace.tsx` wired into `InventoryAppWorkspace.tsx`), and SQLite + disposable PostgreSQL 17 integration coverage (`src/__tests__/inventory-phase1.test.ts`).
+
 ## Checkpoint 6 — Fiscal period closing, opening balances and financial statements
 
 - AfriCore baseline `a81f7d025831be935f7bdde4370c839345312797` (extending `1749a4c4a25b038eff955e4f4e2efce34a4f9655`). Odoo 20 Community baseline `4968b8772ab96e25471ebbcdcbe32f6049e5b728`. Existing 668-addon inventory reused.

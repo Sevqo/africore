@@ -4,6 +4,7 @@ import { Field, Form, money, today, type API } from '../operations/UI';
 import { DocumentAttachments } from './DocumentAttachments';
 import { ProcurementEditor } from './ProcurementEditor';
 import { ProcurementReports, ProcurementReplenishment } from './ProcurementReports';
+import { ProcurementPhase3Workspace } from './ProcurementPhase3Workspace';
 import { useIdempotentAPI } from './useIdempotentAPI';
 import { displayQuantity, quantityMilli } from '../../../src/inventory/quantity';
 import {
@@ -444,6 +445,15 @@ export function ProcurementAppWorkspace({
   );
 
   function renderView() {
+    if (view === 'three-way-match' || view === 'blanket-orders')
+      return (
+        <ProcurementPhase3Workspace
+          api={api}
+          view={view}
+          writable={writable}
+          onNotify={refresh}
+        />
+      );
     if (view === 'replenishment')
       return <ProcurementReplenishment api={api} scope={scope} writable={writable} />;
     if (view === 'analysis') return <ProcurementReports api={api} scope={scope} />;

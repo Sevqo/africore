@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Field, Form, type API } from '../operations/UI';
+import { CrmParityPanel } from './CrmParityPanel';
 export function CrmSettings({
   configuration,
   members,
@@ -217,6 +218,7 @@ export function CrmSettings({
         </button>
         <button className="button">Save CRM configuration</button>
       </Form>
+      <CrmParityPanel api={api} writable={admin} />
     </section>
   );
 }

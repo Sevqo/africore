@@ -1,6 +1,6 @@
 import unittest
 
-from africore_accounting.bank import parse_statement, rank_matches
+from domain.bank import parse_statement, rank_matches
 
 
 class BankStatementTests(unittest.TestCase):

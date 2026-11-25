@@ -1,0 +1,858 @@
+/* ==========================================================================
+ * AfriCore Minimalist Odoo Design System (Loaded AFTER apps.css)
+ * Single restrained accent (#166534), #F8F9FA neutral canvas, #FFFFFF cards,
+ * flush white Odoo module bar, compact single-row Control Panel, and
+ * frameless Odoo Kanban boards across all 26 applications.
+ * ========================================================================== */
+
+.business-shell,
+.business-shell[data-platform-density],
+.focused-account[data-platform-density] {
+  --accent: #166534 !important;
+  --accent-hover: #14532d !important;
+  --accent-text: #166534 !important;
+  --accent-light: #ecfdf5 !important;
+  --brand: #166534 !important;
+  --teal: #166534 !important;
+  --website-primary: #166534 !important;
+  --surface: #f8f9fa !important;
+  --surface-alt: #f3f4f6 !important;
+  --line: #e5e7eb !important;
+  --workspace-border: #e5e7eb !important;
+  background: #f8f9fa !important;
+  color: #111827 !important;
+}
+
+/* Remove wasted full-width Sandbox banner inside immersive open apps */
+.business-shell.is-app-immersive .apps-workspace[data-app-selected='true'][data-app-installed='true'] > .environment-note {
+  display: none !important;
+}
+
+/* Flush White Odoo Module Navigation Bar across ALL 26 Apps */
+.business-shell .app-section-tabs,
+.business-shell .crm-section-nav,
+.business-shell .acc-module-nav {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  background: #ffffff !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  margin: -12px -24px 14px !important;
+  padding: 0 20px !important;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.business-shell .app-section-tabs button,
+.business-shell .crm-section-nav button,
+.business-shell .acc-module-nav button {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 8px 14px !important;
+  border: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #4b5563 !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  box-shadow: none !important;
+  cursor: pointer;
+}
+
+.business-shell .app-section-tabs button:hover,
+.business-shell .crm-section-nav button:hover,
+.business-shell .acc-module-nav button:hover {
+  color: #111827 !important;
+  background: #f9fafb !important;
+}
+
+.business-shell .app-section-tabs button[aria-current='page'],
+.business-shell .crm-section-nav button.is-active,
+.business-shell .acc-module-nav button.active,
+.business-shell .acc-module-nav button[aria-current='page'] {
+  color: #166534 !important;
+  font-weight: 700 !important;
+  border-bottom-color: #166534 !important;
+  background: transparent !important;
+}
+
+/* Crisp Primary & Secondary Buttons (Inspora / Salezify / Odoo Minimal) */
+.business-shell .button,
+.business-shell .sales-primary,
+.business-shell button.primary {
+  background: #166534 !important;
+  color: #ffffff !important;
+  border: 1px solid #166534 !important;
+  border-radius: 7px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  padding: 7px 14px !important;
+  min-height: 36px;
+  box-shadow: 0 1px 2px rgba(22, 101, 52, 0.14) !important;
+}
+
+.business-shell .button:hover:not(:disabled),
+.business-shell .sales-primary:hover:not(:disabled) {
+  background: #14532d !important;
+  border-color: #14532d !important;
+}
+
+.business-shell .secondary-button {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 7px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  padding: 7px 13px !important;
+  min-height: 36px;
+}
+
+.business-shell .secondary-button:hover:not(:disabled) {
+  background: #f9fafb !important;
+  border-color: #9ca3af !important;
+}
+
+/* Single-Row Odoo Control Panel (.ac-odoo-cp & .ac-control-panel) */
+.ac-odoo-view-root {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ac-odoo-cp,
+.ac-control-panel,
+.business-shell .sales-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px !important;
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.03) !important;
+}
+
+.ac-odoo-cp-left,
+.ac-control-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ac-odoo-cp-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 300px;
+  max-width: 560px;
+}
+
+.ac-odoo-cp-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ac-odoo-count {
+  font-size: 12px;
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ac-breadcrumb {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  line-height: 1.2;
+}
+
+.ac-breadcrumb-parent {
+  font-size: 11px;
+  font-weight: 600;
+  color: #166534;
+}
+
+.ac-breadcrumb-title {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  margin: 0 !important;
+}
+
+/* Faceted Search Input (Odoo + Seline ⌘K) */
+.ac-faceted-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 240px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  padding: 3px 9px;
+  min-height: 36px;
+}
+
+.ac-faceted-search:focus-within {
+  border-color: #166534;
+  box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.1);
+}
+
+.ac-facet-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #166534 !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 3px 8px !important;
+  border-radius: 5px !important;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ac-facet-chip.is-neutral {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.ac-faceted-search input {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 3px 4px !important;
+  min-height: 26px !important;
+  font-size: 13px !important;
+  color: #111827 !important;
+  width: 100%;
+  min-width: 80px;
+}
+
+.ac-kbd-hint {
+  font-family: var(--font-code, 'Space Mono', monospace);
+  font-size: 10px;
+  color: #6b7280;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+
+/* Floating Filters Popover (eliminates 7-dropdown grid clutter!) */
+.ac-filter-popover {
+  position: relative;
+}
+
+.ac-filter-popover > summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.ac-filter-popover > summary::-webkit-details-marker {
+  display: none;
+}
+
+.ac-filter-popover-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 80;
+  width: min(520px, 90vw);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(17, 24, 39, 0.12);
+}
+
+/* Segmented View Switcher */
+.ac-view-switcher,
+.business-shell .sales-view-switch {
+  display: inline-flex;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.ac-view-switcher button,
+.business-shell .sales-view-switch button {
+  border: 0 !important;
+  border-right: 1px solid #e5e7eb !important;
+  border-radius: 0 !important;
+  background: #ffffff !important;
+  color: #4b5563 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 6px 11px !important;
+  min-height: 34px;
+  cursor: pointer;
+}
+
+.ac-view-switcher button:last-child,
+.business-shell .sales-view-switch button:last-child {
+  border-right: 0 !important;
+}
+
+.ac-view-switcher button[aria-pressed='true'],
+.business-shell .sales-view-switch button.active {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+  font-weight: 700 !important;
+}
+
+/* Authentic Frameless Odoo Kanban Board (.crm-board) */
+.ac-odoo-kanban-surface {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.business-shell .crm-board {
+  display: grid !important;
+  grid-auto-flow: column !important;
+  grid-auto-columns: minmax(272px, 1fr) !important;
+  gap: 0 !important;
+  overflow-x: auto;
+  align-items: stretch !important;
+  min-height: 62vh;
+  background: transparent !important;
+}
+
+.business-shell .crm-board-column {
+  background: transparent !important;
+  border: 0 !important;
+  border-right: 1px solid #e5e7eb !important;
+  border-radius: 0 !important;
+  padding: 6px 14px 20px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.business-shell .crm-board-column:last-child {
+  border-right: 0 !important;
+}
+
+.business-shell .crm-board-column.is-drop-target {
+  background: #f0fdf4 !important;
+}
+
+.business-shell .crm-stage-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: auto !important;
+  padding-bottom: 6px;
+}
+
+.crm-stage-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.crm-stage-top h4 {
+  margin: 0 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+}
+
+.crm-stage-add {
+  font-size: 18px !important;
+  line-height: 1 !important;
+  color: #6b7280 !important;
+  padding: 2px 6px !important;
+}
+
+.crm-stage-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.business-shell .crm-stage-volume {
+  flex: 1;
+  height: 6px !important;
+  margin: 0 !important;
+  border-radius: 999px;
+  background: #e5e7eb !important;
+  overflow: hidden;
+}
+
+.business-shell .crm-stage-volume > span {
+  display: block;
+  height: 100%;
+  background: #166534 !important;
+  border-radius: 999px;
+}
+
+.crm-stage-total {
+  font-family: var(--font-code, 'Space Mono', monospace);
+  font-size: 12px;
+  font-weight: 700;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.business-shell .crm-stage-empty {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 4px 0 !important;
+  margin: 0 !important;
+  font-size: 12px !important;
+  color: #9ca3af !important;
+}
+
+.business-shell .crm-opportunity {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-left: 3px solid #166534 !important;
+  border-radius: 8px !important;
+  padding: 12px 14px !important;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04) !important;
+}
+
+.business-shell .crm-forecast-column {
+  border-left: 3px solid #166534 !important;
+}
+
+/* Work Kanban & Cross-App Odoo Toolbars (Sales, Inventory, Procurement, Accounting, POS, Analytics, Automations) */
+.business-shell .work-board {
+  background: transparent !important;
+  gap: 0 !important;
+}
+
+.business-shell .work-board > section,
+.business-shell .work-column {
+  background: transparent !important;
+  border: 0 !important;
+  border-right: 1px solid #e5e7eb !important;
+  border-radius: 0 !important;
+  padding: 6px 14px 20px !important;
+}
+
+.business-shell .work-task {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-left: 3px solid #166534 !important;
+  border-radius: 8px !important;
+  padding: 12px 14px !important;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04) !important;
+}
+
+.business-shell .work-avatar {
+  background: #ecfdf5 !important;
+  color: #166534 !important;
+  border: 1px solid #bbf7d0 !important;
+  font-weight: 700 !important;
+}
+
+.business-shell .acc-toolbar,
+.business-shell .analytics-toolbar,
+.business-shell .automation-app-toolbar,
+.business-shell .pos-app-toolbar {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 10px !important;
+  padding: 10px 16px !important;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.03) !important;
+}
+
+/* Analytics / Seline KPI Strip & Clean Panels */
+.ac-kpi-strip,
+.business-shell .sales-pulse {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 10px !important;
+  padding: 14px 18px !important;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.03) !important;
+}
+
+.ac-kpi-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 12px;
+  border-right: 1px solid #f3f4f6;
+}
+
+.ac-kpi-item:last-child {
+  border-right: 0;
+  padding-right: 0;
+}
+
+.ac-kpi-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.ac-kpi-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.ac-kpi-value {
+  font-family: var(--font-code, 'Space Mono', monospace);
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+}
+
+.ac-kpi-delta {
+  font-size: 11px;
+  font-weight: 600;
+  color: #15803d;
+}
+
+.ac-kpi-delta.warn {
+  color: #b45309;
+}
+
+.ac-kpi-delta.down {
+  color: #b91c1c;
+}
+
+/* Statusbar Pipeline & Filter Pills */
+.ac-pipeline {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.ac-pipeline-step {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+.ac-pipeline-step.active {
+  background: #166534;
+  color: #ffffff;
+  border-color: #166534;
+}
+
+.ac-pipeline-step.done {
+  background: #ecfdf5;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.ac-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.ac-pill {
+  background: #ffffff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ac-pill[aria-pressed='true'] {
+  background: #166534;
+  color: #ffffff;
+  border-color: #166534;
+}
+
+/* Clean Hairline Record Rows & Split Sheet */
+.ac-record-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid #e5e7eb;
+}
+
+.ac-record-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 4px;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 13px;
+}
+
+.ac-record-row:hover {
+  background: #f9fafb;
+}
+
+.ac-record-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ac-record-title {
+  font-weight: 600;
+  color: #111827;
+}
+
+.ac-record-meta {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.ac-record-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ac-split-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .ac-split-grid,
+  .ac-filter-popover-panel {
+    grid-template-columns: 1fr;
+  }
+  .ac-kpi-item {
+    border-right: 0;
+    padding-right: 0;
+  }
+  .business-shell .app-section-tabs,
+  .business-shell .crm-section-nav,
+  .business-shell .acc-module-nav {
+    margin: -8px -12px 10px !important;
+    padding: 0 10px !important;
+  }
+}
+
+/* ==========================================================================
+ * Universal Clean Button, Dropdown Menu, Input & Form Normalization
+ * Eliminates raw native browser 3D button borders across all 26 apps.
+ * ========================================================================== */
+.business-shell button:not(.button):not(.primary):not(.sales-primary):not(.sales-new):not(.ac-pill):not(.icon-button) {
+  appearance: none;
+  background: #ffffff;
+  color: #111827;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.business-shell button:not(.button):not(.primary):not(.sales-primary):not(.sales-new):not(.ac-pill):not(.icon-button):hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.business-shell button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Clean Top Module Menu Bar (Sales, Accounting, Inventory dropdowns) */
+.business-shell .sales-nav,
+.business-shell .sales-module-nav {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap;
+  gap: 6px !important;
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 10px !important;
+  padding: 6px 12px !important;
+  margin-bottom: 14px !important;
+  position: relative;
+  z-index: 20;
+}
+
+.business-shell .sales-nav > button:not(.sales-new),
+.business-shell .sales-module-nav > button:not(.sales-new) {
+  border: 0 !important;
+  background: transparent !important;
+  color: #374151 !important;
+  font-weight: 500 !important;
+  padding: 6px 10px !important;
+  border-radius: 6px !important;
+}
+
+.business-shell .sales-nav > button:not(.sales-new):hover,
+.business-shell .sales-nav > button.active:not(.sales-new),
+.business-shell .sales-module-nav > button:not(.sales-new):hover,
+.business-shell .sales-module-nav > button.active:not(.sales-new) {
+  background: #ecfdf5 !important;
+  color: #166534 !important;
+  font-weight: 600 !important;
+}
+
+.business-shell .sales-nav .sales-new,
+.business-shell .sales-module-nav .sales-new {
+  background: #166534 !important;
+  color: #ffffff !important;
+  border: 1px solid #166534 !important;
+  border-radius: 7px !important;
+  padding: 6px 14px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+}
+
+.business-shell .sales-nav .sales-new:hover {
+  background: #14532d !important;
+}
+
+.business-shell .sales-menu {
+  position: relative;
+}
+
+.business-shell .sales-menu > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  user-select: none;
+}
+
+.business-shell .sales-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.business-shell .sales-menu > summary::after {
+  content: '▾';
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.business-shell .sales-menu > summary:hover,
+.business-shell .sales-menu > summary.active {
+  background: #ecfdf5;
+  color: #166534;
+  font-weight: 600;
+}
+
+.business-shell .sales-menu[open] > div {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 210px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.1);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 40;
+}
+
+.business-shell .sales-menu[open] > div > button {
+  width: 100%;
+  text-align: left;
+  border: 0 !important;
+  background: transparent !important;
+  color: #1f2937 !important;
+  padding: 7px 10px !important;
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+
+.business-shell .sales-menu[open] > div > button:hover {
+  background: #f3f4f6 !important;
+  color: #166534 !important;
+}
+
+/* Clean Structured Form Controls Inside App Views */
+.ac-inline-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+  align-items: end;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+
+.ac-inline-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.ac-inline-form input,
+.ac-inline-form select {
+  height: 36px;
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 13px;
+}
+
+.ac-inline-form input:focus,
+.ac-inline-form select:focus {
+  outline: none;
+  border-color: #166534;
+  box-shadow: 0 0 0 2px rgba(22, 101, 52, 0.12);
+}
+
+.ac-subtabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e5e7eb;
+}

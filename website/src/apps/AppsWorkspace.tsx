@@ -7,7 +7,7 @@ import { WorkWorkspace } from './lazy-workspaces';
 import { AccountingAppWorkspace } from './lazy-workspaces';
 import { BusinessIDWorkspace } from './lazy-workspaces';
 import { useIdempotentAPI } from './useIdempotentAPI';
-import { appNavigationEvent } from './AppNavigation';
+import { appNavigationEvent, AppSectionTabs } from './AppNavigation';
 import { allowanceLabel } from '../marketplace/usage-presentation';
 import { AutomationsWorkspace } from './lazy-workspaces';
 import { SalesAppWorkspace } from './lazy-workspaces';
@@ -18,11 +18,16 @@ import { useEffect, useState } from 'react';
 import { Icon } from '../components/Icon';
 import { Overlay } from '../components/Overlay';
 import { money, type API } from '../operations/UI';
-import { FinanceAppWorkspace } from './lazy-workspaces';
+import {
+  ExtendedAppWorkspace,
+  FinanceAppWorkspace,
+  OdooSuiteExpansionWorkspace,
+} from './lazy-workspaces';
 import { CalendarWorkspace, WebsiteWorkspace } from './lazy-workspaces';
 import { appIcons as icons } from './appIcons';
 import { appPortfolioPath } from './app-portfolio-path';
 import './apps.css';
+import './minimal-workspace-shell.css';
 type Props = {
   openRecord?: (tab: string, id: string) => void;
   role?: string;
@@ -179,25 +184,38 @@ export function AppsWorkspace({
             Apps bring related services into one workspace. Installation is free; each service keeps
             its own disclosed usage and provider requirements.
           </p>
-          <div className="app-directory-toolbar">
-            <label className="field">
-              <span>Find an app</span>
+          <div className="ac-control-panel app-directory-toolbar">
+            <label className="ac-faceted-search">
+              <span className="ac-facet-chip">App Store</span>
               <input
                 type="search"
                 value={directoryQuery}
                 onChange={(e) => setDirectoryQuery(e.target.value)}
-                placeholder="Search your apps"
+                placeholder="Search all 26 apps..."
               />
+              <span className="ac-kbd-hint">⌘K</span>
             </label>
-            <label className="checkbox-field">
-              <input
-                type="checkbox"
-                checked={installedOnly}
-                onChange={(e) => setInstalledOnly(e.target.checked)}
-              />{' '}
-              Installed only
-            </label>
-            <span role="status">{directoryApps.length} apps</span>
+            <div className="ac-filter-pills">
+              <button
+                type="button"
+                className="ac-pill"
+                aria-pressed={!installedOnly}
+                onClick={() => setInstalledOnly(false)}
+              >
+                All ({(catalog?.apps || []).length})
+              </button>
+              <button
+                type="button"
+                className="ac-pill"
+                aria-pressed={installedOnly}
+                onClick={() => setInstalledOnly(true)}
+              >
+                Installed ({(catalog?.apps || []).filter((a: any) => a.installation?.status === 'installed').length})
+              </button>
+              <span role="status" className="badge">
+                {directoryApps.length} apps
+              </span>
+            </div>
           </div>
           {!directoryApps.length && (
             <section className="panel">
@@ -248,6 +266,15 @@ export function AppsWorkspace({
               </article>
             ))}
           </div>
+          <details className="panel">
+            <summary>Extended Operations Suite (POS · CRM · Work · Payroll · Subscriptions · Support · Marketing · MRP · Fleet · Logistics)</summary>
+            <OdooSuiteExpansionWorkspace
+              api={api}
+              scope={scope}
+              writable={writable}
+              financeWritable={financeWritable}
+            />
+          </details>
         </>
       )}
       {app && (
@@ -356,6 +383,10 @@ export function AppsWorkspace({
             </section>
           ) : (
             <>
+              {!['crm', 'accounting', 'pos'].includes(app.id) &&
+                app.navigation?.length > 1 && (
+                  <AppSectionTabs app={app} section={activeSection} navigate={navigate} />
+                )}
               {app.id === 'pos' ? (
                 <POSAppWorkspace
                   key={scope}
@@ -484,6 +515,26 @@ export function AppsWorkspace({
                 <CalendarWorkspace key={scope} api={api} scope={scope} section={activeSection} />
               ) : app.id === 'website' ? (
                 <WebsiteWorkspace key={scope} api={api} scope={scope} section={activeSection} />
+              ) : [
+                  'marketing',
+                  'support',
+                  'subscriptions',
+                  'manufacturing',
+                  'field_operations',
+                  'logistics',
+                  'property_hospitality',
+                  'knowledge_learning',
+                  'studio',
+                  'integrations_hub',
+                ].includes(app.id) ? (
+                <ExtendedAppWorkspace
+                  key={scope + ':' + app.id}
+                  appId={app.id}
+                  section={activeSection}
+                  api={api}
+                  scope={scope}
+                  writable={writable}
+                />
               ) : (
                 <section className="panel">
                   <h2>Workspace interface update required</h2>

@@ -121,3 +121,17 @@ export const FinanceDashboard = workspace<
 export const FinanceAppWorkspace = workspace<
   Parameters<(typeof import('./FinanceAppWorkspace'))['FinanceAppWorkspace']>[0]
 >(() => import('./FinanceAppWorkspace').then((m) => ({ default: m.FinanceAppWorkspace })));
+export const OdooSuiteExpansionWorkspace = workspace<
+  Parameters<(typeof import('./OdooSuiteExpansionWorkspace'))['OdooSuiteExpansionWorkspace']>[0]
+>(() =>
+  import('./OdooSuiteExpansionWorkspace').then((m) => ({
+    default: m.OdooSuiteExpansionWorkspace,
+  })),
+);
+export const ExtendedAppWorkspace = workspace<
+  Parameters<(typeof import('./ExtendedAppWorkspace'))['ExtendedAppWorkspace']>[0]
+>(() =>
+  import('./ExtendedAppWorkspace').then((m) => ({
+    default: m.ExtendedAppWorkspace,
+  })),
+);

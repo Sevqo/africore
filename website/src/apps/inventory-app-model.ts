@@ -11,15 +11,22 @@ export const inventoryViews = [
   'receipts',
   'deliveries',
   'transfers',
+  'packages',
+  'barcode',
   'counts',
   'replenishment',
+  'scrap',
+  'landed-costs',
   'stock',
+  'lots',
+  'valuation',
   'movements',
   'detailed',
   'reservations',
   'incoming',
   'warehouses',
   'locations',
+  'putaway-rules',
   'settings',
 ] as const;
 
@@ -35,10 +42,10 @@ export const defaultViewForSection: Record<string, InventoryView> = {
 
 export const viewsForSection: Record<string, InventoryView[]> = {
   dashboard: ['overview'],
-  operations: ['receipts', 'deliveries', 'transfers', 'counts', 'replenishment'],
-  products: ['stock'],
-  reporting: ['stock', 'movements', 'detailed', 'reservations', 'incoming'],
-  configuration: ['warehouses', 'locations', 'settings'],
+  operations: ['receipts', 'deliveries', 'transfers', 'packages', 'barcode', 'counts', 'scrap', 'landed-costs', 'replenishment'],
+  products: ['stock', 'lots'],
+  reporting: ['stock', 'valuation', 'movements', 'detailed', 'reservations', 'incoming'],
+  configuration: ['warehouses', 'locations', 'putaway-rules', 'settings'],
 };
 
 export const sectionForView: Record<InventoryView, string> = {
@@ -46,15 +53,22 @@ export const sectionForView: Record<InventoryView, string> = {
   receipts: 'operations',
   deliveries: 'operations',
   transfers: 'operations',
+  packages: 'operations',
+  barcode: 'operations',
   counts: 'operations',
+  scrap: 'operations',
+  'landed-costs': 'operations',
   replenishment: 'operations',
-  stock: 'reporting',
+  stock: 'products',
+  lots: 'products',
+  valuation: 'reporting',
   movements: 'reporting',
   detailed: 'reporting',
   reservations: 'reporting',
   incoming: 'reporting',
   warehouses: 'configuration',
   locations: 'configuration',
+  'putaway-rules': 'configuration',
   settings: 'configuration',
 };
 

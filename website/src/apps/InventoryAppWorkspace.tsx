@@ -3,6 +3,8 @@ import { Icon } from '../components/Icon';
 import { Field, Form, today, type API } from '../operations/UI';
 import { ReplenishmentReview } from './ReplenishmentReview';
 import { ReviewFields } from './ReviewFields';
+import { InventoryPhase1Workspace } from './InventoryPhase1Workspace';
+import { InventoryParityPanel } from './InventoryParityPanel';
 import {
   defaultViewForSection,
   filterProducts,
@@ -183,15 +185,22 @@ export function InventoryAppWorkspace({
     receipts: 'Receipts',
     deliveries: 'Delivery Orders',
     transfers: 'Internal Transfers',
+    packages: 'Packages',
+    barcode: 'Barcode Scanner',
     counts: 'Physical Inventory',
     replenishment: 'Replenishment',
+    scrap: 'Scrap',
+    'landed-costs': 'Landed Costs',
     stock: 'Stock',
+    lots: 'Lots & Serials',
+    valuation: 'Stock Valuation',
     movements: 'Moves History',
     detailed: 'Detailed Stock',
     reservations: 'Reservations',
     incoming: 'Incoming',
     warehouses: 'Warehouses',
     locations: 'Locations',
+    'putaway-rules': 'Putaway Rules',
     settings: 'Inventory Settings',
   };
 
@@ -2403,6 +2412,11 @@ export function InventoryAppWorkspace({
       {view === 'receipts' && <ReceiptsView />}
       {view === 'deliveries' && <DeliveriesView />}
       {view === 'transfers' && <TransfersView />}
+      {(view === 'packages' || view === 'barcode') && (
+        <div className="panel">
+          <InventoryParityPanel api={api} writable={writable} activeSection={view} />
+        </div>
+      )}
       {view === 'counts' && <CountsView />}
       {view === 'replenishment' && (
         <>
@@ -2410,10 +2424,12 @@ export function InventoryAppWorkspace({
             <div>
               <h2>Replenishment</h2>
               <p>
-                Quality workflow suggestions and low-stock products. Planning incoming stock never
-                places a supplier order.
+                Automated Min/Max reordering rules, quality workflow suggestions, and low-stock products.
               </p>
             </div>
+          </div>
+          <div className="panel" style={{ marginBottom: 16 }}>
+            <InventoryParityPanel api={api} writable={writable} activeSection="reorder" />
           </div>
           <ReplenishmentReview
             api={api}
@@ -2426,7 +2442,27 @@ export function InventoryAppWorkspace({
       )}
       {view === 'stock' &&
         (productId ? <ProductDocument id={productId} /> : <StockTable rows={products} />)}
+      {['lots', 'scrap', 'valuation', 'landed-costs'].includes(view) && (
+        <InventoryPhase1Workspace
+          api={api}
+          view={view}
+          products={products}
+          warehouses={warehouses.data || []}
+          movements={movements}
+          writable={writable}
+          revision={revision}
+          refresh={(msg) => {
+            setRevision((n) => n + 1);
+            setNotice(msg);
+          }}
+        />
+      )}
       {['movements', 'reservations', 'incoming', 'detailed'].includes(view) && <InventoryReports />}
+      {view === 'putaway-rules' && (
+        <div className="panel">
+          <InventoryParityPanel api={api} writable={writable} activeSection="putaway" />
+        </div>
+      )}
       {['warehouses', 'locations', 'settings'].includes(view) && <ConfigurationView />}
     </div>
   );

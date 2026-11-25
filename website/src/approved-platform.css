@@ -1,24 +1,27 @@
 /* Founder-approved composition: charcoal navigation, open workspace, green actions.
    Shared by every app and independent service; domain layouts remain distinct. */
 html:has([data-platform-density]) {
-  --text: #17201c;
-  --ink: #111815;
-  --muted: #66716b;
-  --line: #e2e7e3;
-  --surface: #f5f7f6;
-  --surface-alt: #edf1ee;
-  --accent: #76b900;
-  --accent-hover: #5b9400;
-  --accent-text: #326b0b;
-  --accent-light: #edf7df;
-  --workspace-border: #e2e7e3;
-  --workspace-shadow: 0 1px 2px #14251b08;
+  --text: #111827;
+  --ink: #111827;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --surface: #f8f9fa;
+  --surface-alt: #f3f4f6;
+  --accent: #166534;
+  --accent-hover: #14532d;
+  --accent-text: #166534;
+  --accent-light: #ecfdf5;
+  --brand: #166534;
+  --teal: #166534;
+  --website-primary: #166534;
+  --workspace-border: #e5e7eb;
+  --workspace-shadow: 0 1px 2px rgba(17, 24, 39, 0.03);
   --app-panel: 14px;
   --app-panel-compact: 11px;
   --app-panel-large: 16px;
   --app-radius-card: 12px;
   --app-radius-record: 10px;
-  --app-radius-large: 14px;
+  --app-radius-large: 12px;
 }
 .business-shell[data-platform-density].business-shell[data-platform-density],
 .focused-account[data-platform-density].focused-account[data-platform-density] {
@@ -76,9 +79,9 @@ html:has([data-platform-density]) {
 }
 .business-shell[data-platform-density] .sidebar nav button.active,
 .focused-account[data-platform-density] .account-nav nav a[aria-current='page'] {
-  background: linear-gradient(100deg, #438400, #68a900);
+  background: #166534;
   color: white;
-  font-weight: 650;
+  font-weight: 600;
 }
 .business-shell[data-platform-density] .workspace-primary-nav {
   display: grid;

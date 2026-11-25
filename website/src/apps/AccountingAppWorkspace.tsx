@@ -10,6 +10,7 @@ import { AccountingBankStatements } from './AccountingBankStatements';
 import { AccountingAssets } from './AccountingAssets';
 import { AccountingDeferrals } from './AccountingDeferrals';
 import { AccountingPeriodWorkspace } from './AccountingPeriodWorkspace';
+import { AccountingParityPanel } from './AccountingParityPanel';
 import { DocumentAttachments } from './DocumentAttachments';
 import {
   AccountingSourceRegister,
@@ -340,6 +341,22 @@ export function AccountingAppWorkspace({
               bills={bills}
               go={go}
             />
+          )}
+          {[
+            'cash-flow',
+            'fx-revaluation',
+            'budgets',
+            'follow-ups',
+            'batch-payments',
+            'debit-notes',
+          ].includes(view) && (
+            <div className="panel">
+              <AccountingParityPanel
+                api={api}
+                writable={Boolean(configuration?.writable)}
+                activeView={view as any}
+              />
+            </div>
           )}
 
           {['invoices', 'credit-notes', 'customer-payments', 'customers', 'receivables'].includes(

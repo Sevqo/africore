@@ -1,6 +1,6 @@
 import unittest
 
-from africore_accounting.statements import summarize_statement
+from domain.statements import summarize_statement
 
 
 class StatementSummaryTests(unittest.TestCase):

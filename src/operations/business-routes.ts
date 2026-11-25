@@ -6,6 +6,15 @@ import {
   savePriceList,
   pricingPreview,
 } from './sales-pricing';
+import {
+  addOptionalProduct,
+  createDownPayment,
+  decideOptionalProduct,
+  listDownPayments,
+  listOptionalProducts,
+  previewDownPayment,
+  salesMarginReport,
+} from './sales-phase2';
 import { crmReport, crmActivityReport } from './crm-report';
 import { crmConfiguration, saveCrmConfiguration } from './crm-configuration';
 import { replenishmentSuggestions, reviewReplenishment } from '../inventory/replenishment';
@@ -32,6 +41,18 @@ import {
   planIncoming,
   resolveIncoming,
 } from '../inventory/service';
+import {
+  createLandedCost,
+  createLot,
+  createScrap,
+  listLandedCosts,
+  listLots,
+  listScraps,
+  previewLandedCost,
+  saveCostingPolicy,
+  stockValuationReport,
+  updateLot,
+} from '../inventory/phase1';
 import {
   importCrmEntries,
   crmEntryHistory,
@@ -325,6 +346,78 @@ business.post(
   '/organizations/:org/inventory/stock-counts',
   route(async (req, res) =>
     res.json(await postStockCount(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+business.get(
+  '/organizations/:org/inventory/lots',
+  route(async (req, res) =>
+    res.json(
+      await listLots(
+        await access(req),
+        z
+          .object({ product_id: z.uuid().optional(), warehouse_id: z.uuid().optional() })
+          .parse(req.query),
+      ),
+    ),
+  ),
+);
+business.post(
+  '/organizations/:org/inventory/lots',
+  route(async (req, res) =>
+    res.status(201).json(await createLot(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+business.patch(
+  '/organizations/:org/inventory/lots/:id',
+  route(async (req, res) =>
+    res.json(
+      await updateLot(await access(req, 'operations'), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+business.get(
+  '/organizations/:org/inventory/scraps',
+  route(async (req, res) => res.json(await listScraps(await access(req)))),
+);
+business.post(
+  '/organizations/:org/inventory/scraps',
+  route(async (req, res) =>
+    res.status(201).json(await createScrap(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+business.get(
+  '/organizations/:org/inventory/valuation',
+  route(async (req, res) =>
+    res.json(
+      await stockValuationReport(
+        await access(req),
+        z.object({ product_id: z.uuid().optional() }).parse(req.query).product_id,
+      ),
+    ),
+  ),
+);
+business.put(
+  '/organizations/:org/inventory/valuation/policy',
+  route(async (req, res) =>
+    res.json(await saveCostingPolicy(await access(req, 'admin'), req.body, key(req))),
+  ),
+);
+business.get(
+  '/organizations/:org/inventory/landed-costs',
+  route(async (req, res) => res.json(await listLandedCosts(await access(req)))),
+);
+business.post(
+  '/organizations/:org/inventory/landed-costs/preview',
+  route(async (req, res) =>
+    res.json(await previewLandedCost(await access(req, 'operations'), req.body)),
+  ),
+);
+business.post(
+  '/organizations/:org/inventory/landed-costs',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createLandedCost(await access(req, 'operations'), req.body, key(req))),
   ),
 );
 business.get(
@@ -720,6 +813,80 @@ business.put(
 business.post(
   '/organizations/:org/sales/pricing-preview',
   route(async (req, res) => res.json(await pricingPreview(await access(req), req.body))),
+);
+business.get(
+  '/organizations/:org/sales/margin-report',
+  route(async (req, res) =>
+    res.json(
+      await salesMarginReport(
+        await access(req),
+        z
+          .object({
+            currency: z.string().trim().min(3).max(3).optional(),
+            from: z.iso.date().optional(),
+            to: z.iso.date().optional(),
+          })
+          .parse(req.query),
+      ),
+    ),
+  ),
+);
+business.get(
+  '/organizations/:org/sales/down-payments',
+  route(async (req, res) =>
+    res.json(
+      await listDownPayments(
+        await access(req),
+        z.object({ order_id: z.uuid().optional() }).parse(req.query).order_id,
+      ),
+    ),
+  ),
+);
+business.post(
+  '/organizations/:org/sales/down-payments/preview',
+  route(async (req, res) =>
+    res.json(await previewDownPayment(await access(req, 'operations'), req.body)),
+  ),
+);
+business.post(
+  '/organizations/:org/sales/down-payments',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await createDownPayment(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+business.get(
+  '/organizations/:org/sales/optional-products',
+  route(async (req, res) =>
+    res.json(
+      await listOptionalProducts(
+        await access(req),
+        z.object({ quotation_id: z.uuid().optional() }).parse(req.query).quotation_id,
+      ),
+    ),
+  ),
+);
+business.post(
+  '/organizations/:org/sales/optional-products',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(await addOptionalProduct(await access(req, 'operations'), req.body, key(req))),
+  ),
+);
+business.patch(
+  '/organizations/:org/sales/optional-products/:id',
+  route(async (req, res) =>
+    res.json(
+      await decideOptionalProduct(
+        await access(req, 'operations'),
+        String(req.params.id),
+        req.body,
+        key(req),
+      ),
+    ),
+  ),
 );
 business.get(
   '/organizations/:org/sales/quotations/:id/history',

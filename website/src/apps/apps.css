@@ -26,36 +26,32 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   flex: none;
-  background: #e3f3eb;
-  color: #18794e;
-  border-radius: 14px;
+  background: #f3f4f6;
+  color: #166534;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+.app-directory-card:hover .app-mark {
+  background: #ecfdf5;
+  border-color: #bbf7d0;
+  color: #14532d;
 }
 .app-mark .icon {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
 }
-.app-mark-crm {
-  background: #e7efff;
-  color: #2558c7;
-}
-.app-mark-inventory {
-  background: #fff0da;
-  color: #a55b0b;
-}
-.app-mark-sales {
-  background: #e6f6f2;
-  color: #087660;
-}
-.app-mark-analytics {
-  background: #eee8ff;
-  color: #6845bc;
-}
+/* Restrained single-accent identity across all 26 apps (no rainbow clutter) */
+.app-mark-crm,
+.app-mark-inventory,
+.app-mark-sales,
+.app-mark-analytics,
 .app-mark-automations {
-  background: #fff5cc;
-  color: #976300;
+  background: #f3f4f6;
+  color: #166534;
 }
 .app-identity {
   display: flex;

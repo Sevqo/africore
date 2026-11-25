@@ -651,188 +651,232 @@ export function CrmWorkspace({
                     <p>Opportunity counts represent recorded stages, not revenue.</p>
                   </section>
                 )}
-                <section className="panel crm-record-list">
-                  <div className="crm-toolbar">
-                    <button
-                      className="button"
-                      disabled={!writable}
-                      onClick={() => {
-                        const el = document.getElementById(
-                          'crm-create',
-                        ) as HTMLDetailsElement | null;
-                        if (el) {
-                          el.open = true;
-                          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }
-                      }}
-                    >
-                      {section === 'pipeline'
-                        ? 'New opportunity'
-                        : section === 'leads'
-                          ? 'New lead'
-                          : 'New activity'}
-                    </button>
-                    {section === 'leads' && (
-                      <button className="secondary-button" onClick={() => changeSection('import')}>
-                        Import leads
-                      </button>
-                    )}
-                    <h3>
-                      {section === 'pipeline'
-                        ? 'Pipeline'
-                        : section === 'leads'
-                          ? 'Leads'
-                          : section === 'followups'
-                            ? 'Activities'
-                            : 'Relationship records'}
-                    </h3>
-                  </div>
-                  <div className="form-grid">
-                    <Field label="Search all matching records">
-                      <input
-                        type="search"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Title, contact, company, email, phone or source"
-                      />
-                    </Field>
-                    {section === 'leads' && (
-                      <Field label="Lead assignment">
-                        <select value={leadFilter} onChange={(e) => setLeadFilter(e.target.value)}>
-                          <option value="all">All leads</option>
-                          <option value="mine">My leads</option>
-                          <option value="unassigned">Unassigned</option>
-                          <option value="open">Open</option>
-                          <option value="cancelled">Cancelled</option>
-                          {members.map((m) => (
-                            <option key={m.id} value={m.id}>
-                              {m.display_name || m.email}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                    )}
-                    {section === 'followups' && <Field label="Activity window"><select value={activityWindow} onChange={(e)=>setActivityWindow(e.target.value)}><option value="all">All activities</option><option value="today">Due today</option><option value="overdue">Overdue</option><option value="upcoming">Upcoming</option><option value="completed">Completed</option></select></Field>}
-                    {section === 'followups' && <Field label="Salesperson"><select value={ownerFilter} onChange={(e)=>setOwnerFilter(e.target.value)}><option value="mine">My activities</option><option value="all">All activities</option>{members.map((m)=><option key={m.id} value={m.id}>{m.display_name||m.email}</option>)}</select></Field>}
-                    <Field label="Sort">
-                      <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
-                        <option value="recent">Newest first</option>
-                        <option value="title">Title</option>
-                      </select>
-                    </Field>
-                    {section === 'pipeline' && data.current_actor && (
-                      <Field label="Salesperson">
-                        <select
-                          value={ownerFilter}
-                          onChange={(e) => setOwnerFilter(e.target.value)}
-                        >
-                          <option value="mine">My pipeline</option>
-                          <option value="all">All authorized opportunities</option>
-                          {members.map((m) => (
-                            <option key={m.id} value={m.id}>
-                              {m.display_name || m.email}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                    )}
-                    {section === 'pipeline' && (
-                      <Field label="Stage">
-                        <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)}>
-                          <option value="all">All stages</option>
-                          {data.configuration.stages.map((s: any) => (
-                            <option key={s.id} value={s.id}>
-                              {s.name}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                    )}
-                    {section === 'pipeline' && data.configuration.teams.length > 0 && (
-                      <Field label="Sales team">
-                        <select value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)}>
-                          <option value="all">All teams</option>
-                          {data.configuration.teams.filter((t: any) => t.active).map((t: any) => (
-                            <option key={t.id} value={t.id}>
-                              {t.name}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                    )}
-                    {section === 'pipeline' && (
-                      <Field label="Outcome">
-                        <select
-                          value={outcomeFilter}
-                          onChange={(e) => setOutcomeFilter(e.target.value)}
-                        >
-                          <option value="active">Active pipeline</option>
-                          <option value="all">All outcomes</option>
-                          <option value="won">Won</option>
-                          <option value="lost">Lost</option>
-                        </select>
-                      </Field>
-                    )}
-                    <Field label="Record status">
-                      <select value={stateFilter} onChange={(e) => setStateFilter(e.target.value)}>
-                        {['all', 'open', 'completed', 'cancelled', 'archived'].map((s) => (
-                          <option key={s}>{s}</option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label="Currency">
-                      <select
-                        value={currencyFilter}
-                        onChange={(e) => setCurrencyFilter(e.target.value)}
+                <div className="ac-odoo-view-root">
+                  <div className="ac-odoo-cp">
+                    <div className="ac-odoo-cp-left">
+                      <button
+                        className="button ac-odoo-new-btn"
+                        disabled={!writable}
+                        onClick={() => {
+                          const el = document.getElementById(
+                            'crm-create',
+                          ) as HTMLDetailsElement | null;
+                          if (el) {
+                            el.open = true;
+                            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }
+                        }}
                       >
-                        <option value="all">All currencies</option>
-                        {['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF'].map((c) => (
-                          <option key={c}>{c}</option>
-                        ))}
-                      </select>
-                    </Field>
-                  </div>
-                  <p className="crm-result-count" role="status">
-                    {listLoading
-                      ? 'Searching CRM records…'
-                      : `${entryPage?.total || 0} matching record${entryPage?.total === 1 ? '' : 's'} · ${entries.length} loaded`}
-                  </p>
-                  <div className="app-service-chips" role="group" aria-label="CRM record view">
-                    <button
-                      className="secondary-button"
-                      aria-pressed={!board && !calendar}
-                      onClick={() => {
-                        setBoard(false);
-                        setCalendar(false);
-                      }}
-                    >
-                      List
-                    </button>
-                    {section === 'pipeline' && (
-                      <>
+                        New
+                      </button>
+                      {section === 'leads' && (
+                        <button className="secondary-button" onClick={() => changeSection('import')}>
+                          Import
+                        </button>
+                      )}
+                      <div className="ac-breadcrumb">
+                        <span className="ac-breadcrumb-parent">CRM</span>
+                        <h3 className="ac-breadcrumb-title">
+                          {section === 'pipeline'
+                            ? 'Opportunities'
+                            : section === 'leads'
+                              ? 'Leads'
+                              : section === 'followups'
+                                ? 'Activities'
+                                : 'Relationship records'}
+                        </h3>
+                      </div>
+                    </div>
+
+                    <div className="ac-odoo-cp-center">
+                      <label className="ac-faceted-search" aria-label="Search all matching records">
+                        {section === 'pipeline' && ownerFilter === 'mine' && (
+                          <button
+                            type="button"
+                            className="ac-facet-chip"
+                            onClick={() => setOwnerFilter('all')}
+                            title="Clear My pipeline filter"
+                          >
+                            My Pipeline ×
+                          </button>
+                        )}
+                        {section === 'pipeline' && outcomeFilter !== 'all' && (
+                          <button
+                            type="button"
+                            className="ac-facet-chip is-neutral"
+                            onClick={() => setOutcomeFilter('all')}
+                            title="Clear outcome filter"
+                          >
+                            {outcomeFilter === 'active' ? 'Active' : outcomeFilter} ×
+                          </button>
+                        )}
+                        <input
+                          type="search"
+                          value={query}
+                          onChange={(e) => setQuery(e.target.value)}
+                          placeholder="Search..."
+                        />
+                        <span className="ac-kbd-hint">⌘K</span>
+                      </label>
+
+                      <details className="ac-filter-popover">
+                        <summary className="secondary-button">Filters ▾</summary>
+                        <div className="ac-filter-popover-panel">
+                          {section === 'leads' && (
+                            <Field label="Lead assignment">
+                              <select value={leadFilter} onChange={(e) => setLeadFilter(e.target.value)}>
+                                <option value="all">All leads</option>
+                                <option value="mine">My leads</option>
+                                <option value="unassigned">Unassigned</option>
+                                <option value="open">Open</option>
+                                <option value="cancelled">Cancelled</option>
+                                {members.map((m) => (
+                                  <option key={m.id} value={m.id}>
+                                    {m.display_name || m.email}
+                                  </option>
+                                ))}
+                              </select>
+                            </Field>
+                          )}
+                          {section === 'followups' && (
+                            <Field label="Activity window">
+                              <select value={activityWindow} onChange={(e) => setActivityWindow(e.target.value)}>
+                                <option value="all">All activities</option>
+                                <option value="today">Due today</option>
+                                <option value="overdue">Overdue</option>
+                                <option value="upcoming">Upcoming</option>
+                                <option value="completed">Completed</option>
+                              </select>
+                            </Field>
+                          )}
+                          {section === 'followups' && (
+                            <Field label="Salesperson">
+                              <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)}>
+                                <option value="mine">My activities</option>
+                                <option value="all">All activities</option>
+                                {members.map((m) => (
+                                  <option key={m.id} value={m.id}>
+                                    {m.display_name || m.email}
+                                  </option>
+                                ))}
+                              </select>
+                            </Field>
+                          )}
+                          <Field label="Sort">
+                            <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+                              <option value="recent">Newest first</option>
+                              <option value="title">Title</option>
+                            </select>
+                          </Field>
+                          {section === 'pipeline' && data.current_actor && (
+                            <Field label="Salesperson">
+                              <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)}>
+                                <option value="mine">My pipeline</option>
+                                <option value="all">All authorized opportunities</option>
+                                {members.map((m) => (
+                                  <option key={m.id} value={m.id}>
+                                    {m.display_name || m.email}
+                                  </option>
+                                ))}
+                              </select>
+                            </Field>
+                          )}
+                          {section === 'pipeline' && (
+                            <Field label="Stage">
+                              <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)}>
+                                <option value="all">All stages</option>
+                                {data.configuration.stages.map((s: any) => (
+                                  <option key={s.id} value={s.id}>
+                                    {s.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </Field>
+                          )}
+                          {section === 'pipeline' && data.configuration.teams.length > 0 && (
+                            <Field label="Sales team">
+                              <select value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)}>
+                                <option value="all">All teams</option>
+                                {data.configuration.teams.filter((t: any) => t.active).map((t: any) => (
+                                  <option key={t.id} value={t.id}>
+                                    {t.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </Field>
+                          )}
+                          {section === 'pipeline' && (
+                            <Field label="Outcome">
+                              <select value={outcomeFilter} onChange={(e) => setOutcomeFilter(e.target.value)}>
+                                <option value="active">Active pipeline</option>
+                                <option value="all">All outcomes</option>
+                                <option value="won">Won</option>
+                                <option value="lost">Lost</option>
+                              </select>
+                            </Field>
+                          )}
+                          <Field label="Record status">
+                            <select value={stateFilter} onChange={(e) => setStateFilter(e.target.value)}>
+                              {['all', 'open', 'completed', 'cancelled', 'archived'].map((s) => (
+                                <option key={s}>{s}</option>
+                              ))}
+                            </select>
+                          </Field>
+                          <Field label="Currency">
+                            <select value={currencyFilter} onChange={(e) => setCurrencyFilter(e.target.value)}>
+                              <option value="all">All currencies</option>
+                              {['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF'].map((c) => (
+                                <option key={c}>{c}</option>
+                              ))}
+                            </select>
+                          </Field>
+                        </div>
+                      </details>
+                    </div>
+
+                    <div className="ac-odoo-cp-right">
+                      <span className="ac-odoo-count" role="status">
+                        {listLoading ? 'Searching…' : `${entryPage?.total || 0} records`}
+                      </span>
+                      <div className="ac-view-switcher" role="group" aria-label="CRM record view">
+                        {section === 'pipeline' && (
+                          <button
+                            type="button"
+                            aria-pressed={board}
+                            onClick={() => {
+                              setBoard(true);
+                              setCalendar(false);
+                            }}
+                          >
+                            Kanban
+                          </button>
+                        )}
                         <button
-                          className="secondary-button"
-                          aria-pressed={board}
+                          type="button"
+                          aria-pressed={!board && !calendar}
                           onClick={() => {
-                            setBoard(true);
+                            setBoard(false);
                             setCalendar(false);
                           }}
                         >
-                          Opportunity board
+                          List
                         </button>
-                        <button
-                          className="secondary-button"
-                          aria-pressed={calendar}
-                          onClick={() => {
-                            setBoard(false);
-                            setCalendar(true);
-                          }}
-                        >
-                          Calendar
-                        </button>
-                      </>
-                    )}
+                        {section === 'pipeline' && (
+                          <button
+                            type="button"
+                            aria-pressed={calendar}
+                            onClick={() => {
+                              setBoard(false);
+                              setCalendar(true);
+                            }}
+                          >
+                            Calendar
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
+                  <div className={board ? 'ac-odoo-kanban-surface' : 'panel crm-record-list'}>
                   {calendar ? (
                     <CrmCalendar entries={entries} open={openRecord} />
                   ) : board ? (
@@ -966,10 +1010,11 @@ export function CrmWorkspace({
                       </button>
                     </div>
                   )}
-                  {!listLoading && !entries.length && (
+                  {!board && !listLoading && !entries.length && (
                     <p>No matching relationship records. Add a lead, opportunity or task below.</p>
                   )}
-                </section>
+                  </div>
+                </div>
                 <details className="panel" id="crm-create">
                   <summary>New relationship record</summary>
                   <Form
