@@ -1,6 +1,8 @@
 import { basisPoints, sumMinor, exactNumber } from '../finance/money';
 import { quantityMilli } from '../inventory/quantity';
 import { z } from 'zod';
+import { roles, invitableRoles, roleAppAccess, roleAllowsApp } from './roles';
+export { roles, invitableRoles, roleAppAccess, roleAllowsApp };
 export const currencySchema = z.enum(['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF']);
 export const quantitySchema = z
   .number()
@@ -55,115 +57,6 @@ export function totals(doc: z.infer<typeof documentSchema>) {
       status: 400,
     });
   return { subtotal_minor, tax_minor, total_minor };
-}
-export const roles = [
-  'owner',
-  'admin',
-  'finance',
-  'accountant',
-  'hr',
-  'sales',
-  'operations',
-  'inventory_manager',
-  'support_agent',
-  'marketing_manager',
-  'viewer',
-] as const;
-
-export const invitableRoles = [
-  'admin',
-  'finance',
-  'accountant',
-  'hr',
-  'sales',
-  'operations',
-  'inventory_manager',
-  'support_agent',
-  'marketing_manager',
-  'viewer',
-] as const;
-
-export const roleAppAccess: Record<string, readonly string[] | '*'> = {
-  owner: '*',
-  admin: '*',
-  finance: [
-    'finance',
-    'accounting',
-    'analytics',
-    'procurement',
-    'subscriptions',
-    'property_hospitality',
-    'documents',
-    'calendar',
-    'work',
-  ],
-  accountant: [
-    'accounting',
-    'finance',
-    'analytics',
-    'subscriptions',
-    'documents',
-    'calendar',
-    'work',
-  ],
-  hr: ['people', 'knowledge_learning', 'work', 'calendar', 'documents'],
-  sales: ['crm', 'sales', 'pos', 'commerce', 'subscriptions', 'calendar', 'work', 'documents'],
-  operations: [
-    'inventory',
-    'procurement',
-    'pos',
-    'sales',
-    'crm',
-    'work',
-    'calendar',
-    'documents',
-    'manufacturing',
-    'field_operations',
-    'logistics',
-    'property_hospitality',
-    'knowledge_learning',
-    'support',
-  ],
-  inventory_manager: [
-    'inventory',
-    'procurement',
-    'manufacturing',
-    'logistics',
-    'field_operations',
-    'pos',
-    'work',
-    'calendar',
-    'documents',
-  ],
-  support_agent: [
-    'support',
-    'crm',
-    'knowledge_learning',
-    'field_operations',
-    'work',
-    'calendar',
-    'documents',
-  ],
-  marketing_manager: [
-    'marketing',
-    'website',
-    'commerce',
-    'crm',
-    'analytics',
-    'calendar',
-    'work',
-    'documents',
-  ],
-  viewer: ['analytics', 'finance', 'work', 'calendar', 'documents', 'knowledge_learning'],
-};
-
-export function roleAllowsApp(role: string | undefined, appId: string, kind = 'business'): boolean {
-  if (kind !== 'business') return true;
-  if (!role || role === 'owner' || role === 'admin') return true;
-  const allowed = roleAppAccess[role];
-  if (!allowed) return false;
-  if (allowed === '*') return true;
-  return allowed.includes(appId);
 }
 
 export function permitted(role: string, capability: string) {

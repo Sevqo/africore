@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { invitableRoles, roleAppAccess } from '../../../src/platform/domain';
+import { invitableRoles, roleAppAccess } from '../../../src/platform/roles';
 
 type Member = { id: string; email: string; role: string; display_name?: string };
 type Invitation = {
