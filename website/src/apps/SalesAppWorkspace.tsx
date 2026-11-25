@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { BarChart } from '../charts/BarChart';
 import { Icon } from '../components/Icon';
 import { Overlay } from '../components/Overlay';
 import { Field, money, today, type API } from '../operations/UI';
@@ -1139,22 +1140,23 @@ function SalesCalendar({
 
 function SalesGraph({ rows, label }: { rows: SalesRecord[]; label: (row: SalesRecord) => string }) {
   const series = reportSeries(rows, 12);
-  const max = Math.max(1, ...series.map((item) => item.value));
   return (
     <div className="sales-graph">
-      <div className="sales-chart">
-        {series.map((item) => (
-          <div key={item.month} className="sales-chart-column" title={`${item.orders} orders`}>
-            <span>{money(item.value, 'KES')}</span>
-            <div style={{ height: `${Math.max(4, Math.round((item.value / max) * 100))}%` }} />
-            <small>
-              {new Date(item.month + '-01T00:00:00Z').toLocaleDateString('en-GB', {
-                month: 'short',
-              })}
-            </small>
-          </div>
-        ))}
-      </div>
+      <BarChart
+        title="Order value by issue month"
+        subtitle="Loaded document totals by issue month (KES)"
+        currency="KES"
+        orientation="vertical"
+        rows={series.map((item) => ({
+          key: item.month,
+          label: new Date(item.month + '-01T00:00:00Z').toLocaleDateString('en-GB', {
+            month: 'short',
+            year: '2-digit',
+          }),
+          value: item.value,
+          secondary: `${item.orders} orders`,
+        }))}
+      />
       <p className="sales-note">
         Order value by issue month for loaded records. This is document value, not recognized
         revenue or collected cash.
@@ -2866,6 +2868,23 @@ function ReportingSection({
       {report === 'customer' && (
         <div className="panel">
           <h3>Sales by customer</h3>
+          {[...new Set(byCustomer.map((row) => row.currency))].map((curr) => (
+            <div key={curr} style={{ marginBottom: 14 }}>
+              <BarChart
+                title={`Top customers (${curr})`}
+                currency={curr}
+                orientation="horizontal"
+                rows={byCustomer
+                  .filter((row) => row.currency === curr)
+                  .map((row, idx) => ({
+                    key: `${row.name}-${curr}-${idx}`,
+                    label: row.name,
+                    value: row.value,
+                    secondary: `${row.orders} orders`,
+                  }))}
+              />
+            </div>
+          ))}
           <PivotTable
             rows={byCustomer.map((row) => ({
               customer: row.name,
@@ -2881,6 +2900,23 @@ function ReportingSection({
       {report === 'product' && (
         <div className="panel">
           <h3>Sales by product</h3>
+          {[...new Set(byProduct.map((row) => row.currency))].map((curr) => (
+            <div key={curr} style={{ marginBottom: 14 }}>
+              <BarChart
+                title={`Top products (${curr})`}
+                currency={curr}
+                orientation="horizontal"
+                rows={byProduct
+                  .filter((row) => row.currency === curr)
+                  .map((row) => ({
+                    key: `${row.name}-${curr}`,
+                    label: row.name,
+                    value: row.value,
+                    secondary: `${row.quantity} sold`,
+                  }))}
+              />
+            </div>
+          ))}
           <PivotTable
             rows={byProduct.map((row) => ({
               product: row.name,
@@ -2897,6 +2933,19 @@ function ReportingSection({
       {report === 'status' && (
         <div className="panel">
           <h3>Orders by status and fulfillment</h3>
+          {byStatus.length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <BarChart
+                title="Confirmed orders by status"
+                orientation="horizontal"
+                rows={byStatus.map((row, idx) => ({
+                  key: `${row.status}-${idx}`,
+                  label: `${row.status} (${row.currency})`,
+                  value: row.orders,
+                }))}
+              />
+            </div>
+          )}
           <PivotTable
             rows={byStatus.map((row) => ({
               status: row.status,

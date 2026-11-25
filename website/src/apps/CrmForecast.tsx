@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { BarChart } from '../charts/BarChart';
+import { vizPalette } from '../charts/viz';
 import { Field, money, type API } from '../operations/UI';
 
 const currencies = ['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF'];
@@ -36,8 +38,7 @@ export function CrmForecast({ api, open, writable, members = [] }: { api: API; o
     records.forEach((r) => keys.add(dateBucket(r.expected_close_on)));
     return [...keys].sort((a, b) => a === 'overdue' ? -1 : b === 'overdue' ? 1 : a === 'no_date' ? 1 : b === 'no_date' ? -1 : a.localeCompare(b));
   }, [groups, records]);
-  const graphData = report?.groups || [], max = Math.max(1, ...graphData.map((g: any) => Number(g[measure] || 0))), pipelineMax = Math.max(1, ...graphData.map((g: any) => Number(g.opportunity_count || 0)));
-  const graphWidth = Math.max(760, graphData.length * 190), graphHeight = 410, chartTop = 50, chartBottom = 335;
+  const graphData = report?.groups || [];
   const pivotColumns: any[] = [...new Set((pivot?.cells || []).map((c: any) => c.column_key))],
     pivotRows: any[] = [...new Set((pivot?.cells || []).map((c: any) => c.row_key))],
     pivotCell = (row: any, column: any) => pivot?.cells.find((c: any) => c.row_key === row && c.column_key === column && c.currency === currency),
@@ -65,11 +66,8 @@ export function CrmForecast({ api, open, writable, members = [] }: { api: API; o
     </>}
     {view === 'graph' && <>
       <div className="crm-report-toolbar"><Field label="Group by"><select value={groupBy} onChange={(e) => setGroupBy(e.target.value)}>{['close_month','stage','team','assignee','source'].map((d) => <option key={d} value={d}>{d.replaceAll('_',' ')}</option>)}</select></Field><Field label="Measure"><select value={measure} onChange={(e) => setMeasure(e.target.value)}>{[['open_amount_minor','Open expected value'],['weighted_open_minor','Weighted expected value'],['opportunity_count','Opportunity count'],['won_amount_minor','Won value'],['lost_amount_minor','Lost value']] .map(([v,l]) => <option value={v} key={v}>{l}</option>)}</select></Field></div>
-      {!report && !error && <p role="status">Loading server totals…</p>}{report && <><p className="environment-note">{report.definition}</p><div className="crm-forecast-chart-scroll"><svg className="crm-forecast-chart" viewBox={`0 0 ${graphWidth} ${graphHeight}`} role="img" aria-label={`${measure.replaceAll('_',' ')} grouped by ${groupBy}`}>
-        {[0,1,2,3,4].map((i) => { const y = chartBottom - i * (chartBottom-chartTop)/4; return <g key={i}><line x1="70" x2={graphWidth-20} y1={y} y2={y} stroke="currentColor" opacity=".16"/><text x="60" y={y+5} textAnchor="end">{measure.endsWith('_minor') ? money(max*i/4,currency) : (max*i/4).toFixed(0)}</text></g>; })}
-        {graphData.map((g: any,i:number) => { const val=Number(g[measure]||0), h=(val/max)*(chartBottom-chartTop), x=105+i*190; return <g key={String(g.bucket)}><title>{String(g.bucket)}: {measure.endsWith('_minor') ? money(val,currency) : val}</title><rect x={x} y={chartBottom-h} width="96" height={h} rx="4" fill="#51a8e8"/><text x={x+48} y={chartBottom+24} textAnchor="middle">{String(g.bucket || 'Unassigned').slice(0,18)}</text></g>; })}
-      </svg></div><p>Open opportunities: {report.totals?.open_count || 0} · Won: {report.totals?.won_count || 0} · Lost: {report.totals?.lost_count || 0} · Weighted amounts use recorded probabilities only.</p></>}</>}
-    {view === 'pipeline' && <><p className="environment-note">Current opportunity-stage snapshot; not a historical reconstruction of stage changes.</p>{report && <div className="crm-report-chart-scroll"><svg viewBox={`0 0 ${Math.max(680, graphData.length*180)} 360`} role="img" aria-label="Pipeline opportunities by current stage">{graphData.map((g:any,i:number)=>{const val=Number(g.opportunity_count||0), h=val/pipelineMax*240; return <g key={g.bucket}><rect x={60+i*180} y={280-h} width="100" height={h} fill="#4bb6aa"/><text x={110+i*180} y="310" textAnchor="middle">{String(g.bucket)}</text><text x={110+i*180} y={270-h} textAnchor="middle">{val}</text></g>;})}</svg></div>}{report && <p>{report.totals?.opportunity_count || 0} opportunities in current stage distribution.</p>}</>}
+      {!report && !error && <p role="status">Loading server totals…</p>}{report && <><p className="environment-note">{report.definition}</p><div className="crm-forecast-chart-scroll"><BarChart title={`${measure.replaceAll('_',' ')} by ${groupBy.replaceAll('_',' ')}`} orientation="vertical" currency={measure.endsWith('_minor') ? currency : undefined} color={vizPalette[0]} rows={graphData.map((g: any) => ({ key: String(g.bucket || 'Unassigned'), label: String(g.bucket || 'Unassigned'), value: Number(g[measure] || 0) }))} /></div><p>Open opportunities: {report.totals?.open_count || 0} · Won: {report.totals?.won_count || 0} · Lost: {report.totals?.lost_count || 0} · Weighted amounts use recorded probabilities only.</p></>}</>}
+    {view === 'pipeline' && <><p className="environment-note">Current opportunity-stage snapshot; not a historical reconstruction of stage changes.</p>{report && <div className="crm-report-chart-scroll"><BarChart title="Pipeline opportunities by current stage" orientation="vertical" color={vizPalette[2]} rows={graphData.map((g: any) => ({ key: String(g.bucket || 'Unassigned'), label: String(g.bucket || 'Unassigned'), value: Number(g.opportunity_count || 0) }))} /></div>}{report && <p>{report.totals?.opportunity_count || 0} opportunities in current stage distribution.</p>}</>}
     {view === 'pivot' && <>
       {!pivot && !error && <p role="status">Loading SQL pivot totals…</p>}
       {pivot && <>

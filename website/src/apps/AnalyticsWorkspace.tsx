@@ -1,10 +1,14 @@
-import { InteractiveChart } from '../charts/InteractiveChart';
-import { BarChart } from '../charts/BarChart';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { BarChart } from '../charts/BarChart';
+import { DonutChart } from '../charts/DonutChart';
+import { InteractiveChart } from '../charts/InteractiveChart';
+import { MetricStrip, MetricTile } from '../charts/MetricTile';
+import { formatDateRange, percentChange, vizColor, vizPalette } from '../charts/viz';
 import { DataTable } from '../components/DataTable';
 import { DateRange } from '../components/DateRange';
 import { Overlay } from '../components/Overlay';
 import { Field, money, type API } from '../operations/UI';
+import './analytics-shopify.css';
 
 type Metric =
   | 'orders.count'
@@ -53,13 +57,18 @@ const metricNames: Record<Metric, string> = {
   'automations.rules': 'Automation rules',
   'automations.runs': 'Automation runs',
 };
+
 function financeCoverage(financial: any) {
   const quality = financial?.quality;
   if (!quality) return 'Financial source coverage is unavailable.';
   return `${quality.history_days} days of recorded history · ${quality.unreconciled_count} unreconciled exceptions · ${quality.unallocated_confirmations} unallocated confirmations${quality.limited_history ? ' · limited history' : ''}`;
 }
 function statusOptionsFor(source: Source | undefined, registry: any): string[] {
-  return source ? registry?.filters?.find((filter: any) => filter.id === 'status')?.options_by_source?.[source] || [] : [];
+  return source
+    ? registry?.filters?.find((filter: any) => filter.id === 'status')?.options_by_source?.[
+        source
+      ] || []
+    : [];
 }
 const groupLabels: Record<Group, string> = {
   day: 'Day',
@@ -69,10 +78,10 @@ const groupLabels: Record<Group, string> = {
   snapshot: 'Current snapshot',
 };
 const chartLabels: Record<Widget['chart'], string> = {
-  kpi: 'KPI',
-  line: 'Line',
-  bar: 'Bar',
-  pie: 'Pie',
+  kpi: 'KPI card',
+  line: 'Line chart',
+  bar: 'Bar chart',
+  pie: 'Donut breakdown',
   table: 'Table',
 };
 const queryString = (input: Record<string, unknown>) => {
@@ -97,6 +106,16 @@ function shiftDate(date: string, amount: number) {
 }
 function monthStart(date: string) {
   return `${date.slice(0, 7)}-01`;
+}
+function comparisonWindowFor(query: Query, today: string) {
+  if (query.range === 'all') return null;
+  const to = query.to || today,
+    from = query.from || shiftDate(to, -89),
+    days = Math.max(1, Math.round((Date.parse(to) - Date.parse(from)) / 86400000) + 1);
+  return {
+    from: shiftDate(from, -days),
+    to: shiftDate(from, -1),
+  };
 }
 function matchingPreset(query: Query, today: string) {
   if (query.range === 'all') return 'all';
@@ -123,6 +142,7 @@ function defaultWidgets(metrics: any[]): Widget[] {
       title: 'Confirmed collections',
       chart: 'kpi',
       group_by: 'month',
+      color: vizPalette[0],
     });
   if (has('financial.net_movement'))
     list.push({
@@ -131,6 +151,7 @@ function defaultWidgets(metrics: any[]): Widget[] {
       title: 'Net movement',
       chart: 'kpi',
       group_by: 'month',
+      color: vizPalette[2],
     });
   if (has('orders.count'))
     list.push({
@@ -139,6 +160,7 @@ function defaultWidgets(metrics: any[]): Widget[] {
       title: 'Orders created',
       chart: 'line',
       group_by: 'month',
+      color: vizPalette[0],
     });
   if (has('customers.count'))
     list.push({
@@ -147,6 +169,7 @@ function defaultWidgets(metrics: any[]): Widget[] {
       title: 'Customers created',
       chart: 'line',
       group_by: 'month',
+      color: vizPalette[2],
     });
   if (has('inventory.movements'))
     list.push({
@@ -155,6 +178,7 @@ function defaultWidgets(metrics: any[]): Widget[] {
       title: 'Stock movement rows',
       chart: 'bar',
       group_by: 'month',
+      color: vizPalette[1],
     });
   return list;
 }
@@ -191,8 +215,13 @@ function templateWidgets(template: string, metrics: any[]): Widget[] {
         id: `widget-${Date.now()}-${index}`,
         metric,
         title: metricNames[metric],
-        chart: (allowedCharts.includes(preferredChart) ? preferredChart : allowedCharts[0] || 'kpi') as Widget['chart'],
-        group_by: (definition?.groups?.includes('month') ? 'month' : definition?.groups?.[0] || 'month') as Group,
+        chart: (allowedCharts.includes(preferredChart)
+          ? preferredChart
+          : allowedCharts[0] || 'kpi') as Widget['chart'],
+        group_by: (definition?.groups?.includes('month')
+          ? 'month'
+          : definition?.groups?.[0] || 'month') as Group,
+        color: vizColor(index),
       };
     });
 }
@@ -215,12 +244,15 @@ export function AnalyticsWorkspace({
   openRecord?: (tab: string, id: string) => void;
 }) {
   const [query, setQuery] = useState<Query>({ currency: 'KES' });
+  const [comparePeriod, setComparePeriod] = useState(true);
   const [data, setData] = useState<any>(null),
+    [priorData, setPriorData] = useState<any>(null),
     [registry, setRegistry] = useState<any>(null),
     [dashboards, setDashboards] = useState<any[]>([]),
     [savedReports, setSavedReports] = useState<any[]>([]),
     [activeDashboardId, setActiveDashboardId] = useState(''),
     [reports, setReports] = useState<Record<string, any>>({}),
+    [priorReports, setPriorReports] = useState<Record<string, any>>({}),
     [reportErrors, setReportErrors] = useState<Record<string, string>>({}),
     [loading, setLoading] = useState(true),
     [loadErrors, setLoadErrors] = useState<Record<string, string>>({}),
@@ -250,6 +282,7 @@ export function AnalyticsWorkspace({
     [reportChart, setReportChart] = useState<'kpi' | 'line' | 'bar' | 'pie' | 'table'>('line'),
     [reportView, setReportView] = useState<'graph' | 'pivot' | 'table'>('graph'),
     [reportData, setReportData] = useState<any>(null),
+    [priorReportData, setPriorReportData] = useState<any>(null),
     [reportName, setReportName] = useState(''),
     [reportSaveError, setReportSaveError] = useState(''),
     [reportSaving, setReportSaving] = useState(false),
@@ -283,27 +316,42 @@ export function AnalyticsWorkspace({
     selectedWidgetMetric = availableMetrics.find((item: any) => item.id === widgetMetric),
     selectedWidget =
       draftWidgets.find((widget) => widget.id === selectedWidgetId) || draftWidgets[0],
-    today = dateAtZone(registry?.timezone || 'Africa/Nairobi');
+    today = dateAtZone(registry?.timezone || 'Africa/Nairobi'),
+    priorWindow = useMemo(() => comparisonWindowFor(query, today), [queryKey, today]),
+    comparing = comparePeriod && !!priorWindow;
 
   useEffect(() => {
     const gate = ++loadGate.current;
     setLoading(true);
     setLoadErrors({});
     setData(null);
-    const request = (key: string, path: string, accept: (value: any) => void) =>
+    setPriorData(null);
+    const request = (key: string, path: string, accept: (value: any) => void, optional = false) =>
       api(path, 'GET', undefined, { 'Cache-Control': 'no-cache' })
         .then((value) => {
           if (gate === loadGate.current) accept(value);
         })
         .catch((error) => {
-          if (gate === loadGate.current)
+          if (gate === loadGate.current && !optional)
             setLoadErrors((current) => ({
               ...current,
               [key]: error.message || 'Could not load this section.',
             }));
         });
+    const window = comparisonWindowFor(query, today);
     Promise.allSettled([
       request('dashboard', '/business/analytics?' + queryString(query), setData),
+      ...(comparePeriod && window
+        ? [
+            request(
+              'prior',
+              '/business/analytics?' +
+                queryString({ ...query, range: undefined, from: window.from, to: window.to }),
+              setPriorData,
+              true,
+            ),
+          ]
+        : []),
       request('registry', '/business/analytics/registry', setRegistry),
       request('dashboards', '/business/analytics/dashboards', (result) =>
         setDashboards(result.data || []),
@@ -315,7 +363,7 @@ export function AnalyticsWorkspace({
     return () => {
       loadGate.current++;
     };
-  }, [api, scope, queryKey, revision]);
+  }, [api, scope, queryKey, revision, comparePeriod]);
 
   useEffect(() => {
     if (dashboards.length && !activeDashboardId) setActiveDashboardId(dashboards[0].id);
@@ -336,7 +384,9 @@ export function AnalyticsWorkspace({
   }, [scope, activeDashboardId]);
   useEffect(() => {
     const metric = availableMetrics.find((item: any) => item.available)?.id;
-    const source = availableMetrics.find((item: any) => item.available)?.source as Source | undefined;
+    const source = availableMetrics.find((item: any) => item.available)?.source as
+      | Source
+      | undefined;
     if (metric && !availableMetrics.some((item: any) => item.id === reportMetric && item.available))
       setReportMetric(metric);
     if (metric && !availableMetrics.some((item: any) => item.id === widgetMetric && item.available))
@@ -344,7 +394,9 @@ export function AnalyticsWorkspace({
     if (source && !availableSources.includes(widgetSource)) setWidgetSource(source);
   }, [registry]);
   useEffect(() => {
-    const source = availableMetrics.find((item: any) => item.id === widgetMetric)?.source as Source | undefined;
+    const source = availableMetrics.find((item: any) => item.id === widgetMetric)?.source as
+      | Source
+      | undefined;
     if (source) setWidgetSource(source);
   }, [widgetMetric, registry]);
   useEffect(() => {
@@ -386,13 +438,16 @@ export function AnalyticsWorkspace({
           : selectedMetric.allowed_charts[0]) as typeof reportChart,
       );
   }, [selectedMetric?.id, reportGroup, reportChart]);
+
   useEffect(() => {
     const active = dashboardWidgets.filter(
       (widget) => !search || widget.title.toLowerCase().includes(search.toLowerCase()),
     );
     if (!registry || !active.length || !['dashboard', 'saved-dashboards'].includes(section)) return;
     const gate = ++reportGate.current;
+    const window = comparisonWindowFor(query, today);
     setReports({});
+    setPriorReports({});
     setReportErrors({});
     active.forEach((widget) => {
       const path =
@@ -410,6 +465,27 @@ export function AnalyticsWorkspace({
               [widget.id]: error.message || 'Report unavailable.',
             }));
         });
+      if (comparePeriod && window && widget.metric !== 'inventory.low_stock') {
+        api(
+          '/business/analytics/report?' +
+            queryString({
+              ...query,
+              range: undefined,
+              from: window.from,
+              to: window.to,
+              metric: widget.metric,
+              group_by: widget.group_by,
+            }),
+          'GET',
+          undefined,
+          { 'Cache-Control': 'no-cache' },
+        )
+          .then((result) => {
+            if (gate === reportGate.current)
+              setPriorReports((current) => ({ ...current, [widget.id]: result }));
+          })
+          .catch(() => {});
+      }
     });
     return () => {
       reportGate.current++;
@@ -421,12 +497,16 @@ export function AnalyticsWorkspace({
     section,
     search,
     activeDashboardId,
+    comparePeriod,
     JSON.stringify(dashboardWidgets),
   ]);
+
   useEffect(() => {
     if (!registry || !['reporting', 'explore'].includes(section)) return;
     const gate = ++reportGate.current;
+    const window = comparisonWindowFor(query, today);
     setReportData(null);
+    setPriorReportData(null);
     api(
       '/business/analytics/report?' +
         queryString({ ...query, metric: reportMetric, group_by: reportGroup }),
@@ -444,10 +524,31 @@ export function AnalyticsWorkspace({
             report: error.message || 'Report unavailable.',
           }));
       });
+    if (comparePeriod && window && reportMetric !== 'inventory.low_stock') {
+      api(
+        '/business/analytics/report?' +
+          queryString({
+            ...query,
+            range: undefined,
+            from: window.from,
+            to: window.to,
+            metric: reportMetric,
+            group_by: reportGroup,
+          }),
+        'GET',
+        undefined,
+        { 'Cache-Control': 'no-cache' },
+      )
+        .then((result) => {
+          if (gate === reportGate.current) setPriorReportData(result);
+        })
+        .catch(() => {});
+    }
     return () => {
       reportGate.current++;
     };
-  }, [api, registry, queryKey, section, reportMetric, reportGroup]);
+  }, [api, registry, queryKey, section, reportMetric, reportGroup, comparePeriod]);
+
   useEffect(() => {
     if (!registry || section !== 'explore' || reportView !== 'pivot') return;
     const gate = ++pivotGate.current;
@@ -474,6 +575,7 @@ export function AnalyticsWorkspace({
       pivotGate.current++;
     };
   }, [api, registry, queryKey, section, reportView, reportMetric, pivotRows, pivotColumns]);
+
   useEffect(() => {
     if (!builder || !registry || !draftWidgets.length) {
       setBuilderPreview(null);
@@ -502,6 +604,7 @@ export function AnalyticsWorkspace({
       previewGate.current++;
     };
   }, [api, registry, builder, JSON.stringify(draftFilters), JSON.stringify(selectedWidget)]);
+
   useEffect(() => {
     drillGate.current++;
     setDrill(null);
@@ -542,7 +645,10 @@ export function AnalyticsWorkspace({
           },
         },
       });
-      setSavedReports((current) => [result, ...current.filter((entry) => entry.id !== result.id)]);
+      setSavedReports((current) => [
+        result,
+        ...current.filter((entry) => entry.id !== result.id),
+      ]);
       setReportName('');
     } catch (error) {
       setReportSaveError((error as Error).message || 'Could not save this exploration.');
@@ -559,13 +665,17 @@ export function AnalyticsWorkspace({
     const filter: any = { kind: reportMetric === 'orders.count' ? 'orders' : 'customers' };
     if (query.from) filter.from = query.from;
     if (query.to) filter.to = query.to;
-    for (const [dimension, key] of [[pivotRows, rowKey], [pivotColumns, columnKey]] as [Group, string][]) {
+    for (const [dimension, key] of [
+      [pivotRows, rowKey],
+      [pivotColumns, columnKey],
+    ] as [Group, string][]) {
       if (dimension === 'day') filter.date = key;
       if (dimension === 'month') {
         filter.from = query.from && query.from > `${key}-01` ? query.from : `${key}-01`;
         filter.to = query.to && query.to < monthLastDay(key) ? query.to : monthLastDay(key);
       }
-      if (dimension === 'status') filter.status = key === 'Unclassified' ? '__unclassified__' : key;
+      if (dimension === 'status')
+        filter.status = key === 'Unclassified' ? '__unclassified__' : key;
     }
     void inspect(filter);
   }
@@ -622,6 +732,7 @@ export function AnalyticsWorkspace({
   function applyDatePreset(preset: string) {
     const todayValue = dateAtZone(registry?.timezone || 'Africa/Nairobi');
     if (preset === 'custom') {
+      setFilterDraft(query);
       setFilterOpen(true);
       return;
     }
@@ -653,7 +764,12 @@ export function AnalyticsWorkspace({
       return;
     }
     if (preset === 'ytd') {
-      setQuery((current) => ({ ...current, range: undefined, from: `${todayValue.slice(0, 4)}-01-01`, to: todayValue }));
+      setQuery((current) => ({
+        ...current,
+        range: undefined,
+        from: `${todayValue.slice(0, 4)}-01-01`,
+        to: todayValue,
+      }));
     }
   }
   function shiftPeriod(direction: number) {
@@ -697,7 +813,7 @@ export function AnalyticsWorkspace({
         title: label,
         chart: widgetMetric.startsWith('financial.') ? 'kpi' : widgetChart,
         group_by: widgetGroup,
-        color: palette[current.length % palette.length],
+        color: vizPalette[current.length % vizPalette.length],
         span: 'normal',
       },
     ]);
@@ -819,7 +935,12 @@ export function AnalyticsWorkspace({
     try {
       const result = await api(
           '/business/analytics/pivot/export-data?' +
-            queryString({ ...query, metric: reportMetric, row_by: pivotRows, column_by: pivotColumns }),
+            queryString({
+              ...query,
+              metric: reportMetric,
+              row_by: pivotRows,
+              column_by: pivotColumns,
+            }),
           'GET',
           undefined,
           { 'Cache-Control': 'no-cache' },
@@ -836,16 +957,20 @@ export function AnalyticsWorkspace({
       setLoadErrors((current) => ({ ...current, export: (error as Error).message }));
     }
   }
+
   const queryLabels = [
     query.from || query.range === 'all'
-      ? `${query.from || 'All history'} → ${query.to || 'today'}`
-      : 'Last 90 days',
+      ? query.range === 'all'
+        ? 'All recorded history'
+        : formatDateRange(query.from, query.to || today)
+      : `Last 90 days (${formatDateRange(shiftDate(today, -89), today)})`,
     query.status
       ? `Status: ${query.status === '__unclassified__' ? 'Unclassified' : query.status}`
       : '',
     query.source ? `Source: ${registry?.sources?.[query.source]?.label || query.source}` : '',
     query.currency ? `Currency: ${query.currency}` : '',
   ].filter(Boolean);
+
   const summary = useMemo(() => {
     const series = data?.series || [],
       sum = (name: string) =>
@@ -854,32 +979,59 @@ export function AnalyticsWorkspace({
           .reduce((total: number, row: any) => total + Number(row.count || 0), 0);
     return { orders: sum('orders'), customers: sum('customers') };
   }, [data]);
-  const activityPoints = useMemo(() => {
+  const priorSummary = useMemo(() => {
+    if (!priorData) return null;
+    const series = priorData?.series || [],
+      sum = (name: string) =>
+        series
+          .filter((row: any) => row.kind === name)
+          .reduce((total: number, row: any) => total + Number(row.count || 0), 0);
+    return { orders: sum('orders'), customers: sum('customers') };
+  }, [priorData]);
+
+  const toActivityPoints = (rows: any[]) => {
     const byDate: Record<string, any> = {};
-    for (const row of data?.series || []) {
+    for (const row of rows || []) {
       const current =
         byDate[row.date] || (byDate[row.date] = { date: row.date, orders: 0, customers: 0 });
       if (row.kind === 'orders' || row.kind === 'customers')
         current[row.kind] = Number(row.count || 0);
     }
-    return Object.values(byDate);
+    return Object.values(byDate).sort((a: any, b: any) => a.date.localeCompare(b.date));
+  };
+  const activityPoints = useMemo(() => toActivityPoints(data?.series || []), [data]);
+  const priorActivityPoints = useMemo(
+    () => (priorData ? toActivityPoints(priorData.series || []) : null),
+    [priorData],
+  );
+  const stockByDate = useMemo(() => {
+    if (!data?.stock_series?.length) return [];
+    const byDate = new Map<string, number>();
+    for (const row of data.stock_series)
+      byDate.set(row.date, (byDate.get(row.date) || 0) + Number(row.operations || 0));
+    return [...byDate]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, value]) => ({ key: date, label: date, value }));
   }, [data]);
+
   const activitySeries = [
       ...(data?.sources?.orders && (!query.source || query.source === 'orders')
-        ? [{ key: 'orders', label: 'Orders', color: '#52a6e8' }]
+        ? [{ key: 'orders', label: 'Orders', color: vizPalette[0] }]
         : []),
       ...(data?.sources?.customers && (!query.source || query.source === 'customers')
-        ? [{ key: 'customers', label: 'Customers', color: '#44bdab' }]
+        ? [{ key: 'customers', label: 'Customers', color: vizPalette[2] }]
         : []),
     ],
     searchResults = dashboardWidgets.filter(
       (widget) => !search || widget.title.toLowerCase().includes(search.toLowerCase()),
     ),
     reportRows = reportData?.rows || [],
+    priorReportRows = priorReportData?.rows || [],
     reportPages = Math.max(1, Math.ceil(reportRows.length / 25));
 
   function renderWidget(widget: Widget) {
     const result = reports[widget.id],
+      priorResult = comparing ? priorReports[widget.id] : null,
       error = reportErrors[widget.id];
     if (error)
       return (
@@ -892,7 +1044,9 @@ export function AnalyticsWorkspace({
       return (
         <article className="analytics-widget panel" key={widget.id}>
           <h3>{widget.title}</h3>
-          <p role="status">Loading authorized metric…</p>
+          <div className="sv-root sv-skeleton" role="status" style={{ height: 140 }}>
+            <span className="sv-sr-only">Loading authorized metric…</span>
+          </div>
         </article>
       );
     if (result.excluded_by_source_filter)
@@ -903,9 +1057,18 @@ export function AnalyticsWorkspace({
         </article>
       );
     const isMoney = widget.metric.startsWith('financial.'),
+      invert = ['financial.expenses', 'financial.receivables', 'inventory.low_stock'].includes(
+        widget.metric,
+      ),
       value = Number(result.value || 0),
+      priorValue =
+        priorResult && !priorResult.excluded_by_source_filter ? Number(priorResult.value || 0) : null,
       rows = result.rows || [],
-      title = widget.title || result.label;
+      priorRows = priorResult?.rows || [],
+      title = widget.title || result.label,
+      currency = isMoney ? result.currency || query.currency : undefined,
+      color = widget.color || vizPalette[0];
+
     return (
       <article
         className={`analytics-widget panel ${widget.span === 'wide' || widget.chart === 'line' ? 'analytics-widget-wide' : ''}`}
@@ -913,69 +1076,90 @@ export function AnalyticsWorkspace({
       >
         <header>
           <div>
-            <h3>{title}</h3>
+            <h3 title={result.definition}>{title}</h3>
             <small>{result.definition}</small>
           </div>
           <span>{result.source}</span>
         </header>
         {widget.chart === 'kpi' ? (
-          <div className="analytics-widget-kpi">
-            <strong className="analytics-widget-value">
-              {isMoney ? money(value, result.currency || query.currency) : value.toLocaleString('en-KE')}
-            </strong>
-            <small>
-              {widget.metric === 'inventory.low_stock'
-                ? `As of ${result.refreshed_at}`
-                : `${result.period.from} – ${result.period.to}`}
-              {result.currency ? ` · ${result.currency}` : ''}
-              {result.timezone ? ` · ${result.timezone}` : ''}
-            </small>
-            {result.coverage && <small>{result.coverage}</small>}
-            <small>Refreshed: {result.refreshed_at}</small>
-          </div>
+          <MetricTile
+            label={title}
+            value={isMoney ? money(value, currency || query.currency) : value.toLocaleString('en-KE')}
+            definition={result.definition}
+            change={comparing && priorValue !== null ? percentChange(value, priorValue) : undefined}
+            invertChange={invert}
+            color={color}
+            caption={
+              <>
+                {widget.metric === 'inventory.low_stock'
+                  ? `As of ${result.refreshed_at}`
+                  : `${result.period.from} – ${result.period.to}`}
+                {result.currency ? ` · ${result.currency}` : ''}
+                {result.timezone ? ` · ${result.timezone}` : ''}
+              </>
+            }
+          >
+            {(result.coverage || result.refreshed_at) && (
+              <details>
+                <summary>Coverage &amp; refresh</summary>
+                {result.coverage && <small>{result.coverage}</small>}
+                <small>Refreshed: {result.refreshed_at}</small>
+              </details>
+            )}
+          </MetricTile>
         ) : widget.chart === 'line' && ['day', 'month'].includes(widget.group_by) ? (
           <InteractiveChart
             compact
             headingLevel={3}
+            showRanges={false}
+            currency={currency}
+            invertChange={invert}
+            defaultCompare={comparing}
             title={`${title} by ${groupLabels[widget.group_by].toLowerCase()}`}
             points={rows.map((row: any) => ({
               date: widget.group_by === 'month' ? `${row.key}-01` : row.key,
-              count: row.value,
+              count: Number(row.value),
             }))}
-            series={[{ key: 'count', label: title, color: widget.color || '#52a6e8' }]}
+            comparisonPoints={
+              priorRows.length
+                ? priorRows.map((row: any) => ({
+                    date: widget.group_by === 'month' ? `${row.key}-01` : row.key,
+                    count: Number(row.value),
+                  }))
+                : null
+            }
+            comparisonPeriod={priorWindow}
+            series={[{ key: 'count', label: title, color }]}
             description={result.definition}
-            onPointSelect={result.drilldown ? (point: any) => {
-              const item = rows.find(
-                (entry: any) =>
-                  (widget.group_by === 'month' ? `${entry.key}-01` : entry.key) === point.date,
-              );
-              inspectReportRow(item);
-            } : undefined}
+            onPointSelect={
+              result.drilldown
+                ? (point: any) => {
+                    const item = rows.find(
+                      (entry: any) =>
+                        (widget.group_by === 'month' ? `${entry.key}-01` : entry.key) ===
+                        point.date,
+                    );
+                    inspectReportRow(item);
+                  }
+                : undefined
+            }
           />
         ) : widget.chart === 'pie' ? (
-          <div className="analytics-pie-wrap">
-            <div
-              className="analytics-pie"
-              style={{ background: pieGradient(rows) }}
-              aria-label={`${title} distribution`}
-            >
-              <span>{value.toLocaleString('en-KE')}</span>
-            </div>
-            <div className="analytics-pie-legend">
-              {rows.map((row: any, index: number) => (
-                <span key={row.key}>
-                  <i style={{ background: pieColor(index) }} />
-                  {row.drilldown ? (
-                    <button className="analytics-pie-drill" onClick={() => inspectReportRow(row)}>
-                      {row.label} <b>{Number(row.value).toLocaleString('en-KE')}</b>
-                    </button>
-                  ) : (
-                    <>{row.label} <b>{Number(row.value).toLocaleString('en-KE')}</b></>
-                  )}
-                </span>
-              ))}
-            </div>
-          </div>
+          <DonutChart
+            title={title}
+            currency={currency}
+            rows={rows.map((row: any, index: number) => ({
+              key: String(row.key),
+              label: row.label,
+              value: Number(row.value),
+              color: vizColor(index),
+            }))}
+            onInspect={
+              result.drilldown
+                ? (key) => inspectReportRow(rows.find((row: any) => String(row.key) === key))
+                : undefined
+            }
+          />
         ) : widget.chart === 'table' ? (
           <DataTable>
             <thead>
@@ -989,23 +1173,50 @@ export function AnalyticsWorkspace({
               {rows.map((row: any) => (
                 <tr key={row.key}>
                   <td>{row.label}</td>
-                  <td>{row.value}</td>
-                  {result.drilldown && <td>{row.drilldown ? <button className="quiet-button" onClick={() => inspectReportRow(row)}>View records</button> : '—'}</td>}
+                  <td>{isMoney ? money(Number(row.value), currency || query.currency) : row.value}</td>
+                  {result.drilldown && (
+                    <td>
+                      {row.drilldown ? (
+                        <button className="quiet-button" onClick={() => inspectReportRow(row)}>
+                          View records
+                        </button>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
-              {!rows.length && <tr><td colSpan={result.drilldown ? 3 : 2}>No observations in the selected period.</td></tr>}
+              {!rows.length && (
+                <tr>
+                  <td colSpan={result.drilldown ? 3 : 2}>
+                    No observations in the selected period.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </DataTable>
         ) : (
           <BarChart
             title={`${title} by ${groupLabels[widget.group_by].toLowerCase()}`}
+            currency={currency}
+            orientation={['day', 'month'].includes(widget.group_by) ? 'vertical' : 'horizontal'}
             rows={rows.map((row: any) => ({
-              key: row.key,
+              key: String(row.key),
               label: row.label,
               value: Number(row.value),
             }))}
-            color={widget.color || '#426900'}
-            onInspect={result.drilldown ? (key) => inspectReportRow(rows.find((row: any) => String(row.key) === key)) : undefined}
+            comparisonRows={
+              comparing && priorRows.length && !['day', 'month'].includes(widget.group_by)
+                ? priorRows.map((row: any) => ({ key: String(row.key), value: Number(row.value) }))
+                : undefined
+            }
+            color={color}
+            onInspect={
+              result.drilldown
+                ? (key) => inspectReportRow(rows.find((row: any) => String(row.key) === key))
+                : undefined
+            }
           />
         )}
         {!!result.ignored_filters?.length && (
@@ -1031,28 +1242,9 @@ export function AnalyticsWorkspace({
   }
 
   return (
-    <div className="apps-workspace analytics-workspace">
+    <div className="apps-workspace analytics-workspace sh-analytics">
       <div className="analytics-toolbar">
-        <label className="analytics-search">
-          <span aria-hidden="true">⌕</span>
-          <input
-            aria-label="Search this dashboard"
-            placeholder="Search dashboard…"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-          <button
-            type="button"
-            aria-label="Open filters"
-            onClick={() => {
-              setFilterDraft(query);
-              setFilterOpen((value) => !value);
-            }}
-          >
-            ▾
-          </button>
-        </label>
-        <div className="analytics-period-controls">
+        <div className="sh-pill-group">
           <select
             aria-label="Reporting period"
             value={matchingPreset(query, today)}
@@ -1060,39 +1252,106 @@ export function AnalyticsWorkspace({
           >
             <option value="today">Today</option>
             <option value="yesterday">Yesterday</option>
-            <option value="7">Last 7 Days</option>
-            <option value="30">Last 30 Days</option>
-            <option value="90">Last 90 Days</option>
-            <option value="365">Last 365 Days</option>
-            <option value="mtd">Month to Date</option>
-            <option value="previous-month">Previous Month</option>
-            <option value="ytd">Year to Date</option>
-            <option value="all">All History</option>
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="365">Last 365 days</option>
+            <option value="mtd">Month to date</option>
+            <option value="previous-month">Previous month</option>
+            <option value="ytd">Year to date</option>
+            <option value="all">All history</option>
             <option value="custom">Custom…</option>
           </select>
-          <button aria-label="Previous period" onClick={() => shiftPeriod(-1)}>
+          <button
+            type="button"
+            className="sh-pill-step"
+            aria-label="Previous period"
+            disabled={query.range === 'all'}
+            onClick={() => shiftPeriod(-1)}
+          >
             ‹
           </button>
           <button
+            type="button"
+            className="sh-pill-step"
             aria-label="Next period"
-            disabled={!query.to || query.to >= today}
+            disabled={!query.to || query.to >= today || query.range === 'all'}
             onClick={() => shiftPeriod(1)}
           >
             ›
           </button>
-          <button
-            className="analytics-toolbar-action"
-            onClick={() => setRevision((value) => value + 1)}
-            aria-label="Refresh analytics"
-            title="Refresh analytics from authorized sources"
-          >
-            Refresh
-          </button>
-          <button className="analytics-toolbar-action" onClick={() => void exportDashboard()}>
-            Export CSV
-          </button>
         </div>
+
         <button
+          type="button"
+          className="sh-pill-btn"
+          aria-pressed={comparing}
+          disabled={!priorWindow}
+          title={
+            priorWindow
+              ? `Overlay ${priorWindow.from} to ${priorWindow.to} across KPIs and charts`
+              : 'Select a bounded date range to compare against its previous period'
+          }
+          onClick={() => setComparePeriod((value) => !value)}
+        >
+          ⇄ {comparing ? 'Comparing previous period' : 'Compare to previous period'}
+        </button>
+
+        <div className="sh-pill-group">
+          <select
+            aria-label="Reporting currency"
+            value={query.currency}
+            onChange={(event) =>
+              setQuery((current) => ({ ...current, currency: event.target.value }))
+            }
+          >
+            {['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF'].map((currency) => (
+              <option key={currency} value={currency}>
+                {currency}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button
+          type="button"
+          className="sh-pill-btn"
+          aria-label="Open filters"
+          aria-expanded={filterOpen}
+          onClick={() => {
+            setFilterDraft(query);
+            setFilterOpen((value) => !value);
+          }}
+        >
+          Filters{query.source || query.status ? ' •' : ''}
+        </button>
+
+        <button
+          type="button"
+          className="sh-pill-btn"
+          onClick={() => setRevision((value) => value + 1)}
+          aria-label="Refresh analytics"
+          title="Refresh analytics from authorized sources"
+        >
+          ↻ Refresh
+        </button>
+
+        <button type="button" className="sh-pill-btn" onClick={() => void exportDashboard()}>
+          Export CSV
+        </button>
+
+        <label className="analytics-search">
+          <span aria-hidden="true">⌕</span>
+          <input
+            aria-label="Search this dashboard"
+            placeholder="Search metrics & cards…"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </label>
+
+        <button
+          type="button"
           className="analytics-star"
           aria-label={favorite ? 'Remove favorite dashboard' : 'Add favorite dashboard'}
           aria-pressed={favorite}
@@ -1100,11 +1359,17 @@ export function AnalyticsWorkspace({
         >
           {favorite ? '★' : '☆'}
         </button>
+
         {manager && (
-          <button className="secondary-button" onClick={() => setCreateOpen(true)}>
-            New Dashboard
+          <button
+            type="button"
+            className="sh-pill-btn sh-pill-btn--primary"
+            onClick={() => setCreateOpen(true)}
+          >
+            Customize / New
           </button>
         )}
+
         {filterOpen && (
           <div className="analytics-filter-popover" role="dialog" aria-label="Dashboard filters">
             <header>
@@ -1139,13 +1404,21 @@ export function AnalyticsWorkspace({
                         next = { ...next, from: todayValue, to: todayValue };
                         break;
                       case 'yesterday':
-                        next = { ...next, from: shiftDate(todayValue, -1), to: shiftDate(todayValue, -1) };
+                        next = {
+                          ...next,
+                          from: shiftDate(todayValue, -1),
+                          to: shiftDate(todayValue, -1),
+                        };
                         break;
                       case '7':
                       case '30':
                       case '90':
                       case '365':
-                        next = { ...next, from: shiftDate(todayValue, -Number(event.target.value) + 1), to: todayValue };
+                        next = {
+                          ...next,
+                          from: shiftDate(todayValue, -Number(event.target.value) + 1),
+                          to: todayValue,
+                        };
                         break;
                       case 'mtd':
                         next = { ...next, from: monthStart(todayValue), to: todayValue };
@@ -1156,10 +1429,18 @@ export function AnalyticsWorkspace({
                         break;
                       }
                       case 'ytd':
-                        next = { ...next, from: `${todayValue.slice(0, 4)}-01-01`, to: todayValue };
+                        next = {
+                          ...next,
+                          from: `${todayValue.slice(0, 4)}-01-01`,
+                          to: todayValue,
+                        };
                         break;
                       case 'all':
-                        next = { currency: current.currency, source: current.source, range: 'all' };
+                        next = {
+                          currency: current.currency,
+                          source: current.source,
+                          range: 'all',
+                        };
                         break;
                       default:
                         break;
@@ -1192,14 +1473,20 @@ export function AnalyticsWorkspace({
                 >
                   <option value="">All authorized sources</option>
                   {Object.entries(registry?.sources || {}).map(([id, source]: [string, any]) =>
-                    source.readable ? <option key={id} value={id}>{source.label}</option> : null,
+                    source.readable ? (
+                      <option key={id} value={id}>
+                        {source.label}
+                      </option>
+                    ) : null,
                   )}
                 </select>
               </Field>
               <Field label="Status">
                 <select
                   value={filterDraft.status || ''}
-                  disabled={!filterDraft.source || !statusOptionsFor(filterDraft.source, registry).length}
+                  disabled={
+                    !filterDraft.source || !statusOptionsFor(filterDraft.source, registry).length
+                  }
                   onChange={(event) =>
                     setFilterDraft((current) => ({
                       ...current,
@@ -1207,7 +1494,9 @@ export function AnalyticsWorkspace({
                     }))
                   }
                 >
-                  <option value="">{filterDraft.source ? 'All statuses' : 'Choose a source first'}</option>
+                  <option value="">
+                    {filterDraft.source ? 'All statuses' : 'Choose a source first'}
+                  </option>
                   {statusOptionsFor(filterDraft.source, registry).map((status) => (
                     <option key={status} value={status}>
                       {status === '__unclassified__' ? 'Unclassified' : status}
@@ -1271,18 +1560,25 @@ export function AnalyticsWorkspace({
           </div>
         )}
       </div>
+
       <div className="analytics-filter-chips">
         {queryLabels.map((label) => (
           <span key={label}>{label}</span>
         ))}
+        {comparing && priorWindow && (
+          <span className="sh-compare-chip">
+            Compared to {formatDateRange(priorWindow.from, priorWindow.to)}
+          </span>
+        )}
       </div>
+
       <div className="analytics-layout">
         <aside className="analytics-sidebar" aria-label="Analytics navigation">
           <button
             className={section === 'dashboard' ? 'selected' : ''}
             onClick={() => navigate?.('dashboard')}
           >
-            Dashboards
+            Overview
           </button>
           {activeDashboard && (
             <button className="analytics-subnav" onClick={() => navigate?.('dashboard')}>
@@ -1295,7 +1591,7 @@ export function AnalyticsWorkspace({
               {activeDashboard?.name || 'Overview'}
             </button>
           )}
-          <h3>REPORTING</h3>
+          <h3>REPORTS</h3>
           <button
             className={section === 'reporting' ? 'selected' : ''}
             onClick={() => {
@@ -1309,9 +1605,15 @@ export function AnalyticsWorkspace({
             className={section === 'explore' ? 'selected' : ''}
             onClick={() => navigate?.('explore')}
           >
-            Pivot & Explore
+            Pivot &amp; Explore
           </button>
-          <h3>MANAGE</h3>
+          <button
+            className={section === 'Intelligence' ? 'selected' : ''}
+            onClick={() => navigate?.('Intelligence')}
+          >
+            Financial Patterns
+          </button>
+          <h3>LIBRARY</h3>
           <button
             className={section === 'saved-dashboards' ? 'selected' : ''}
             onClick={() => navigate?.('saved-dashboards')}
@@ -1330,17 +1632,12 @@ export function AnalyticsWorkspace({
           >
             Configuration
           </button>
-          <button
-            className={section === 'Intelligence' ? 'selected' : ''}
-            onClick={() => navigate?.('Intelligence')}
-          >
-            Financial Patterns
-          </button>
         </aside>
+
         <main className="analytics-main">
           {(loading || Object.keys(loadErrors).length > 0) && (
             <div className="analytics-load-status">
-              {loading && <p role="status">Loading authorized analytics sources…</p>}
+              {loading && !data && <p role="status">Loading authorized analytics sources…</p>}
               {Object.entries(loadErrors).map(([key, message]) => (
                 <p className="alert error" role="alert" key={key}>
                   {key}: {message}{' '}
@@ -1354,6 +1651,7 @@ export function AnalyticsWorkspace({
               ))}
             </div>
           )}
+
           {builder ? (
             <section className="analytics-builder">
               <header className="analytics-page-heading">
@@ -1383,72 +1681,81 @@ export function AnalyticsWorkspace({
                     </span>
                   </div>
                   {builderPreviewError && <p className="alert error">{builderPreviewError}</p>}
-                      {builderPreview?.excluded_by_source_filter && (
-                        <p className="analytics-excluded">Excluded by the selected record-source filter.</p>
-                      )}
+                  {builderPreview?.excluded_by_source_filter && (
+                    <p className="analytics-excluded">
+                      Excluded by the selected record-source filter.
+                    </p>
+                  )}
                   {builderPreview && !builderPreview.excluded_by_source_filter ? (
-                    <>
-                      <h2>{selectedWidget?.title || builderPreview.label}</h2>
+                    <div className="panel" style={{ padding: 18 }}>
                       {selectedWidget?.chart === 'kpi' ? (
-                        <strong className="analytics-widget-value">
-                          {selectedWidget?.metric.startsWith('financial.')
-                            ? money(builderPreview.value, draftFilters.currency)
-                            : builderPreview.value}
-                        </strong>
+                        <MetricTile
+                          label={selectedWidget?.title || builderPreview.label}
+                          value={
+                            selectedWidget?.metric.startsWith('financial.')
+                              ? money(Number(builderPreview.value || 0), draftFilters.currency)
+                              : Number(builderPreview.value || 0).toLocaleString('en-KE')
+                          }
+                          definition={builderPreview.definition}
+                          color={selectedWidget?.color || vizPalette[0]}
+                          caption={`${builderPreview.period?.from || ''} – ${builderPreview.period?.to || ''}`}
+                        />
                       ) : selectedWidget?.chart === 'line' &&
                         ['day', 'month'].includes(selectedWidget.group_by) ? (
                         <InteractiveChart
-                          title={builderPreview.label}
+                          title={selectedWidget.title || builderPreview.label}
+                          currency={
+                            selectedWidget.metric.startsWith('financial.')
+                              ? draftFilters.currency
+                              : undefined
+                          }
                           points={(builderPreview.rows || []).map((row: any) => ({
-                            date: selectedWidget.group_by === 'month' ? `${row.key}-01` : row.key,
+                            date:
+                              selectedWidget.group_by === 'month' ? `${row.key}-01` : row.key,
                             value: Number(row.value),
                           }))}
                           series={[
                             {
                               key: 'value',
                               label: builderPreview.label,
-                              color: selectedWidget.color || '#52a6e8',
+                              color: selectedWidget.color || vizPalette[0],
                             },
                           ]}
                           description={builderPreview.definition}
                         />
                       ) : selectedWidget?.chart === 'pie' ? (
-                        <div className="analytics-pie-wrap">
-                          <div
-                            className="analytics-pie"
-                            style={{ background: pieGradient(builderPreview.rows || []) }}
-                          >
-                            <span>{Number(builderPreview.value || 0).toLocaleString('en-KE')}</span>
-                          </div>
-                          <div className="analytics-pie-legend">
-                            {(builderPreview.rows || []).map((row: any, index: number) => (
-                              <span key={row.key}>
-                                <i style={{ background: pieColor(index) }} />
-                                {row.label} <b>{Number(row.value).toLocaleString('en-KE')}</b>
-                              </span>
-                            ))}
-                          </div>
-                        </div>
+                        <DonutChart
+                          title={selectedWidget.title || builderPreview.label}
+                          rows={(builderPreview.rows || []).map((row: any, index: number) => ({
+                            key: String(row.key),
+                            label: row.label,
+                            value: Number(row.value),
+                            color: vizColor(index),
+                          }))}
+                        />
                       ) : selectedWidget?.chart === 'table' ? (
-                        <ReportTable rows={builderPreview.rows || []} group={selectedWidget.group_by} />
+                        <ReportTable
+                          rows={builderPreview.rows || []}
+                          group={selectedWidget.group_by}
+                        />
                       ) : (
                         <BarChart
-                          title={`${builderPreview.label} · ${groupLabels[selectedWidget?.group_by || 'month']}`}
+                          title={`${selectedWidget?.title || builderPreview.label} · ${groupLabels[selectedWidget?.group_by || 'month']}`}
                           rows={(builderPreview.rows || []).map((row: any) => ({
-                            key: row.key,
+                            key: String(row.key),
                             label: row.label,
                             value: Number(row.value),
                           }))}
-                          color={selectedWidget?.color || '#426900'}
+                          color={selectedWidget?.color || vizPalette[0]}
                         />
                       )}
-                    </>
+                    </div>
                   ) : (
                     <p>Select an authorized data source to preview its results.</p>
                   )}
                 </section>
                 <aside className="analytics-builder-config">
-                  <h2>Chart</h2>
+                  <h2>Customize</h2>
                   <nav>
                     <button
                       className={builderTab === 'configuration' ? 'selected' : ''}
@@ -1529,7 +1836,10 @@ export function AnalyticsWorkspace({
                       <Field label="Status">
                         <select
                           value={draftFilters.status || ''}
-                          disabled={!draftFilters.source || !statusOptionsFor(draftFilters.source, registry).length}
+                          disabled={
+                            !draftFilters.source ||
+                            !statusOptionsFor(draftFilters.source, registry).length
+                          }
                           onChange={(event) =>
                             setDraftFilters((current) => ({
                               ...current,
@@ -1537,31 +1847,38 @@ export function AnalyticsWorkspace({
                             }))
                           }
                         >
-                          <option value="">{draftFilters.source ? 'All statuses' : 'Choose a source first'}</option>
+                          <option value="">
+                            {draftFilters.source ? 'All statuses' : 'Choose a source first'}
+                          </option>
                           {statusOptionsFor(draftFilters.source, registry).map((status) => (
                             <option key={status} value={status}>
                               {status === '__unclassified__' ? 'Unclassified' : status}
                             </option>
                           ))}
                         </select>
-                        {draftFilters.source && !statusOptionsFor(draftFilters.source, registry).length && (
-                          <small>This source has no status dimension.</small>
-                        )}
+                        {draftFilters.source &&
+                          !statusOptionsFor(draftFilters.source, registry).length && (
+                            <small>This source has no status dimension.</small>
+                          )}
                       </Field>
                       <hr />
-                      <h3>Data series</h3>
+                      <h3>Add visualization</h3>
                       <Field label="Data source">
                         <select
                           value={widgetSource}
                           onChange={(event) => {
                             const source = event.target.value as Source,
-                              metric = availableMetrics.find((entry: any) => entry.available && entry.source === source)?.id as Metric | undefined;
+                              metric = availableMetrics.find(
+                                (entry: any) => entry.available && entry.source === source,
+                              )?.id as Metric | undefined;
                             setWidgetSource(source);
                             if (metric) setWidgetMetric(metric);
                           }}
                         >
                           {availableSources.map((source) => (
-                            <option key={source} value={source}>{registry?.sources?.[source]?.label || source}</option>
+                            <option key={source} value={source}>
+                              {registry?.sources?.[source]?.label || source}
+                            </option>
                           ))}
                         </select>
                       </Field>
@@ -1571,7 +1888,9 @@ export function AnalyticsWorkspace({
                           onChange={(event) => setWidgetMetric(event.target.value as Metric)}
                         >
                           {availableMetrics
-                            .filter((entry: any) => entry.available && entry.source === widgetSource)
+                            .filter(
+                              (entry: any) => entry.available && entry.source === widgetSource,
+                            )
                             .map((entry: any) => (
                               <option key={entry.id} value={entry.id}>
                                 {entry.label}
@@ -1598,10 +1917,24 @@ export function AnalyticsWorkspace({
                             setWidgetChart(event.target.value as Widget['chart'])
                           }
                         >
-                          {(selectedWidgetMetric?.allowed_charts || ['kpi', 'line', 'bar', 'pie', 'table'])
-                            .filter((chart: string) => chart in chartLabels && (chart !== 'line' || ['day', 'month'].includes(widgetGroup)))
+                          {(
+                            selectedWidgetMetric?.allowed_charts || [
+                              'kpi',
+                              'line',
+                              'bar',
+                              'pie',
+                              'table',
+                            ]
+                          )
+                            .filter(
+                              (chart: string) =>
+                                chart in chartLabels &&
+                                (chart !== 'line' || ['day', 'month'].includes(widgetGroup)),
+                            )
                             .map((chart: Widget['chart']) => (
-                              <option value={chart} key={chart}>{chartLabels[chart]}</option>
+                              <option value={chart} key={chart}>
+                                {chartLabels[chart]}
+                              </option>
                             ))}
                         </select>
                       </Field>
@@ -1617,15 +1950,23 @@ export function AnalyticsWorkspace({
                         >
                           <Field label="Data source">
                             <select
-                              value={availableMetrics.find((entry: any) => entry.id === widget.metric)?.source || ''}
+                              value={
+                                availableMetrics.find((entry: any) => entry.id === widget.metric)
+                                  ?.source || ''
+                              }
                               onFocus={() => setSelectedWidgetId(widget.id)}
                               onChange={(event) => {
-                                const metric = availableMetrics.find((entry: any) => entry.available && entry.source === event.target.value)?.id as Metric | undefined;
+                                const metric = availableMetrics.find(
+                                  (entry: any) =>
+                                    entry.available && entry.source === event.target.value,
+                                )?.id as Metric | undefined;
                                 if (metric) selectMetricForWidget(widget.id, metric);
                               }}
                             >
                               {availableSources.map((source) => (
-                                <option key={source} value={source}>{registry?.sources?.[source]?.label || source}</option>
+                                <option key={source} value={source}>
+                                  {registry?.sources?.[source]?.label || source}
+                                </option>
                               ))}
                             </select>
                           </Field>
@@ -1654,10 +1995,19 @@ export function AnalyticsWorkspace({
                             <select
                               value={widget.metric}
                               onFocus={() => setSelectedWidgetId(widget.id)}
-                              onChange={(event) => selectMetricForWidget(widget.id, event.target.value as Metric)}
+                              onChange={(event) =>
+                                selectMetricForWidget(widget.id, event.target.value as Metric)
+                              }
                             >
                               {availableMetrics
-                                .filter((entry: any) => entry.available && entry.source === (availableMetrics.find((entry: any) => entry.id === widget.metric)?.source || 'orders'))
+                                .filter(
+                                  (entry: any) =>
+                                    entry.available &&
+                                    entry.source ===
+                                      (availableMetrics.find(
+                                        (entry: any) => entry.id === widget.metric,
+                                      )?.source || 'orders'),
+                                )
                                 .map((entry: any) => (
                                   <option key={entry.id} value={entry.id}>
                                     {entry.label}
@@ -1703,10 +2053,17 @@ export function AnalyticsWorkspace({
                                 )
                               }
                             >
-                              {(availableMetrics.find((entry: any) => entry.id === widget.metric)?.allowed_charts || ['kpi', 'line', 'bar', 'pie', 'table'])
-                                .filter((chart: string) => ['kpi', 'line', 'bar', 'pie', 'table'].includes(chart))
+                              {(
+                                availableMetrics.find((entry: any) => entry.id === widget.metric)
+                                  ?.allowed_charts || ['kpi', 'line', 'bar', 'pie', 'table']
+                              )
+                                .filter((chart: string) =>
+                                  ['kpi', 'line', 'bar', 'pie', 'table'].includes(chart),
+                                )
                                 .map((chart: Widget['chart']) => (
-                                <option key={chart} value={chart}>{chartLabels[chart]}</option>
+                                  <option key={chart} value={chart}>
+                                    {chartLabels[chart]}
+                                  </option>
                                 ))}
                             </select>
                           </Field>
@@ -1749,32 +2106,30 @@ export function AnalyticsWorkspace({
                   ) : (
                     <>
                       <p>
-                        Style the selected series. Layout and color apply to the saved dashboard
-                        preview and chart.
+                        Style the selected series using Polaris Viz colors and layout width.
                       </p>
                       {selectedWidget ? (
                         <>
                           <h3>{selectedWidget.title}</h3>
-                          <Field label="Chart color">
-                            <select
-                              value={selectedWidget.color || '#52a6e8'}
-                              onChange={(event) =>
-                                setDraftWidgets((current) =>
-                                  current.map((item) =>
-                                    item.id === selectedWidget.id
-                                      ? { ...item, color: event.target.value }
-                                      : item,
-                                  ),
-                                )
-                              }
-                            >
-                              {palette.map((color) => (
-                                <option value={color} key={color}>
-                                  {color}
-                                </option>
-                              ))}
-                            </select>
-                          </Field>
+                          <div className="sh-color-swatches" role="group" aria-label="Chart color">
+                            {vizPalette.map((color) => (
+                              <button
+                                key={color}
+                                type="button"
+                                className="sh-color-swatch"
+                                style={{ backgroundColor: color }}
+                                aria-label={`Color ${color}`}
+                                aria-pressed={(selectedWidget.color || vizPalette[0]) === color}
+                                onClick={() =>
+                                  setDraftWidgets((current) =>
+                                    current.map((item) =>
+                                      item.id === selectedWidget.id ? { ...item, color } : item,
+                                    ),
+                                  )
+                                }
+                              />
+                            ))}
+                          </div>
                           <Field label="Widget width">
                             <select
                               value={selectedWidget.span || 'normal'}
@@ -1792,10 +2147,6 @@ export function AnalyticsWorkspace({
                               <option value="wide">Full width</option>
                             </select>
                           </Field>
-                          <div className="analytics-design-swatch">
-                            <span style={{ backgroundColor: selectedWidget.color || '#52a6e8' }} />
-                            {selectedWidget.chart} preview color
-                          </div>
                         </>
                       ) : (
                         <p>Add a widget to configure its design.</p>
@@ -1809,7 +2160,7 @@ export function AnalyticsWorkspace({
             <>
               <header className="analytics-page-heading">
                 <div>
-                  <p>{section === 'reporting' ? 'Reporting' : 'Explore'}</p>
+                  <p>{section === 'reporting' ? 'Reports' : 'Explore'}</p>
                   <h1>{section === 'reporting' ? 'Graph Analysis' : 'Pivot Analysis'}</h1>
                 </div>
                 <div className="analytics-view-switch">
@@ -1822,8 +2173,8 @@ export function AnalyticsWorkspace({
                   >
                     Graph
                   </button>
-                <button
-                  disabled={!selectedMetric?.allowed_charts?.includes('pivot')}
+                  <button
+                    disabled={!selectedMetric?.allowed_charts?.includes('pivot')}
                     className={reportView === 'pivot' ? 'selected' : ''}
                     onClick={() => {
                       setReportView('pivot');
@@ -1870,14 +2221,22 @@ export function AnalyticsWorkspace({
                   </Field>
                 )}
                 {reportView === 'graph' && (
-                  <Field label="Chart">
+                  <Field label="Visualization">
                     <select
                       value={reportChart}
                       onChange={(event) => setReportChart(event.target.value as any)}
                     >
                       {(selectedMetric?.allowed_charts || ['line', 'bar', 'pie', 'table'])
-                        .filter((chart: string) => ['kpi', 'line', 'bar', 'pie', 'table'].includes(chart) && (chart !== 'line' || ['day', 'month'].includes(reportGroup)))
-                        .map((chart: any) => <option value={chart} key={chart}>{chartLabels[chart as Widget['chart']]}</option>)}
+                        .filter(
+                          (chart: string) =>
+                            ['kpi', 'line', 'bar', 'pie', 'table'].includes(chart) &&
+                            (chart !== 'line' || ['day', 'month'].includes(reportGroup)),
+                        )
+                        .map((chart: any) => (
+                          <option value={chart} key={chart}>
+                            {chartLabels[chart as Widget['chart']]}
+                          </option>
+                        ))}
                     </select>
                   </Field>
                 )}
@@ -1901,10 +2260,21 @@ export function AnalyticsWorkspace({
                   {reportSaving ? 'Saving…' : 'Save exploration'}
                 </button>
               </div>
-              {reportSaveError && <p role="alert" className="alert error">{reportSaveError}</p>}
-          {reportView === 'pivot' && !selectedMetric?.allowed_charts?.includes('pivot') ? (
-            <section className="panel"><h2>Pivot unavailable for this measure</h2><p>This source provides a snapshot measure without compatible historical dimensions. Choose an authorized operational measure to build a pivot.</p></section>
-          ) : reportView === 'pivot' ? (
+              {reportSaveError && (
+                <p role="alert" className="alert error">
+                  {reportSaveError}
+                </p>
+              )}
+
+              {reportView === 'pivot' && !selectedMetric?.allowed_charts?.includes('pivot') ? (
+                <section className="panel" style={{ padding: 18 }}>
+                  <h2>Pivot unavailable for this measure</h2>
+                  <p>
+                    This source provides a snapshot measure without compatible historical
+                    dimensions. Choose an authorized operational measure to build a pivot.
+                  </p>
+                </section>
+              ) : reportView === 'pivot' ? (
                 <>
                   <div className="analytics-pivot-toolbar">
                     <Field label="Rows">
@@ -1912,9 +2282,11 @@ export function AnalyticsWorkspace({
                         value={pivotRows}
                         onChange={(event) => setPivotRows(event.target.value as Group)}
                       >
-                        {(selectedMetric?.groups || []).filter((group: Group) => group !== pivotColumns).map((group: Group) => (
-                          <option key={group}>{group}</option>
-                        ))}
+                        {(selectedMetric?.groups || [])
+                          .filter((group: Group) => group !== pivotColumns)
+                          .map((group: Group) => (
+                            <option key={group}>{group}</option>
+                          ))}
                       </select>
                     </Field>
                     <button
@@ -1932,9 +2304,11 @@ export function AnalyticsWorkspace({
                         value={pivotColumns}
                         onChange={(event) => setPivotColumns(event.target.value as Group)}
                       >
-                        {(selectedMetric?.groups || []).filter((group: Group) => group !== pivotRows).map((group: Group) => (
-                          <option key={group}>{group}</option>
-                        ))}
+                        {(selectedMetric?.groups || [])
+                          .filter((group: Group) => group !== pivotRows)
+                          .map((group: Group) => (
+                            <option key={group}>{group}</option>
+                          ))}
                       </select>
                     </Field>
                     <button className="secondary-button" onClick={() => void exportPivot()}>
@@ -1948,78 +2322,100 @@ export function AnalyticsWorkspace({
                   )}
                   {!pivotData && <p role="status">Loading pivot aggregates…</p>}
                   {pivotData?.excluded_by_source_filter ? (
-                    <p className="analytics-excluded">Excluded by the selected record-source filter.</p>
-                  ) : pivotData && (
-                    <div className="analytics-pivot-scroll">
-                      <DataTable>
-                        <thead>
-                          <tr>
-                            <th>{groupLabels[pivotData.row_by as Group]}</th>
-                            {pivotData.columns.map((column: string) => (
-                              <th key={column}>{column}</th>
-                            ))}
-                            <th>Total</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {pivotData.rows.map((row: any) => (
-                            <Fragment key={row.key}>
-                              <tr>
-                                <th>
-                                  {pivotRows === 'month' && pivotColumns !== 'day' && (
-                                    <button
-                                      className="analytics-pivot-expand"
-                                      aria-label={pivotExpanded[row.key] ? `Collapse ${row.label}` : `Expand ${row.label} by day`}
-                                      aria-expanded={!!pivotExpanded[row.key]}
-                                      onClick={() => void togglePivotMonth(row.key)}
-                                    >
-                                      {pivotExpanded[row.key] ? '−' : '+'}
-                                    </button>
-                                  )}
-                                  {row.label}
-                                </th>
-                                {pivotData.columns.map((column: string) => (
-                                  <td key={column}>
-                                    {['orders.count', 'customers.count'].includes(reportMetric) && pivotRows !== 'currency' && pivotColumns !== 'currency' ? (
-                                      <button className="analytics-pivot-cell" onClick={() => inspectPivotCell(row.key, column)}>
-                                        {Number(row.values[column] || 0).toLocaleString('en-KE')}
-                                      </button>
-                                    ) : Number(row.values[column] || 0).toLocaleString('en-KE')}
-                                  </td>
-                                ))}
-                                <td>
-                                  <strong>{row.total.toLocaleString('en-KE')}</strong>
-                                </td>
-                              </tr>
-                              {pivotExpanded[row.key]?.rows?.map((child: any) => (
-                                <tr className="analytics-pivot-child" key={`${row.key}-${child.key}`}>
-                                  <th>↳ {child.label}</th>
-                                  {pivotData.columns.map((column: string) => (
-                                    <td key={column}>{Number(child.values[column] || 0).toLocaleString('en-KE')}</td>
-                                  ))}
-                                  <td><strong>{child.total.toLocaleString('en-KE')}</strong></td>
-                                </tr>
+                    <p className="analytics-excluded">
+                      Excluded by the selected record-source filter.
+                    </p>
+                  ) : (
+                    pivotData && (
+                      <div className="analytics-pivot-scroll panel">
+                        <DataTable>
+                          <thead>
+                            <tr>
+                              <th>{groupLabels[pivotData.row_by as Group]}</th>
+                              {pivotData.columns.map((column: string) => (
+                                <th key={column}>{column}</th>
                               ))}
-                            </Fragment>
-                          ))}
-                          <tr>
-                            <th>Total</th>
-                            {pivotData.columns.map((column: string) => (
-                              <td key={column}>
-                                <strong>
-                                  {Number(pivotData.totals.columns[column] || 0).toLocaleString(
-                                    'en-KE',
-                                  )}
-                                </strong>
-                              </td>
+                              <th>Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pivotData.rows.map((row: any) => (
+                              <Fragment key={row.key}>
+                                <tr>
+                                  <th>
+                                    {pivotRows === 'month' && pivotColumns !== 'day' && (
+                                      <button
+                                        className="analytics-pivot-expand"
+                                        aria-label={
+                                          pivotExpanded[row.key]
+                                            ? `Collapse ${row.label}`
+                                            : `Expand ${row.label} by day`
+                                        }
+                                        aria-expanded={!!pivotExpanded[row.key]}
+                                        onClick={() => void togglePivotMonth(row.key)}
+                                      >
+                                        {pivotExpanded[row.key] ? '−' : '+'}
+                                      </button>
+                                    )}
+                                    {row.label}
+                                  </th>
+                                  {pivotData.columns.map((column: string) => (
+                                    <td key={column}>
+                                      {['orders.count', 'customers.count'].includes(reportMetric) &&
+                                      pivotRows !== 'currency' &&
+                                      pivotColumns !== 'currency' ? (
+                                        <button
+                                          className="analytics-pivot-cell"
+                                          onClick={() => inspectPivotCell(row.key, column)}
+                                        >
+                                          {Number(row.values[column] || 0).toLocaleString('en-KE')}
+                                        </button>
+                                      ) : (
+                                        Number(row.values[column] || 0).toLocaleString('en-KE')
+                                      )}
+                                    </td>
+                                  ))}
+                                  <td>
+                                    <strong>{row.total.toLocaleString('en-KE')}</strong>
+                                  </td>
+                                </tr>
+                                {pivotExpanded[row.key]?.rows?.map((child: any) => (
+                                  <tr
+                                    className="analytics-pivot-child"
+                                    key={`${row.key}-${child.key}`}
+                                  >
+                                    <th>↳ {child.label}</th>
+                                    {pivotData.columns.map((column: string) => (
+                                      <td key={column}>
+                                        {Number(child.values[column] || 0).toLocaleString('en-KE')}
+                                      </td>
+                                    ))}
+                                    <td>
+                                      <strong>{child.total.toLocaleString('en-KE')}</strong>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </Fragment>
                             ))}
-                            <td>
-                              <strong>{pivotData.totals.overall.toLocaleString('en-KE')}</strong>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </DataTable>
-                    </div>
+                            <tr>
+                              <th>Total</th>
+                              {pivotData.columns.map((column: string) => (
+                                <td key={column}>
+                                  <strong>
+                                    {Number(pivotData.totals.columns[column] || 0).toLocaleString(
+                                      'en-KE',
+                                    )}
+                                  </strong>
+                                </td>
+                              ))}
+                              <td>
+                                <strong>{pivotData.totals.overall.toLocaleString('en-KE')}</strong>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </DataTable>
+                      </div>
+                    )
                   )}
                 </>
               ) : reportData?.excluded_by_source_filter ? (
@@ -2028,95 +2424,138 @@ export function AnalyticsWorkspace({
                   <p>{reportData.definition}</p>
                   {!!reportData.ignored_filters?.length && (
                     <p className="analytics-filter-note">
-                      These filters do not apply to this measure: {reportData.ignored_filters.join(', ')}.
+                      These filters do not apply to this measure:{' '}
+                      {reportData.ignored_filters.join(', ')}.
                     </p>
                   )}
                 </section>
               ) : reportView === 'table' || reportChart === 'table' ? (
-              <ReportTable
+                <ReportTable
                   rows={reportRows.slice(reportPage * 25, reportPage * 25 + 25)}
                   group={reportGroup}
-                onInspect={reportData?.drilldown ? inspectReportRow : undefined}
+                  onInspect={reportData?.drilldown ? inspectReportRow : undefined}
                 />
               ) : !reportData ? (
-                <p role="status">Loading authorized aggregate…</p>
+                <div className="sv-root sv-skeleton" role="status" style={{ height: 280 }}>
+                  <span className="sv-sr-only">Loading authorized aggregate…</span>
+                </div>
               ) : (
-                <section className="analytics-report-chart panel">
-                  <h2>
-                    {reportData.label} by {groupLabels[reportGroup].toLowerCase()}
-                  </h2>
-                  <p>{reportData.definition}</p>
+                <section className="analytics-report-chart panel" style={{ padding: 20 }}>
                   {reportChart === 'kpi' ? (
-                    <MetricCard
+                    <MetricTile
                       label={reportData.label}
-                      value={selectedMetric?.unit === 'records' || selectedMetric?.unit === 'products'
-                        ? Number(reportData.value || 0).toLocaleString('en-KE')
-                        : money(Number(reportData.value || 0), query.currency)}
-                      tint={0}
-                      source={reportData.source}
-                      period={reportMetric === 'inventory.low_stock'
-                        ? `As of ${reportData.refreshed_at}`
-                        : `${reportData.period.from} – ${reportData.period.to}`}
-                      currency={reportData.currency || undefined}
+                      value={
+                        selectedMetric?.unit === 'records' || selectedMetric?.unit === 'products'
+                          ? Number(reportData.value || 0).toLocaleString('en-KE')
+                          : money(Number(reportData.value || 0), query.currency)
+                      }
                       definition={reportData.definition}
-                      coverage={reportData.coverage}
-                      refreshedAt={reportData.refreshed_at}
+                      change={
+                        comparing && priorReportData
+                          ? percentChange(
+                              Number(reportData.value || 0),
+                              Number(priorReportData.value || 0),
+                            )
+                          : undefined
+                      }
+                      caption={
+                        reportMetric === 'inventory.low_stock'
+                          ? `As of ${reportData.refreshed_at}`
+                          : `${reportData.period.from} – ${reportData.period.to}`
+                      }
                     />
                   ) : reportChart === 'line' && ['day', 'month'].includes(reportGroup) ? (
                     <InteractiveChart
-                      title={reportData.label}
+                      title={`${reportData.label} by ${groupLabels[reportGroup].toLowerCase()}`}
+                      currency={
+                        reportMetric.startsWith('financial.') ? query.currency : undefined
+                      }
+                      defaultCompare={comparing}
                       points={reportRows.map((row: any) => ({
                         date: reportGroup === 'month' ? `${row.key}-01` : row.key,
-                        value: row.value,
+                        value: Number(row.value),
                       }))}
-                      series={[{ key: 'value', label: reportData.label, color: '#52a6e8' }]}
+                      comparisonPoints={
+                        priorReportRows.length
+                          ? priorReportRows.map((row: any) => ({
+                              date: reportGroup === 'month' ? `${row.key}-01` : row.key,
+                              value: Number(row.value),
+                            }))
+                          : null
+                      }
+                      comparisonPeriod={priorWindow}
+                      series={[{ key: 'value', label: reportData.label, color: vizPalette[0] }]}
                       description={reportData.definition}
-                      onPointSelect={reportData.drilldown ? (point: any) =>
-                        inspectReportRow(
-                          reportRows.find(
-                            (row: any) =>
-                              (reportGroup === 'month' ? `${row.key}-01` : row.key) === point.date,
-                          ),
-                        ) : undefined}
+                      onPointSelect={
+                        reportData.drilldown
+                          ? (point: any) =>
+                              inspectReportRow(
+                                reportRows.find(
+                                  (row: any) =>
+                                    (reportGroup === 'month' ? `${row.key}-01` : row.key) ===
+                                    point.date,
+                                ),
+                              )
+                          : undefined
+                      }
                     />
                   ) : reportChart === 'pie' ? (
-                    <div className="analytics-pie-wrap">
-                      <div
-                        className="analytics-pie"
-                        style={{ background: pieGradient(reportRows) }}
-                      >
-                        <span>{Number(reportData.value || 0).toLocaleString('en-KE')}</span>
-                      </div>
-                      <div className="analytics-pie-legend">
-                        {reportRows.map((row: any, index: number) => (
-                          <span key={row.key}>
-                            <i style={{ background: pieColor(index) }} />
-                            {row.drilldown ? (
-                              <button className="analytics-pie-drill" onClick={() => inspectReportRow(row)}>
-                                {row.label} <b>{Number(row.value).toLocaleString('en-KE')}</b>
-                              </button>
-                            ) : (
-                              <>{row.label} <b>{Number(row.value).toLocaleString('en-KE')}</b></>
-                            )}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
+                    <DonutChart
+                      title={reportData.label}
+                      currency={
+                        reportMetric.startsWith('financial.') ? query.currency : undefined
+                      }
+                      rows={reportRows.map((row: any, index: number) => ({
+                        key: String(row.key),
+                        label: row.label,
+                        value: Number(row.value),
+                        color: vizColor(index),
+                      }))}
+                      onInspect={
+                        reportData.drilldown
+                          ? (key) =>
+                              inspectReportRow(
+                                reportRows.find((row: any) => String(row.key) === key),
+                              )
+                          : undefined
+                      }
+                    />
                   ) : (
                     <BarChart
-                      title={reportData.label}
+                      title={`${reportData.label} by ${groupLabels[reportGroup].toLowerCase()}`}
+                      subtitle={reportData.definition}
+                      currency={
+                        reportMetric.startsWith('financial.') ? query.currency : undefined
+                      }
+                      orientation={['day', 'month'].includes(reportGroup) ? 'vertical' : 'auto'}
                       rows={reportRows.map((row: any) => ({
-                        key: row.key,
+                        key: String(row.key),
                         label: row.label,
                         value: Number(row.value),
                       }))}
-                      onInspect={reportData.drilldown ? (key) =>
-                        inspectReportRow(reportRows.find((row: any) => String(row.key) === key))
-                      : undefined}
+                      comparisonRows={
+                        comparing &&
+                        priorReportRows.length &&
+                        !['day', 'month'].includes(reportGroup)
+                          ? priorReportRows.map((row: any) => ({
+                              key: String(row.key),
+                              value: Number(row.value),
+                            }))
+                          : undefined
+                      }
+                      onInspect={
+                        reportData.drilldown
+                          ? (key) =>
+                              inspectReportRow(
+                                reportRows.find((row: any) => String(row.key) === key),
+                              )
+                          : undefined
+                      }
                     />
                   )}
                 </section>
               )}
+
               <div className="analytics-report-pagination">
                 <button
                   className="secondary-button"
@@ -2137,7 +2576,7 @@ export function AnalyticsWorkspace({
                 </button>
               </div>
               {reportData?.definition && (
-                <details className="analytics-definition panel">
+                <details className="analytics-definition panel" style={{ padding: 14 }}>
                   <summary>Metric definition and source</summary>
                   <p>{reportData.definition}</p>
                   <p>
@@ -2154,7 +2593,7 @@ export function AnalyticsWorkspace({
                   <h1>Data Quality</h1>
                 </div>
               </header>
-              <p className="panel">
+              <p className="panel" style={{ padding: 16 }}>
                 {data?.classification ||
                   'Authorized sources are evaluated separately. Missing sources are identified and never replaced with sample values.'}{' '}
                 Time zone: {registry?.timezone || data?.timezone || 'Loading'}.
@@ -2175,7 +2614,8 @@ export function AnalyticsWorkspace({
                     )}
                     {value.covered_from && value.covered_to && (
                       <small>
-                        Observed records: {value.covered_from} – {value.covered_to} ({registry.timezone})
+                        Observed records: {value.covered_from} – {value.covered_to} (
+                        {registry.timezone})
                       </small>
                     )}
                     {value.refreshed_at && <small>Checked: {value.refreshed_at}</small>}
@@ -2183,19 +2623,21 @@ export function AnalyticsWorkspace({
                 ))}
               </div>
               {data?.inventory && (
-                <section className="panel analytics-quality-detail">
+                <section className="panel analytics-quality-detail" style={{ padding: 18 }}>
                   <h2>Inventory snapshot coverage</h2>
                   <p>
                     {data.inventory.covered_products} of {data.inventory.total_products} products
                     were included in the current snapshot.
-                    {data.inventory.truncated ? ' The 1,000 product service limit truncated this snapshot.' : ' The current product set was fully covered.'}
+                    {data.inventory.truncated
+                      ? ' The 1,000 product service limit truncated this snapshot.'
+                      : ' The current product set was fully covered.'}
                   </p>
                   <p>{data.inventory.valuation_note}</p>
                   <small>Snapshot refreshed: {data.refreshed_at}</small>
                 </section>
               )}
               {data?.financial?.quality && (
-                <section className="panel analytics-quality-detail">
+                <section className="panel analytics-quality-detail" style={{ padding: 18 }}>
                   <h2>Financial coverage and assurance</h2>
                   <p>{financeCoverage(data.financial)}</p>
                   <p>
@@ -2208,8 +2650,7 @@ export function AnalyticsWorkspace({
                   <p>
                     {data.financial.quality.missing_expense_data
                       ? 'No recorded outflows are present in this period; this does not establish zero operating expenses.'
-                      : 'Recorded expense data is present for this period.'}
-                    {' '}
+                      : 'Recorded expense data is present for this period.'}{' '}
                     Bank balance and profit are not available from this measure set.
                   </p>
                   {!!data.financial.quality.unknown_provider_occurrence_dates && (
@@ -2221,7 +2662,7 @@ export function AnalyticsWorkspace({
                   <small>Financial snapshot refreshed: {data.financial.refreshed_at}</small>
                 </section>
               )}
-              <section className="panel">
+              <section className="panel" style={{ padding: 18, marginTop: 16 }}>
                 <h2>Metric definitions</h2>
                 <DataTable>
                   <thead>
@@ -2266,7 +2707,7 @@ export function AnalyticsWorkspace({
                   <h1>Dashboard Defaults</h1>
                 </div>
               </header>
-              <section className="panel analytics-config-panel">
+              <section className="panel analytics-config-panel" style={{ padding: 20 }}>
                 <p>
                   These settings are stored with each private workspace dashboard. They do not grant
                   access to restricted data sources.
@@ -2334,7 +2775,7 @@ export function AnalyticsWorkspace({
             <>
               <header className="analytics-page-heading">
                 <div>
-                  <p>Dashboards</p>
+                  <p>Library</p>
                   <h1>Saved Dashboards</h1>
                 </div>
                 {manager && (
@@ -2351,7 +2792,7 @@ export function AnalyticsWorkspace({
                       {dashboard.configuration.widgets.length} widgets · Updated{' '}
                       {new Date(dashboard.updated_at).toLocaleDateString()}
                     </p>
-                    <div>
+                    <div style={{ display: 'flex', gap: 8 }}>
                       <button
                         className="secondary-button"
                         onClick={() => {
@@ -2362,14 +2803,21 @@ export function AnalyticsWorkspace({
                         Open
                       </button>
                       {manager && (
-                        <button className="secondary-button" onClick={() => openBuilder(dashboard)}>
+                        <button
+                          className="secondary-button"
+                          onClick={() => openBuilder(dashboard)}
+                        >
                           Edit
                         </button>
                       )}
                     </div>
                   </article>
                 ))}
-                {!dashboards.length && <p className="panel">No saved dashboards yet.</p>}
+                {!dashboards.length && (
+                  <p className="panel" style={{ padding: 16 }}>
+                    No saved dashboards yet.
+                  </p>
+                )}
               </div>
             </>
           ) : section === 'saved-reports' ? (
@@ -2377,27 +2825,29 @@ export function AnalyticsWorkspace({
               api={api}
               query={query}
               saved={savedReports}
-            exploration={{
-              metric: reportMetric,
-              group_by: reportGroup,
-              chart: reportChart,
-              view: reportView,
-              source: (selectedMetric?.source || 'orders') as Source,
+              exploration={{
+                metric: reportMetric,
+                group_by: reportGroup,
+                chart: reportChart,
+                view: reportView,
+                source: (selectedMetric?.source || 'orders') as Source,
                 ...(reportView === 'pivot' ? { row_by: pivotRows, column_by: pivotColumns } : {}),
-            }}
+              }}
               onRefresh={() => setRevision((value) => value + 1)}
-            onLoad={(configuration) => {
-              setQuery(configuration.query);
-              if (configuration.exploration) {
-                setReportMetric(configuration.exploration.metric);
-                setReportGroup(configuration.exploration.group_by);
-                setReportChart(configuration.exploration.chart);
-                setReportView(configuration.exploration.view);
-                  if (configuration.exploration.row_by) setPivotRows(configuration.exploration.row_by);
-                  if (configuration.exploration.column_by) setPivotColumns(configuration.exploration.column_by);
-                navigate?.(configuration.exploration.view === 'pivot' ? 'explore' : 'reporting');
-              }
-            }}
+              onLoad={(configuration) => {
+                setQuery(configuration.query);
+                if (configuration.exploration) {
+                  setReportMetric(configuration.exploration.metric);
+                  setReportGroup(configuration.exploration.group_by);
+                  setReportChart(configuration.exploration.chart);
+                  setReportView(configuration.exploration.view);
+                  if (configuration.exploration.row_by)
+                    setPivotRows(configuration.exploration.row_by);
+                  if (configuration.exploration.column_by)
+                    setPivotColumns(configuration.exploration.column_by);
+                  navigate?.(configuration.exploration.view === 'pivot' ? 'explore' : 'reporting');
+                }
+              }}
             />
           ) : section === 'Intelligence' ? (
             <>
@@ -2409,34 +2859,111 @@ export function AnalyticsWorkspace({
               </header>
               {data?.financial ? (
                 <>
-                  <div className="analytics-kpis">
+                  <MetricStrip label="Financial KPIs">
                     {[
-                      ['Confirmed collections', data.financial.totals.confirmed_inflows_minor, data.financial.definitions.confirmed_inflows],
-                      ['Recorded expenses', data.financial.totals.recorded_outflows_minor, data.financial.definitions.recorded_outflows],
-                      ['Net movement', data.financial.totals.net_movement_minor, data.financial.definitions.net_movement],
-                      ['Outstanding receivables', data.financial.totals.outstanding_minor, data.financial.definitions.receivables],
-                    ].map(([label, value, definition], index) => (
-                      <MetricCard
+                      [
+                        'Confirmed collections',
+                        data.financial.totals.confirmed_inflows_minor,
+                        priorData?.financial?.totals?.confirmed_inflows_minor,
+                        data.financial.definitions.confirmed_inflows,
+                        false,
+                        vizPalette[0],
+                      ],
+                      [
+                        'Recorded expenses',
+                        data.financial.totals.recorded_outflows_minor,
+                        priorData?.financial?.totals?.recorded_outflows_minor,
+                        data.financial.definitions.recorded_outflows,
+                        true,
+                        vizPalette[3],
+                      ],
+                      [
+                        'Net movement',
+                        data.financial.totals.net_movement_minor,
+                        priorData?.financial?.totals?.net_movement_minor,
+                        data.financial.definitions.net_movement,
+                        false,
+                        vizPalette[2],
+                      ],
+                      [
+                        'Outstanding receivables',
+                        data.financial.totals.outstanding_minor,
+                        priorData?.financial?.totals?.outstanding_minor,
+                        data.financial.definitions.receivables,
+                        true,
+                        vizPalette[1],
+                      ],
+                    ].map(([label, value, priorValue, definition, invert, color]) => (
+                      <MetricTile
                         key={String(label)}
                         label={String(label)}
                         value={money(Number(value), query.currency)}
-                        tint={index}
-                        source="Finance"
-                        period={`${data.financial.period.from} – ${data.financial.period.to}`}
-                        currency={data.financial.currency}
                         definition={String(definition)}
-                        coverage={financeCoverage(data.financial)}
-                        refreshedAt={data.financial.refreshed_at}
-                      />
+                        change={
+                          comparing && priorValue !== undefined
+                            ? percentChange(Number(value), Number(priorValue))
+                            : undefined
+                        }
+                        invertChange={Boolean(invert)}
+                        color={String(color)}
+                        caption={`${data.financial.period.from} – ${data.financial.period.to} · ${data.financial.currency}`}
+                      >
+                        <details>
+                          <summary>Source &amp; definition</summary>
+                          <small>Source: Finance</small>
+                          <small>{String(definition)}</small>
+                          <small>Coverage: {financeCoverage(data.financial)}</small>
+                          <small>Refreshed: {data.financial.refreshed_at}</small>
+                        </details>
+                      </MetricTile>
                     ))}
+                  </MetricStrip>
+                  <div className="sh-bento-grid">
+                    <section className="panel sh-span-8" style={{ padding: 18 }}>
+                      <BarChart
+                        title="Financial movement summary"
+                        subtitle={`${data.financial.period.from} – ${data.financial.period.to} · ${data.financial.currency}`}
+                        currency={query.currency}
+                        orientation="horizontal"
+                        rows={[
+                          {
+                            key: 'inflows',
+                            label: 'Confirmed collections',
+                            value: Math.max(0, Number(data.financial.totals.confirmed_inflows_minor || 0)),
+                            color: vizPalette[0],
+                          },
+                          {
+                            key: 'outflows',
+                            label: 'Recorded outflows',
+                            value: Math.max(0, Number(data.financial.totals.recorded_outflows_minor || 0)),
+                            color: vizPalette[3],
+                          },
+                          {
+                            key: 'receivables',
+                            label: 'Outstanding receivables',
+                            value: Math.max(0, Number(data.financial.totals.outstanding_minor || 0)),
+                            color: vizPalette[1],
+                          },
+                        ]}
+                        showTotal={false}
+                      />
+                    </section>
+                    <section className="panel sh-span-4" style={{ padding: 18 }}>
+                      <div className="sh-card-head">
+                        <h2>Assurance &amp; scope</h2>
+                      </div>
+                      <p style={{ fontSize: 12.5, color: '#616161', margin: '0 0 10px' }}>
+                        {data.financial.definitions.net_movement ||
+                          'Authorized canonical financial snapshot. Net movement is not profit or cash balance.'}
+                      </p>
+                      <small style={{ color: '#616161', display: 'block', lineHeight: 1.5 }}>
+                        {financeCoverage(data.financial)}
+                      </small>
+                    </section>
                   </div>
-                  <p className="panel">
-                    {data.financial.definitions.net_movement ||
-                      'Authorized canonical financial snapshot. Net movement is not profit or cash balance.'}
-                  </p>
                 </>
               ) : (
-                <p className="panel">
+                <p className="panel" style={{ padding: 16 }}>
                   Financial patterns require a permitted finance role and the Intelligence service.
                 </p>
               )}
@@ -2445,7 +2972,7 @@ export function AnalyticsWorkspace({
             <>
               <header className="analytics-dashboard-heading">
                 <div>
-                  <p>Dashboards</p>
+                  <p>Analytics</p>
                   <h1>
                     {activeDashboard?.name ||
                       (kind === 'personal' ? 'Personal Overview' : 'Business Overview')}
@@ -2472,7 +2999,7 @@ export function AnalyticsWorkspace({
                         className="secondary-button"
                         onClick={() => openBuilder(activeDashboard)}
                       >
-                        Edit
+                        Customize
                       </button>
                       <button className="quiet-button" onClick={() => void duplicateDashboard()}>
                         Duplicate
@@ -2482,150 +3009,262 @@ export function AnalyticsWorkspace({
                       </button>
                     </>
                   )}
-                  {manager && activeDashboard && (
-                    <button className="quiet-button" onClick={() => void exportDashboard()}>
-                      Export CSV
-                    </button>
-                  )}
                 </div>
               </header>
+
               {data && (
                 <>
-                  <div className="analytics-kpis">
+                  <MetricStrip label="Key business metrics">
                     {data.financial && (
-                      <MetricCard
+                      <MetricTile
                         label="Confirmed collections"
                         value={money(data.financial.totals.confirmed_inflows_minor, data.currency)}
-                        tint={0}
-                        source="Finance"
-                        period={`${data.period.from} – ${data.period.to}`}
-                        currency={data.currency}
                         definition={data.financial.definitions.confirmed_inflows}
-                        coverage={financeCoverage(data.financial)}
-                        refreshedAt={data.financial.refreshed_at}
-                      />
+                        change={
+                          comparing && priorData?.financial
+                            ? percentChange(
+                                data.financial.totals.confirmed_inflows_minor,
+                                priorData.financial.totals.confirmed_inflows_minor,
+                              )
+                            : undefined
+                        }
+                        color={vizPalette[0]}
+                        caption={`${formatDateRange(data.period.from, data.period.to)} · ${data.currency}`}
+                      >
+                        <details>
+                          <summary>Source &amp; definition</summary>
+                          <small>Source: Finance</small>
+                          <small>{data.financial.definitions.confirmed_inflows}</small>
+                          <small>Coverage: {financeCoverage(data.financial)}</small>
+                          <small>Refreshed: {data.financial.refreshed_at}</small>
+                        </details>
+                      </MetricTile>
                     )}
                     {data.financial && (
-                      <MetricCard
+                      <MetricTile
                         label="Net movement"
                         value={money(data.financial.totals.net_movement_minor, data.currency)}
-                        tint={1}
-                        source="Finance"
-                        period={`${data.period.from} – ${data.period.to}`}
-                        currency={data.currency}
                         definition={data.financial.definitions.net_movement}
-                        coverage={financeCoverage(data.financial)}
-                        refreshedAt={data.financial.refreshed_at}
-                      />
+                        change={
+                          comparing && priorData?.financial
+                            ? percentChange(
+                                data.financial.totals.net_movement_minor,
+                                priorData.financial.totals.net_movement_minor,
+                              )
+                            : undefined
+                        }
+                        color={vizPalette[2]}
+                        caption={`${formatDateRange(data.period.from, data.period.to)} · ${data.currency}`}
+                      >
+                        <details>
+                          <summary>Source &amp; definition</summary>
+                          <small>Source: Finance</small>
+                          <small>{data.financial.definitions.net_movement}</small>
+                          <small>Coverage: {financeCoverage(data.financial)}</small>
+                          <small>Refreshed: {data.financial.refreshed_at}</small>
+                        </details>
+                      </MetricTile>
                     )}
                     {data.sources?.orders && (!query.source || query.source === 'orders') && (
-                      <MetricCard
+                      <MetricTile
                         label="Orders created"
                         value={summary.orders.toLocaleString('en-KE')}
-                        tint={2}
-                        source="Orders"
-                        period={`${data.period.from} – ${data.period.to}`}
                         definition="Canonical order records created in the selected local-date window; not revenue."
-                        refreshedAt={data.refreshed_at}
-                        coverage={`${registry?.sources?.orders?.records ?? 'Unknown'} records in this environment`}
-                      />
+                        change={
+                          comparing && priorSummary
+                            ? percentChange(summary.orders, priorSummary.orders)
+                            : undefined
+                        }
+                        spark={activityPoints.map((p: any) => Number(p.orders || 0))}
+                        sparkComparison={
+                          comparing && priorActivityPoints
+                            ? priorActivityPoints.map((p: any) => Number(p.orders || 0))
+                            : undefined
+                        }
+                        color={vizPalette[0]}
+                        caption={formatDateRange(data.period.from, data.period.to)}
+                      >
+                        <details>
+                          <summary>Source &amp; definition</summary>
+                          <small>Source: Orders</small>
+                          <small>
+                            Canonical order records created in the selected local-date window; not
+                            revenue.
+                          </small>
+                          <small>
+                            Coverage: {registry?.sources?.orders?.records ?? 'Unknown'} records in
+                            this environment
+                          </small>
+                          <small>Refreshed: {data.refreshed_at}</small>
+                        </details>
+                      </MetricTile>
                     )}
                     {data.sources?.customers && (!query.source || query.source === 'customers') && (
-                      <MetricCard
+                      <MetricTile
                         label="Customers created"
                         value={summary.customers.toLocaleString('en-KE')}
-                        tint={3}
-                        source="Customers"
-                        period={`${data.period.from} – ${data.period.to}`}
                         definition="Canonical customer records created in the selected local-date window."
-                        refreshedAt={data.refreshed_at}
-                        coverage={`${registry?.sources?.customers?.records ?? 'Unknown'} records in this environment`}
-                      />
+                        change={
+                          comparing && priorSummary
+                            ? percentChange(summary.customers, priorSummary.customers)
+                            : undefined
+                        }
+                        spark={activityPoints.map((p: any) => Number(p.customers || 0))}
+                        sparkComparison={
+                          comparing && priorActivityPoints
+                            ? priorActivityPoints.map((p: any) => Number(p.customers || 0))
+                            : undefined
+                        }
+                        color={vizPalette[2]}
+                        caption={formatDateRange(data.period.from, data.period.to)}
+                      >
+                        <details>
+                          <summary>Source &amp; definition</summary>
+                          <small>Source: Customers</small>
+                          <small>
+                            Canonical customer records created in the selected local-date window.
+                          </small>
+                          <small>
+                            Coverage: {registry?.sources?.customers?.records ?? 'Unknown'} records
+                            in this environment
+                          </small>
+                          <small>Refreshed: {data.refreshed_at}</small>
+                        </details>
+                      </MetricTile>
                     )}
                     {data.financial && (
-                      <MetricCard
+                      <MetricTile
                         label="Recorded outflows"
                         value={money(data.financial.totals.recorded_outflows_minor, data.currency)}
-                        tint={4}
-                        source="Finance"
-                        period={`${data.period.from} – ${data.period.to}`}
-                        currency={data.currency}
                         definition={data.financial.definitions.recorded_outflows}
-                        coverage={financeCoverage(data.financial)}
-                        refreshedAt={data.financial.refreshed_at}
-                      />
+                        change={
+                          comparing && priorData?.financial
+                            ? percentChange(
+                                data.financial.totals.recorded_outflows_minor,
+                                priorData.financial.totals.recorded_outflows_minor,
+                              )
+                            : undefined
+                        }
+                        invertChange
+                        color={vizPalette[3]}
+                        caption={`${formatDateRange(data.period.from, data.period.to)} · ${data.currency}`}
+                      >
+                        <details>
+                          <summary>Source &amp; definition</summary>
+                          <small>Source: Finance</small>
+                          <small>{data.financial.definitions.recorded_outflows}</small>
+                          <small>Coverage: {financeCoverage(data.financial)}</small>
+                          <small>Refreshed: {data.financial.refreshed_at}</small>
+                        </details>
+                      </MetricTile>
                     )}
                     {data.financial && (
-                      <MetricCard
+                      <MetricTile
                         label="Outstanding receivables"
                         value={money(data.financial.totals.outstanding_minor, data.currency)}
-                        tint={5}
-                        source="Finance"
-                        period={`${data.period.from} – ${data.period.to}`}
-                        currency={data.currency}
                         definition={data.financial.definitions.receivables}
-                        coverage={financeCoverage(data.financial)}
-                        refreshedAt={data.financial.refreshed_at}
-                      />
+                        change={
+                          comparing && priorData?.financial
+                            ? percentChange(
+                                data.financial.totals.outstanding_minor,
+                                priorData.financial.totals.outstanding_minor,
+                              )
+                            : undefined
+                        }
+                        invertChange
+                        color={vizPalette[1]}
+                        caption={`${formatDateRange(data.period.from, data.period.to)} · ${data.currency}`}
+                      >
+                        <details>
+                          <summary>Source &amp; definition</summary>
+                          <small>Source: Finance</small>
+                          <small>{data.financial.definitions.receivables}</small>
+                          <small>Coverage: {financeCoverage(data.financial)}</small>
+                          <small>Refreshed: {data.financial.refreshed_at}</small>
+                        </details>
+                      </MetricTile>
                     )}
-                  </div>
-                  <section className="analytics-primary-chart panel">
-                    <div className="analytics-section-title">
-                      <h2>Activity by Date</h2>
-                      <span>
-                        {data.period.from} — {data.period.to}
-                      </span>
-                    </div>
-                    {activitySeries.length ? (
-                      <>
+                  </MetricStrip>
+
+                  <div className="sh-bento-grid">
+                    <section className="analytics-primary-chart panel sh-span-8">
+                      <div className="sh-card-head">
+                        <h2>Activity over time</h2>
                         {!query.source && activitySeries.length > 1 && (
-                          <Field label="Drill into">
+                          <label className="sh-inline-select">
+                            <span>Drill into</span>
                             <select
                               value={activityDrillKind}
-                              onChange={(event) => setActivityDrillKind(event.target.value as 'orders' | 'customers')}
+                              onChange={(event) =>
+                                setActivityDrillKind(
+                                  event.target.value as 'orders' | 'customers',
+                                )
+                              }
                             >
                               <option value="orders">Orders</option>
                               <option value="customers">Customers</option>
                             </select>
-                          </Field>
+                          </label>
                         )}
+                      </div>
+                      {activitySeries.length ? (
                         <InteractiveChart
                           compact
-                          title={activitySeries.map((series) => series.label).join(' and ') + ' created'}
+                          defaultCompare={comparing}
+                          title={
+                            activitySeries.map((series) => series.label).join(' & ') + ' created'
+                          }
                           points={activityPoints}
+                          comparisonPoints={comparing ? priorActivityPoints : null}
+                          comparisonPeriod={priorWindow}
                           series={activitySeries}
                           description={`Canonical record creation counts by local workspace date (${data.timezone}). Counts are not revenue.`}
                           onPointSelect={(point: any) => {
-                            const selected = query.source === 'customers' || (!query.source && activityDrillKind === 'customers')
-                              ? 'customers'
-                              : 'orders';
+                            const selected =
+                              query.source === 'customers' ||
+                              (!query.source && activityDrillKind === 'customers')
+                                ? 'customers'
+                                : 'orders';
                             void inspect({ kind: selected, date: point.date });
                           }}
                         />
-                      </>
-                    ) : (
-                      <p className="analytics-excluded">
-                        Creation trends are available for Orders and Customers. The selected source has no compatible time-series measure.
-                      </p>
-                    )}
-                    <footer>Values come from authorized saved records · {data.timezone}</footer>
-                  </section>
-                  <div className="analytics-lower-grid">
-                    <section className="analytics-panel panel">
-                      <div className="analytics-section-title">
-                        <h2>Orders by Status</h2>
+                      ) : (
+                        <p className="analytics-excluded">
+                          Creation trends are available for Orders and Customers. The selected
+                          source has no compatible time-series measure.
+                        </p>
+                      )}
+                      <footer>Values come from authorized saved records · {data.timezone}</footer>
+                    </section>
+
+                    <section className="analytics-panel panel sh-span-4">
+                      <div className="sh-card-head">
+                        <h2>Orders by status</h2>
                         <button className="quiet-button" onClick={() => navigate?.('reporting')}>
                           Open report
                         </button>
                       </div>
                       {data.orders ? (
                         <BarChart
-                          title="Orders created in the selected period"
+                          title="Orders created by current status"
+                          orientation="horizontal"
+                          color={vizPalette[0]}
                           rows={data.orders.map((row: any) => ({
                             key: row.status === null ? '__unclassified__' : row.status || 'empty',
                             label: row.status || 'Unclassified',
                             value: Number(row.count),
                           }))}
+                          comparisonRows={
+                            comparing && priorData?.orders
+                              ? priorData.orders.map((row: any) => ({
+                                  key:
+                                    row.status === null
+                                      ? '__unclassified__'
+                                      : row.status || 'empty',
+                                  value: Number(row.count),
+                                }))
+                              : undefined
+                          }
                           onInspect={(key) =>
                             void inspect({
                               kind: 'orders',
@@ -2637,67 +3276,105 @@ export function AnalyticsWorkspace({
                         <p>Orders source is not available to this workspace.</p>
                       )}
                     </section>
-                    <section className="analytics-panel panel">
-                      <div className="analytics-section-title">
-                        <h2>Data Sources</h2>
+
+                    {data.sources?.inventory && (!query.source || query.source === 'inventory') && (
+                      <section className="analytics-panel panel sh-span-6">
+                        <div className="sh-card-head">
+                          <h2>Stock movement rows over time</h2>
+                          {data.inventory && (
+                            <span className="sh-badge">
+                              {data.inventory.total_products} products
+                            </span>
+                          )}
+                        </div>
+                        <BarChart
+                          title="Physical stock movements by date"
+                          subtitle={data.definitions?.inventory}
+                          orientation="vertical"
+                          color={vizPalette[1]}
+                          rows={stockByDate}
+                        />
+                        {data.inventory && (
+                          <ul className="sh-stat-list">
+                            <li>
+                              <span>Low stock products</span>
+                              <strong className="sh-badge sh-badge--warn">
+                                {data.inventory.low_stock}
+                              </strong>
+                            </li>
+                            <li>
+                              <span>Out of stock</span>
+                              <strong>{data.inventory.out_of_stock}</strong>
+                            </li>
+                          </ul>
+                        )}
+                      </section>
+                    )}
+
+                    <section
+                      className={`analytics-panel panel ${data.sources?.inventory && (!query.source || query.source === 'inventory') ? 'sh-span-6' : 'sh-span-12'}`}
+                    >
+                      <div className="sh-card-head">
+                        <h2>Authorized data sources</h2>
                         <button className="quiet-button" onClick={() => navigate?.('coverage')}>
                           Data quality
                         </button>
                       </div>
-                      <DataTable>
-                        <thead>
-                          <tr>
-                            <th>Source</th>
-                            <th>Availability</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {Object.entries(registry?.sources || {}).map(
-                            ([key, value]: [string, any]) => (
-                              <tr key={key}>
-                                <td>{value.label}</td>
-                                <td>{value.status.replaceAll('_', ' ')}</td>
-                              </tr>
-                            ),
-                          )}
-                        </tbody>
-                      </DataTable>
+                      <ul className="sh-stat-list">
+                        {Object.entries(registry?.sources || {}).map(
+                          ([key, value]: [string, any]) => (
+                            <li key={key}>
+                              <span>
+                                <strong>{value.label}</strong>
+                                {value.records !== null
+                                  ? ` · ${Number(value.records).toLocaleString('en-KE')} records`
+                                  : ''}
+                              </span>
+                              <span
+                                className={`sh-badge ${value.status === 'available' ? 'sh-badge--ok' : 'sh-badge--warn'}`}
+                              >
+                                {value.status.replaceAll('_', ' ')}
+                              </span>
+                            </li>
+                          ),
+                        )}
+                      </ul>
+                      {data.inventory?.valuation_note && (
+                        <p style={{ fontSize: 11.5, color: '#616161', margin: '10px 0 0' }}>
+                          {data.inventory.valuation_note}
+                        </p>
+                      )}
                     </section>
                   </div>
+
                   {dashboardWidgets.length > 0 && (
                     <section className="analytics-widgets-section">
-                      <div className="analytics-section-title">
-                        <h2>Dashboard Widgets</h2>
-                        <span>{dashboardWidgets.length} configured</span>
+                      <div className="sh-card-head" style={{ marginBottom: 12 }}>
+                        <h2>Custom cards &amp; reports</h2>
+                        <span style={{ fontSize: 12, color: '#616161' }}>
+                          {dashboardWidgets.length} configured
+                        </span>
                       </div>
                       <div className="analytics-widget-grid">{searchResults.map(renderWidget)}</div>
                       {!searchResults.length && <p>No dashboard widgets match “{search}”.</p>}
                     </section>
                   )}
+
                   {!dashboardWidgets.length && (
-                    <section className="panel">
-                      <p>This dashboard has no widgets yet.</p>
+                    <section className="panel" style={{ padding: 18, marginTop: 16 }}>
+                      <p>This dashboard has no custom cards yet.</p>
                       {manager && (
                         <button className="button" onClick={() => openBuilder(activeDashboard)}>
-                          Add widgets
+                          Add cards
                         </button>
                       )}
                     </section>
                   )}
-                  {data.inventory && (
-                    <section className="panel">
-                      <h2>Inventory snapshot</h2>
-                      <p>
-                        {data.inventory.total_products} products · {data.inventory.low_stock} low
-                        stock · {data.inventory.out_of_stock} out of stock.
-                      </p>
-                      <p>{data.inventory.valuation_note}</p>
-                    </section>
-                  )}
                 </>
               )}
+
               {!data && !loading && (
-                <section className="panel">
+                <section className="panel" style={{ padding: 20 }}>
                   <h2>Dashboard sources unavailable</h2>
                   <p>Retry the authorized dashboard request or inspect source readiness.</p>
                   <button
@@ -2712,6 +3389,7 @@ export function AnalyticsWorkspace({
           )}
         </main>
       </div>
+
       {createOpen && (
         <Overlay onClose={() => setCreateOpen(false)}>
           <section
@@ -2789,6 +3467,7 @@ export function AnalyticsWorkspace({
           </section>
         </Overlay>
       )}
+
       {drill && (
         <Overlay onClose={closeDrill}>
           <section
@@ -2886,44 +3565,6 @@ export function AnalyticsWorkspace({
   );
 }
 
-function MetricCard({
-  label,
-  value,
-  tint,
-  source,
-  period,
-  currency,
-  definition,
-  coverage,
-  refreshedAt,
-}: {
-  label: string;
-  value: string;
-  tint: number;
-  source?: string;
-  period?: string;
-  currency?: string;
-  definition?: string;
-  coverage?: string;
-  refreshedAt?: string;
-}) {
-  return (
-    <article className={`analytics-kpi analytics-kpi-${tint}`}>
-      <strong>{label}</strong>
-      <span>{value}</span>
-      <small>{period || 'Selected period'}{currency ? ` · ${currency}` : ''}</small>
-      {(source || definition || coverage || refreshedAt) && (
-        <details>
-          <summary>Source & definition</summary>
-          {source && <small>Source: {source}</small>}
-          {definition && <small>{definition}</small>}
-          {coverage && <small>Coverage: {coverage}</small>}
-          {refreshedAt && <small>Refreshed: {refreshedAt}</small>}
-        </details>
-      )}
-    </article>
-  );
-}
 function ReportTable({
   rows,
   group,
@@ -2934,7 +3575,7 @@ function ReportTable({
   onInspect?: (row: any) => void;
 }) {
   return (
-    <section className="panel">
+    <section className="panel" style={{ padding: 14 }}>
       <DataTable>
         <thead>
           <tr>
@@ -2948,23 +3589,30 @@ function ReportTable({
             <tr key={row.key}>
               <td>{row.label}</td>
               <td>{row.value}</td>
-              {onInspect && <td>
-                {row.drilldown ? (
-                  <button className="quiet-button" onClick={() => onInspect(row)}>
-                    View records
-                  </button>
-                ) : (
-                  '—'
-                )}
-              </td>}
+              {onInspect && (
+                <td>
+                  {row.drilldown ? (
+                    <button className="quiet-button" onClick={() => onInspect(row)}>
+                      View records
+                    </button>
+                  ) : (
+                    '—'
+                  )}
+                </td>
+              )}
             </tr>
           ))}
-          {!rows.length && <tr><td colSpan={onInspect ? 3 : 2}>No observations in the selected period.</td></tr>}
+          {!rows.length && (
+            <tr>
+              <td colSpan={onInspect ? 3 : 2}>No observations in the selected period.</td>
+            </tr>
+          )}
         </tbody>
       </DataTable>
     </section>
   );
 }
+
 function SavedViews({
   api,
   query,
@@ -3015,7 +3663,7 @@ function SavedViews({
           <h1>Saved Report Views</h1>
         </div>
       </header>
-      <section className="panel analytics-saved-views">
+      <section className="panel analytics-saved-views" style={{ padding: 18 }}>
         <p>
           Legacy report views are kept separately and remain private to the creator, workspace, and
           environment.
@@ -3057,6 +3705,7 @@ function SavedViews({
     </>
   );
 }
+
 function moveWidget(items: Widget[], index: number, direction: number) {
   const next = [...items],
     target = index + direction;
@@ -3065,38 +3714,16 @@ function moveWidget(items: Widget[], index: number, direction: number) {
   return next;
 }
 function monthLastDay(month: string) {
-  const [year, number] = month.split('-').map(Number), last = new Date(Date.UTC(year, number, 0));
+  const [year, number] = month.split('-').map(Number),
+    last = new Date(Date.UTC(year, number, 0));
   return `${last.getUTCFullYear()}-${String(last.getUTCMonth() + 1).padStart(2, '0')}-${String(last.getUTCDate()).padStart(2, '0')}`;
 }
-function legacyWidgetForSource(source: Source): 'financial' | 'sales' | 'customers' | 'inventory' | 'automations' {
+function legacyWidgetForSource(
+  source: Source,
+): 'financial' | 'sales' | 'customers' | 'inventory' | 'automations' {
   if (source === 'financial') return 'financial';
   if (source === 'customers') return 'customers';
   if (source === 'inventory') return 'inventory';
   if (source === 'automations') return 'automations';
   return 'sales';
-}
-const palette = [
-  '#52a6e8',
-  '#e55a70',
-  '#44bdab',
-  '#f0a05a',
-  '#8b73c8',
-  '#e1c84c',
-  '#657b91',
-  '#ce74ac',
-];
-function pieColor(index: number) {
-  return palette[index % palette.length];
-}
-function pieGradient(rows: any[]) {
-  const total = rows.reduce((sum, row) => sum + Math.max(0, Number(row.value || 0)), 0);
-  if (!total) return '#e5e7eb';
-  let start = 0;
-  const stops = rows.map((row, index) => {
-    const end = start + (Math.max(0, Number(row.value || 0)) / total) * 100,
-      stop = `${pieColor(index)} ${start.toFixed(2)}% ${end.toFixed(2)}%`;
-    start = end;
-    return stop;
-  });
-  return `conic-gradient(${stops.join(',')})`;
 }

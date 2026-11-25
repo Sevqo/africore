@@ -1,0 +1,846 @@
+/* Shopify Admin Analytics / Polaris Viz shared visualization system (.sv-*) */
+.sv-root {
+  --sv-surface: #ffffff;
+  --sv-surface-subdued: #f7f7f7;
+  --sv-surface-hover: #f1f2f4;
+  --sv-border: #e3e3e3;
+  --sv-border-strong: #cccccc;
+  --sv-grid: #ebebeb;
+  --sv-grid-zero: #c9cccf;
+  --sv-text: #1f1f1f;
+  --sv-text-subdued: #616161;
+  --sv-text-faint: #8a8a8a;
+  --sv-primary: #3c8ceb;
+  --sv-positive: #047b5d;
+  --sv-positive-bg: #cdfee1;
+  --sv-negative: #c70a24;
+  --sv-negative-bg: #fee1e6;
+  --sv-radius: 12px;
+  --sv-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  color: var(--sv-text);
+  font-variant-numeric: tabular-nums;
+  box-sizing: border-box;
+}
+.sv-root *,
+.sv-root *::before,
+.sv-root *::after {
+  box-sizing: border-box;
+}
+.sv-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Reset inherited workspace button styles inside chart primitives */
+:is(.sv-root, .apps-workspace .sv-root, .business-shell .sv-root, .focused-account .sv-root)
+  button.sv-btn {
+  appearance: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 550;
+  line-height: 1.2;
+  min-height: 0;
+  height: auto;
+  margin: 0;
+  box-shadow: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease,
+    opacity 120ms ease;
+}
+:is(.sv-root, .apps-workspace .sv-root, .business-shell .sv-root) button.sv-btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+/* Trend / period-over-period delta badge */
+.sv-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 2px 6px;
+  border-radius: 6px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.sv-trend svg {
+  flex: none;
+  display: block;
+}
+.sv-trend--positive {
+  color: var(--sv-positive);
+  background: rgba(4, 123, 93, 0.1);
+}
+.sv-trend--negative {
+  color: var(--sv-negative);
+  background: rgba(199, 10, 36, 0.09);
+}
+.sv-trend--flat {
+  color: var(--sv-text-subdued);
+  background: var(--sv-surface-subdued);
+}
+
+/* Sparklines */
+.sv-spark {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+.sv-spark--empty {
+  width: 100%;
+  border-bottom: 1px dashed var(--sv-grid);
+}
+
+/* Metric tiles & Shopify KPI strip */
+.sv-metric-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.sv-metric {
+  background: var(--sv-surface);
+  border-radius: var(--sv-radius);
+  box-shadow: var(--sv-shadow);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  transition: box-shadow 140ms ease, transform 140ms ease;
+}
+.sv-metric:hover {
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+.sv-metric--selected {
+  box-shadow:
+    0 2px 6px rgba(60, 140, 235, 0.14),
+    0 0 0 2px var(--sv-primary);
+}
+.sv-metric-hit {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  width: 100%;
+}
+.sv-metric-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--sv-text);
+  text-decoration: underline dotted #b5b5b5;
+  text-underline-offset: 4px;
+  align-self: flex-start;
+  line-height: 1.3;
+}
+.sv-metric-value-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+.sv-metric-value {
+  font-size: clamp(19px, 1.9vw, 24px);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--sv-text);
+  line-height: 1.15;
+}
+.sv-metric-caption {
+  font-size: 11.5px;
+  color: var(--sv-text-subdued);
+  line-height: 1.35;
+}
+.sv-metric-spark {
+  margin-top: auto;
+  padding-top: 4px;
+  display: block;
+}
+.sv-metric details {
+  margin-top: 4px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 6px;
+}
+.sv-metric details summary {
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--sv-text-subdued);
+  cursor: pointer;
+  user-select: none;
+}
+.sv-metric details small {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--sv-text-subdued);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+/* Interactive Line / Area Chart */
+.sv-chart {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.panel > .sv-chart,
+.sv-card {
+  background: var(--sv-surface);
+}
+.sv-card {
+  border-radius: var(--sv-radius);
+  box-shadow: var(--sv-shadow);
+  padding: 16px 18px;
+}
+.sv-chart-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+}
+.sv-chart-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.sv-chart-title {
+  margin: 0 !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  line-height: 1.35 !important;
+  color: var(--sv-text) !important;
+  text-decoration: underline dotted #b5b5b5;
+  text-underline-offset: 4px;
+  align-self: flex-start;
+}
+.sv-chart-sub {
+  font-size: 11.5px;
+  color: var(--sv-text-subdued);
+}
+
+/* Segmented range selector (Shopify pill bar) */
+.sv-segmented {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: #f1f1f1;
+  border-radius: 8px;
+  border: 1px solid #e6e6e6;
+}
+:is(.sv-root, .apps-workspace .sv-root, .business-shell .sv-root) button.sv-segment {
+  border: 0;
+  background: transparent;
+  color: var(--sv-text-subdued);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+:is(.sv-root, .apps-workspace .sv-root, .business-shell .sv-root)
+  button.sv-segment:hover:not(:disabled) {
+  color: var(--sv-text);
+}
+:is(.sv-root, .apps-workspace .sv-root, .business-shell .sv-root)
+  button.sv-segment[aria-pressed='true'] {
+  background: #ffffff;
+  color: var(--sv-text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Headline totals row inside charts */
+.sv-readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  align-items: baseline;
+}
+.sv-readout-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.sv-readout--single .sv-readout-label {
+  display: none;
+}
+.sv-readout-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--sv-text-subdued);
+  font-weight: 500;
+}
+.sv-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  display: inline-block;
+  flex: none;
+}
+.sv-readout-value-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sv-readout-value {
+  font-size: clamp(20px, 2vw, 26px);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--sv-text);
+  line-height: 1.15;
+}
+
+/* Plot surface & SVG elements */
+.sv-plot {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  user-select: none;
+  touch-action: pan-y;
+}
+.sv-plot > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.sv-grid {
+  stroke: var(--sv-grid);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+.sv-grid--zero {
+  stroke: var(--sv-grid-zero);
+}
+.sv-axis {
+  fill: var(--sv-text-subdued);
+  font-size: 11px;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.sv-line {
+  fill: none;
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.sv-line--comparison {
+  stroke-width: 1.75;
+  stroke-dasharray: 4 4;
+  opacity: 0.58;
+}
+.sv-crosshair {
+  stroke: #b5b5b5;
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  pointer-events: none;
+}
+.sv-bar-col {
+  transition: opacity 120ms ease;
+}
+
+/* Floating Polaris Viz Tooltip */
+.sv-tooltip {
+  position: absolute;
+  top: 6px;
+  transform: translateX(12px);
+  z-index: 8;
+  min-width: 186px;
+  max-width: 270px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid #e1e3e5;
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.12),
+    0 1px 3px rgba(0, 0, 0, 0.06);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--sv-text);
+  backdrop-filter: blur(6px);
+}
+.sv-tooltip--flip {
+  transform: translateX(calc(-100% - 12px));
+}
+.sv-tooltip-title {
+  font-size: 11.5px;
+  font-weight: 650;
+  color: var(--sv-text-subdued);
+  margin-bottom: 1px;
+}
+.sv-tooltip-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+}
+.sv-tooltip-row > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--sv-text-subdued);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sv-tooltip-row > b {
+  font-weight: 650;
+  color: var(--sv-text);
+  white-space: nowrap;
+}
+.sv-tooltip hr {
+  border: 0;
+  border-top: 1px solid #ededed;
+  margin: 3px 0;
+}
+
+/* Swatches & Legend */
+.sv-line-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 0;
+  border-top: 2.5px solid currentColor;
+  border-radius: 2px;
+  flex: none;
+}
+.sv-line-swatch--dashed {
+  border-top-style: dashed;
+}
+.sv-chart-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding-top: 2px;
+}
+.sv-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+:is(.sv-root, .apps-workspace .sv-root, .business-shell .sv-root) button.sv-legend-item,
+.sv-legend-item--static {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: var(--sv-surface-subdued);
+  color: var(--sv-text);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+:is(.sv-root, .apps-workspace .sv-root, .business-shell .sv-root)
+  button.sv-legend-item[aria-pressed='false'] {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+:is(.sv-root, .apps-workspace .sv-root, .business-shell .sv-root)
+  button.sv-legend-item:hover:not(:disabled) {
+  background: var(--sv-surface-hover);
+  border-color: var(--sv-border);
+}
+.sv-chart-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+:is(.sv-root, .apps-workspace .sv-root, .business-shell .sv-root) button.sv-chip {
+  padding: 4px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--sv-border);
+  background: #ffffff;
+  color: var(--sv-text-subdued);
+  font-size: 11.5px;
+  font-weight: 550;
+}
+:is(.sv-root, .apps-workspace .sv-root, .business-shell .sv-root)
+  button.sv-chip:hover:not(:disabled) {
+  background: var(--sv-surface-subdued);
+  color: var(--sv-text);
+}
+:is(.sv-root, .apps-workspace .sv-root, .business-shell .sv-root)
+  button.sv-chip[aria-pressed='true'] {
+  background: #eaf3ff;
+  border-color: #9bc4f7;
+  color: #1659b0;
+}
+:is(.sv-root, .apps-workspace .sv-root, .business-shell .sv-root) button.sv-link {
+  padding: 4px 6px;
+  border: 0;
+  background: transparent;
+  color: #1659b0;
+  font-size: 12px;
+  font-weight: 550;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Accessible keyboard scrubber */
+.sv-explorer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--sv-text-subdued);
+}
+.sv-explorer input[type='range'] {
+  flex: 1;
+  max-width: 220px;
+  height: 4px;
+  accent-color: var(--sv-primary);
+  cursor: pointer;
+}
+
+/* Description & Exact Data disclosure */
+.sv-chart-desc {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--sv-text-subdued);
+  line-height: 1.45;
+}
+.sv-data {
+  border-top: 1px solid #f0f0f0;
+  padding-top: 6px;
+}
+.sv-data > summary {
+  font-size: 11.5px;
+  font-weight: 550;
+  color: var(--sv-text-subdued);
+  cursor: pointer;
+  user-select: none;
+}
+.sv-data[open] > summary {
+  margin-bottom: 8px;
+}
+
+/* Empty & Skeleton states */
+.sv-skeleton {
+  width: 100%;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #f3f4f6 25%, #eceef1 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: sv-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes sv-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+.sv-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
+  padding: 22px 16px;
+  border-radius: 10px;
+  background: #fafafa;
+  border: 1px dashed var(--sv-border);
+  color: var(--sv-text-subdued);
+}
+.sv-empty h4 {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sv-text);
+}
+.sv-empty p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--sv-text-subdued);
+}
+
+/* Shopify BarChart (Horizontal breakdown + Vertical column chart) */
+.sv-bar {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.sv-bar-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.sv-bar-head figcaption {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--sv-text);
+  text-decoration: underline dotted #b5b5b5;
+  text-underline-offset: 4px;
+}
+.sv-bar-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.sv-bar-total {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sv-text-subdued);
+}
+.sv-bar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sv-bar-row {
+  margin: 0;
+  padding: 0;
+}
+.sv-bar-row-inner,
+:is(.sv-root, .apps-workspace .sv-root, .business-shell .sv-root) button.sv-bar-row-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  padding: 6px 8px;
+  margin: -6px -8px;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  transition: background-color 120ms ease;
+}
+:is(.sv-root, .apps-workspace .sv-root, .business-shell .sv-root) button.sv-bar-row-btn {
+  cursor: pointer;
+}
+.sv-bar-row-inner:hover,
+:is(.sv-root, .apps-workspace .sv-root, .business-shell .sv-root) button.sv-bar-row-btn:hover {
+  background: var(--sv-surface-subdued);
+}
+.sv-bar-row-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12.5px;
+}
+.sv-bar-label {
+  font-weight: 500;
+  color: var(--sv-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sv-bar-stats {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: none;
+}
+.sv-bar-value {
+  font-weight: 650;
+  color: var(--sv-text);
+  font-size: 12.5px;
+}
+.sv-bar-share {
+  font-size: 11.5px;
+  color: var(--sv-text-subdued);
+  min-width: 34px;
+  text-align: right;
+}
+.sv-bar-track {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 9px;
+  border-radius: 5px;
+  background: linear-gradient(
+      to right,
+      transparent 24.8%,
+      rgba(0, 0, 0, 0.04) 25%,
+      transparent 25.2%,
+      transparent 49.8%,
+      rgba(0, 0, 0, 0.04) 50%,
+      transparent 50.2%,
+      transparent 74.8%,
+      rgba(0, 0, 0, 0.04) 75%,
+      transparent 75.2%
+    ),
+    #f1f2f4;
+  overflow: hidden;
+}
+.sv-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 5px;
+  transition:
+    width 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 120ms ease;
+}
+.sv-bar-compare-mark {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  width: 2px;
+  background: #4a4a4a;
+  opacity: 0.55;
+  border-radius: 1px;
+}
+
+/* Donut / Breakdown Chart */
+.sv-donut {
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr);
+  align-items: center;
+  gap: 20px;
+  min-height: 180px;
+}
+.sv-donut-ring {
+  position: relative;
+  width: 168px;
+  height: 168px;
+  margin: 0 auto;
+}
+.sv-donut-ring svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.sv-donut-center {
+  position: absolute;
+  inset: 24%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+  gap: 2px;
+}
+.sv-donut-center small {
+  font-size: 10.5px;
+  color: var(--sv-text-subdued);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sv-donut-center strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--sv-text);
+  line-height: 1.15;
+}
+.sv-donut-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.sv-donut-item {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  transition: background-color 120ms ease;
+}
+.sv-donut-item:hover,
+.sv-donut-item.is-active {
+  background: var(--sv-surface-subdued);
+}
+.sv-donut-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--sv-text);
+}
+:is(.sv-root, .apps-workspace .sv-root, .business-shell .sv-root) button.sv-donut-drill {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--sv-text);
+  font-size: 12.5px;
+  font-weight: 500;
+  text-decoration: underline dotted #999;
+  text-underline-offset: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sv-donut-val {
+  font-weight: 650;
+  color: var(--sv-text);
+  white-space: nowrap;
+}
+.sv-donut-pct {
+  font-size: 11.5px;
+  color: var(--sv-text-subdued);
+  min-width: 36px;
+  text-align: right;
+}
+@media (max-width: 620px) {
+  .sv-donut {
+    grid-template-columns: 1fr;
+  }
+  .sv-segmented {
+    flex-wrap: wrap;
+  }
+}

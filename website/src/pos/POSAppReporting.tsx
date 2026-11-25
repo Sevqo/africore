@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { BarChart } from '../charts/BarChart';
 import { money, type API } from '../operations/UI';
 import { POSDailyReport } from './POSDailyReport';
 import {
@@ -545,47 +546,26 @@ export function POSAppReporting({
               {series.length ? (
                 chartCurrencies.map((chartCurrency: string) => {
                   const currencySeries = series.filter(
-                      (group: any) => group.currency === chartCurrency,
-                    ),
-                    max = Math.max(
-                      1,
-                      ...currencySeries.map((group: any) => valueFor(group, groupedMeasure)),
-                    );
+                    (group: any) => group.currency === chartCurrency,
+                  );
                   return (
                     <div className="pos-report-chart-currency" key={chartCurrency}>
-                      <h4>{chartCurrency}</h4>
-                      <div className="pos-report-chart-grid">
-                        {currencySeries.slice(0, 30).map((group: any) => {
-                          const val = valueFor(group, groupedMeasure);
-                          return (
-                            <div
-                              className="pos-report-chart-column"
-                              key={group.key}
-                              title={group.label + ': ' + val}
-                            >
-                              <strong>
-                                {groupedMeasure.endsWith('_minor')
-                                  ? money(val, group.currency)
-                                  : numberFormat.format(
-                                      groupedMeasure === 'product_quantity_milli'
-                                        ? val / 1000
-                                        : val,
-                                    )}
-                              </strong>
-                              <span className="pos-report-chart-track">
-                                <i
-                                  style={{
-                                    height:
-                                      Math.max(val > 0 ? 2 : 0, Math.round((val / max) * 100)) +
-                                      '%',
-                                  }}
-                                />
-                              </span>
-                              <small>{group.label}</small>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      <BarChart
+                        title={`${measureLabel} · ${chartCurrency}`}
+                        subtitle={`${currencySeries.length} ${groupBy.replaceAll('_', ' ')} group(s)`}
+                        currency={groupedMeasure.endsWith('_minor') ? chartCurrency : undefined}
+                        valueFormatter={
+                          groupedMeasure === 'product_quantity_milli'
+                            ? (val) => numberFormat.format(val / 1000)
+                            : undefined
+                        }
+                        orientation="vertical"
+                        rows={currencySeries.slice(0, 30).map((group: any) => ({
+                          key: String(group.key),
+                          label: String(group.label),
+                          value: valueFor(group, groupedMeasure),
+                        }))}
+                      />
                       {currencySeries.length > 30 && (
                         <p>
                           Chart shows the first 30 groups for {chartCurrency}; the table and CSV

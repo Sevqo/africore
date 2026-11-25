@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { previousPeriod } from '../src/charts/model.ts';
+import {
+  barPath,
+  dateGranularity,
+  niceScale,
+  percentChange,
+  smoothPath,
+} from '../src/charts/viz.ts';
 
 test('previous windows are adjacent and align sparse records without inventing points', () => {
   const points = [
@@ -49,4 +56,29 @@ test('an explicit as-of date determines the window and invalid dates are exclude
   assert.equal(result.from, '2026-01-01');
   assert.equal(result.to, '2026-01-07');
   assert.equal(result.records.length, 1);
+});
+test('Polaris Viz scale, monotone curves, rounded bars and percentage deltas stay truthful', () => {
+  const scale = niceScale([0, 14, 37], 4, true);
+  assert.equal(scale.min, 0);
+  assert.ok(scale.max >= 37);
+  assert.ok(scale.ticks.every((tick) => Number.isInteger(tick)));
+
+  const curve = smoothPath([
+    [0, 100],
+    [50, 20],
+    [100, 60],
+  ]);
+  assert.ok(curve.startsWith('M0,100C'));
+
+  const column = barPath(10, 20, 24, 80);
+  assert.ok(column.startsWith('M10,100V'));
+  assert.equal(barPath(10, 20, 24, 0), '');
+
+  assert.equal(percentChange(120, 100), 20);
+  assert.equal(percentChange(80, 100), -20);
+  assert.equal(percentChange(10, 0), null);
+  assert.equal(percentChange(0, 0), 0);
+
+  assert.equal(dateGranularity(['2026-01-01', '2026-02-01', '2026-03-01']), 'month');
+  assert.equal(dateGranularity(['2026-01-01', '2026-01-02']), 'day');
 });

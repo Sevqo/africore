@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { BarChart } from '../charts/BarChart';
 import { Field, Form, factor, money, type API } from '../operations/UI';
 import { parseMoney } from '../../../src/finance/money';
 import { displayQuantity, quantityMilli } from '../../../src/inventory/quantity';
@@ -114,10 +115,20 @@ export function ProcurementReports({ api, scope }: { api: API; scope: string }) 
             const found = result.find((group) => group.currency === row.currency);
             if (found) found.rows.push(row); else result.push({ currency: row.currency, rows: [row] });
             return result;
-          }, []).map((group: any) => {
-            const max = Math.max(1, ...group.rows.map((row: any) => row.value_minor));
-            return <section className="panel" key={group.currency}><h4>{group.currency}</h4>{group.rows.map((row: any) => <div key={row.month} style={{ display: 'grid', gridTemplateColumns: '110px 1fr 140px', gap: 12, alignItems: 'center', margin: '8px 0' }}><span>{row.month}</span><div style={{ height: 18, background: '#edf0f2' }}><div style={{ width: Math.max(2, row.value_minor / max * 100) + '%', height: '100%', background: 'var(--accent, #78506f)' }} /></div><span className="numeric">{money(row.value_minor, group.currency)}</span></div>)}</section>;
-          })}
+          }, []).map((group: any) => (
+            <section className="panel" key={group.currency}>
+              <BarChart
+                title={`Committed orders by month (${group.currency})`}
+                currency={group.currency}
+                orientation="vertical"
+                rows={group.rows.map((row: any) => ({
+                  key: String(row.month),
+                  label: String(row.month),
+                  value: Number(row.value_minor || 0),
+                }))}
+              />
+            </section>
+          ))}
           <h3>Supplier payable aging</h3>
           <p>
             Only current financial roles receive payable details. Manual payment observations do not

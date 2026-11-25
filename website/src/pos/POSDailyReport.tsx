@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { BarChart } from '../charts/BarChart';
 import { Field, money, type API } from '../operations/UI';
 import { displayQuantity } from '../../../src/inventory/quantity';
 import { posReportBars } from './pos-app-model';
@@ -106,18 +107,19 @@ export function POSDailyReport({
             ))}
           </div>
           {!!report.top_products.length && (
-            <>
-              <h4>Product value in covered sales</h4>
-              <div className="pos-report-bars" role="img" aria-label="Line subtotal by top product">
-                {posReportBars(report.top_products).map((bar: any) => (
-                  <div className="pos-report-bar" key={bar.label}>
-                    <span style={{ height: bar.height + '%' }} />
-                    <small>{bar.label}</small>
-                    <strong>{money(bar.value, report.currency)}</strong>
-                  </div>
-                ))}
-              </div>
-            </>
+            <div style={{ margin: '14px 0' }}>
+              <BarChart
+                title="Product value in covered sales"
+                subtitle="Line subtotal by top product before invoice discount and tax"
+                currency={report.currency}
+                orientation="vertical"
+                rows={posReportBars(report.top_products).map((bar: any) => ({
+                  key: String(bar.label),
+                  label: String(bar.label),
+                  value: Number(bar.value || 0),
+                }))}
+              />
+            </div>
           )}
           <h4>Top products in covered sales</h4>
           <p>

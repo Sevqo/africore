@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import { BarChart } from './BarChart';
 import { InteractiveChart, financialSeries } from './InteractiveChart';
 import { groupDatedAmounts } from './model';
+import { vizPalette } from './viz';
+
 export function FinancialActivity({
   load,
   scope,
@@ -85,6 +88,7 @@ export function FinancialActivity({
     </section>
   );
 }
+
 export function RecordAnalytics({
   records,
   kind,
@@ -117,7 +121,7 @@ export function RecordAnalytics({
           {
             key: 'value',
             label: kind === 'payments' ? 'Requested amount' : 'Invoice face value',
-            color: '#426900',
+            color: vizPalette[0],
           },
         ]}
         currency={currency}
@@ -127,45 +131,48 @@ export function RecordAnalytics({
             : 'Face value on the creation date, not cash received. This is a view of loaded invoices, not historical outstanding balances.'
         }
       />
-      <div className="status-breakdown" aria-label="Current record statuses">
-        {states.map((state) => {
-          const count = rows.filter((r) => (r.status || 'unknown') === state).length;
-          return (
-            <div key={state}>
-              <span>{state.replaceAll('_', ' ')}</span>
-              <div>
-                <i style={{ width: (count / rows.length) * 100 + '%' }} />
-              </div>
-              <strong>
-                {count} of {rows.length}
-              </strong>
-            </div>
-          );
-        })}
+      <div className="status-breakdown" aria-label="Current record statuses" style={{ marginTop: 14 }}>
+        <BarChart
+          title="Current record statuses"
+          orientation="horizontal"
+          allowOrientationSwitch={false}
+          color={vizPalette[2]}
+          rows={states.map((state) => ({
+            key: String(state),
+            label: String(state).replaceAll('_', ' '),
+            value: rows.filter((r) => (r.status || 'unknown') === state).length,
+          }))}
+        />
       </div>
     </section>
   );
 }
+
 export function ReconciliationOverview({ data }: { data: any }) {
   const rows = [
     [
+      'allocations',
       'Confirmed allocations',
       data?.allocations?.length || 0,
       'Allocations associate trusted payment amounts with documents.',
+      vizPalette[0],
     ],
     [
+      'pending',
       'Pending review',
       (data?.exceptions || []).filter((r: any) => r.status === 'pending_review').length,
       'These exception records need a documented review; do not force them into a match.',
+      vizPalette[3],
     ],
     [
+      'reviewed',
       'Reviewed exceptions',
       (data?.exceptions || []).filter((r: any) => r.status !== 'pending_review').length,
       'Review history is retained alongside the original financial event.',
+      vizPalette[2],
     ],
   ] as const;
-  const [selected, setSelected] = useState(0),
-    max = Math.max(1, ...rows.map((r) => r[1]));
+  const [selected, setSelected] = useState(0);
   return (
     <section className="panel reconciliation-overview">
       <h2>Matching and review</h2>
@@ -173,23 +180,25 @@ export function ReconciliationOverview({ data }: { data: any }) {
         Counts of loaded records. Allocations and exceptions are different record types and are not
         parts of a shared total.
       </p>
-      <div className="review-bars">
-        {rows.map(([label, count], i) => (
-          <button
-            key={label}
-            type="button"
-            aria-pressed={selected === i}
-            onClick={() => setSelected(i)}
-          >
-            <span>{label}</span>
-            <i>
-              <b style={{ width: (count / max) * 100 + '%' }} />
-            </i>
-            <strong>{count}</strong>
-          </button>
-        ))}
-      </div>
-      <p role="status">{rows[selected][2]}</p>
+      <BarChart
+        title="Loaded matching and exception records"
+        orientation="horizontal"
+        allowOrientationSwitch={false}
+        showTotal={false}
+        rows={rows.map(([key, label, value, , color]) => ({
+          key,
+          label,
+          value,
+          color,
+        }))}
+        onInspect={(key) => {
+          const idx = rows.findIndex((r) => r[0] === key);
+          if (idx >= 0) setSelected(idx);
+        }}
+      />
+      <p role="status" style={{ marginTop: 10 }}>
+        {rows[selected][3]}
+      </p>
     </section>
   );
 }

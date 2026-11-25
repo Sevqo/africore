@@ -1,0 +1,454 @@
+/* Shopify Admin Analytics Workspace Redesign */
+.analytics-workspace.sh-analytics {
+  --sh-bg: #f1f2f4;
+  --sh-card: #ffffff;
+  --sh-border: #e3e3e3;
+  --sh-border-strong: #c9cccf;
+  --sh-ink: #1f1f1f;
+  --sh-muted: #616161;
+  --sh-accent: #303030;
+  --sh-blue: #3c8ceb;
+  --sh-radius: 12px;
+  --sh-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  --analytics-ink: #1f1f1f;
+  --analytics-teal: #1f1f1f;
+  --analytics-line: #e3e3e3;
+  background: var(--sh-bg);
+  color: var(--sh-ink);
+  min-height: calc(100vh - 120px);
+}
+
+/* Sticky Shopify Analytics Top Controls Bar */
+.sh-analytics .analytics-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 52px;
+  padding: 8px 20px;
+  background: #f7f7f7;
+  border-bottom: 1px solid var(--sh-border);
+  position: sticky;
+  top: 0;
+  z-index: 6;
+}
+.sh-analytics .sh-pill-group {
+  display: inline-flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  border-radius: 8px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  height: 32px;
+}
+.sh-analytics .sh-pill-group select {
+  border: 0;
+  background: transparent;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 26px 0 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--sh-ink);
+  cursor: pointer;
+}
+.sh-analytics .sh-pill-step {
+  border: 0 !important;
+  border-left: 1px solid #e6e6e6 !important;
+  background: transparent !important;
+  width: 28px;
+  min-width: 28px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 !important;
+  font-size: 15px !important;
+  color: var(--sh-muted) !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.sh-analytics .sh-pill-step:hover:not(:disabled) {
+  background: #f3f3f3 !important;
+  color: var(--sh-ink) !important;
+}
+.sh-analytics .sh-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  min-height: 32px !important;
+  padding: 0 11px !important;
+  border-radius: 8px !important;
+  border: 1px solid #d4d4d4 !important;
+  background: #ffffff !important;
+  color: var(--sh-ink) !important;
+  font-size: 12.5px !important;
+  font-weight: 550 !important;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+}
+.sh-analytics .sh-pill-btn:hover:not(:disabled) {
+  background: #f6f6f7 !important;
+}
+.sh-analytics .sh-pill-btn[aria-pressed='true'] {
+  background: #eaf3ff !important;
+  border-color: #9bc4f7 !important;
+  color: #1353a3 !important;
+}
+.sh-analytics .sh-pill-btn--primary {
+  background: #303030 !important;
+  border-color: #1f1f1f !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.16);
+}
+.sh-analytics .sh-pill-btn--primary:hover:not(:disabled) {
+  background: #1a1a1a !important;
+}
+
+.sh-analytics .analytics-search {
+  width: min(260px, 32vw);
+  min-width: 170px;
+  height: 32px;
+  border: 1px solid #d4d4d4;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0 8px 0 10px;
+  gap: 6px;
+  margin-left: auto;
+}
+.sh-analytics .analytics-search > span {
+  font-size: 14px;
+  color: var(--sh-muted);
+}
+.sh-analytics .analytics-search input {
+  font-size: 12.5px;
+}
+.sh-analytics .analytics-star {
+  margin-left: 0;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #d4d4d4;
+  background: #ffffff;
+  font-size: 16px;
+  color: #e09b00;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Active filter chips strip */
+.sh-analytics .analytics-filter-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 20px;
+  background: #f7f7f7;
+  border-bottom: 1px solid var(--sh-border);
+}
+.sh-analytics .analytics-filter-chips span {
+  background: #ffffff;
+  border: 1px solid #dcdcdc;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--sh-muted);
+}
+.sh-analytics .analytics-filter-chips .sh-compare-chip {
+  border-style: dashed;
+  border-color: #9bc4f7;
+  background: #f4f9ff;
+  color: #1659b0;
+}
+
+/* Filter Popover */
+.sh-analytics .analytics-filter-popover {
+  top: 46px;
+  left: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--sh-border);
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.14),
+    0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* Left Shopify Navigation Rail + Main Canvas */
+.sh-analytics .analytics-layout {
+  grid-template-columns: 204px minmax(0, 1fr);
+}
+.sh-analytics .analytics-sidebar {
+  background: #ebebeb;
+  border-right: 1px solid #dfe1e4;
+  padding: 14px 10px;
+  gap: 2px;
+}
+.sh-analytics .analytics-sidebar h3 {
+  margin: 14px 10px 4px;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  color: #6b7177;
+  text-transform: uppercase;
+}
+.sh-analytics .analytics-sidebar button {
+  min-height: 30px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #303030;
+}
+.sh-analytics .analytics-sidebar button:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+.sh-analytics .analytics-sidebar button.selected {
+  background: #ffffff;
+  color: #1f1f1f;
+  font-weight: 650;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* Main Content Area */
+.sh-analytics .analytics-main {
+  padding: 20px clamp(16px, 3vw, 36px) 48px;
+  max-width: 1440px;
+}
+.sh-analytics .analytics-dashboard-heading,
+.sh-analytics .analytics-page-heading {
+  margin: 0 0 16px;
+}
+.sh-analytics .analytics-dashboard-heading > div:first-child > p,
+.sh-analytics .analytics-page-heading > div:first-child > p {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--sh-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 2px;
+}
+.sh-analytics .analytics-dashboard-heading h1,
+.sh-analytics .analytics-page-heading h1 {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--sh-ink);
+  margin: 0;
+}
+.sh-analytics .analytics-dashboard-actions select {
+  min-height: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #d4d4d4;
+  padding: 0 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: #ffffff;
+}
+
+/* Crisp White Polaris Cards inside Analytics */
+.sh-analytics .panel,
+.sh-analytics .analytics-primary-chart,
+.sh-analytics .analytics-panel,
+.sh-analytics .analytics-widget,
+.sh-analytics .analytics-report-chart {
+  background: var(--sh-card);
+  border: 0;
+  border-radius: var(--sh-radius);
+  box-shadow: var(--sh-shadow);
+}
+.sh-analytics .analytics-primary-chart {
+  padding: 18px 20px 14px;
+}
+.sh-analytics .analytics-section-title {
+  border-bottom: 0;
+  margin-bottom: 10px;
+  padding-bottom: 0;
+}
+.sh-analytics .analytics-section-title h2 {
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--sh-ink);
+  margin: 0;
+}
+
+/* Bento Analytics Grid */
+.sh-analytics .sh-bento-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 4px;
+}
+.sh-analytics .sh-span-12 {
+  grid-column: span 12;
+}
+.sh-analytics .sh-span-8 {
+  grid-column: span 8;
+}
+.sh-analytics .sh-span-6 {
+  grid-column: span 6;
+}
+.sh-analytics .sh-span-4 {
+  grid-column: span 4;
+}
+
+.sh-analytics .sh-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.sh-analytics .sh-card-head h2,
+.sh-analytics .sh-card-head h3 {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--sh-ink);
+}
+.sh-analytics .sh-inline-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--sh-muted);
+}
+.sh-analytics .sh-inline-select select {
+  height: 28px;
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 7px;
+  border: 1px solid var(--sh-border);
+  background: #f7f7f7;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Inventory & Source summary list inside Shopify card */
+.sh-analytics .sh-stat-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sh-analytics .sh-stat-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: #f7f7f7;
+  font-size: 12.5px;
+}
+.sh-analytics .sh-stat-list li strong {
+  font-weight: 650;
+}
+.sh-analytics .sh-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #ebebeb;
+  color: #4a4a4a;
+}
+.sh-analytics .sh-badge--ok {
+  background: #cdfee1;
+  color: #047b5d;
+}
+.sh-analytics .sh-badge--warn {
+  background: #ffd6a4;
+  color: #5e4200;
+}
+
+/* Configured Widgets Grid */
+.sh-analytics .analytics-widget-grid {
+  gap: 14px;
+}
+.sh-analytics .analytics-widget {
+  padding: 16px 18px;
+}
+.sh-analytics .analytics-widget > header {
+  border-bottom: 0;
+  padding-bottom: 4px;
+  margin-bottom: 8px;
+}
+.sh-analytics .analytics-widget > header h3 {
+  color: var(--sh-ink);
+  font-size: 13.5px;
+  font-weight: 650;
+}
+.sh-analytics .analytics-widget > header > span {
+  background: #f1f2f4;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--sh-muted);
+  align-self: flex-start;
+}
+
+/* Segmented View Switcher */
+.sh-analytics .analytics-view-switch {
+  background: #e4e5e7;
+  border-radius: 8px;
+  padding: 2px;
+}
+.sh-analytics .analytics-view-switch button {
+  min-height: 28px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sh-muted);
+}
+.sh-analytics .analytics-view-switch button.selected {
+  background: #ffffff;
+  color: var(--sh-ink);
+}
+
+/* Color swatch buttons in Dashboard Builder */
+.sh-color-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 6px 0 12px;
+}
+.sh-color-swatch {
+  width: 28px;
+  height: 28px;
+  min-height: 28px !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  border: 2px solid transparent !important;
+  cursor: pointer;
+}
+.sh-color-swatch[aria-pressed='true'] {
+  outline: 2px solid #1f1f1f;
+  outline-offset: 2px;
+}
+
+@media (max-width: 1040px) {
+  .sh-analytics .sh-span-8,
+  .sh-analytics .sh-span-6,
+  .sh-analytics .sh-span-4 {
+    grid-column: span 12;
+  }
+}
+@media (max-width: 720px) {
+  .sh-analytics .analytics-toolbar {
+    position: static;
+    padding: 8px 12px;
+  }
+  .sh-analytics .analytics-search {
+    width: 100%;
+    margin-left: 0;
+  }
+}

@@ -223,9 +223,9 @@ export function FinanceOperationsOverview({
                   {
                     key: 'confirmed_inflows_minor',
                     label: 'Confirmed collections',
-                    color: '#238c83',
+                    color: '#3c8ceb',
                   },
-                  { key: 'recorded_outflows_minor', label: 'Recorded outflows', color: '#805077' },
+                  { key: 'recorded_outflows_minor', label: 'Recorded outflows', color: '#f08c3a' },
                 ]}
                 description="Movement recorded in the selected currency and covered period."
               />

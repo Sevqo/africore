@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { BarChart } from '../charts/BarChart';
 import { CrmActivityReport } from './CrmActivityReport';
 import { Field, Form, money, type API } from '../operations/UI';
 import { DataTable } from '../components/DataTable';
@@ -199,7 +200,6 @@ export function CrmReport({
                   0,
                 ),
             }));
-            const max = Math.max(1, ...rows.map((r) => r.value));
             if (view === 'pivot') {
               const dimensions = [
                 ...new Set<string>(records.map((record: any) => String(record[pivotBy] || 'unassigned'))),
@@ -294,20 +294,16 @@ export function CrmReport({
             }
             return view === 'graph' ? (
               <div className="crm-report-graph" aria-label="Opportunity report">
-                {rows.map((row) => (
-                  <div className="crm-report-bar-row" key={row.id}>
-                    <span>{row.label}</span>
-                    <div>
-                      <i style={{ width: (100 * row.value) / max + '%' }} />
-                    </div>
-                    <strong>
-                      {['count', 'won', 'lost'].includes(measure)
-                        ? row.value
-                        : money(row.value, data.currency)}
-                    </strong>
-                  </div>
-                ))}
-                {!rows.length && <p>No opportunities match this report.</p>}
+                <BarChart
+                  title="Opportunities by selected dimension"
+                  orientation="horizontal"
+                  currency={['count', 'won', 'lost'].includes(measure) ? undefined : data.currency}
+                  rows={rows.map((row) => ({
+                    key: row.id,
+                    label: row.label,
+                    value: row.value,
+                  }))}
+                />
               </div>
             ) : (
               <DataTable>

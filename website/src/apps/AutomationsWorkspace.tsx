@@ -1,4 +1,5 @@
 import { BarChart } from '../charts/BarChart';
+import { MetricStrip, MetricTile } from '../charts/MetricTile';
 import { Overlay } from '../components/Overlay';
 import { DataTable } from '../components/DataTable';
 import { WorkAutomationDirectory } from './WorkAutomation';
@@ -702,15 +703,15 @@ export function AutomationsWorkspace({
       {error && <p className="alert error" role="alert">{error}</p>}
 
       {section === 'dashboard' && rules && <>
-        <div className="automation-kpis">
+        <MetricStrip label="Automation metrics">
           {[
             ['Automation Rules', rules.summary?.total ?? rules.total ?? 0, 'Configured in this workspace'],
             ['Active', rules.summary?.enabled ?? 0, 'Rules currently enabled'],
             ['Pending Runs', runs?.summary?.pending ?? '—', runSummaryError ? 'Execution summary unavailable' : 'Waiting for the existing worker'],
             ['Needs Review', runs?.summary?.dead_letter ?? '—', runSummaryError ? 'Execution summary unavailable' : 'Dead-letter runs'],
-          ].map(([label, value, hint]) => <article className="automation-kpi" key={String(label)}><span>{label}</span><strong>{value}</strong><small>{hint}</small></article>)}
-        </div>
-        <section className="automation-dashboard-grid"><article className="automation-panel"><h2>Execution overview</h2>{runSummaryError ? <p className="alert error" role="alert">{runSummaryError} <button className="quiet-button" onClick={() => setRevision((value) => value + 1)}>Retry</button></p> : runs ? <BarChart title="Automation runs by state" rows={Object.entries(runs.summary || {}).map(([status, value]) => ({ key: status, label: titleCase(status), value: Number(value) }))} /> : <p role="status">{loadingRunSummary ? 'Loading execution summary…' : 'Execution summary unavailable.'}</p>}</article><article className="automation-panel"><h2>Runtime &amp; safeguards</h2><dl className="automation-facts"><div><dt>Worker</dt><dd>Existing application worker</dd></div><div><dt>Poll interval</dt><dd>{runtime.worker_poll_seconds || 15} seconds while awake</dd></div><div><dt>Per-pass limit</dt><dd>{runtime.maximum_candidates_per_pass || 50} candidates</dd></div><div><dt>Delivery</dt><dd>Internal actions only</dd></div></dl><p>{runtime.timing_notice}</p><button className="secondary-button" onClick={() => openSection('rules')}>View Rules</button></article></section>
+          ].map(([label, value, hint]) => <MetricTile key={String(label)} label={String(label)} value={String(value)} caption={String(hint)} />)}
+        </MetricStrip>
+        <section className="automation-dashboard-grid"><article className="automation-panel"><h2>Execution overview</h2>{runSummaryError ? <p className="alert error" role="alert">{runSummaryError} <button className="quiet-button" onClick={() => setRevision((value) => value + 1)}>Retry</button></p> : runs ? <BarChart title="Automation runs by state" multiColor rows={Object.entries(runs.summary || {}).map(([status, value]) => ({ key: status, label: titleCase(status), value: Number(value) }))} /> : <p role="status">{loadingRunSummary ? 'Loading execution summary…' : 'Execution summary unavailable.'}</p>}</article><article className="automation-panel"><h2>Runtime &amp; safeguards</h2><dl className="automation-facts"><div><dt>Worker</dt><dd>Existing application worker</dd></div><div><dt>Poll interval</dt><dd>{runtime.worker_poll_seconds || 15} seconds while awake</dd></div><div><dt>Per-pass limit</dt><dd>{runtime.maximum_candidates_per_pass || 50} candidates</dd></div><div><dt>Delivery</dt><dd>Internal actions only</dd></div></dl><p>{runtime.timing_notice}</p><button className="secondary-button" onClick={() => openSection('rules')}>View Rules</button></article></section>
         <section className="automation-panel"><div className="automation-section-heading"><h2>Recent Execution History</h2><button className="quiet-button" onClick={() => openRuns()}>Open All Runs</button></div>{runs ? <RunTable runs={runs} openRun={openRun} /> : runSummaryError ? <Empty text="Execution history is unavailable; retry the summary above." /> : <p role="status">Loading recent executions…</p>}</section>
         <section className="automation-panel"><div className="automation-section-heading"><h2>Attention in This Result</h2><button className="quiet-button" onClick={() => openSection('rules')}>Open Rules</button></div>{rules.data?.filter((rule: any) => rule.owner_permission_revoked || rule.last_run_status === 'dead_letter' || !rule.enabled).length ? <ul className="automation-attention-list">{rules.data.filter((rule: any) => rule.owner_permission_revoked || rule.last_run_status === 'dead_letter' || !rule.enabled).slice(0, 8).map((rule: any) => <li key={rule.id}><button className="automation-table-link" onClick={() => openRule(rule.id)}>{rule.name}</button><span>{rule.owner_permission_revoked ? 'Owner permission revoked' : rule.last_run_status === 'dead_letter' ? 'Latest run needs review' : 'Paused'}</span></li>)}</ul> : <Empty text="No rules in this filtered result require attention." />}</section>
       </>}

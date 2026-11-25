@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { BarChart } from '../charts/BarChart';
+import { InteractiveChart } from '../charts/InteractiveChart';
+import { vizPalette } from '../charts/viz';
 import { Field, type API } from '../operations/UI';
 
 const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Nairobi' });
@@ -103,7 +106,6 @@ export function WorkReports({
             : measure === 'actual'
               ? row.actual_seconds
               : row.task_count;
-  const max = Math.max(1, ...groupRows.map((row: any) => Number(value(row) || 0)));
   const projectName = (id: string) =>
     projects.find((item) => item.id === id)?.data?.name ||
     projects.find((item) => item.id === id)?.name ||
@@ -312,52 +314,18 @@ export function WorkReports({
               )}
               {mode === 'graph' ? (
                 <div className="work-report-chart">
-                  <svg
-                    viewBox="0 0 1000 400"
-                    role="img"
-                    aria-label={`${measure} grouped by ${group}`}
-                  >
-                    {[0, 1, 2, 3, 4].map((i) => (
-                      <g key={i}>
-                        <line
-                          x1="55"
-                          x2="980"
-                          y1={340 - i * 75}
-                          y2={340 - i * 75}
-                          stroke="#dfe5e2"
-                        />
-                        <text x="45" y={345 - i * 75} textAnchor="end" fontSize="13">
-                          {Math.round(((max * i) / 4) * 100) / 100}
-                        </text>
-                      </g>
-                    ))}
-                    {groupRows.map((row: any, i: number) => {
-                      const width = 900 / Math.max(1, groupRows.length),
-                        raw = value(row),
-                        height = raw == null ? 0 : (300 * Number(raw)) / max;
-                      return (
-                        <g key={row.key}>
-                          <rect
-                            x={65 + i * width + width * 0.15}
-                            y={340 - height}
-                            width={width * 0.7}
-                            height={height}
-                            fill={['#4aa4e8', '#eb6077', '#43bca9', '#f1a359'][i % 4]}
-                          >
-                            <title>{`${row.label}: ${raw == null ? 'Unavailable' : raw}`}</title>
-                          </rect>
-                          <text
-                            x={65 + i * width + width * 0.5}
-                            y="370"
-                            textAnchor="middle"
-                            fontSize="14"
-                          >
-                            {row.label.length > 20 ? row.label.slice(0, 19) + '…' : row.label}
-                          </text>
-                        </g>
-                      );
-                    })}
-                  </svg>
+                  <BarChart
+                    title={`Tasks (${measure}) by ${group}`}
+                    orientation="vertical"
+                    multiColor
+                    rows={groupRows
+                      .filter((row: any) => value(row) != null)
+                      .map((row: any) => ({
+                        key: String(row.key),
+                        label: String(row.label),
+                        value: Number(value(row) || 0),
+                      }))}
+                  />
                 </div>
               ) : (
                 <div className="table-scroll">
@@ -411,63 +379,28 @@ export function WorkReports({
           )}
           <h3>Historical task progress</h3>
           {progress && (
-            <>
-              <p>{progress.disclosure}</p>
-              <div className="work-report-chart">
-                <svg
-                  viewBox="0 0 1000 320"
-                  role="img"
-                  aria-label="Historical open, completed and cancelled task counts"
-                >
-                  {[0, 1, 2, 3, 4].map((i) => (
-                    <line
-                      key={i}
-                      x1="55"
-                      x2="980"
-                      y1={270 - i * 55}
-                      y2={270 - i * 55}
-                      stroke="#dfe5e2"
-                    />
-                  ))}
-                  {(['open', 'completed', 'cancelled'] as const).map((key, line) => {
-                    const points = progress.days.filter((d: any) => d.available && d[key] != null);
-                    if (points.length < 2) return null;
-                    const maxTotal = Math.max(1, ...points.map((d: any) => d.total)),
-                      x = (date: string) =>
-                        65 +
-                        (900 *
-                          (Date.parse(date + 'T12:00:00Z') - Date.parse(from + 'T12:00:00Z'))) /
-                          Math.max(
-                            86400000,
-                            Date.parse(to + 'T12:00:00Z') - Date.parse(from + 'T12:00:00Z'),
-                          ),
-                      y = (n: number) => 270 - (220 * n) / maxTotal;
-                    return (
-                      <polyline
-                        key={key}
-                        fill="none"
-                        stroke={['#4aa4e8', '#43bca9', '#f1a359'][line]}
-                        strokeWidth="4"
-                        points={points.map((d: any) => `${x(d.date)},${y(d[key])}`).join(' ')}
-                      >
-                        <title>{key}</title>
-                      </polyline>
-                    );
-                  })}
-                  <text x="65" y="300" fontSize="13">
-                    {from}
-                  </text>
-                  <text x="980" y="300" textAnchor="end" fontSize="13">
-                    {to}
-                  </text>
-                </svg>
-              </div>
-              <div className="work-report-legend">
-                <span>Open</span>
-                <span>Completed</span>
-                <span>Cancelled</span>
-              </div>
-            </>
+            <div className="work-report-chart">
+              <InteractiveChart
+                compact
+                headingLevel={3}
+                showRanges={false}
+                title="Historical open, completed and cancelled tasks"
+                points={(progress.days || [])
+                  .filter((d: any) => d.available && d.open != null)
+                  .map((d: any) => ({
+                    date: d.date,
+                    open: Number(d.open || 0),
+                    completed: Number(d.completed || 0),
+                    cancelled: Number(d.cancelled || 0),
+                  }))}
+                series={[
+                  { key: 'open', label: 'Open', color: vizPalette[0] },
+                  { key: 'completed', label: 'Completed', color: vizPalette[2] },
+                  { key: 'cancelled', label: 'Cancelled', color: vizPalette[3], dashed: true },
+                ]}
+                description={progress.disclosure || 'Daily recorded project task state counts.'}
+              />
+            </div>
           )}
           {!progress && <p>Choose both dates to see available task history.</p>}
           <h3>Timesheet analysis</h3>

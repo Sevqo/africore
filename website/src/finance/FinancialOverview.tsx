@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
+import { BarChart } from '../charts/BarChart';
 import { InteractiveChart } from '../charts/InteractiveChart';
+import { MetricStrip, MetricTile } from '../charts/MetricTile';
+import { vizPalette } from '../charts/viz';
 import { DateRange } from '../components/DateRange';
 import { DataTable } from '../components/DataTable';
 import { Field, money, type API } from '../operations/UI';
@@ -117,19 +120,32 @@ export function FinancialOverview({
       {!data && !error && <p role="status">Loading covered financial records…</p>}
       {data && (
         <>
-          <div className="finance-metrics">
+          <MetricStrip label="Recorded financial summary">
             {[
-              ['Net confirmed collections', data.totals.confirmed_inflows_minor],
-              ['Recorded outflows', data.totals.recorded_outflows_minor],
-              ['Outstanding invoices', data.totals.outstanding_minor],
-              ['Overdue invoices', data.totals.overdue_minor],
-            ].map(([label, n]) => (
-              <div key={String(label)}>
-                <span>{label}</span>
-                <strong>{money(Number(n), currency)}</strong>
-              </div>
+              [
+                'Net confirmed collections',
+                data.totals.confirmed_inflows_minor,
+                data.series.map((p: any) => Number(p.confirmed_inflows_minor || 0)),
+                vizPalette[0],
+              ],
+              [
+                'Recorded outflows',
+                data.totals.recorded_outflows_minor,
+                data.series.map((p: any) => Number(p.recorded_outflows_minor || 0)),
+                vizPalette[3],
+              ],
+              ['Outstanding invoices', data.totals.outstanding_minor, undefined, vizPalette[1]],
+              ['Overdue invoices', data.totals.overdue_minor, undefined, vizPalette[4]],
+            ].map(([label, n, spark, color]) => (
+              <MetricTile
+                key={String(label)}
+                label={String(label)}
+                value={money(Number(n), currency)}
+                spark={spark as number[] | undefined}
+                color={String(color)}
+              />
             ))}
-          </div>
+          </MetricStrip>
           {view === 'chart' ? (
             <InteractiveChart
               compact
@@ -140,12 +156,12 @@ export function FinancialOverview({
                 {
                   key: 'confirmed_inflows_minor',
                   label: 'Net confirmed collections',
-                  color: '#426900',
+                  color: vizPalette[0],
                 },
                 {
                   key: 'recorded_outflows_minor',
                   label: 'Recorded expenses / imports',
-                  color: '#595959',
+                  color: vizPalette[3],
                 },
               ]}
               description={data.definitions.net_movement}
@@ -190,11 +206,19 @@ export function FinancialOverview({
           </p>
           <details>
             <summary>Receivables aging & data coverage</summary>
-            {Object.entries(data.aging).map(([bucket, n]) => (
-              <p key={bucket}>
-                {bucket.replaceAll('_', ' ')}: {money(Number(n), currency)}
-              </p>
-            ))}
+            <div style={{ margin: '10px 0' }}>
+              <BarChart
+                title="Receivables aging"
+                currency={currency}
+                orientation="horizontal"
+                allowOrientationSwitch={false}
+                rows={Object.entries(data.aging).map(([bucket, n]) => ({
+                  key: bucket,
+                  label: bucket.replaceAll('_', ' '),
+                  value: Number(n),
+                }))}
+              />
+            </div>
             <p>
               {data.quality.history_days} days of observed history ·{' '}
               {data.quality.unreconciled_count} unresolved exceptions ·{' '}

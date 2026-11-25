@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
+import { DonutChart } from '../charts/DonutChart';
 import { InteractiveChart } from '../charts/InteractiveChart';
+import { MetricStrip, MetricTile } from '../charts/MetricTile';
+import { vizPalette } from '../charts/viz';
 import { DataTable } from '../components/DataTable';
-import { Field, money, factor, type API } from '../operations/UI';
+import { Field, money, type API } from '../operations/UI';
 import { Icon } from '../components/Icon';
 import { SegmentedControl } from '../components/SegmentedControl';
-const palette = ['#26966a', '#a5dfc4', '#ffe075', '#bfa9f9', '#ef7d91', '#cdd5df'];
+
 function Breakdown({
   title,
   rows,
@@ -14,66 +17,22 @@ function Breakdown({
   rows: { label: string; amount: number }[];
   currency: string;
 }) {
-  const positiveRows = rows.filter((row) => row.amount > 0);
-  const total = positiveRows.reduce((n, r) => n + r.amount, 0);
-  let offset = 0;
   return (
     <section
-      id={title === 'Receivables' ? 'finance-receivables' : undefined}
+      id={title.startsWith('Receivables') ? 'finance-receivables' : undefined}
       className="panel finance-breakdown"
     >
       <h3>{title}</h3>
-      <div className="finance-ring-layout">
-        <svg viewBox="0 0 180 180" role="img" aria-label={title + ': ' + money(total, currency)}>
-          <circle cx="90" cy="90" r="68" fill="none" stroke="#edf1f5" strokeWidth="27" />
-          {total > 0 &&
-            positiveRows.map((r, i) => {
-              const segment = (r.amount / total) * 100,
-                start = offset;
-              offset += segment;
-              return (
-                <circle
-                  key={r.label}
-                  cx="90"
-                  cy="90"
-                  r="68"
-                  fill="none"
-                  stroke={palette[i % palette.length]}
-                  strokeWidth="27"
-                  pathLength="100"
-                  strokeDasharray={segment + ' ' + (100 - segment)}
-                  strokeDashoffset={-start}
-                  transform="rotate(-90 90 90)"
-                />
-              );
-            })}
-          <text x="90" y="87" textAnchor="middle" fontSize="12" fill="currentColor">
-            {currency}
-          </text>
-          <text
-            x="90"
-            y="107"
-            textAnchor="middle"
-            fontSize="16"
-            fontWeight="700"
-            fill="currentColor"
-          >
-            {new Intl.NumberFormat('en-KE', { notation: 'compact' }).format(
-              total / factor(currency),
-            )}
-          </text>
-        </svg>
-        <ul>
-          {positiveRows.map((r, i) => (
-            <li key={r.label}>
-              <span className="chart-key" style={{ background: palette[i % palette.length] }} />
-              <span>{r.label}</span>
-              <strong>{money(r.amount, currency)}</strong>
-            </li>
-          ))}
-        </ul>
-      </div>
-      {total === 0 && <p>No covered amounts in this period.</p>}
+      <DonutChart
+        title={title}
+        currency={currency}
+        emptyText="No covered amounts in this period."
+        rows={rows.map((r) => ({
+          key: r.label,
+          label: r.label,
+          value: r.amount,
+        }))}
+      />
     </section>
   );
 }
@@ -157,33 +116,51 @@ export function FinanceDashboard({
       {!data && !error && <p role="status">Loading covered financial records…</p>}
       {data && (
         <>
-          <section className="app-metric-grid finance-app-metrics" aria-label="Financial summary">
+          <MetricStrip label="Financial summary">
             {[
-              ['Confirmed collections', data.totals.confirmed_inflows_minor],
-              ['Recorded outflows', data.totals.recorded_outflows_minor],
-              ['Net movement', data.totals.net_movement_minor],
-              ['Receivables', data.totals.outstanding_minor],
-            ].map(([label, value]) => (
-              <article className="panel" key={label}>
-                <span>
-                  <Icon
-                    name={
-                      label === 'Recorded outflows'
-                        ? 'payment'
-                        : label === 'Receivables'
-                          ? 'document'
-                          : 'chart'
-                    }
-                  />
-                  {label}
-                </span>
-                <strong>{money(Number(value), currency)}</strong>
-                <small>
-                  {data.period.from} — {data.period.to} · {currency}
-                </small>
-              </article>
+              [
+                'Confirmed collections',
+                data.totals.confirmed_inflows_minor,
+                data.definitions?.confirmed_inflows,
+                data.series.map((p: any) => Number(p.confirmed_inflows_minor || 0)),
+                vizPalette[0],
+              ],
+              [
+                'Recorded outflows',
+                data.totals.recorded_outflows_minor,
+                data.definitions?.recorded_outflows,
+                data.series.map((p: any) => Number(p.recorded_outflows_minor || 0)),
+                vizPalette[3],
+              ],
+              [
+                'Net movement',
+                data.totals.net_movement_minor,
+                data.definitions?.net_movement,
+                data.series.map(
+                  (p: any) =>
+                    Number(p.confirmed_inflows_minor || 0) - Number(p.recorded_outflows_minor || 0),
+                ),
+                vizPalette[2],
+              ],
+              [
+                'Receivables',
+                data.totals.outstanding_minor,
+                data.definitions?.receivables,
+                undefined,
+                vizPalette[1],
+              ],
+            ].map(([label, value, definition, spark, color]) => (
+              <MetricTile
+                key={String(label)}
+                label={String(label)}
+                value={money(Number(value), currency)}
+                definition={definition ? String(definition) : undefined}
+                spark={spark as number[] | undefined}
+                color={String(color)}
+                caption={`${data.period.from} — ${data.period.to} · ${currency}`}
+              />
             ))}
-          </section>
+          </MetricStrip>
           <div className="finance-app-main">
             <section className="panel finance-trend-panel">
               <div className="finance-panel-heading">
@@ -209,10 +186,14 @@ export function FinanceDashboard({
                   {
                     key: 'confirmed_inflows_minor',
                     label: 'Confirmed collections',
-                    color: '#278a36',
+                    color: vizPalette[0],
                   },
-                  { key: 'recorded_outflows_minor', label: 'Recorded expenses', color: '#9ecb83' },
-                  { key: 'net', label: 'Net movement', color: '#25323a', dashed: true },
+                  {
+                    key: 'recorded_outflows_minor',
+                    label: 'Recorded expenses',
+                    color: vizPalette[3],
+                  },
+                  { key: 'net', label: 'Net movement', color: vizPalette[2], dashed: true },
                 ]}
                 description={data.definitions.net_movement}
               />

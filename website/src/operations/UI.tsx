@@ -113,7 +113,7 @@ export function Trend({
       points={data}
       series={
         forecast
-          ? [{ key: 'net', label: 'Projected net movement', color: '#426900' }]
+          ? [{ key: 'net', label: 'Projected net movement', color: '#3c8ceb' }]
           : financialSeries
       }
       currency={currency}

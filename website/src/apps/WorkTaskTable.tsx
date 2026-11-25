@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { BarChart } from '../charts/BarChart';
 import { DataTable } from '../components/DataTable';
 export function WorkTaskTable({
   tasks,
@@ -174,16 +175,15 @@ export function WorkAnalysis({
     };
   });
   const value = (row: (typeof rows)[number]) =>
-      measure === 'estimate'
-        ? row.estimate
-        : measure === 'completed'
-          ? row.completed
-          : measure === 'open'
-            ? row.open
-            : measure === 'overdue'
-              ? row.overdue
-              : row.count,
-    max = Math.max(1, ...rows.map(value));
+    measure === 'estimate'
+      ? row.estimate
+      : measure === 'completed'
+        ? row.completed
+        : measure === 'open'
+          ? row.open
+          : measure === 'overdue'
+            ? row.overdue
+            : row.count;
   return (
     <section className="panel work-analysis">
       <h2>Task analysis</h2>
@@ -255,36 +255,16 @@ export function WorkAnalysis({
       </p>
       {mode === 'graph' ? (
         <div className="work-report-chart">
-          <svg viewBox="0 0 1000 400" role="img" aria-label={measure + ' grouped by ' + group}>
-            {[0, 1, 2, 3, 4].map((i) => (
-              <g key={i}>
-                <line x1="55" x2="980" y1={340 - i * 75} y2={340 - i * 75} stroke="#dfe5e2" />
-                <text x="45" y={345 - i * 75} textAnchor="end" fontSize="13">
-                  {Math.round(((max * i) / 4) * 100) / 100}
-                </text>
-              </g>
-            ))}
-            {rows.map((row, i) => {
-              const width = 900 / Math.max(1, rows.length),
-                height = (300 * value(row)) / max;
-              return (
-                <g key={row.id}>
-                  <rect
-                    x={65 + i * width + width * 0.15}
-                    y={340 - height}
-                    width={width * 0.7}
-                    height={height}
-                    fill={['#4aa4e8', '#eb6077', '#43bca9', '#f1a359'][i % 4]}
-                  >
-                    <title>{row.label + ': ' + value(row)}</title>
-                  </rect>
-                  <text x={65 + i * width + width * 0.5} y="370" textAnchor="middle" fontSize="14">
-                    {row.label.length > 20 ? row.label.slice(0, 19) + '…' : row.label}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
+          <BarChart
+            title={`Tasks (${measure}) by ${group}`}
+            orientation="vertical"
+            multiColor
+            rows={rows.map((row) => ({
+              key: String(row.id),
+              label: String(row.label),
+              value: Number(value(row) || 0),
+            }))}
+          />
         </div>
       ) : (
         <DataTable>
