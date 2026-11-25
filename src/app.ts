@@ -306,7 +306,11 @@ export function createApp() {
         if (destination) return res.redirect(308, destination);
         return res.status(404).type('text/plain').send('Website page not found');
       }
-      const indexHtml = await readFile(path.join(process.cwd(), 'website/dist/index.html'), 'utf8');
+      const distIndex = path.join(process.cwd(), 'website/dist/index.html');
+      const fallbackIndex = path.join(process.cwd(), 'website/index.html');
+      const indexHtml = await readFile(distIndex, 'utf8').catch(() =>
+        readFile(fallbackIndex, 'utf8'),
+      );
       const html = renderWebsiteSeoDocument(
         indexHtml,
         page,

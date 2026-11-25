@@ -47,7 +47,7 @@ docker-compose.yml
 .tmp/
 **/__pycache__/
 **/*.pyc
-python/tests/
+engines/tests/
 docs/odoo-reverse-engineering/odoo20-community-index.json
 *.log
 npm-debug.log*

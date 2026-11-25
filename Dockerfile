@@ -71,7 +71,7 @@ COPY docs ./docs
 COPY --from=website-build /app/website/dist ./website/dist
 COPY --from=production-deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
-COPY python ./python
+COPY engines ./engines
 
 # The official Node images ship an unprivileged `node` user (uid 1000).
 # /app/data is the writable location for the optional SQLite database; a

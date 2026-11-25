@@ -320,7 +320,7 @@ describe('decision card endpoint and ledger wiring', () => {
     assert.ok(!policy.includes('https:'));
     const theme = await fetch(`${baseUrl}/dashboard/shared/theme.css`);
     assert.strictEqual(theme.status, 200);
-    assert.ok((await theme.text()).includes('#76b900'));
+    assert.ok((await theme.text()).includes('#166534'));
     const apiResponse = await fetch(`${baseUrl}/v1/does-not-exist`);
     assert.strictEqual(
       apiResponse.headers.get('content-security-policy'),
