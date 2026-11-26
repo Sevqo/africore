@@ -29,6 +29,12 @@ import { Icon } from './components/Icon';
 import { Header } from './components/Header';
 import { pages, media } from './content';
 import { FeatureSection } from './components/Media';
+import { serviceCatalog } from '../../src/marketplace/catalog';
+import { appCatalog } from '../../src/apps/catalog';
+import {
+  WORKSPACE_ALL_APPS_CAP_MINOR,
+  commercialRateFor,
+} from '../../src/marketplace/pricing-catalog';
 const PublicStorefront = lazy(() =>
   import('./commerce/PublicStorefront').then((m) => ({ default: m.PublicStorefront })),
 );
@@ -43,9 +49,9 @@ function Footer() {
       <div className="footer-top">
         <Logo />
         <p>
-          Customers, invoices and payment records.
+          {appCatalog.length} connected apps and {serviceCatalog.length} modular services.
           <br />
-          One connected business workspace.
+          One unified workspace for growing businesses.
         </p>
       </div>
       <div className="footer-links">
@@ -258,6 +264,109 @@ function Application() {
             </section>
             {guides[path] ? (
               <ProductEducation path={path} />
+            ) : path === '/pricing' ? (
+              <section className="pricing-showcase">
+                <div className="pricing-tiers-grid">
+                  <article className="pricing-tier-card">
+                    <span className="badge">Foundation</span>
+                    <h2>KSh 0 / mo</h2>
+                    <p className="pricing-tier-sub">Starter directories &amp; Sandbox evaluation</p>
+                    <ul>
+                      <li>Unlimited staff seats &amp; 11 RBAC roles</li>
+                      <li>Customers, Products, Calendar, Income &amp; Passport</li>
+                      <li>Full 26-app sandbox evaluation at KSh 0</li>
+                    </ul>
+                    <a className="secondary-button" href="/get-started">
+                      Start free
+                    </a>
+                  </article>
+                  <article className="pricing-tier-card">
+                    <span className="badge">Essential Operations</span>
+                    <h2>KSh 190 – 290 / mo</h2>
+                    <p className="pricing-tier-sub">Per module, per workspace (never per user)</p>
+                    <ul>
+                      <li>Expenses (KSh 190), Cash Flow, Orders &amp; Fulfillment (KSh 250)</li>
+                      <li>Documents e-sign, Website &amp; Intelligence (KSh 290)</li>
+                      <li>150 – 1,000 monthly operations included per service</li>
+                    </ul>
+                    <a className="secondary-button" href="/products">
+                      Explore services
+                    </a>
+                  </article>
+                  <article className="pricing-tier-card">
+                    <span className="badge">Core ERP Modules</span>
+                    <h2>KSh 350 – 590 / mo</h2>
+                    <p className="pricing-tier-sub">Full department suites with Python engines</p>
+                    <ul>
+                      <li>Work (KSh 350), Invoicing &amp; CRM (KSh 390)</li>
+                      <li>Sales, Procurement &amp; People (KSh 450)</li>
+                      <li>Inventory, POS &amp; Commerce (KSh 490) · Accounting GL (KSh 590)</li>
+                    </ul>
+                    <a className="secondary-button" href="/apps">
+                      Browse 26 apps
+                    </a>
+                  </article>
+                  <article className="pricing-tier-card is-featured">
+                    <span className="badge">All-Apps SME Cap</span>
+                    <h2>
+                      KSh {(WORKSPACE_ALL_APPS_CAP_MINOR / 100).toLocaleString('en-KE')} / mo
+                    </h2>
+                    <p className="pricing-tier-sub">
+                      Whole-workspace maximum (~$15/mo) · Unlimited users
+                    </p>
+                    <ul>
+                      <li>Enable all 26 apps &amp; core services under one predictable ceiling</li>
+                      <li>Pay-as-you-go services keep KSh 0 fixed monthly base fees</li>
+                      <li>Zero app installation fees · Deactivate anytime</li>
+                    </ul>
+                    <a className="button" href="/get-started">
+                      Create workspace <Icon name="right" />
+                    </a>
+                  </article>
+                </div>
+
+                <div className="pricing-table-section">
+                  <span className="eyebrow">Complete schedule · All {serviceCatalog.length} services</span>
+                  <h2>Transparent per-service reference rates</h2>
+                  <p>
+                    Sandbox evaluation never charges your account. Commercial reference rates below
+                    apply per workspace with unlimited team members.
+                  </p>
+                  <div className="table-scroll pricing-table-wrap" tabIndex={0} role="region" aria-label="Service pricing schedule">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th scope="col">Service</th>
+                          <th scope="col">Tier</th>
+                          <th scope="col">Monthly base</th>
+                          <th scope="col">Included allowance &amp; overage</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {serviceCatalog.map((svc) => {
+                          const rate = commercialRateFor(svc.id);
+                          const route =
+                            serviceEducation[svc.id]?.route || svc.documentation;
+                          return (
+                            <tr key={svc.id}>
+                              <th scope="row">
+                                <a href={route}>{svc.name}</a>
+                              </th>
+                              <td>{rate.tier.replaceAll('_', ' ')}</td>
+                              <td>
+                                <strong>
+                                  KSh {(rate.monthly_minor / 100).toLocaleString('en-KE')}/mo
+                                </strong>
+                              </td>
+                              <td>{rate.summary}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
             ) : (
               <FeatureSection
                 eyebrow="CONNECTED BY DESIGN"

@@ -1,8 +1,12 @@
+import { useState } from 'react';
 import { ServiceFinder } from './ServiceFinder';
 import { Icon } from '../components/Icon';
 import { EditorialCard, MediaCarousel } from '../components/Media';
 import { editorial } from '../editorial';
 import { HeroWorkflow } from './Components';
+import { appCatalog } from '../../../src/apps/catalog';
+import { serviceCatalog } from '../../../src/marketplace/catalog';
+import { WORKSPACE_ALL_APPS_CAP_MINOR } from '../../../src/marketplace/pricing-catalog';
 
 export function ProductComposition() {
   return (
@@ -16,7 +20,7 @@ export function ProductComposition() {
           src="/media/product/workspace.webp"
           width="1200"
           height="800"
-          alt="Actual AfriCore synthetic demo: customer and invoice navigation, confirmed inflows and outstanding amounts."
+          alt="AfriCore connected business workspace showing 26 apps, confirmed inflows, open receivables and live cross-app activity."
           fetchPriority="high"
         />
         <div className="device-base" />
@@ -26,7 +30,7 @@ export function ProductComposition() {
           src="/media/product/checkout.webp"
           width="390"
           height="760"
-          alt="Actual sandbox checkout showing the merchant, invoice reference, KSh 650 and pending status."
+          alt="Sandbox checkout showing Amani Supplies Ltd, invoice reference, KSh 650 and pending confirmation."
         />
       </div>
       <div className="device-invoice">
@@ -38,49 +42,193 @@ export function ProductComposition() {
     </figure>
   );
 }
+
 const groups = [
   [
     'Run your business',
-    'Customers, orders, invoices and team responsibilities.',
-    '/products/business',
-    'Explore the workspace',
+    'Sales, CRM, Inventory, Procurement, POS, Commerce and 20 more connected apps.',
+    '/apps',
+    'Explore all 26 apps',
   ],
   [
     'Manage your money',
-    'Payment requests, receipt matching and recorded cash movement.',
+    'Double-entry Accounting, Invoicing, Pay links, receipt matching and cash movement.',
     '/products/pay',
     'Follow a payment',
   ],
   [
     'Connect and automate',
-    'Authorized sources, structured records and defined administrative rules.',
-    '/products/connect',
-    'Understand the connections',
+    '37 modular services, authorized data connectors, workflow rules and Integrations Hub.',
+    '/products',
+    'Explore all 37 services',
   ],
   [
     'Build business credibility',
-    'A private Passport, signed claims and corroborated relationships.',
+    'A private Business Passport, signed verifiable credentials and corroborated relationships.',
     '/products/business-passport',
     'Explore Business Passport',
   ],
 ];
+
+const SUITE_DOMAINS: {
+  id: string;
+  label: string;
+  summary: string;
+  appIds: string[];
+  serviceIds: string[];
+}[] = [
+  {
+    id: 'sales_commerce',
+    label: 'Sales, CRM & Commerce',
+    summary:
+      'Convert CRM pipeline deals into quotations, retail POS shifts, online storefront orders and recurring subscriptions without re-entering data.',
+    appIds: ['sales', 'crm', 'pos', 'commerce', 'subscriptions', 'marketing', 'website'],
+    serviceIds: ['customers', 'products', 'sales', 'crm', 'orders', 'pos', 'commerce', 'website'],
+  },
+  {
+    id: 'finance_accounting',
+    label: 'Finance & Accounting',
+    summary:
+      'Maintain balanced double-entry books, tax schedules, fixed assets, FX revaluation, budgets, invoices, payment links and smart reconciliation.',
+    appIds: ['finance', 'accounting'],
+    serviceIds: [
+      'accounting',
+      'invoicing',
+      'payments',
+      'reconciliation',
+      'cash_flow',
+      'expenses',
+      'income',
+      'protected_payments',
+    ],
+  },
+  {
+    id: 'supply_production',
+    label: 'Inventory, Supply & Field',
+    summary:
+      'Manage multi-warehouse stock, FIFO/AVCO valuation, automated procurement RFQs, BOM manufacturing, freight logistics and field dispatches.',
+    appIds: ['inventory', 'procurement', 'manufacturing', 'logistics', 'field_operations', 'property_hospitality'],
+    serviceIds: ['inventory', 'procurement', 'fulfillment'],
+  },
+  {
+    id: 'people_work',
+    label: 'People, Work & Support',
+    summary:
+      'Coordinate HR profiles, leave, attendance, Kanban projects, shared calendars, encrypted e-sign documents, helpdesk SLAs and staff training.',
+    appIds: ['people', 'work', 'calendar', 'documents', 'support', 'knowledge_learning'],
+    serviceIds: ['people', 'work', 'calendar', 'documents'],
+  },
+  {
+    id: 'trust_platform',
+    label: 'Analytics, AI, Studio & Trust',
+    summary:
+      'Combine Shopify-style analytics, 90-day cash forecasts, consent-gated AI explanations, custom Studio apps, Integrations Hub and Business Passport.',
+    appIds: ['analytics', 'automations', 'business_id', 'studio', 'integrations_hub'],
+    serviceIds: [
+      'intelligence',
+      'forecasting',
+      'assistant',
+      'automations',
+      'data',
+      'connect',
+      'passport',
+      'verification',
+      'credentials',
+      'trust_network',
+      'blockchain',
+      'developer_api',
+      'webhooks',
+      'verification_api',
+    ],
+  },
+];
+
+function SuiteExplorer() {
+  const [activeDomain, setActiveDomain] = useState(SUITE_DOMAINS[0].id);
+  const current = SUITE_DOMAINS.find((d) => d.id === activeDomain) || SUITE_DOMAINS[0];
+  const domainApps = current.appIds
+    .map((id) => appCatalog.find((a) => a.id === id))
+    .filter((a): a is NonNullable<typeof a> => !!a);
+  const domainServices = current.serviceIds
+    .map((id) => serviceCatalog.find((s) => s.id === id))
+    .filter((s): s is NonNullable<typeof s> => !!s);
+
+  return (
+    <section className="home-suite-explorer" aria-labelledby="suite-explorer-heading">
+      <div className="home-suite-header">
+        <div>
+          <span className="eyebrow">
+            {appCatalog.length} connected apps · {serviceCatalog.length} modular services
+          </span>
+          <h2 id="suite-explorer-heading">Every department working in unison.</h2>
+        </div>
+        <span className="suite-price-pill">
+          Capped at KSh {(WORKSPACE_ALL_APPS_CAP_MINOR / 100).toLocaleString('en-KE')}/mo per
+          workspace · Unlimited staff seats
+        </span>
+      </div>
+      <div className="suite-tab-bar" role="tablist" aria-label="Platform suite domains">
+        {SUITE_DOMAINS.map((domain) => (
+          <button
+            key={domain.id}
+            type="button"
+            role="tab"
+            aria-selected={domain.id === current.id}
+            className={'suite-tab' + (domain.id === current.id ? ' is-active' : '')}
+            onClick={() => setActiveDomain(domain.id)}
+          >
+            {domain.label}
+          </button>
+        ))}
+      </div>
+      <p className="suite-domain-summary">{current.summary}</p>
+      <div className="suite-columns">
+        <div className="suite-column-panel">
+          <h3>Connected apps ({domainApps.length})</h3>
+          <ul className="suite-pill-grid">
+            {domainApps.map((app) => (
+              <li key={app.id} className="suite-item-card">
+                <strong>{app.name}</strong>
+                <span>{app.description}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="suite-column-panel">
+          <h3>Underlying services ({domainServices.length})</h3>
+          <ul className="suite-pill-grid">
+            {domainServices.map((svc) => (
+              <li key={svc.id} className="suite-item-card">
+                <strong>{svc.name}</strong>
+                <span>{svc.description}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function RefinedHome() {
   return (
     <>
       <section className="hero hero-compact">
         <div className="hero-copy">
-          <span className="eyebrow">AfriCore Business</span>
+          <span className="eyebrow">
+            AfriCore Platform · {appCatalog.length} Apps · {serviceCatalog.length} Services
+          </span>
           <h1>
             Your business,
             <br /> all connected.
           </h1>
           <p>
-            Manage payments, invoices and business records in one place. Know what’s paid, what’s
-            outstanding, and what needs your attention.
+            Run sales, accounting, inventory, POS, HR, projects, analytics and business credentials
+            in one unified workspace — with role-based permissions and fair per-workspace pricing.
           </p>
           <div className="actions">
             <a className="button" href="/get-started">
-              Get started <Icon name="right" />
+              Get started free <Icon name="right" />
             </a>
             <a className="text-link light" href="#how-it-works">
               See how it works <Icon name="down" />
@@ -90,7 +238,7 @@ export function RefinedHome() {
         <ProductComposition />
       </section>
       <section className="home-groups" aria-labelledby="product-groups">
-        <span className="eyebrow">One workspace. Four jobs.</span>
+        <span className="eyebrow">One workspace. Complete operational unison.</span>
         <h2 id="product-groups">Start with what your business needs.</h2>
         <div>
           {groups.map(([name, text, href, cta]) => (
@@ -105,6 +253,7 @@ export function RefinedHome() {
           ))}
         </div>
       </section>
+      <SuiteExplorer />
       <section className="home-example" id="how-it-works">
         <div>
           <span className="eyebrow">One sale, followed through</span>
@@ -130,17 +279,26 @@ export function RefinedHome() {
           <li>
             <b>01</b>
             <h3>Record the work</h3>
-            <p>Add the customer, order and invoice with an amount and due date.</p>
+            <p>
+              Convert CRM leads into Sales orders, reserve Inventory stock and issue itemized
+              invoices without duplicate typing.
+            </p>
           </li>
           <li>
             <b>02</b>
             <h3>Follow the evidence</h3>
-            <p>Inspect confirmed payment events and review unmatched records.</p>
+            <p>
+              Inspect confirmed payment events, reconcile unmatched receipts and post balanced
+              Accounting journals with second-person approval.
+            </p>
           </li>
           <li>
             <b>03</b>
-            <h3>Decide what comes next</h3>
-            <p>Follow unpaid invoices, plan expenses and share only the proof needed.</p>
+            <h3>Scale with role permissions</h3>
+            <p>
+              Assign Owner, Admin, Finance, Accountant, HR, Sales, Inventory, Support, Marketing or
+              Viewer permissions across your entire team.
+            </p>
           </li>
         </ol>
       </section>
@@ -187,21 +345,22 @@ export function RefinedHome() {
           <span className="eyebrow">Trust and security</span>
           <h2>Know what a record can prove.</h2>
           <p>
-            Workspace permissions control access. Source labels distinguish a merchant statement
-            from provider evidence. Credential signatures, issuer recognition and claim quality
-            remain separate checks.
+            Eleven granular workspace roles enforce least-privilege access. Source labels
+            distinguish a merchant statement from provider evidence, and credential signatures stay
+            separate from claim quality.
           </p>
           <a className="text-link" href="/security">
             Review the safeguards <Icon name="right" />
           </a>
         </div>
         <div>
-          <span className="eyebrow">Availability</span>
-          <h3>Know what is available.</h3>
+          <span className="eyebrow">Transparent Pricing &amp; Availability</span>
+          <h3>Fair SME pricing. Honest sandbox boundaries.</h3>
           <p>
-            Payments and protected purchase outcomes are simulated. Live provider collection,
-            regulated settlement and institutional connections are not enabled. Capital remains
-            deferred.
+            Starter services are KSh 0/month and the entire 26-app suite is capped at KSh{' '}
+            {(WORKSPACE_ALL_APPS_CAP_MINOR / 100).toLocaleString('en-KE')}/month per workspace
+            (unlimited staff seats). Sandbox evaluation never charges your account; live provider
+            settlement remains gated.
           </p>
           <p>Kenya first. Built for the continent.</p>
         </div>
@@ -236,7 +395,7 @@ export function RefinedHome() {
         <a className="button" href="/get-started">
           Find your workspace <Icon name="right" />
         </a>
-        <p>Start with your work, your customers and a clearer view of your business.</p>
+        <p>Start free in sandbox with all 26 apps and 37 modular services ready to explore.</p>
       </section>
     </>
   );

@@ -324,11 +324,17 @@ html:has([data-platform-density]) {
 .focused-account[data-platform-density] .button {
   min-height: 39px;
   padding: 8px 14px;
-  border-radius: 10px;
-  background: linear-gradient(#73b400, #589700);
+  border-radius: 8px;
+  background: var(--accent);
   color: white;
-  border-color: #589700;
+  border-color: var(--accent);
   font-weight: 650;
+}
+.business-shell[data-platform-density] .button:hover,
+.focused-account[data-platform-density] .button:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: white;
 }
 .business-shell[data-platform-density] .secondary-button,
 .focused-account[data-platform-density] .secondary-button {

@@ -1129,16 +1129,410 @@
 }
 .learning-paths .secondary-button {
   white-space: normal;
-  margin-right: 8px;
 }
 .learning-paths article {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 .learning-paths .lesson-grid article {
-  border: 1px solid var(--line, #d1d1d1);
-  padding: 16px;
+  border: 1px solid var(--line, #e5e7eb);
+  padding: 20px;
+  border-radius: 12px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.service-finder-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.service-finder-rate {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--accent-text);
+}
+.service-finder-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--surface-alt);
+}
+.service-finder-footnote {
+  margin-top: 18px;
+  font-size: 14px;
+}
+.service-page-actions,
+.exercise-buttons {
+  gap: 12px;
+  margin: 16px 0 20px;
+}
+.exercise-buttons button {
+  margin-block: 0;
+}
+.exercise-buttons button[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+.related-app-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+  margin: 14px 0 0;
+}
+.related-app-pills li {
+  margin: 0;
+}
+.related-app-pills a {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
   border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+}
+.related-app-pills a:hover {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+/* Homepage 26-App & 37-Service Suite Explorer */
+.home-suite-explorer {
+  padding: 48px var(--gutter);
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.home-suite-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.suite-price-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--accent-light);
+  color: var(--accent-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+.suite-tab-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.suite-tab {
+  min-height: 40px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+.suite-tab:hover {
+  border-color: #9ca3af;
+}
+.suite-tab.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+.suite-domain-summary {
+  max-width: 820px;
+  font-size: 16px;
+  margin-bottom: 22px;
+}
+.suite-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.suite-column-panel {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 22px;
+  min-width: 0;
+}
+.suite-column-panel h3 {
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+.suite-pill-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+.suite-item-card {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.suite-item-card strong {
+  font-size: 14.5px;
+  color: var(--text);
+}
+.suite-item-card span {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+/* Public /products Full 37-Service Directory */
+.services-directory-page {
+  width: min(1280px, 100%);
+  margin: 0 auto;
+  padding: 24px clamp(20px, 5vw, 60px) 72px;
+}
+.services-directory-hero {
+  padding: clamp(28px, 5vw, 56px);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+}
+.services-directory-hero .breadcrumbs {
+  padding: 0 0 18px;
+}
+.services-directory-hero h1 {
+  max-width: 820px;
+  margin-bottom: 14px;
+}
+.services-directory-hero > p {
+  max-width: 740px;
+  font-size: 18px;
+  margin-bottom: 24px;
+}
+.services-directory-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin: 24px 0 40px;
+}
+.services-directory-stats > div {
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.services-directory-stats span {
+  font-size: 13px;
+  color: var(--muted);
+}
+.services-directory-stats strong {
+  font-size: 20px;
+  color: var(--text);
+}
+.services-family-section {
+  padding-top: 36px;
+}
+.services-family-heading {
+  max-width: 760px;
+  margin-bottom: 18px;
+}
+.services-family-heading h2 {
+  margin: 4px 0 8px;
+}
+.services-directory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+.service-directory-card {
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.service-directory-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.service-directory-card-top .badge {
+  background: var(--accent-light);
+  color: var(--accent-text);
+  border-color: transparent;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.service-directory-workspaces {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: capitalize;
+}
+.service-directory-card h3 {
+  font-size: 18px;
+}
+.service-directory-card h3 a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.service-directory-card p {
+  font-size: 15px;
+  line-height: 1.55;
+}
+.service-directory-rate {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+.service-directory-actions {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--surface-alt);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Public /pricing Showcase & Schedule */
+.pricing-showcase {
+  width: min(1280px, 100%);
+  margin: 0 auto;
+  padding: 48px clamp(20px, 5vw, 60px) 64px;
+}
+.pricing-tiers-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 56px;
+}
+.pricing-tier-card {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.pricing-tier-card.is-featured {
+  border: 2px solid var(--accent);
+  background: var(--surface);
+}
+.pricing-tier-card .badge {
+  align-self: flex-start;
+  background: var(--accent-light);
+  color: var(--accent-text);
+  border-color: transparent;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.pricing-tier-card h2 {
+  font-size: 26px;
+}
+.pricing-tier-sub {
+  font-size: 14px;
+  color: var(--muted);
+}
+.pricing-tier-card ul {
+  padding-left: 18px;
+  margin: 4px 0 12px;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.65;
+  flex: 1;
+}
+.pricing-tier-card li + li {
+  margin-top: 6px;
+}
+.pricing-table-section h2 {
+  margin-bottom: 10px;
+}
+.pricing-table-section > p {
+  max-width: 740px;
+  margin-bottom: 20px;
+}
+.pricing-table-wrap {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #ffffff;
+}
+.pricing-table-wrap table {
+  min-width: 640px;
+}
+.pricing-table-wrap th,
+.pricing-table-wrap td {
+  padding: 13px 16px;
+  font-size: 14px;
+}
+.pricing-table-wrap tbody th,
+.pricing-table-wrap td:nth-child(2),
+.pricing-table-wrap td:nth-child(3) {
+  white-space: nowrap;
+  text-transform: capitalize;
+}
+.pricing-table-wrap thead th {
+  background: var(--surface);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.pricing-table-wrap tbody th a {
+  color: var(--accent-text);
+  font-weight: 650;
+}
+.pricing-table-wrap tbody th a:hover {
+  text-decoration: underline;
+}
+@media (max-width: 1024px) {
+  .suite-columns,
+  .services-directory-stats,
+  .pricing-tiers-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .suite-columns,
+  .services-directory-stats,
+  .pricing-tiers-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 @media (max-width: 560px) {
   .invoice-lab fieldset label {

@@ -1,12 +1,15 @@
 import { ServiceExercise } from './ServiceExercise';
 import { serviceCatalog } from '../../../src/marketplace/catalog';
 import { appCatalog } from '../../../src/apps/catalog';
+import { WORKSPACE_ALL_APPS_CAP_MINOR, commercialRateFor } from '../../../src/marketplace/pricing-catalog';
 import { appPortfolioPath } from '../apps/app-portfolio-path';
 import { serviceEducation } from './serviceEducation';
 import { ServiceFinder } from './ServiceFinder';
+
 export function ServiceEducationPage({ id }: { id: string }) {
   const service = serviceCatalog.find((s) => s.id === id)!,
     copy = serviceEducation[id],
+    rate = commercialRateFor(id),
     relatedApps = appCatalog.filter(
       (app) =>
         Object.values(app.required).some((ids) => ids?.includes(id)) || app.optional.includes(id),
@@ -16,7 +19,9 @@ export function ServiceEducationPage({ id }: { id: string }) {
       <nav className="breadcrumbs" aria-label="Breadcrumb">
         <a href="/">Home</a>
         <span>/</span>
-        <a href="/learn#service-finder">Find a service</a>
+        <a href="/products">All services</a>
+        <span>/</span>
+        <span>{service.name}</span>
       </nav>
       <span className="eyebrow">{service.category}</span>
       <h1>{service.name}</h1>
@@ -24,8 +29,9 @@ export function ServiceEducationPage({ id }: { id: string }) {
       <p>{service.detail}</p>
       <h2>Who can use it?</h2>
       <p>
-        Eligible workspaces: {service.kinds.join(', ')}. Your current membership, role and service
-        selection are checked in the application.
+        Eligible workspaces: {service.kinds.join(', ')}. Role-based permissions (Owner, Admin,
+        Finance, Accountant, HR, Sales, Operations, Inventory Manager, Support Agent, Marketing
+        Manager, or Read-Only Viewer) are enforced automatically.
       </p>
       <section className="article-example">
         <h2>A fictional example</h2>
@@ -43,7 +49,12 @@ export function ServiceEducationPage({ id }: { id: string }) {
       <h2>What to expect</h2>
       <p>{service.description}</p>
       <p className="content-limitation">{copy.limit}</p>
-      <h2>Availability and usage</h2>
+      <h2>Pricing, availability and usage</h2>
+      <p>
+        <strong>Commercial SME rate:</strong> {rate.summary} (capped at KSh{' '}
+        {(WORKSPACE_ALL_APPS_CAP_MINOR / 100).toLocaleString('en-KE')}/month across all active
+        workspace modules, with unlimited staff seats).
+      </p>
       <p>
         Catalog state: {service.availability.replaceAll('_', ' ')}. Usage measure: {service.unit}.
       </p>
@@ -54,21 +65,20 @@ export function ServiceEducationPage({ id }: { id: string }) {
         {service.dependencies.length
           ? 'Required services: ' +
             service.dependencies
-              .map((id) => serviceCatalog.find((s) => s.id === id)!.name)
+              .map((depId) => serviceCatalog.find((s) => s.id === depId)!.name)
               .join(', ') +
             '.'
           : 'No other optional service is required.'}
       </p>
       <p>
-        Free evaluation is the initial plan, with customer charging disabled. Review current
-        published prices, your applicable price version and limits before activating. Evaluation is
-        not a permanent-free promise.
+        Sandbox evaluation is KSh 0 with customer charging disabled. Review current published
+        prices, your applicable price version and workspace limits before activating.
       </p>
       {relatedApps.length > 0 && (
         <section className="article-example app-related-services">
           <h2>Apps that use this service</h2>
-          <p>Apps group related work. Service access, permissions and setup remain separate.</p>
-          <ul>
+          <p>Apps group related work and share canonical records without double entry.</p>
+          <ul className="related-app-pills">
             {relatedApps.map((app) => (
               <li key={app.id}>
                 <a href={appPortfolioPath(app.id)}>{app.name}</a>
@@ -80,15 +90,22 @@ export function ServiceEducationPage({ id }: { id: string }) {
       <h2>Get started</h2>
       <p>
         Sign in with your existing identity or create an eligible workspace, review the service,
-        then activate it explicitly. This page cannot activate a service.
+        then activate it explicitly.
       </p>
-      {service.kinds.map((kind) => (
-        <p key={kind}>
-          <a className="secondary-button" href={'/app?create=' + kind + '&service=' + service.id}>
-            Review in {kind}
+      <div className="actions service-page-actions">
+        {service.kinds.map((kind) => (
+          <a
+            key={kind}
+            className={kind === 'business' ? 'button' : 'secondary-button'}
+            href={'/app?create=' + kind + '&service=' + service.id}
+          >
+            Review in {kind} workspace
           </a>
-        </p>
-      ))}
+        ))}
+        <a className="secondary-button" href="/products">
+          Browse all 37 services
+        </a>
+      </div>
       <ServiceFinder />
     </article>
   );

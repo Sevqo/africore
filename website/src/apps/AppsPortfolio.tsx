@@ -1,5 +1,6 @@
 import { appCatalog, type AppDefinition } from '../../../src/apps/catalog';
 import { serviceCatalog } from '../../../src/marketplace/catalog';
+import { serviceEducation } from '../education/serviceEducation';
 import { Icon } from '../components/Icon';
 import { appIcons } from './appIcons';
 import { appPortfolioPath } from './app-portfolio-path';
@@ -162,6 +163,102 @@ const journeys: Record<string, { title: string; steps: string[] }> = {
       'Inspect durable run history',
     ],
   },
+  calendar: {
+    title: 'Shared team scheduling',
+    steps: [
+      'Create a timezone-aware team meeting or appointment slot',
+      'Notify eligible workspace members automatically in-app',
+      'Track attendee responses and booking availability',
+    ],
+  },
+  website: {
+    title: 'A reviewed public page release',
+    steps: [
+      'Compose typed hero, content, menu and lead-capture sections',
+      'Configure SEO metadata and preview the draft safely',
+      'Publish an immutable public snapshot to your site slug',
+    ],
+  },
+  marketing: {
+    title: 'A connected campaign to CRM',
+    steps: [
+      'Segment customer audiences for email, SMS or WhatsApp outreach',
+      'Launch the campaign and monitor delivery and click metrics',
+      'Capture responses directly as qualified CRM pipeline leads',
+    ],
+  },
+  support: {
+    title: 'An SLA-backed support resolution',
+    steps: [
+      'Log an incoming customer ticket with SLA response targets',
+      'Link Knowledge Base articles or escalate to Work / Field Ops',
+      'Close the ticket and record customer satisfaction feedback',
+    ],
+  },
+  subscriptions: {
+    title: 'Recurring contract billing',
+    steps: [
+      'Define recurring plans, billing intervals and proration rules',
+      'Activate a customer subscription contract and monitor MRR/ARR',
+      'Generate renewal invoices automatically in Accounting',
+    ],
+  },
+  manufacturing: {
+    title: 'Production and quality release',
+    steps: [
+      'Define a Bill of Materials with component, scrap and labor costs',
+      'Schedule a Manufacturing Order and run quality checks',
+      'Receive finished goods automatically into Inventory stock',
+    ],
+  },
+  field_operations: {
+    title: 'Field dispatch and fleet maintenance',
+    steps: [
+      'Schedule an on-site technician dispatch or equipment rental',
+      'Log preventive maintenance checks and fleet odometer readings',
+      'Complete the field worksheet and update linked customer records',
+    ],
+  },
+  logistics: {
+    title: 'Connected freight and proof of delivery',
+    steps: [
+      'Book a shipment directly from a confirmed Sales order',
+      'Assign carrier routes, dispatch milestones and freight costs',
+      'Capture signed Proof of Delivery onto the platform event bus',
+    ],
+  },
+  property_hospitality: {
+    title: 'Unit leases and guest folios',
+    steps: [
+      'Register rental units, tenant leases or hospitality room bookings',
+      'Track occupancy schedules and itemized guest folio charges',
+      'Issue recurring rent or checkout invoices directly into Accounting',
+    ],
+  },
+  knowledge_learning: {
+    title: 'Internal wiki and staff certification',
+    steps: [
+      'Publish structured SOPs and internal knowledge articles',
+      'Enroll team members in training courses and assessments',
+      'Grade quizzes automatically and issue completion certificates',
+    ],
+  },
+  studio: {
+    title: 'A custom no-code internal tool',
+    steps: [
+      'Design typed custom fields, validation rules and list views',
+      'Publish the custom app inside your workspace launcher',
+      'Capture validated records and stream events to Integrations Hub',
+    ],
+  },
+  integrations_hub: {
+    title: 'Cross-app orchestration and sync',
+    steps: [
+      'Inspect live event flows across Sales, Inventory, Procurement and Accounting',
+      'Configure data sync connectors and automated RFQ/invoice handoffs',
+      'Audit every cross-module event with full provenance logs',
+    ],
+  },
 };
 
 const statusLabel = (app: AppDefinition) =>
@@ -208,7 +305,7 @@ function ServiceLinks({ ids, optional = false }: { ids: string[]; optional?: boo
   return (
     <ul className="app-portfolio-service-list">
       {services.map((service) => {
-        const href = guideHref(service.documentation);
+        const href = serviceEducation[service.id]?.route || guideHref(service.documentation);
         return (
           <li key={service.id}>
             {href ? <a href={href}>{service.name}</a> : <span>{service.name}</span>}

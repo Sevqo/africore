@@ -148,8 +148,8 @@
 .app-portfolio-boundary {
   margin: 20px 0;
   padding: 14px 16px;
-  border-left: 3px solid var(--accent, #76b900);
-  background: var(--surface, #f7f7f7);
+  border-left: 3px solid var(--accent, #166534);
+  background: var(--surface, #f8f9fa);
   color: var(--muted, #555);
   line-height: 1.6;
 }
@@ -207,7 +207,7 @@
   line-height: 1.6;
 }
 .app-portfolio-service-list a {
-  color: var(--accent-text, #426900);
+  color: var(--accent-text, #166534);
   text-underline-offset: 3px;
 }
 .app-portfolio-bottom-actions {

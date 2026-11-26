@@ -10,9 +10,9 @@ import { lessons } from './Learn';
 export function pageMetadata(path: string) {
   if (path === '/apps' || path === '/apps/')
     return {
-      title: 'AfriCore apps | Business tools for everyday work',
+      title: 'AfriCore apps | 26 connected business applications',
       description:
-        'Browse fourteen focused AfriCore apps for money, customers, stock, people, identity and insight. Apps group work; services remain independently discoverable and activatable.',
+        'Browse 26 connected AfriCore apps across finance, accounting, sales, CRM, inventory, procurement, POS, commerce, people, manufacturing, logistics, and trust.',
     };
   if (path.startsWith('/apps/')) {
     const app = appCatalog.find(

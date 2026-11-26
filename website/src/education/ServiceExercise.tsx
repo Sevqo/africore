@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { serviceCatalog } from '../../../src/marketplace/catalog';
 export function ServiceExercise({ id }: { id: string }) {
   const [selected, setSelected] = useState(0),
     [amount, setAmount] = useState(8000);
+  const catalogItem = serviceCatalog.find((s) => s.id === id);
   if (id === 'customers')
     return (
       <section className="learning-paths">
@@ -74,16 +76,18 @@ export function ServiceExercise({ id }: { id: string }) {
       <section className="learning-paths">
         <h2>Ask about fictional records</h2>
         <p>Prewritten teaching responses; no AI provider is called.</p>
-        {examples.map(([q], i) => (
-          <button
-            className="secondary-button"
-            aria-pressed={i === selected}
-            key={q}
-            onClick={() => setSelected(i)}
-          >
-            {q}
-          </button>
-        ))}
+        <div className="actions exercise-buttons">
+          {examples.map(([q], i) => (
+            <button
+              className="secondary-button"
+              aria-pressed={i === selected}
+              key={q}
+              onClick={() => setSelected(i)}
+            >
+              {q}
+            </button>
+          ))}
+        </div>
         <p role="status">{examples[selected][1]}</p>
       </section>
     );
@@ -117,39 +121,46 @@ export function ServiceExercise({ id }: { id: string }) {
               'Delivery evidence is recorded. Payment and customer acceptance remain separate.',
             ],
           ]
-        : [
-            [
-              'Receive',
-              'Example delivery event-001 arrives at a fictional receiver. No network request is made.',
-            ],
-            [
-              'Verify',
-              'Check the raw-body signature, timestamp and the intended environment using your server-side configuration.',
-            ],
-            [
-              'Deduplicate',
-              'Store event-001 once. A repeated delivery must not repeat a financial action.',
-            ],
-            [
-              'Acknowledge',
-              'Return the appropriate HTTP success only after durable handling; inspect failures and retries.',
-            ],
-          ];
+        : id === 'webhooks'
+          ? [
+              [
+                'Receive',
+                'Example delivery event-001 arrives at a fictional receiver. No network request is made.',
+              ],
+              [
+                'Verify',
+                'Check the raw-body signature, timestamp and the intended environment using your server-side configuration.',
+              ],
+              [
+                'Deduplicate',
+                'Store event-001 once. A repeated delivery must not repeat a financial action.',
+              ],
+              [
+                'Acknowledge',
+                'Return the appropriate HTTP success only after durable handling; inspect failures and retries.',
+              ],
+            ]
+          : (catalogItem?.workflow || ['Configure', 'Record', 'Review']).map((step, idx) => [
+              `Step ${idx + 1}: ${step}`,
+              `${catalogItem?.name || 'Service'} workflow stage ${idx + 1} of ${catalogItem?.workflow.length || 3}: ${step}. Measured in ${catalogItem?.unit || 'operations'} with role-based permissions.`,
+            ]);
   return (
     <section className="learning-paths">
       <h2>Inspect each stage</h2>
       <p>Synthetic walkthrough · no records change or messages are sent.</p>
-      {states.map(([title], i) => (
-        <button
-          className="secondary-button"
-          key={title}
-          aria-pressed={i === selected}
-          onClick={() => setSelected(i)}
-        >
-          {title}
-        </button>
-      ))}
-      <p role="status">{states[selected][1]}</p>
+      <div className="actions exercise-buttons">
+        {states.map(([title], i) => (
+          <button
+            className="secondary-button"
+            key={title}
+            aria-pressed={i === selected}
+            onClick={() => setSelected(i)}
+          >
+            {title}
+          </button>
+        ))}
+      </div>
+      <p role="status">{states[selected]?.[1] || states[0][1]}</p>
     </section>
   );
 }
