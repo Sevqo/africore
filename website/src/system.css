@@ -152,7 +152,8 @@ button:disabled {
   color: var(--ink);
 }
 .brand-mark {
-  color: var(--white);
+  display: block;
+  object-fit: contain;
 }
 .site-header {
   position: sticky;

@@ -1,9 +1,14 @@
 export function Logo() {
   return (
     <a href="/" className="logo" aria-label="AfriCore home">
-      <span className="brand-mark" aria-hidden="true">
-        A
-      </span>
+      <img
+        src="/favicon.svg"
+        alt=""
+        className="brand-mark"
+        width={32}
+        height={32}
+        aria-hidden="true"
+      />
       AfriCore<span className="logo-period">.</span>
     </a>
   );
