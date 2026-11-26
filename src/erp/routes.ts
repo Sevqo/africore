@@ -2979,13 +2979,13 @@ erp.get(
 erp.post(
   '/organizations/:org/sales/promos',
   route(async (req, res) =>
-    res.status(201).json(await createSalesPromo(await access(req, 'operations'), req.body, key(req))),
+    res.status(201).json(await createSalesPromo(await access(req, 'sales'), req.body, key(req))),
   ),
 );
 erp.post(
   '/organizations/:org/sales/promos/apply',
   route(async (req, res) =>
-    res.json(await applySalesPromo(await access(req, 'operations'), req.body, key(req))),
+    res.json(await applySalesPromo(await access(req, 'sales'), req.body, key(req))),
   ),
 );
 erp.get(
@@ -2995,7 +2995,7 @@ erp.get(
 erp.post(
   '/organizations/:org/sales/signatures',
   route(async (req, res) =>
-    res.status(201).json(await signSalesQuote(await access(req, 'operations'), req.body, key(req))),
+    res.status(201).json(await signSalesQuote(await access(req, 'sales'), req.body, key(req))),
   ),
 );
 erp.get(
@@ -3007,7 +3007,7 @@ erp.post(
   route(async (req, res) =>
     res
       .status(201)
-      .json(await createCommissionPlan(await access(req, 'operations'), req.body, key(req))),
+      .json(await createCommissionPlan(await access(req, 'sales'), req.body, key(req))),
   ),
 );
 erp.post(
@@ -3023,7 +3023,7 @@ erp.post(
   route(async (req, res) =>
     res
       .status(201)
-      .json(await createShippingMethod(await access(req, 'operations'), req.body, key(req))),
+      .json(await createShippingMethod(await access(req, 'sales'), req.body, key(req))),
   ),
 );
 erp.post(
@@ -3049,14 +3049,14 @@ erp.post(
   route(async (req, res) =>
     res
       .status(201)
-      .json(await createSalesWarning(await access(req, 'operations'), req.body, key(req))),
+      .json(await createSalesWarning(await access(req, 'sales'), req.body, key(req))),
   ),
 );
 erp.post(
   '/organizations/:org/sales/warnings/check',
   route(async (req, res) => res.json(await checkSalesWarnings(await access(req), req.body))),
 );
-// Accounting parity (Odoo 20: cash flow, FX revaluation, analytic budgets, follow-ups, batch payments, debit notes)
+// Accounting features (strict finance/accountant/admin/owner permission)
 erp.post(
   '/organizations/:org/accounting/cash-flow',
   route(async (req, res) => res.json(await computeCashFlowStatement(await access(req), req.body))),
@@ -3068,7 +3068,7 @@ erp.get(
 erp.post(
   '/organizations/:org/accounting/fx-revaluations',
   route(async (req, res) =>
-    res.status(201).json(await runFxRevaluation(await access(req, 'operations'), req.body, key(req))),
+    res.status(201).json(await runFxRevaluation(await access(req, 'finance'), req.body, key(req))),
   ),
 );
 erp.get(
@@ -3080,7 +3080,7 @@ erp.post(
   route(async (req, res) =>
     res
       .status(201)
-      .json(await createAnalyticAccount(await access(req, 'operations'), req.body, key(req))),
+      .json(await createAnalyticAccount(await access(req, 'finance'), req.body, key(req))),
   ),
 );
 erp.get(
@@ -3090,7 +3090,7 @@ erp.get(
 erp.post(
   '/organizations/:org/accounting/budgets',
   route(async (req, res) =>
-    res.status(201).json(await createBudget(await access(req, 'operations'), req.body, key(req))),
+    res.status(201).json(await createBudget(await access(req, 'finance'), req.body, key(req))),
   ),
 );
 erp.post(
@@ -3108,7 +3108,7 @@ erp.post(
   route(async (req, res) =>
     res
       .status(201)
-      .json(await createFollowupLevel(await access(req, 'operations'), req.body, key(req))),
+      .json(await createFollowupLevel(await access(req, 'finance'), req.body, key(req))),
   ),
 );
 erp.post(
@@ -3124,7 +3124,7 @@ erp.post(
   route(async (req, res) =>
     res
       .status(201)
-      .json(await createBatchPayment(await access(req, 'operations'), req.body, key(req))),
+      .json(await createBatchPayment(await access(req, 'finance'), req.body, key(req))),
   ),
 );
 erp.get(
@@ -3134,10 +3134,10 @@ erp.get(
 erp.post(
   '/organizations/:org/accounting/debit-notes',
   route(async (req, res) =>
-    res.status(201).json(await createDebitNote(await access(req, 'operations'), req.body, key(req))),
+    res.status(201).json(await createDebitNote(await access(req, 'finance'), req.body, key(req))),
   ),
 );
-// CRM parity (Odoo 20: lead routing, lost-reason analytics, recurring revenue MRR/ARR, quotas, enrichment)
+// CRM features (sales/operations/admin/owner permission)
 erp.get(
   '/organizations/:org/crm/routing-rules',
   route(async (req, res) => res.json(await listCrmRoutingRules(await access(req)))),
@@ -3147,7 +3147,7 @@ erp.post(
   route(async (req, res) =>
     res
       .status(201)
-      .json(await createCrmRoutingRule(await access(req, 'operations'), req.body, key(req))),
+      .json(await createCrmRoutingRule(await access(req, 'sales'), req.body, key(req))),
   ),
 );
 erp.post(
@@ -3163,7 +3163,7 @@ erp.post(
   route(async (req, res) =>
     res
       .status(201)
-      .json(await createCrmLostReason(await access(req, 'operations'), req.body, key(req))),
+      .json(await createCrmLostReason(await access(req, 'sales'), req.body, key(req))),
   ),
 );
 erp.post(
@@ -3181,7 +3181,7 @@ erp.get(
 erp.post(
   '/organizations/:org/crm/quotas',
   route(async (req, res) =>
-    res.status(201).json(await createCrmQuota(await access(req, 'operations'), req.body, key(req))),
+    res.status(201).json(await createCrmQuota(await access(req, 'sales'), req.body, key(req))),
   ),
 );
 erp.get(
@@ -3197,10 +3197,10 @@ erp.post(
   route(async (req, res) =>
     res
       .status(201)
-      .json(await createCrmEnrichment(await access(req, 'operations'), req.body, key(req))),
+      .json(await createCrmEnrichment(await access(req, 'sales'), req.body, key(req))),
   ),
 );
-// Inventory parity (Odoo 20: min/max reordering, putaway rules, wave picking, packages, barcode scan, backorder split)
+// Inventory features (inventory_manager/operations/admin/owner permission)
 erp.get(
   '/organizations/:org/inventory/reordering-rules',
   route(async (req, res) => res.json(await listReorderingRules(await access(req)))),
@@ -3210,12 +3210,12 @@ erp.post(
   route(async (req, res) =>
     res
       .status(201)
-      .json(await createReorderingRule(await access(req, 'operations'), req.body, key(req))),
+      .json(await createReorderingRule(await access(req, 'inventory'), req.body, key(req))),
   ),
 );
 erp.post(
   '/organizations/:org/inventory/replenishment/run',
-  route(async (req, res) => res.json(await runReplenishment(await access(req), req.body))),
+  route(async (req, res) => res.json(await runReplenishment(await access(req, 'inventory'), req.body, key(req)))),
 );
 erp.get(
   '/organizations/:org/inventory/putaway-rules',
@@ -3226,7 +3226,7 @@ erp.post(
   route(async (req, res) =>
     res
       .status(201)
-      .json(await createPutawayRule(await access(req, 'operations'), req.body, key(req))),
+      .json(await createPutawayRule(await access(req, 'inventory'), req.body, key(req))),
   ),
 );
 erp.post(
@@ -3246,7 +3246,7 @@ erp.post(
   route(async (req, res) =>
     res
       .status(201)
-      .json(await createStockPackage(await access(req, 'operations'), req.body, key(req))),
+      .json(await createStockPackage(await access(req, 'inventory'), req.body, key(req))),
   ),
 );
 erp.post(
@@ -3254,14 +3254,14 @@ erp.post(
   route(async (req, res) =>
     res
       .status(201)
-      .json(await processBarcodeScan(await access(req, 'operations'), req.body, key(req))),
+      .json(await processBarcodeScan(await access(req, 'inventory'), req.body, key(req))),
   ),
 );
 erp.post(
   '/organizations/:org/inventory/backorders/split',
   route(async (req, res) => res.json(await evaluateBackorderSplit(await access(req), req.body))),
 );
-// Procurement (App #5) & POS (App #6) parity
+// Procurement & POS features
 erp.get(
   '/organizations/:org/procurement/vendor-tiers',
   route(async (req, res) => res.json(await listVendorTiers(await access(req)))),
@@ -3269,7 +3269,7 @@ erp.get(
 erp.post(
   '/organizations/:org/procurement/vendor-tiers',
   route(async (req, res) =>
-    res.status(201).json(await createVendorTier(await access(req, 'operations'), req.body, key(req))),
+    res.status(201).json(await createVendorTier(await access(req, 'procurement'), req.body, key(req))),
   ),
 );
 erp.post(
@@ -3291,7 +3291,7 @@ erp.get(
 erp.post(
   '/organizations/:org/procurement/dropships',
   route(async (req, res) =>
-    res.status(201).json(await createDropship(await access(req, 'operations'), req.body, key(req))),
+    res.status(201).json(await createDropship(await access(req, 'procurement'), req.body, key(req))),
   ),
 );
 erp.get(
@@ -3301,13 +3301,13 @@ erp.get(
 erp.post(
   '/organizations/:org/pos/floors',
   route(async (req, res) =>
-    res.status(201).json(await createPosFloor(await access(req, 'operations'), req.body, key(req))),
+    res.status(201).json(await createPosFloor(await access(req, 'sales'), req.body, key(req))),
   ),
 );
 erp.post(
   '/organizations/:org/pos/tables',
   route(async (req, res) =>
-    res.status(201).json(await createPosTable(await access(req, 'operations'), req.body, key(req))),
+    res.status(201).json(await createPosTable(await access(req, 'sales'), req.body, key(req))),
   ),
 );
 erp.get(
@@ -3317,7 +3317,7 @@ erp.get(
 erp.post(
   '/organizations/:org/pos/kds/tickets',
   route(async (req, res) =>
-    res.status(201).json(await createKdsTicket(await access(req, 'operations'), req.body, key(req))),
+    res.status(201).json(await createKdsTicket(await access(req, 'sales'), req.body, key(req))),
   ),
 );
 erp.post(
@@ -3325,7 +3325,7 @@ erp.post(
   route(async (req, res) =>
     res.json(
       await updateKdsTicketStatus(
-        await access(req, 'operations'),
+        await access(req, 'sales'),
         String(req.params.id),
         req.body,
         key(req),
@@ -3346,17 +3346,17 @@ erp.post(
   route(async (req, res) =>
     res
       .status(201)
-      .json(await createSelfOrderSession(await access(req, 'operations'), req.body, key(req))),
+      .json(await createSelfOrderSession(await access(req, 'sales'), req.body, key(req))),
   ),
 );
-// Apps #7-#26 Suite Parity
+// Suite operations with domain-scoped permissions
 erp.post(
   '/organizations/:org/work/profitability',
   route(async (req, res) => res.json(await evaluateWorkProfitability(await access(req), req.body))),
 );
 erp.post(
   '/organizations/:org/people/shifts/overtime',
-  route(async (req, res) => res.json(await evaluatePeopleOvertime(await access(req), req.body))),
+  route(async (req, res) => res.json(await evaluatePeopleOvertime(await access(req, 'hr'), req.body))),
 );
 erp.post(
   '/organizations/:org/commerce/abandoned-carts',
@@ -3369,12 +3369,12 @@ erp.get(
 erp.post(
   '/organizations/:org/commerce/wishlists',
   route(async (req, res) =>
-    res.status(201).json(await addWishlistItem(await access(req, 'operations'), req.body, key(req))),
+    res.status(201).json(await addWishlistItem(await access(req, 'sales'), req.body, key(req))),
   ),
 );
 erp.post(
   '/organizations/:org/finance/treasury/runway',
-  route(async (req, res) => res.json(await evaluateTreasuryRunway(await access(req), req.body))),
+  route(async (req, res) => res.json(await evaluateTreasuryRunway(await access(req, 'finance'), req.body))),
 );
 erp.get(
   '/organizations/:org/documents/sign/envelopes',
@@ -3401,16 +3401,16 @@ erp.post(
   route(async (req, res) =>
     res
       .status(201)
-      .json(await createAnalyticsSnapshot(await access(req, 'operations'), req.body, key(req))),
+      .json(await createAnalyticsSnapshot(await access(req, 'finance'), req.body, key(req))),
   ),
 );
 erp.post(
   '/organizations/:org/marketing/funnel',
-  route(async (req, res) => res.json(await evaluateMarketingFunnel(await access(req), req.body))),
+  route(async (req, res) => res.json(await evaluateMarketingFunnel(await access(req, 'marketing'), req.body))),
 );
 erp.post(
   '/organizations/:org/support/sla/evaluate',
-  route(async (req, res) => res.json(await evaluateSupportSla(await access(req), req.body))),
+  route(async (req, res) => res.json(await evaluateSupportSla(await access(req, 'support'), req.body))),
 );
 erp.post(
   '/organizations/:org/subscriptions/nrr',
@@ -3418,11 +3418,11 @@ erp.post(
 );
 erp.post(
   '/organizations/:org/mrp/workcenters/oee',
-  route(async (req, res) => res.json(await evaluateMrpOee(await access(req), req.body))),
+  route(async (req, res) => res.json(await evaluateMrpOee(await access(req, 'inventory'), req.body))),
 );
 erp.post(
   '/organizations/:org/field-ops/rentals/price',
-  route(async (req, res) => res.json(await evaluateRentalPricing(await access(req), req.body))),
+  route(async (req, res) => res.json(await evaluateRentalPricing(await access(req, 'inventory'), req.body))),
 );
 erp.post(
   '/organizations/:org/property/revpar',

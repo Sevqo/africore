@@ -6,55 +6,57 @@ import { Icon, type IconName } from '../components/Icon';
 import { CardGridSkeleton } from '../components/Skeleton';
 import { serviceCatalog, serviceForTab, foundationTabs } from '../../../src/marketplace/catalog';
 import { serviceFamilies, serviceFamilyFor } from '../../../src/marketplace/families';
+import {
+  WORKSPACE_ALL_APPS_CAP_MINOR,
+  commercialRateFor,
+  commercialServiceRates,
+} from '../../../src/marketplace/pricing-catalog';
 import './services.css';
 import { allowanceLabel, formatUnits, planLabel, selectUsage } from './usage-presentation';
 import { serviceOpenDestination } from './service-open-destination';
 import { marketTabs, type WorkspaceKind } from '../workspace-navigation';
 export { marketTabs };
 
-/** Reference commercial schedule in KES minor units (cents) so users can compare realistic service tiers while evaluation charging stays off. */
+const BUNDLE_PARENTS: Record<string, string> = {
+  customers: 'crm',
+  expenses: 'cash_flow',
+  orders: 'sales',
+  fulfillment: 'inventory',
+  forecasting: 'intelligence',
+  verification: 'passport',
+  credentials: 'passport',
+  trust_network: 'passport',
+  blockchain: 'passport',
+  connect: 'data',
+};
+
+const TIER_LABELS: Record<string, 'Foundation' | 'Essential' | 'Core ERP' | 'Pay-As-You-Go'> = {
+  free: 'Foundation',
+  essential: 'Essential',
+  core_erp: 'Core ERP',
+  pay_as_you_go: 'Pay-As-You-Go',
+};
+
+/** Reference commercial schedule in KES minor units (cents) sourced from pricing-catalog.ts. */
 const COMMERCIAL_TIERS_KES: Record<
   string,
-  { tier: 'Foundation' | 'Core' | 'Growth' | 'Enterprise'; monthlyMinor: number; summary: string; bundle?: string }
-> = {
-  invoicing: { tier: 'Foundation', monthlyMinor: 0, summary: 'Included free · up to 50 invoices/mo, then Ksh 15/invoice' },
-  customers: { tier: 'Foundation', monthlyMinor: 0, summary: 'Included free · shared canonical customer directory', bundle: 'crm' },
-  products: { tier: 'Foundation', monthlyMinor: 0, summary: 'Included free · shared product & SKU catalog' },
-  calendar: { tier: 'Foundation', monthlyMinor: 0, summary: 'Included free · team scheduling & invitations' },
-  documents: { tier: 'Core', monthlyMinor: 90000, summary: 'Ksh 900 / mo · encrypted vault & version control' },
-  expenses: { tier: 'Core', monthlyMinor: 80000, summary: 'Ksh 800 / mo · cost tracking & approvals', bundle: 'cash_flow' },
-  income: { tier: 'Foundation', monthlyMinor: 0, summary: 'Included free · personal income register' },
-  cash_flow: { tier: 'Core', monthlyMinor: 120000, summary: 'Ksh 1,200 / mo · cash movement, expenses & obligations' },
-  orders: { tier: 'Core', monthlyMinor: 120000, summary: 'Ksh 1,200 / mo · order lifecycle & fulfillment status', bundle: 'sales' },
-  sales: { tier: 'Core', monthlyMinor: 180000, summary: 'Ksh 1,800 / mo · quotations, price lists & sales orders' },
-  crm: { tier: 'Core', monthlyMinor: 180000, summary: 'Ksh 1,800 / mo · pipeline, leads & follow-up activities' },
-  pos: { tier: 'Growth', monthlyMinor: 220000, summary: 'Ksh 2,200 / mo per active counter register' },
-  inventory: { tier: 'Growth', monthlyMinor: 250000, summary: 'Ksh 2,500 / mo · multi-warehouse stock, lots & valuation' },
-  procurement: { tier: 'Growth', monthlyMinor: 240000, summary: 'Ksh 2,400 / mo · purchase requests, RFQs, POs & 3-way match' },
-  fulfillment: { tier: 'Core', monthlyMinor: 150000, summary: 'Ksh 1,500 / mo · dispatch shipments & delivery proof', bundle: 'inventory' },
-  accounting: { tier: 'Growth', monthlyMinor: 350000, summary: 'Ksh 3,500 / mo · double-entry ledger, tax, assets & close' },
-  payments: { tier: 'Growth', monthlyMinor: 150000, summary: 'Ksh 1,500 / mo + 1.2% per settled collection' },
-  reconciliation: { tier: 'Growth', monthlyMinor: 190000, summary: 'Ksh 1,900 / mo · automated bank & mobile-money matching' },
-  protected_payments: { tier: 'Enterprise', monthlyMinor: 290000, summary: 'Ksh 2,900 / mo · milestone escrow & dispute protection' },
-  people: { tier: 'Growth', monthlyMinor: 280000, summary: 'Ksh 2,800 / mo · HR records, leave, attendance & payroll' },
-  work: { tier: 'Core', monthlyMinor: 160000, summary: 'Ksh 1,600 / mo · projects, Kanban boards, Gantt & timesheets' },
-  commerce: { tier: 'Growth', monthlyMinor: 290000, summary: 'Ksh 2,900 / mo · online storefront, catalog & checkout' },
-  website: { tier: 'Core', monthlyMinor: 140000, summary: 'Ksh 1,400 / mo · public website pages, forms & SEO' },
-  intelligence: { tier: 'Core', monthlyMinor: 190000, summary: 'Ksh 1,900 / mo · cross-app analytics & executive KPIs' },
-  forecasting: { tier: 'Growth', monthlyMinor: 210000, summary: 'Ksh 2,100 / mo · cash & demand projections', bundle: 'intelligence' },
-  assistant: { tier: 'Growth', monthlyMinor: 200000, summary: 'Ksh 2,000 / mo · grounded AI explanations (100 queries inc.)' },
-  automations: { tier: 'Growth', monthlyMinor: 220000, summary: 'Ksh 2,200 / mo · workflow rules, schedules & approvals' },
-  passport: { tier: 'Core', monthlyMinor: 150000, summary: 'Ksh 1,500 / mo · Business Passport, verification & trust suite' },
-  verification: { tier: 'Core', monthlyMinor: 0, summary: 'Bundled with Business Passport · KRA/CR12 review', bundle: 'passport' },
-  credentials: { tier: 'Core', monthlyMinor: 0, summary: 'Bundled with Business Passport · signed W3C credentials', bundle: 'passport' },
-  trust_network: { tier: 'Core', monthlyMinor: 0, summary: 'Bundled with Business Passport · partner trust sharing', bundle: 'passport' },
-  blockchain: { tier: 'Enterprise', monthlyMinor: 250000, summary: 'Ksh 2,500 / mo · tamper-evident credential anchoring', bundle: 'passport' },
-  data: { tier: 'Core', monthlyMinor: 150000, summary: 'Ksh 1,500 / mo · structured CSV/JSON normalization & imports' },
-  connect: { tier: 'Growth', monthlyMinor: 240000, summary: 'Ksh 2,400 / mo · external ERP/bank data sync connectors', bundle: 'data' },
-  developer_api: { tier: 'Growth', monthlyMinor: 250000, summary: 'Ksh 2,500 / mo · 25,000 scoped REST API calls included' },
-  webhooks: { tier: 'Core', monthlyMinor: 120000, summary: 'Ksh 1,200 / mo · 10,000 signed HTTPS event deliveries' },
-  verification_api: { tier: 'Enterprise', monthlyMinor: 320000, summary: 'Ksh 3,200 / mo · programmatic KYB & credential checks' },
-};
+  {
+    tier: 'Foundation' | 'Essential' | 'Core ERP' | 'Pay-As-You-Go';
+    monthlyMinor: number;
+    summary: string;
+    bundle?: string;
+  }
+> = Object.fromEntries(
+  Object.entries(commercialServiceRates).map(([id, rate]) => [
+    id,
+    {
+      tier: TIER_LABELS[rate.tier] || 'Essential',
+      monthlyMinor: rate.monthly_minor,
+      summary: rate.summary,
+      ...(BUNDLE_PARENTS[id] ? { bundle: BUNDLE_PARENTS[id] } : {}),
+    },
+  ]),
+);
 
 function serviceIconFor(id: string): IconName {
   if (/payment|reconciliation|protected/.test(id)) return 'payment';
@@ -625,7 +627,8 @@ export function Services({
         <>
           <div className="service-results-toolbar">
             <p role="status">
-              {items.length} services · Apps are free; sandbox evaluation never charges your account
+              {items.length} services · Per-workspace pricing (unlimited users), capped at{' '}
+              {money(WORKSPACE_ALL_APPS_CAP_MINOR)}/mo for all apps · KSh 0 in Sandbox
             </p>
             <div className="segmented-control" role="group" aria-label="Service layout">
               <button
@@ -667,8 +670,8 @@ export function Services({
                         <span
                           className="badge"
                           style={{
-                            background: tierInfo.monthlyMinor === 0 ? '#ecfdf5' : '#eff6ff',
-                            color: tierInfo.monthlyMinor === 0 ? '#166534' : '#1d4ed8',
+                            background: tierInfo.monthlyMinor === 0 ? '#ecfdf5' : '#f3f4f6',
+                            color: tierInfo.monthlyMinor === 0 ? '#166534' : '#374151',
                           }}
                         >
                           {tierInfo.tier}
@@ -697,7 +700,7 @@ export function Services({
                   <div>
                     <p style={{ margin: 0, fontSize: 13, color: '#334155' }}>{s.description}</p>
                     {bundledChildren.length > 0 && (
-                      <small style={{ display: 'block', marginTop: 6, color: '#0f766e', fontWeight: 500 }}>
+                      <small style={{ display: 'block', marginTop: 6, color: '#166534', fontWeight: 500 }}>
                         Suite includes: {bundledChildren.map((c: any) => c.name).join(' · ')}
                       </small>
                     )}
@@ -835,6 +838,11 @@ export function Services({
               </p>
             )}
             <h3>Pricing and usage</h3>
+            <p>
+              <strong>Commercial SME rate:</strong> {commercialRateFor(service.id).summary} (whole
+              workspace capped at {money(WORKSPACE_ALL_APPS_CAP_MINOR)}/mo across all active modules,
+              unlimited staff seats).
+            </p>
             <p>{service.price?.description || 'No effective price is published.'}</p>
             <p>
               Meter: {service.unit}. Price version: {service.price?.version || 'unpublished'}. All

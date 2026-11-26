@@ -4,6 +4,7 @@ import { fail, type Access } from '../platform/auth';
 import { currencySchema } from '../platform/domain';
 import { requireServices } from '../marketplace/engine';
 import { accountingPython } from './bank-python';
+import { recordHubEvent } from './apps-17-26';
 import { decode, insert, operation, type ERPKind } from './store';
 
 const day = z.iso.date();
@@ -467,6 +468,14 @@ export async function createBatchPayment(a: Access, input: unknown, key: string)
         },
         { status: 'ready' },
       );
+      await recordHubEvent(a, {
+        source_app: 'accounting',
+        target_app: 'finance',
+        event_type: 'batch_payment.ready',
+        source_id: rec.id,
+        target_id: rec.id,
+        summary: `Batch remittance ${d.name} (${summary.payment_count} payments, ${d.currency} ${(summary.total_minor / 100).toFixed(2)}) ready for settlement`,
+      });
       return { id: rec.id, status: rec.status, ...rec.data };
     },
   );
@@ -506,6 +515,14 @@ export async function createDebitNote(a: Access, input: unknown, key: string) {
         { number, ...d, created_at: new Date().toISOString() },
         { status: 'posted' },
       );
+      await recordHubEvent(a, {
+        source_app: 'accounting',
+        target_app: 'sales',
+        event_type: 'debit_note.posted',
+        source_id: rec.id,
+        target_id: d.original_invoice_id,
+        summary: `Posted debit note ${number} linked to invoice ${d.original_invoice_id}`,
+      });
       return { id: rec.id, status: rec.status, ...rec.data };
     },
   );

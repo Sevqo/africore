@@ -5,6 +5,7 @@ import { dbAll, dbGet, dbRun, dbTransaction } from '../db/adapter';
 import type { Access } from '../platform/auth';
 import type { ServiceDefinition } from './catalog';
 import { costMinor, priceInput, type Price } from './pricing';
+import { commercialRateFor, WORKSPACE_ALL_APPS_CAP_MINOR } from './pricing-catalog';
 function reject(status: number, message: string): never {
   throw Object.assign(new Error(message), { status });
 }
@@ -100,6 +101,7 @@ export async function catalogFor(a: Access) {
     kind,
     collection_enabled: false,
     currency: 'KES',
+    workspace_bundle_cap_minor: WORKSPACE_ALL_APPS_CAP_MINOR,
     services: defs.map((s) => {
       const e = entitlements.find((e) => e.service_id === s.id);
       const row =
@@ -123,6 +125,7 @@ export async function catalogFor(a: Access) {
             }
           : null,
         price: row ? JSON.parse(row.data) : null,
+        commercial_plan: commercialRateFor(s.id),
         setup_ready: setupReady(s.id),
       };
     }),

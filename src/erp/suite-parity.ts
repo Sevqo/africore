@@ -5,6 +5,8 @@ import { fail, type Access } from '../platform/auth';
 import { currencySchema } from '../platform/domain';
 import { requireServices } from '../marketplace/engine';
 import { accountingPython } from './bank-python';
+import { recordHubEvent } from './apps-17-26';
+import { notify } from '../operations/automation';
 import { decode, insert, operation, update, type ERPKind } from './store';
 
 const text = (max: number) => z.string().trim().min(1).max(max);
@@ -168,6 +170,26 @@ export async function signEnvelope(a: Access, envelopeId: string, input: unknown
       const allSigned = sigs.length >= (Array.isArray(rec.data.signers) ? rec.data.signers.length : 1);
       const nextStatus = allSigned ? 'completed' : 'partially_signed';
       await update(a, rec, { ...rec.data, signatures: sigs }, { status: nextStatus }, 'envelope_signed');
+      if (allSigned) {
+        await recordHubEvent(a, {
+          source_app: 'documents',
+          target_app: 'integrations_hub',
+          event_type: 'envelope.completed',
+          source_id: rec.id,
+          target_id: rec.id,
+          summary: `Document "${rec.data.document_title}" signed by all ${sigs.length} required signers`,
+        });
+        await notify(a, {
+          category: 'documents',
+          title: 'Document signature completed',
+          body: `"${rec.data.document_title}" has been cryptographically signed by all parties.`,
+          resource_id: rec.id,
+          key: 'doc-sign-complete:' + rec.id,
+          user_id: rec.owner_id || a.actor,
+          capability: 'read',
+          action_data: { app_id: 'documents', record_id: rec.id },
+        });
+      }
       return { id: rec.id, status: nextStatus, signatures: sigs };
     },
   );

@@ -31,6 +31,7 @@ export const roleAppAccess: Record<string, readonly string[] | '*'> = {
   finance: [
     'finance',
     'accounting',
+    'sales',
     'analytics',
     'procurement',
     'subscriptions',
@@ -42,6 +43,7 @@ export const roleAppAccess: Record<string, readonly string[] | '*'> = {
   accountant: [
     'accounting',
     'finance',
+    'sales',
     'analytics',
     'subscriptions',
     'documents',

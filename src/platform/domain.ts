@@ -65,6 +65,9 @@ export function permitted(role: string, capability: string) {
   if (capability === 'finance') return role === 'finance' || role === 'accountant';
   if (capability === 'hr') return role === 'hr';
   if (capability === 'sales') return role === 'sales' || role === 'operations';
+  if (capability === 'inventory') return role === 'inventory_manager' || role === 'operations';
+  if (capability === 'procurement')
+    return ['inventory_manager', 'operations', 'finance', 'accountant'].includes(role);
   if (capability === 'support') return role === 'support_agent' || role === 'operations';
   if (capability === 'marketing') return role === 'marketing_manager' || role === 'operations';
   if (capability === 'operations')

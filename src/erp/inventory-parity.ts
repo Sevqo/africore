@@ -3,6 +3,7 @@ import { dbAll } from '../db/adapter';
 import { type Access } from '../platform/auth';
 import { requireServices } from '../marketplace/engine';
 import { accountingPython } from './bank-python';
+import { recordHubEvent } from './apps-17-26';
 import { decode, insert, operation, type ERPKind } from './store';
 
 const text = (max: number) => z.string().trim().min(1).max(max);
@@ -93,9 +94,10 @@ export async function createReorderingRule(a: Access, input: unknown, key: strin
   );
 }
 
-export async function runReplenishment(a: Access, input: unknown) {
+export async function runReplenishment(a: Access, input: unknown, key?: string) {
   const d = z
     .object({
+      auto_create_requests: z.boolean().default(false),
       positions: z
         .array(
           z
@@ -126,7 +128,50 @@ export async function runReplenishment(a: Access, input: unknown) {
         outgoing_qty: p?.outgoing_qty ?? 0,
       };
     });
-  return accountingPython('warehouse_replenishment_waves', { op: 'replenishment_plan', rules }, replenishSchema);
+  const plan = await accountingPython(
+    'warehouse_replenishment_waves',
+    { op: 'replenishment_plan', rules },
+    replenishSchema,
+  );
+  if (d.auto_create_requests && plan.suggestions.length > 0 && key) {
+    const createdRequests = await operation(
+      a,
+      'inventory.replenishment.auto_rfq',
+      key,
+      d,
+      () => requireServices(a, ['inventory']),
+      async () => {
+        const out: string[] = [];
+        for (const s of plan.suggestions) {
+          const pr = await insert(
+            a,
+            'purchase_request',
+            {
+              source: 'inventory_replenishment',
+              product_id: s.product_id,
+              warehouse: s.warehouse,
+              requested_qty: s.order_qty,
+              lead_days: s.lead_days,
+              created_at: new Date().toISOString(),
+            },
+            { status: 'draft' },
+          );
+          out.push(pr.id);
+          await recordHubEvent(a, {
+            source_app: 'inventory',
+            target_app: 'procurement',
+            event_type: 'replenishment.rfq_created',
+            source_id: s.product_id,
+            target_id: pr.id,
+            summary: `Auto-generated purchase request for ${s.order_qty} units of ${s.product_id} (${s.warehouse})`,
+          });
+        }
+        return out;
+      },
+    );
+    return { ...plan, created_purchase_request_ids: createdRequests };
+  }
+  return plan;
 }
 
 // 2. Putaway Rules

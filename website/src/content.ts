@@ -224,13 +224,14 @@ export const pages: Record<
   },
   '/pricing': {
     category: 'Pricing',
-    title: 'Start with understanding. Scale with confidence.',
+    title: 'Fair, modular workspace pricing built for growing businesses.',
     description:
-      'Commercial pricing has not been published. Sandbox use is for evaluation; no production service commitment is implied.',
+      'Start free in sandbox and pay per workspace — never per user seat — with generous monthly allowances and an all-apps SME cap.',
     points: [
-      'Business workspace: sandbox evaluation.',
-      'Developer APIs: sandbox evaluation.',
-      'Production pricing and service terms: to be agreed before launch.',
+      'Starter & Directory Services (Customers, Products, Calendar, Business Passport): KSh 0/month.',
+      'Essential Operations (Expenses, Cash Flow, Orders, Documents, Automations, Website): KSh 190 – 290/month per workspace.',
+      'Core ERP Modules (Sales, Invoicing, CRM, Inventory, Procurement, POS, People, Work, Accounting): KSh 350 – 590/month per workspace with unlimited staff seats.',
+      'All-Apps SME Growth Cap: KSh 1,990/month (~$15/month) maximum across all enabled business modules.',
     ],
   },
   '/privacy': {
