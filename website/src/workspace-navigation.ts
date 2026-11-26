@@ -98,6 +98,8 @@ export const personalTabs = [
   'Clients',
   'Payment Records',
   'Cash Flow',
+  'Intelligence',
+  'Forecasts',
   'Reports',
   'Learn',
   'Settings',
@@ -105,6 +107,7 @@ export const personalTabs = [
 
 export const developerTabs = [
   'Overview',
+  'Apps',
   'Notifications',
   'Products',
   ...marketTabs,

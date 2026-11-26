@@ -23,8 +23,8 @@ export const appCatalog: AppDefinition[] = [
     icon: 'calendar',
     description: 'Schedule workspace meetings and manage attendee responses in one timezone-aware calendar.',
     version: 1,
-    kinds: ['business'],
-    required: { business: ['calendar'] },
+    kinds: ['business', 'personal'],
+    required: { business: ['calendar'], personal: ['calendar'] },
     optional: ['people', 'work', 'customers', 'crm', 'documents'],
     navigation: [
       { label: 'Calendar', section: 'calendar' },
@@ -46,8 +46,8 @@ export const appCatalog: AppDefinition[] = [
     icon: 'globe',
     description: 'Build typed content pages and publish reviewed public snapshots for your business.',
     version: 1,
-    kinds: ['business'],
-    required: { business: ['website'] },
+    kinds: ['business', 'personal'],
+    required: { business: ['website'], personal: ['website'] },
     optional: ['commerce', 'products', 'documents'],
     navigation: [
       { label: 'Overview', section: 'overview' },
@@ -157,8 +157,8 @@ export const appCatalog: AppDefinition[] = [
     description:
       'Manage private files, folders, explicit sharing, retained versions and recoverable trash with current per-file authorization.',
     version: 1,
-    kinds: ['business'],
-    required: { business: ['documents'] },
+    kinds: ['business', 'personal'],
+    required: { business: ['documents'], personal: ['documents'] },
     optional: [
       'people',
       'work',
@@ -287,8 +287,8 @@ export const appCatalog: AppDefinition[] = [
     description:
       'Organize private projects, shared task boards, dependencies, milestones and persistent discussions.',
     version: 1,
-    kinds: ['business'],
-    required: { business: ['work'] },
+    kinds: ['business', 'personal'],
+    required: { business: ['work'], personal: ['work'] },
     optional: ['customers', 'orders', 'automations'],
     navigation: [
       { label: 'Projects', section: 'dashboard' },
@@ -420,8 +420,8 @@ export const appCatalog: AppDefinition[] = [
     description:
       'Inspect authorized cross-service records, definitions, source coverage and saved report choices.',
     version: 1,
-    kinds: ['business', 'personal'],
-    required: { business: ['intelligence'], personal: [] },
+    kinds: ['business', 'personal', 'developer'],
+    required: { business: ['intelligence'], personal: [], developer: [] },
     optional: ['forecasting'],
     navigation: [
       { label: 'Dashboard', section: 'dashboard' },
@@ -447,8 +447,8 @@ export const appCatalog: AppDefinition[] = [
     description:
       'Configure supported business rules, inspect durable runs and manage assigned approvals.',
     version: 1,
-    kinds: ['business'],
-    required: { business: ['automations'] },
+    kinds: ['business', 'developer'],
+    required: { business: ['automations'], developer: ['automations'] },
     optional: ['work'],
     navigation: [
       { label: 'Dashboard', section: 'dashboard' },
@@ -642,9 +642,9 @@ export const appCatalog: AppDefinition[] = [
     description:
       'Build custom no-code internal apps, typed forms, and structured database views inside your workspace.',
     version: 1,
-    kinds: ['business'],
-    required: { business: ['customers'] },
-    optional: ['automations'],
+    kinds: ['business', 'developer'],
+    required: { business: ['customers'], developer: ['customers'] },
+    optional: ['automations', 'data'],
     navigation: [
       { label: 'Custom Apps', section: 'apps' },
       { label: 'Live Records', section: 'records' },
@@ -663,9 +663,9 @@ export const appCatalog: AppDefinition[] = [
     description:
       'Manage connectors, data sync pipelines, cross-app orchestration, and inspect the live 26-app event bus.',
     version: 1,
-    kinds: ['business'],
-    required: { business: ['customers'] },
-    optional: ['orders', 'invoicing', 'inventory'],
+    kinds: ['business', 'developer'],
+    required: { business: ['customers'], developer: ['customers'] },
+    optional: ['orders', 'invoicing', 'inventory', 'connect', 'data', 'webhooks'],
     navigation: [
       { label: 'Connected Flows', section: 'topology' },
       { label: 'Connectors & Pipelines', section: 'pipelines' },

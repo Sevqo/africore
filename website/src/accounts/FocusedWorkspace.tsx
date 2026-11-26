@@ -5,6 +5,8 @@ import { AppsWorkspace } from '../apps/AppsWorkspace';
 import { ProductCatalog } from '../apps/ProductCatalog';
 import { DataPlatformView } from '../operations/DataPlatformView';
 import { AssistantView } from '../operations/AssistantView';
+import { OperationsWorkspace } from '../operations/OperationsWorkspace';
+import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { CustomerTools } from '../finance/CustomerTools';
 import { FinancialOverview } from '../finance/FinancialOverview';
 import { PaymentCentre } from '../finance/PaymentCentre';
@@ -64,8 +66,8 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
   const market = useMarketplace(w.id, environment, w.kind, account?.service_catalog);
   const visibleItems = [...new Set(items)].filter((t) => visibleServiceTab(market, t));
   const primaryItems = [
-    ...(personal ? [{ tab: 'Apps', label: 'Apps', icon: 'grid' }] : []),
     { tab: 'Overview', label: 'Home', icon: 'home' },
+    { tab: 'Apps', label: 'Apps', icon: 'grid' },
     { tab: 'My Services', label: 'Services', icon: 'network' },
     { tab: 'Notifications', label: 'Notifications', icon: 'bell' },
   ] as const;
@@ -110,8 +112,8 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
       return result;
     });
   };
-  const appContext = useAppContext(call, w.id + '\0' + environment, personal),
-    immersiveApp = personal && (appContext.app || appContext.resolving),
+  const appContext = useAppContext(call, w.id + '\0' + environment, true),
+    immersiveApp = !!(appContext.app || appContext.resolving) && tab === 'Apps',
     appSectionLabel = appContext.app?.navigation.find(
       (item: any) => item.section === appContext.section,
     )?.label || 'Opening app';
@@ -145,7 +147,7 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
     setError('');
     setData({});
     if (
-      ['Apps', 'Products', 'Notifications'].includes(tab) ||
+      ['Apps', 'Products', 'Notifications', 'Intelligence', 'Forecasts'].includes(tab) ||
       marketTabs.includes(tab) ||
       !canReadServiceTab(market, tab)
     ) {
@@ -483,9 +485,7 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
           >
             <Icon name="menu" />
           </button>
-          {immersiveApp && (
-            <WorkspaceAppLauncher api={call} scope={w.id + '\0' + environment} navigate={setTab} />
-          )}
+          <WorkspaceAppLauncher api={call} scope={w.id + '\0' + environment} navigate={setTab} />
           <span>
             {immersiveApp
               ? `${appContext.app?.name.replace('AfriCore ', '') || 'App'} · ${appSectionLabel}`
@@ -500,11 +500,11 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
               <Icon name="document" />
             </button>
           )}
-          {immersiveApp && (
-            <a className="focused-app-workspace-switch" href="/app/workspaces">
-              {w.name}
-            </a>
-          )}
+          <WorkspaceSwitcher
+            currentId={w.id}
+            workspaces={account?.workspaces}
+            onError={setError}
+          />
           <div className="focused-user-actions">
             <NotificationBell
               kind={w.kind}
@@ -543,38 +543,42 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
             <h1>{w.name}</h1>
           </div>
           <div>
+            <WorkspaceSwitcher
+              currentId={w.id}
+              workspaces={account?.workspaces}
+              onError={setError}
+            />
             {!personal && (
               <label>
                 Environment{' '}
                 <select value={environment} onChange={(e) => setEnvironment(e.target.value)}>
                   <option value="sandbox">Sandbox</option>
-                  {selectedInvoice && (
-                    <Overlay onClose={() => setSelectedInvoice(null)}>
-                      <section
-                        className="service-detail print-invoice"
-                        role="dialog"
-                        aria-modal="true"
-                        aria-label="Invoice financial details"
-                      >
-                        <h2>{selectedInvoice.reference}</h2>
-                        <RecordFinanceDetails
-                          row={{ ...selectedInvoice, kind: 'invoices' }}
-                          printDocument
-                          api={call}
-                          writable={['owner', 'admin', 'finance'].includes(w.role)}
-                          onChanged={() => setRevision((v) => v + 1)}
-                        />
-                        <button onClick={() => setSelectedInvoice(null)}>Close</button>
-                      </section>
-                    </Overlay>
-                  )}
-                  {personal && <option value="production">Personal records</option>}
                 </select>
               </label>
             )}
             <a href="/app/workspaces">All workspaces</a>
           </div>
         </header>
+        {selectedInvoice && (
+          <Overlay onClose={() => setSelectedInvoice(null)}>
+            <section
+              className="service-detail print-invoice"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Invoice financial details"
+            >
+              <h2>{selectedInvoice.reference}</h2>
+              <RecordFinanceDetails
+                row={{ ...selectedInvoice, kind: 'invoices' }}
+                printDocument
+                api={call}
+                writable={['owner', 'admin', 'finance'].includes(w.role)}
+                onChanged={() => setRevision((v) => v + 1)}
+              />
+              <button onClick={() => setSelectedInvoice(null)}>Close</button>
+            </section>
+          </Overlay>
+        )}
         <p className="environment-note">
           {personal
             ? 'Personal records · payment simulations stay separate from manual entries.'
@@ -592,21 +596,25 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
             kind={w.kind}
             navigate={notificationNavigate}
           />
-        ) : tab === 'Apps' && personal ? (
+        ) : tab === 'Apps' ? (
           <AppsWorkspace
             role={w.role}
             api={call}
             scope={w.id + '\0' + environment}
             manager={['owner', 'admin'].includes(w.role)}
-            navigate={(tab) => {
+            navigate={(nextTab) => {
               setTab(
-                (
-                  {
-                    Customers: 'Clients',
-                    Payments: 'Payment Records',
-                    Reconciliation: 'Payment Records',
-                  } as Record<string, string>
-                )[tab] || tab,
+                personal
+                  ? (
+                      {
+                        Customers: 'Clients',
+                        Payments: 'Payment Records',
+                        Reconciliation: 'Payment Records',
+                      } as Record<string, string>
+                    )[nextTab] || nextTab
+                  : items.includes(nextTab)
+                    ? nextTab
+                    : 'Overview',
               );
               setNavigationOpen(false);
             }}
@@ -614,6 +622,22 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
             onServicesChanged={market.reload}
             timezone={account?.profile?.timezone || 'Africa/Nairobi'}
           />
+        ) : personal && ['Intelligence', 'Forecasts'].includes(tab) ? (
+          <ServiceGate market={market} tab={tab} navigate={setTab}>
+            <OperationsWorkspace
+              key={w.id + '\0' + environment + '\0' + tab}
+              section={tab}
+              org={w.id}
+              environment={environment}
+              role={w.role || 'owner'}
+              onNavigate={setTab}
+              services={
+                market.catalog?.services
+                  ?.filter((s: any) => s.status === 'active')
+                  .map((s: any) => s.id) || []
+              }
+            />
+          </ServiceGate>
         ) : tab === 'Products' && !personal ? (
           <ServiceGate market={market} tab={tab} navigate={setTab}>
             <ProductCatalog
@@ -984,7 +1008,9 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
             </div>
             <p>{appContext.app.description}</p>
             <p className="environment-note">
-              Personal records · payment simulations stay separate from manual entries.
+              {personal
+                ? 'Personal records · payment simulations stay separate from manual entries.'
+                : 'Developer sandbox · test records and isolated schemas only.'}
             </p>
             <h3>Required services</h3>
             <ul className="immersive-app-services">

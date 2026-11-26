@@ -233,7 +233,7 @@ test('dependency deactivation order is safe and a direct dependent preserves its
     'active',
   );
 });
-test('app compatibility denies Developer installations and offers a limited Personal registry', async () => {
+test('app compatibility offers tailored Personal and Developer registries, role-scoped permissions, and denies ineligible company apps', async () => {
   const personal = await api('/api/auth/workspaces', 'POST', {
     kind: 'personal',
     name: 'Fixture personal',
@@ -243,11 +243,16 @@ test('app compatibility denies Developer installations and offers a limited Pers
   assert.equal(personal.status, 201);
   const pp = '/api/v1/organizations/' + personal.data.id;
   const catalog = await api(pp + '/apps');
+  assert.equal(catalog.status, 200);
   assert.deepEqual(
     catalog.data.apps.map((a: any) => a.id),
-    ['finance', 'analytics'],
+    ['calendar', 'website', 'documents', 'work', 'finance', 'analytics'],
   );
+  assert.equal(catalog.data.total_workspace_apps, 6);
+  assert.equal(catalog.data.restricted_apps.length, 0);
   assert.equal((await api(pp + '/apps/sales/installation-preview')).status, 403);
+  assert.equal((await api(pp + '/apps/people/installation-preview')).status, 403);
+
   const developer = await api('/api/auth/workspaces', 'POST', {
     kind: 'developer',
     name: 'Fixture developer',
@@ -255,5 +260,44 @@ test('app compatibility denies Developer installations and offers a limited Pers
     services: [],
   });
   assert.equal(developer.status, 201);
-  assert.equal((await api('/api/v1/organizations/' + developer.data.id + '/apps')).status, 403);
+  const dp = '/api/v1/organizations/' + developer.data.id;
+  const devCatalog = await api(dp + '/apps');
+  assert.equal(devCatalog.status, 200);
+  assert.deepEqual(
+    devCatalog.data.apps.map((a: any) => a.id),
+    ['analytics', 'automations', 'studio', 'integrations_hub'],
+  );
+  assert.equal(devCatalog.data.total_workspace_apps, 4);
+  assert.equal((await api(dp + '/apps/people/installation-preview')).status, 403);
+  assert.equal((await api(dp + '/apps/pos/installation-preview')).status, 403);
+  const studioPreview = await api(dp + '/apps/studio/installation-preview');
+  assert.equal(studioPreview.status, 200);
+  const studioInstall = await api(dp + '/apps/studio/install', 'POST', {
+    review_hash: studioPreview.data.review_hash,
+    optional_services: [],
+  });
+  assert.equal(studioInstall.status, 200);
+
+  // Business role-scoped permissions return permitted apps alongside restricted_apps metadata
+  const finEmail = randomUUID() + '@example.test';
+  const finUser = await fetch(base + '/api/auth/signup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: finEmail, password: 'Safe-synthetic-password-1!' }),
+  });
+  const finCookie = finUser.headers.get('set-cookie')?.split(';')[0] || '';
+  const finData = (await finUser.json()) as any;
+  await dbRun("INSERT INTO ac_memberships(org_id,user_id,role) VALUES (?,?,'finance')", [
+    org,
+    finData.id,
+  ]);
+  const finAppsRes = await fetch(base + '/api/v1/organizations/' + org + '/apps', {
+    headers: { Cookie: finCookie },
+  });
+  assert.equal(finAppsRes.status, 200);
+  const finApps = (await finAppsRes.json()) as any;
+  assert.equal(finApps.role, 'finance');
+  assert.equal(finApps.total_workspace_apps, 26);
+  assert.equal(finApps.apps.length, 10);
+  assert.equal(finApps.restricted_apps.length, 16);
 });

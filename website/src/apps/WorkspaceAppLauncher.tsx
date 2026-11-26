@@ -17,12 +17,14 @@ export function WorkspaceAppLauncher({
   const [open, setOpen] = useState(false),
     [query, setQuery] = useState(''),
     [apps, setApps] = useState<any[] | null>(null),
+    [meta, setMeta] = useState<{ role?: string; restrictedCount?: number; kind?: string }>({}),
     [error, setError] = useState(''),
     [revision, setRevision] = useState(0);
   useEffect(() => {
     setOpen(false);
     setQuery('');
     setApps(null);
+    setMeta({});
   }, [scope]);
   useEffect(() => {
     if (!open) return;
@@ -31,7 +33,14 @@ export function WorkspaceAppLauncher({
     setApps(null);
     api('/apps')
       .then((result) => {
-        if (current) setApps(result.apps);
+        if (current) {
+          setApps(result.apps);
+          setMeta({
+            role: result.role,
+            kind: result.kind,
+            restrictedCount: result.restricted_apps?.length || 0,
+          });
+        }
       })
       .catch((e) => {
         if (current) setError(e.message);
@@ -80,7 +89,15 @@ export function WorkspaceAppLauncher({
           >
             <div className="section-heading">
               <div>
-                <span className="eyebrow">Your workspace</span>
+                <span className="eyebrow">
+                  {meta.restrictedCount
+                    ? `Permitted for your ${meta.role || 'workspace'} role`
+                    : meta.kind === 'personal'
+                      ? 'Personal workspace'
+                      : meta.kind === 'developer'
+                        ? 'Developer console'
+                        : 'Your workspace'}
+                </span>
                 <h2 id="workspace-launcher-title">Switch app</h2>
               </div>
               <button

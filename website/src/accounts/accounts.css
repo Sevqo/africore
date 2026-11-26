@@ -7,6 +7,28 @@
   display: flex;
   margin-bottom: 30px;
 }
+.account-entry-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+.account-entry-topbar > .logo {
+  margin-bottom: 0;
+}
+.workspace-switcher-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.workspace-switcher-select {
+  min-width: 210px;
+  max-width: 300px;
+  font-weight: 500;
+}
 .account-entry h1 {
   font-size: clamp(24px, 2.56vw, 33.28px);
   max-width: 850px;

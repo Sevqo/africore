@@ -46,16 +46,22 @@ export async function appsFor(a: Access) {
       [a.org, a.environment],
     );
   const services = await catalogFor(a);
+  const eligibleForKind = appCatalog.filter((app) => app.kinds.includes(kind));
+  const permittedApps = eligibleForKind.filter((app) => roleAllowsApp(a.role, app.id, kind));
+  const restrictedApps = eligibleForKind
+    .filter((app) => !roleAllowsApp(a.role, app.id, kind))
+    .map((app) => ({ id: app.id, name: app.name, description: app.description }));
   return {
     kind,
     role: a.role,
     environment: a.environment,
     installation_fee_minor: 0,
-    apps: appCatalog
-      .filter((app) => app.kinds.includes(kind) && roleAllowsApp(a.role, app.id, kind))
+    total_workspace_apps: eligibleForKind.length,
+    restricted_apps: restrictedApps,
+    apps: permittedApps
       .map((app) => {
         const row = rows.find((r) => r.app_id === app.id);
-        const required = app.required[kind as 'business' | 'personal'] || [];
+        const required = app.required[kind as 'business' | 'personal' | 'developer'] || [];
         return {
           ...app,
           required_services: required,
@@ -89,7 +95,10 @@ export async function installationPreview(a: Access, id: string, input: unknown 
     if (!app.optional.includes(service) || !catalog.services.some((s) => s.id === service))
       fail(400, 'Unsupported optional service');
   const seedIds = [
-    ...new Set([...(app.required[kind as 'business' | 'personal'] || []), ...optional]),
+    ...new Set([
+      ...(app.required[kind as 'business' | 'personal' | 'developer'] || []),
+      ...optional,
+    ]),
   ];
   // Automatically resolve and include transitive dependencies in topological order so every
   // disclosed prerequisite is reviewed and activated before any dependent service.

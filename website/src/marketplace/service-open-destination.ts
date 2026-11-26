@@ -50,6 +50,8 @@ const personalDestinations: Record<string, ServiceOpenDestination> = {
   customers: { tab: 'Clients' },
   payments: { tab: 'Payment Records' },
   reconciliation: { tab: 'Payment Records' },
+  documents: { tab: 'Apps', app: 'documents', section: 'all' },
+  work: { tab: 'Apps', app: 'work', section: 'dashboard' },
 };
 
 /** The developer console is an API console, not a merchant workspace. Business
@@ -62,6 +64,10 @@ const developerDestinations: Record<string, ServiceOpenDestination> = {
   payments: { tab: 'API Explorer' },
   reconciliation: { tab: 'API Explorer' },
   connect: { tab: 'API Explorer' },
+  inventory: { tab: 'API Explorer' },
+  fulfillment: { tab: 'API Explorer' },
+  expenses: { tab: 'API Explorer' },
+  automations: { tab: 'Apps', app: 'automations', section: 'dashboard' },
   developer_api: { tab: 'My Applications' },
 };
 

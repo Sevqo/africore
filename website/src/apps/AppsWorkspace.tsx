@@ -132,6 +132,26 @@ export function AppsWorkspace({
   }
   const [directoryQuery, setDirectoryQuery] = useState(''),
     [installedOnly, setInstalledOnly] = useState(false);
+  const roleTitles: Record<string, string> = {
+    owner: 'Workspace Owner',
+    admin: 'Administrator',
+    finance: 'Finance Manager',
+    accountant: 'Accountant',
+    hr: 'HR & People Manager',
+    sales: 'Sales Representative',
+    operations: 'Operations Lead',
+    inventory_manager: 'Inventory & Warehouse Manager',
+    support_agent: 'Customer Support Agent',
+    marketing_manager: 'Marketing Manager',
+    viewer: 'Workspace Viewer',
+  };
+  const effectiveRole = catalog?.role || role || 'viewer',
+    roleLabel = roleTitles[effectiveRole] || effectiveRole,
+    workspaceKind = catalog?.kind || 'business',
+    restrictedApps: { id: string; name: string; description: string }[] =
+      catalog?.restricted_apps || [],
+    totalWorkspaceApps: number =
+      catalog?.total_workspace_apps ?? (catalog?.apps?.length || 0) + restrictedApps.length;
   const directoryApps = (catalog?.apps || []).filter(
     (a: any) =>
       (!installedOnly || a.installation?.status === 'installed') &&
@@ -201,18 +221,96 @@ export function AppsWorkspace({
       {!catalog && !error && <CardGridSkeleton count={8} label="Loading workspace apps…" />}
       {!app && catalog && (
         <>
-          <p>
-            Apps bring related services into one workspace. Installation is free; each service keeps
-            its own disclosed usage and provider requirements.
-          </p>
+          <section
+            className={
+              'panel app-permission-banner' +
+              (restrictedApps.length > 0 ? ' is-role-scoped' : '')
+            }
+            aria-label="Workspace app permissions"
+          >
+            <div className="app-permission-banner-main">
+              <div className="app-permission-badges">
+                <span className="badge">
+                  {workspaceKind === 'personal'
+                    ? 'Personal workspace'
+                    : workspaceKind === 'developer'
+                      ? 'Developer console'
+                      : `Your role: ${roleLabel}`}
+                </span>
+                <span className="badge app-permission-count">
+                  {restrictedApps.length > 0
+                    ? `${catalog.apps.length} of ${totalWorkspaceApps} apps permitted`
+                    : `${catalog.apps.length} workspace apps included`}
+                </span>
+              </div>
+              {restrictedApps.length > 0 ? (
+                <p>
+                  Showing the <strong>{catalog.apps.length} apps</strong> you have permission to
+                  access in this workspace for your <strong>{roleLabel}</strong> role. The remaining{' '}
+                  {restrictedApps.length} company apps are assigned to other department roles or
+                  administrators.
+                </p>
+              ) : workspaceKind === 'personal' ? (
+                <p>
+                  Personal workspace suite — equipped with the{' '}
+                  <strong>{catalog.apps.length} essential apps</strong> for individual work, client
+                  invoicing, personal finances, projects, documents, scheduling, and personal pages
+                  (without company HR or retail bloat).
+                </p>
+              ) : workspaceKind === 'developer' ? (
+                <p>
+                  Developer sandbox suite — equipped with{' '}
+                  <strong>{catalog.apps.length} engineering apps</strong> for custom schemas,
+                  connectors, event pipelines, workflow automations, and API telemetry.
+                </p>
+              ) : (
+                <p>
+                  Full workspace access — your <strong>{roleLabel}</strong> role has permission to
+                  open and manage all <strong>{catalog.apps.length} business apps</strong> in this
+                  workspace.
+                </p>
+              )}
+            </div>
+            {restrictedApps.length > 0 && (
+              <details className="app-restricted-disclosure">
+                <summary>
+                  View {restrictedApps.length} apps restricted from your current role
+                </summary>
+                <p className="app-restricted-note">
+                  Need access to one of these modules? Ask a Workspace Owner or Administrator in{' '}
+                  <strong>Team</strong> settings to update your role.
+                </p>
+                <div className="app-restricted-grid">
+                  {restrictedApps.map((item) => (
+                    <div className="app-restricted-item" key={item.id}>
+                      <span className="app-mark app-mark-locked" aria-hidden="true">
+                        <Icon name={icons[item.id] || 'grid'} />
+                      </span>
+                      <div>
+                        <strong>{item.name}</strong>
+                        <small>{item.description}</small>
+                      </div>
+                      <span className="badge">Role restricted</span>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+          </section>
           <div className="ac-control-panel app-directory-toolbar">
             <label className="ac-faceted-search">
-              <span className="ac-facet-chip">App Store</span>
+              <span className="ac-facet-chip">
+                {restrictedApps.length > 0 ? 'Permitted Apps' : 'App Directory'}
+              </span>
               <input
                 type="search"
                 value={directoryQuery}
                 onChange={(e) => setDirectoryQuery(e.target.value)}
-                placeholder="Search all 26 apps..."
+                placeholder={
+                  restrictedApps.length > 0
+                    ? `Search your ${catalog.apps.length} permitted apps...`
+                    : `Search ${catalog.apps.length} workspace apps...`
+                }
               />
               <span className="ac-kbd-hint">⌘K</span>
             </label>
@@ -287,15 +385,21 @@ export function AppsWorkspace({
               </article>
             ))}
           </div>
-          <details className="panel">
-            <summary>Extended Operations Suite (POS · CRM · Work · Payroll · Subscriptions · Support · Marketing · MRP · Fleet · Logistics)</summary>
-            <OdooSuiteExpansionWorkspace
-              api={api}
-              scope={scope}
-              writable={writable}
-              financeWritable={financeWritable}
-            />
-          </details>
+          {workspaceKind === 'business' &&
+            ['owner', 'admin', 'operations'].includes(effectiveRole) && (
+              <details className="panel">
+                <summary>
+                  Extended Operations Suite (POS · CRM · Work · Payroll · Subscriptions · Support ·
+                  Marketing · MRP · Fleet · Logistics)
+                </summary>
+                <OdooSuiteExpansionWorkspace
+                  api={api}
+                  scope={scope}
+                  writable={writable}
+                  financeWritable={financeWritable}
+                />
+              </details>
+            )}
         </>
       )}
       {app && (

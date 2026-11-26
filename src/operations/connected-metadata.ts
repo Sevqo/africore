@@ -24,7 +24,7 @@ bind(
 );
 bind(['business', 'developer'], ['data', 'connect'], ['GET /data/quality', 'POST /data/imports']);
 bind(
-  ['business'],
+  ['business', 'personal'],
   ['intelligence'],
   [
     'GET /intelligence/alerts',
@@ -36,7 +36,7 @@ bind(
 bind(['business'], ['trust_network', 'passport'], ['GET /trust/assessment']);
 
 bind(
-  ['business'],
+  ['business', 'developer'],
   ['automations'],
   [
     'PUT /automations/:id/configuration',
@@ -45,6 +45,6 @@ bind(
   ],
 );
 
-bind(['business'], ['forecasting'], ['GET /forecasts/evaluations']);
+bind(['business', 'personal'], ['forecasting'], ['GET /forecasts/evaluations']);
 
-bind(['business'], [], ['POST /approvals/:id/cancel']);
+bind(['business', 'developer'], [], ['POST /approvals/:id/cancel']);

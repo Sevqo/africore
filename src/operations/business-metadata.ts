@@ -48,6 +48,7 @@ bind(
     'POST /inventory/landed-costs',
   ],
   ['inventory'],
+  products,
 );
 bind(
   [
@@ -137,18 +138,18 @@ bind(
     'DELETE /business/saved-reports/:id',
   ],
   [],
-  ['business', 'personal'],
+  all,
 );
 
-bind(['POST /business/workflows/:id/test'], ['automations']);
+bind(['POST /business/workflows/:id/test'], ['automations'], products);
 
-bind(['PATCH /inventory/warehouses/:id'], ['inventory']);
+bind(['PATCH /inventory/warehouses/:id'], ['inventory'], products);
 
-bind(['GET /business/orders/:id/draft', 'POST /business/orders/:id/draft'], ['orders']);
+bind(['GET /business/orders/:id/draft', 'POST /business/orders/:id/draft'], ['orders'], products);
 
 bind(['GET /notifications/preferences', 'PUT /notifications/preferences'], [], all);
 
-bind(['GET /business/analytics/records'], [], ['business', 'personal']);
+bind(['GET /business/analytics/records'], [], all);
 
 bind(
   [
@@ -156,4 +157,5 @@ bind(
     'POST /inventory/replenishment-suggestions/:id/review',
   ],
   ['inventory'],
+  products,
 );

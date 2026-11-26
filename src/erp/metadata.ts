@@ -33,7 +33,7 @@ for (const [suffix, service] of [
 ] as const) {
   const [method, path] = suffix.split(' '),
     key = method + ' /organizations/:org' + path;
-  erpRouteKinds[key] = ['business'];
+  erpRouteKinds[key] = ['business', 'personal'];
   erpPolicies[key] = { services: [service] };
 }
 erpRouteKinds['POST /organizations/:org/accounting/sources'] = ['business'];
@@ -160,7 +160,7 @@ for (const suffix of [
 ]) {
   const [method, path] = suffix.split(' '),
     key = method + ' /organizations/:org' + path;
-  erpRouteKinds[key] = ['business'];
+  erpRouteKinds[key] = ['business', 'personal'];
   erpPolicies[key] = { services: ['work'] };
 }
 
@@ -260,7 +260,7 @@ for (const suffix of [
 ]) {
   const [method, path] = suffix.split(' '),
     key = method + ' /organizations/:org' + path;
-  erpRouteKinds[key] = ['business'];
+  erpRouteKinds[key] = ['business', 'personal'];
   erpPolicies[key] = { services: ['documents'] };
 }
 
@@ -269,13 +269,13 @@ for (const key of [
   'GET /organizations/:org/document-attachments',
   'GET /organizations/:org/document-source-options',
 ]) {
-  erpRouteKinds[key] = ['business'];
+  erpRouteKinds[key] = ['business', 'personal'];
   erpPolicies[key] = { services: ['documents'] };
 }
 
-erpRouteKinds['POST /organizations/:org/documents/:id/review'] = ['business'];
+erpRouteKinds['POST /organizations/:org/documents/:id/review'] = ['business', 'personal'];
 erpPolicies['POST /organizations/:org/documents/:id/review'] = { services: ['documents'] };
-erpRouteKinds['GET /organizations/:org/documents/:id/reviewers'] = ['business'];
+erpRouteKinds['GET /organizations/:org/documents/:id/reviewers'] = ['business', 'personal'];
 erpPolicies['GET /organizations/:org/documents/:id/reviewers'] = { services: ['documents'] };
 
 for (const key of [
@@ -285,7 +285,7 @@ for (const key of [
   'POST /organizations/:org/document-requests/:id/submit',
   'POST /organizations/:org/document-requests/:id/cancel',
 ]) {
-  erpRouteKinds[key] = ['business'];
+  erpRouteKinds[key] = ['business', 'personal'];
   erpPolicies[key] = { services: ['documents'] };
 }
 
@@ -344,7 +344,7 @@ for (const [suffix, service] of [
 ] as const) {
   const [method, path] = suffix.split(' '),
     key = method + ' /organizations/:org' + path;
-  erpRouteKinds[key] = ['business'];
+  erpRouteKinds[key] = service === 'work' ? ['business', 'personal'] : ['business'];
   erpPolicies[key] = { services: [service] };
 }
 
@@ -492,6 +492,11 @@ for (const [suffix, service] of [
 ] as const) {
   const [method, path] = suffix.split(' '),
     key = method + ' /organizations/:org' + path;
-  erpRouteKinds[key] = ['business'];
+  erpRouteKinds[key] =
+    path.startsWith('/studio/') || path.startsWith('/integrations-hub/')
+      ? ['business', 'developer']
+      : service === 'documents' || service === 'work'
+        ? ['business', 'personal']
+        : ['business'];
   erpPolicies[key] = { services: [service] };
 }

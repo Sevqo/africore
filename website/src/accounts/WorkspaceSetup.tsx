@@ -6,6 +6,7 @@ import { Logo } from '../components/Logo';
 import { Icon } from '../components/Icon';
 import { types, url, Field, Alert, Currency } from './AccountUI';
 import { appIntentDestination, requestedAppIntent } from './app-intent';
+import { navigate } from '../lib/navigation';
 export function Workspaces({ account }: { account: any }) {
   const chosen = new URLSearchParams(location.search).get('create');
   const requestedService = new URLSearchParams(location.search).get('service');
@@ -48,7 +49,18 @@ export function Workspaces({ account }: { account: any }) {
   }
   return (
     <main data-platform-density className="account-entry">
-      <Logo />
+      <div className="account-entry-topbar">
+        <Logo />
+        {account.workspace && (
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => navigate(url(account.workspace))}
+          >
+            ← Back to {account.workspace.name}
+          </button>
+        )}
+      </div>
       <h1>Your workspaces</h1>
       <p>One identity. Separate records and permissions for every workspace.</p>
       <div className="account-options">

@@ -29,6 +29,8 @@ import { parseMoney, parsePercent } from '../../src/finance/money';
 import { PaymentCentre } from './finance/PaymentCentre';
 import { RecordFinanceDetails } from './finance/RecordFinanceDetails';
 import { TeamDirectory } from './accounts/TeamDirectory';
+import { WorkspaceSwitcher } from './accounts/WorkspaceSwitcher';
+import { navigate } from './lib/navigation';
 import { peekQuery, cancelOtherWorkspaceReads } from './lib/query-cache';
 import { managedSignOut } from './accounts/auth';
 import { createRequestGate } from './components/requestGate';
@@ -253,7 +255,6 @@ const tabs = businessTabs;
 export function BusinessApp({ initialOrg, account }: { initialOrg?: string; account?: any } = {}) {
   const [resolvingOrgs, setResolvingOrgs] = useState(true),
     [orgLoadError, setOrgLoadError] = useState('');
-  const workspaceSwitch = useRef(0);
   const creationKeys = useRef(new Map<string, string>());
   const [reportFilters] = useState({ from: '', to: '', currency: 'KES' });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -772,9 +773,32 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
             </select>
           </Field>
         </div>
-        <button className="button" disabled={busy}>
-          Create workspace <Icon name="right" />
-        </button>
+        <div className="actions">
+          <button className="button" disabled={busy}>
+            Create workspace <Icon name="right" />
+          </button>
+          {(orgs.length > 0 || creating === ('workspace' as any)) && (
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => {
+                if (!org && orgs[0]?.id) setOrg(initialOrg || orgs[0].id);
+                setCreating(false);
+              }}
+            >
+              Cancel
+            </button>
+          )}
+          {!isDemo() && (
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => navigate('/app/workspaces')}
+            >
+              Switch workspace kind
+            </button>
+          )}
+        </div>
       </form>
     );
   }
@@ -1050,6 +1074,7 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
                   url.hash = encodeURIComponent(item.tab);
                   history.pushState(null, '', url.pathname + url.search + url.hash);
                   dispatchEvent(new Event('africore:app-navigation'));
+                  if (!org && orgs[0]?.id) setOrg(initialOrg || orgs[0].id);
                   setTab(item.tab);
                   setCreating(false);
                   setNavOpen(false);
@@ -1075,6 +1100,7 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
           <WorkspaceAdminNavigation
             tab={tab}
             navigate={(value) => {
+              if (!org && orgs[0]?.id) setOrg(initialOrg || orgs[0].id);
               setTab(value);
               setCreating(false);
               setNavOpen(false);
@@ -1136,41 +1162,29 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
               </button>
             </>
           )}
-          <div>
-            <select
-              aria-label="Switch organization"
-              value={org}
-              onChange={async (e) => {
-                const version = ++workspaceSwitch.current;
-                const id = e.target.value;
-                if (!id) {
-                  setOrg('');
-                  return;
-                }
-                try {
-                  if (!isDemo())
-                    await api('/api/auth/account/workspace', 'POST', { workspace_id: id });
-                  if (version === workspaceSwitch.current) {
-                    if (initialOrg && !isDemo()) {
-                      const target = new URL(location.href);
-                      target.pathname = '/app/business/' + id;
-                      location.href = target.pathname + target.search + target.hash;
-                    }
-                    else setOrg(id);
-                  }
-                } catch (error) {
-                  if (version === workspaceSwitch.current) setError((error as Error).message);
+          <div className="workspace-switcher-group">
+            <WorkspaceSwitcher
+              currentId={org}
+              workspaces={account?.workspaces}
+              fallbackOrgs={orgs}
+              demo={isDemo()}
+              onSelectSameBusiness={(id) => {
+                setCreating(false);
+                if (initialOrg && !isDemo() && id !== initialOrg) {
+                  const target = new URL(location.href);
+                  target.pathname = '/app/business/' + id;
+                  navigate(target.pathname + target.search + target.hash);
+                } else {
+                  setOrg(id);
                 }
               }}
+              onError={setError}
+            />
+            <button
+              type="button"
+              className="quiet-button"
+              onClick={() => setCreating('workspace' as any)}
             >
-              <option value="">Select workspace</option>
-              {orgs.map((o) => (
-                <option value={o.id} key={o.id}>
-                  {o.name}
-                </option>
-              ))}
-            </select>
-            <button className="quiet-button" onClick={() => setCreating('workspace' as any)}>
               + Workspace
             </button>
           </div>
@@ -1285,6 +1299,7 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
                 url.hash = 'Overview';
                 history.pushState(null, '', url.pathname + url.search + url.hash);
                 dispatchEvent(new Event('africore:app-navigation'));
+                if (!org && orgs[0]?.id) setOrg(initialOrg || orgs[0].id);
                 setTab('Overview');
                 setCreating(false);
               }}
