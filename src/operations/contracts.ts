@@ -3,15 +3,28 @@ export { workflowAction, selectedWorkflowAction } from '../common/workflow-polic
 import { z } from 'zod';
 import { currencySchema, quantitySchema } from '../platform/domain';
 export const minor = z.number().int().min(1).max(100000000000);
+export const expenseCategories = [
+  'stock',
+  'rent',
+  'payroll',
+  'utilities',
+  'delivery',
+  'subscriptions',
+  'groceries',
+  'transport',
+  'software',
+  'health',
+  'education',
+  'entertainment',
+  'other',
+] as const;
 export const expenseSchema = z
   .object({
     description: z.string().trim().min(1).max(300),
     amount_minor: minor,
     currency: currencySchema.default('KES'),
     occurred_on: z.string().date(),
-    category: z
-      .enum(['stock', 'rent', 'payroll', 'utilities', 'delivery', 'other'])
-      .default('other'),
+    category: z.enum(expenseCategories).default('other'),
     transaction_id: z.string().max(100).optional(),
     obligation_id: z.string().uuid().optional(),
     supersedes_id: z.string().uuid().optional(),
@@ -28,9 +41,7 @@ export const obligationSchema = z
     next_due_date: z.string().date(),
     recurrence: z.enum(['once', 'weekly', 'monthly', 'quarterly', 'yearly']),
     anchor_day: z.number().int().min(1).max(31).optional(),
-    category: z
-      .enum(['stock', 'rent', 'payroll', 'utilities', 'delivery', 'other'])
-      .default('other'),
+    category: z.enum(expenseCategories).default('other'),
     supplier: z.string().max(200).default(''),
     timezone: z
       .string()

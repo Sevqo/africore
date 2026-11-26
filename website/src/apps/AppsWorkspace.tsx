@@ -27,6 +27,7 @@ import {
   OdooSuiteExpansionWorkspace,
 } from './lazy-workspaces';
 import { CalendarWorkspace, WebsiteWorkspace } from './lazy-workspaces';
+import { PersonalSubscriptions } from '../accounts/PersonalSubscriptions';
 import { appIcons as icons } from './appIcons';
 import { appPortfolioPath } from './app-portfolio-path';
 import './apps.css';
@@ -642,6 +643,14 @@ export function AppsWorkspace({
                 <CalendarWorkspace key={scope} api={api} scope={scope} section={activeSection} />
               ) : app.id === 'website' ? (
                 <WebsiteWorkspace key={scope} api={api} scope={scope} section={activeSection} />
+              ) : app.id === 'subscriptions' && catalog.kind === 'personal' ? (
+                <PersonalSubscriptions
+                  key={scope}
+                  api={api}
+                  scope={scope}
+                  timezone={timezone}
+                  writable={writable}
+                />
               ) : [
                   'marketing',
                   'support',

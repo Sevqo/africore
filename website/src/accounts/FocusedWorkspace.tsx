@@ -7,6 +7,7 @@ import { DataPlatformView } from '../operations/DataPlatformView';
 import { AssistantView } from '../operations/AssistantView';
 import { OperationsWorkspace } from '../operations/OperationsWorkspace';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
+import { PersonalSubscriptions } from './PersonalSubscriptions';
 import { CustomerTools } from '../finance/CustomerTools';
 import { FinancialOverview } from '../finance/FinancialOverview';
 import { PaymentCentre } from '../finance/PaymentCentre';
@@ -147,7 +148,9 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
     setError('');
     setData({});
     if (
-      ['Apps', 'Products', 'Notifications', 'Intelligence', 'Forecasts'].includes(tab) ||
+      ['Apps', 'Products', 'Notifications', 'Intelligence', 'Forecasts', 'Subscriptions'].includes(
+        tab,
+      ) ||
       marketTabs.includes(tab) ||
       !canReadServiceTab(market, tab)
     ) {
@@ -744,9 +747,11 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
                       className="account-type-tabs personal-quick-actions"
                       aria-label="Personal quick actions"
                     >
-                      {['Income', 'Expenses', 'Invoices', 'Clients'].map((t) => (
+                      {['Income', 'Expenses', 'Subscriptions', 'Invoices', 'Clients'].map((t) => (
                         <a className="secondary-button" href={'#' + t} key={t}>
-                          Add {t === 'Clients' ? 'client' : t.toLowerCase()}
+                          {t === 'Subscriptions'
+                            ? 'Track subscriptions'
+                            : 'Add ' + (t === 'Clients' ? 'client' : t.toLowerCase())}
                         </a>
                       ))}
                     </div>
@@ -828,11 +833,20 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
                       {tab === 'Expenses' && (
                         <Field label="Category">
                           <select name="category">
-                            {['other', 'rent', 'utilities', 'delivery', 'stock', 'payroll'].map(
-                              (c) => (
-                                <option key={c}>{c}</option>
-                              ),
-                            )}
+                            {[
+                              'subscriptions',
+                              'groceries',
+                              'transport',
+                              'rent',
+                              'utilities',
+                              'software',
+                              'health',
+                              'education',
+                              'entertainment',
+                              'other',
+                            ].map((c) => (
+                              <option key={c}>{c}</option>
+                            ))}
                           </select>
                         </Field>
                       )}
@@ -935,7 +949,23 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
                     ))}
                   </>
                 )}
-                {tab === 'Cash Flow' && <FinancialOverview api={call} scope={w.id + environment} />}
+                {tab === 'Subscriptions' && (
+                  <PersonalSubscriptions
+                    api={call}
+                    scope={w.id + environment}
+                    currency={currency}
+                    timezone={account.profile?.timezone || 'Africa/Nairobi'}
+                    writable={['owner', 'admin', 'finance'].includes(w.role)}
+                    onChanged={() => setRevision((v) => v + 1)}
+                  />
+                )}
+                {tab === 'Cash Flow' && (
+                  <FinancialOverview
+                    api={call}
+                    scope={w.id + environment}
+                    timezone={account.profile?.timezone || 'Africa/Nairobi'}
+                  />
+                )}
                 {tab === 'Payment Records' && (
                   <PaymentCentre
                     api={call}

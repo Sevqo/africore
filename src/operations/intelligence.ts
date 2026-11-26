@@ -76,13 +76,18 @@ export async function addExpense(a: Access, input: unknown) {
     return r;
   });
 }
-export async function financialSnapshot(a: Access, input: unknown = {}, asOf = day()) {
+export async function financialSnapshot(
+  a: Access,
+  input: unknown = {},
+  asOf = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(new Date()),
+) {
   const query = analyticsQuery.parse(input);
   let from = query.from || addDays(asOf, -89);
   const to = query.to || asOf;
+  const maxAsOf = addDays(asOf, 1);
   if (
     ((query.range !== 'all' || query.from) && from > to) ||
-    to > asOf ||
+    to > maxAsOf ||
     (query.range !== 'all' && Date.parse(to) - Date.parse(from) > 366 * 86400000)
   )
     fail(400, 'Choose a historical range of at most 366 days');

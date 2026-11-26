@@ -5,7 +5,21 @@ import { parseMoney } from '../../../src/finance/money';
 import { Overlay } from '../components/Overlay';
 import { DocumentAttachments } from '../apps/DocumentAttachments';
 import { DataTable } from '../components/DataTable';
-const categories = ['stock', 'rent', 'utilities', 'payroll', 'delivery', 'other'];
+const categories = [
+  'subscriptions',
+  'groceries',
+  'transport',
+  'rent',
+  'utilities',
+  'software',
+  'health',
+  'education',
+  'entertainment',
+  'stock',
+  'payroll',
+  'delivery',
+  'other',
+];
 const currencies = ['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF'];
 export function MoneyTools({
   api,
@@ -155,9 +169,16 @@ export function MoneyTools({
   return (
     <section className="service-marketplace">
       {error && (
-        <p role="alert" className="alert error">
-          {error}
-        </p>
+        <div role="alert" className="alert error">
+          <p>{error}</p>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => setVersion((n) => n + 1)}
+          >
+            Retry
+          </button>
+        </div>
       )}
       {notice && <p role="status">{notice}</p>}
       {busy && <p role="status">Updating records…</p>}

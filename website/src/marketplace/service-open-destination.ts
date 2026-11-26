@@ -67,6 +67,8 @@ const developerDestinations: Record<string, ServiceOpenDestination> = {
   inventory: { tab: 'API Explorer' },
   fulfillment: { tab: 'API Explorer' },
   expenses: { tab: 'API Explorer' },
+  work: { tab: 'Apps', app: 'work', section: 'dashboard' },
+  intelligence: { tab: 'Apps', app: 'analytics', section: 'dashboard' },
   automations: { tab: 'Apps', app: 'automations', section: 'dashboard' },
   developer_api: { tab: 'My Applications' },
 };

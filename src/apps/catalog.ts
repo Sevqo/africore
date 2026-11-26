@@ -287,8 +287,8 @@ export const appCatalog: AppDefinition[] = [
     description:
       'Organize private projects, shared task boards, dependencies, milestones and persistent discussions.',
     version: 1,
-    kinds: ['business', 'personal'],
-    required: { business: ['work'], personal: ['work'] },
+    kinds: ['business', 'personal', 'developer'],
+    required: { business: ['work'], personal: ['work'], developer: ['work'] },
     optional: ['customers', 'orders', 'automations'],
     navigation: [
       { label: 'Projects', section: 'dashboard' },
@@ -514,10 +514,10 @@ export const appCatalog: AppDefinition[] = [
     name: 'AfriCore Subscriptions',
     icon: 'repeat',
     description:
-      'Manage recurring plans, memberships, contracts, proration, MRR/ARR analytics, and automatic renewal invoicing.',
+      'Manage recurring subscriptions (Spotify, Netflix, cloud, memberships), contracts, renewal alerts, and billing.',
     version: 1,
-    kinds: ['business'],
-    required: { business: ['customers', 'invoicing'] },
+    kinds: ['business', 'personal'],
+    required: { business: ['customers', 'invoicing'], personal: ['cash_flow'] },
     optional: ['accounting', 'orders'],
     navigation: [
       { label: 'Plans & Contracts', section: 'contracts' },
@@ -619,10 +619,10 @@ export const appCatalog: AppDefinition[] = [
     name: 'AfriCore Knowledge & Learning',
     icon: 'book',
     description:
-      'Publish internal company knowledge wikis, run employee training courses, and grade assessments with certificates.',
+      'Publish knowledge wikis, personal notes, engineering runbooks, training courses, and assessments.',
     version: 1,
-    kinds: ['business'],
-    required: { business: ['customers'] },
+    kinds: ['business', 'personal', 'developer'],
+    required: { business: ['customers'], personal: ['customers'], developer: ['customers'] },
     optional: ['people', 'documents'],
     navigation: [
       { label: 'Knowledge Wiki', section: 'articles' },

@@ -52,6 +52,13 @@
               "payroll",
               "utilities",
               "delivery",
+              "subscriptions",
+              "groceries",
+              "transport",
+              "software",
+              "health",
+              "education",
+              "entertainment",
               "other"
             ]
           },
@@ -155,6 +162,13 @@
               "payroll",
               "utilities",
               "delivery",
+              "subscriptions",
+              "groceries",
+              "transport",
+              "software",
+              "health",
+              "education",
+              "entertainment",
               "other"
             ]
           },

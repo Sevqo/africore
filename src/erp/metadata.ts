@@ -161,7 +161,7 @@ for (const suffix of [
 ]) {
   const [method, path] = suffix.split(' '),
     key = method + ' /organizations/:org' + path;
-  erpRouteKinds[key] = ['business', 'personal'];
+  erpRouteKinds[key] = ['business', 'personal', 'developer'];
   erpPolicies[key] = { services: ['work'] };
 }
 
@@ -347,7 +347,7 @@ for (const [suffix, service] of [
 ] as const) {
   const [method, path] = suffix.split(' '),
     key = method + ' /organizations/:org' + path;
-  erpRouteKinds[key] = service === 'work' ? ['business', 'personal'] : ['business'];
+  erpRouteKinds[key] = service === 'work' ? ['business', 'personal', 'developer'] : ['business'];
   erpPolicies[key] = { services: [service] };
 }
 
@@ -498,8 +498,14 @@ for (const [suffix, service] of [
   erpRouteKinds[key] =
     path.startsWith('/studio/') || path.startsWith('/integrations-hub/')
       ? ['business', 'developer']
-      : service === 'documents' || service === 'work'
-        ? ['business', 'personal']
-        : ['business'];
+      : path.startsWith('/learning/')
+        ? ['business', 'personal', 'developer']
+        : path.startsWith('/subscriptions/')
+          ? ['business', 'personal']
+          : service === 'documents'
+            ? ['business', 'personal']
+            : service === 'work'
+              ? ['business', 'personal', 'developer']
+              : ['business'];
   erpPolicies[key] = { services: [service] };
 }

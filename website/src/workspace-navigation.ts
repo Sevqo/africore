@@ -94,6 +94,7 @@ export const personalTabs = [
   'Assistant',
   'Income',
   'Expenses',
+  'Subscriptions',
   'Invoices',
   'Clients',
   'Payment Records',

@@ -3,7 +3,7 @@ import { activationSource, activeAppSources, type ActivationSource } from './act
 import { z } from 'zod';
 import { dbAll, dbGet, dbRun, dbTransaction } from '../db/adapter';
 import type { Access } from '../platform/auth';
-import type { ServiceDefinition } from './catalog';
+import { serviceCatalog, type ServiceDefinition } from './catalog';
 import { costMinor, priceInput, type Price } from './pricing';
 import { commercialRateFor, WORKSPACE_ALL_APPS_CAP_MINOR } from './pricing-catalog';
 function reject(status: number, message: string): never {
@@ -45,14 +45,30 @@ async function history(a: Access, service: string, action: string, data: object 
   );
 }
 export async function definitions() {
-  return (await dbAll('SELECT * FROM ac_services ORDER BY id')).map(
-    (row) =>
-      ({
-        ...JSON.parse(row.definition),
-        enabled: !!row.enabled,
-        version: row.version,
-      }) as ServiceDefinition & { enabled: boolean },
-  );
+  const byId = new Map(serviceCatalog.map((item) => [item.id, item]));
+  return (await dbAll('SELECT * FROM ac_services ORDER BY id')).map((row) => {
+    const stored = JSON.parse(row.definition) as ServiceDefinition;
+    const canonical = byId.get(row.id);
+    return {
+      ...stored,
+      ...(canonical
+        ? {
+            name: canonical.name,
+            description: canonical.description,
+            detail: canonical.detail,
+            category: canonical.category,
+            kinds: canonical.kinds,
+            tabs: canonical.tabs,
+            dependencies: canonical.dependencies,
+            complements: canonical.complements,
+            workflow: canonical.workflow,
+            documentation: canonical.documentation,
+          }
+        : {}),
+      enabled: !!row.enabled,
+      version: row.version,
+    } as ServiceDefinition & { enabled: boolean };
+  });
 }
 export async function workspaceKind(org: string) {
   return (await dbGet('SELECT kind FROM ac_workspaces WHERE id=?', [org]))?.kind || 'business';

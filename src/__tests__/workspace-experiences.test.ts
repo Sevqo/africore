@@ -368,3 +368,59 @@ test('Business onboarding accepts the current eligible catalog while selections 
   );
   assert.equal(oversized.status, 400);
 });
+
+test('Personal subscriptions, expenses, and cash flow financial summary work cleanly together', async () => {
+  const u = await identity();
+  const personal = await req(
+    '/api/auth/workspaces',
+    'POST',
+    { ...setup('personal'), services: ['cash_flow'] },
+    u.cookie,
+  );
+  assert.equal(personal.status, 201, JSON.stringify(personal.data));
+  const b = '/api/v1/organizations/' + personal.data.id;
+
+  // Cash flow financial-summary & expenses work with only cash_flow active
+  const summary = await req(b + '/financial-summary?currency=KES', 'GET', undefined, u.cookie);
+  assert.equal(summary.status, 200, JSON.stringify(summary.data));
+
+  // Track a personal subscription (e.g., Spotify Premium)
+  const sub = await req(
+    b + '/obligations',
+    'POST',
+    {
+      description: 'Spotify Premium',
+      supplier: 'Spotify',
+      amount_minor: 49900,
+      currency: 'KES',
+      recurrence: 'monthly',
+      next_due_date: '2026-12-01',
+      category: 'subscriptions',
+      timezone: 'Africa/Nairobi',
+      reminder_days: 3,
+    },
+    u.cookie,
+    { 'Idempotency-Key': randomUUID() },
+  );
+  assert.equal(sub.status, 201, JSON.stringify(sub.data));
+
+  // Record a personal expense in the new subscriptions category
+  const exp = await req(
+    b + '/expenses',
+    'POST',
+    {
+      description: 'Netflix Standard',
+      amount_minor: 110000,
+      currency: 'KES',
+      occurred_on: '2026-10-05',
+      category: 'subscriptions',
+    },
+    u.cookie,
+    { 'Idempotency-Key': randomUUID() },
+  );
+  assert.equal(exp.status, 201, JSON.stringify(exp.data));
+
+  const list = await req(b + '/expenses?category=subscriptions', 'GET', undefined, u.cookie);
+  assert.equal(list.status, 200);
+  assert.equal(list.data.data.length, 1);
+});

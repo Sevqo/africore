@@ -170,11 +170,19 @@ const apiExplorerServices = [
 const tabServices = (tab: string) =>
   ['Customers', 'Clients'].includes(tab)
     ? ['customers', 'invoicing', 'orders']
-    : tab === 'Business Passport'
-      ? trustServices
-      : tab === 'API Explorer'
-        ? apiExplorerServices
-        : [serviceForTab(tab)];
+    : tab === 'Expenses'
+      ? ['expenses', 'cash_flow']
+      : tab === 'Subscriptions'
+        ? ['cash_flow', 'expenses']
+        : tab === 'Forecasts'
+          ? ['forecasting', 'intelligence']
+          : tab === 'Connect'
+            ? ['connect', 'data']
+            : tab === 'Business Passport'
+              ? trustServices
+              : tab === 'API Explorer'
+                ? apiExplorerServices
+                : [serviceForTab(tab)];
 export function favoriteTabs(m: MarketplaceState): string[] {
   return (m.catalog?.services || [])
     .filter((s: any) => s.status === 'active' && s.entitlement?.favorite)
@@ -229,6 +237,8 @@ export function ServiceGate({
     candidates.find((s: any) => s.status === 'active') ||
     candidates.find((s: any) => s.status === 'disabled') ||
     candidates[0];
+  const [activating, setActivating] = useState(false);
+  const [activateError, setActivateError] = useState('');
   if (service?.status === 'active') return <>{children}</>;
   if (service?.status === 'disabled')
     return (
@@ -241,6 +251,11 @@ export function ServiceGate({
         </fieldset>
       </>
     );
+  const canQuickActivate =
+    !!service &&
+    service.status === 'available' &&
+    !market.demo &&
+    service.price?.version;
   return (
     <section className="panel service-start">
       <h2>{service?.name || tab}</h2>
@@ -250,9 +265,57 @@ export function ServiceGate({
           ? service.setup.join(' ')
           : 'Activate this service before creating or processing new records.'}
       </p>
-      <button className="button" onClick={() => navigate('Explore Services')}>
-        Explore services <Icon name="right" />
-      </button>
+      {activateError && (
+        <p className="alert error" role="alert">
+          {activateError}
+        </p>
+      )}
+      <div className="actions">
+        {canQuickActivate && (
+          <button
+            type="button"
+            className="button"
+            disabled={activating}
+            onClick={async () => {
+              setActivating(true);
+              setActivateError('');
+              try {
+                for (const depId of service.dependencies || []) {
+                  const dep = market.catalog?.services?.find((x: any) => x.id === depId);
+                  if (dep && dep.status !== 'active' && dep.price?.version) {
+                    await api(
+                      '/api/v1/organizations/' + market.org + '/services/' + dep.id + '/activate',
+                      'POST',
+                      { confirm_price_version: dep.price.version },
+                      market.environment,
+                    );
+                  }
+                }
+                await api(
+                  '/api/v1/organizations/' + market.org + '/services/' + service.id + '/activate',
+                  'POST',
+                  { confirm_price_version: service.price.version },
+                  market.environment,
+                );
+                market.reload();
+              } catch (e) {
+                setActivateError((e as Error).message);
+              } finally {
+                setActivating(false);
+              }
+            }}
+          >
+            {activating ? 'Activating…' : `Activate ${service.name}`}
+          </button>
+        )}
+        <button
+          type="button"
+          className={canQuickActivate ? 'secondary-button' : 'button'}
+          onClick={() => navigate('Explore Services')}
+        >
+          Explore services <Icon name="right" />
+        </button>
+      </div>
     </section>
   );
 }
@@ -371,11 +434,17 @@ export function Services({
       orderedDeps.push(found);
     };
     visit(targetService.id);
-    // Also activate bundled sub-services when activating Business Passport
-    if (targetService.id === 'passport' && consolidateSuites) {
-      for (const subId of ['verification', 'credentials', 'trust_network']) {
+    // Also activate bundled sub-services when activating a parent suite
+    if (consolidateSuites) {
+      const bundledChildren = Object.entries(BUNDLE_PARENTS)
+        .filter(([, parentId]) => parentId === targetService.id)
+        .map(([childId]) => childId);
+      for (const subId of bundledChildren) {
         const sub = all.find((x: any) => x.id === subId);
-        if (sub && sub.price?.model === 'free') orderedDeps.push(sub);
+        if (sub && sub.price?.model === 'free' && !seen.has(sub.id)) {
+          seen.add(sub.id);
+          orderedDeps.push(sub);
+        }
       }
     }
     let lastResult: any = null;
@@ -396,11 +465,12 @@ export function Services({
     .filter((s: any) => {
       const tierInfo = COMMERCIAL_TIERS_KES[s.id];
       const isFreeTier = s.price?.model === 'free' && (!tierInfo || tierInfo.monthlyMinor === 0);
+      const parentInCatalog = !!tierInfo?.bundle && all.some((p: any) => p.id === tierInfo.bundle);
       if (
         consolidateSuites &&
         view === 'Explore Services' &&
         !search.trim() &&
-        tierInfo?.bundle &&
+        parentInCatalog &&
         !['active', 'requires_setup'].includes(s.status)
       ) {
         return false;

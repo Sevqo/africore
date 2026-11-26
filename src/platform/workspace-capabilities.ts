@@ -40,7 +40,7 @@ export const workspaceRouteKinds: Record<string, readonly string[]> = {
   'POST /organizations/:org/webhooks/:id/rotate': ['business', 'developer'],
   'POST /organizations/:org/deliveries/:id/replay': ['business', 'developer'],
   'GET /organizations/:org/audit': ['business', 'developer'],
-  'GET /organizations/:org/intelligence': ['business', 'personal'],
+  'GET /organizations/:org/intelligence': ['business', 'personal', 'developer'],
   'POST /organizations/:org/forecasts': ['business', 'personal'],
   'GET /organizations/:org/expenses': ['business', 'personal', 'developer'],
   'POST /organizations/:org/expenses': ['business', 'personal', 'developer'],

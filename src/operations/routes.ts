@@ -19,6 +19,7 @@ import {
   addExpense,
   obligationSchema,
 } from './intelligence';
+import { expenseCategories } from './contracts';
 import {
   automationTemplates,
   automationDirectory,
@@ -133,9 +134,7 @@ operations.get(
           limit: z.coerce.number().int().min(1).max(100).default(50),
           offset: z.coerce.number().int().min(0).default(0),
           q: z.string().trim().max(200).optional(),
-          category: z
-            .enum(['stock', 'rent', 'utilities', 'payroll', 'delivery', 'other'])
-            .optional(),
+          category: z.enum(expenseCategories).optional(),
           currency: currencySchema.optional(),
           from: z.string().date().optional(),
           to: z.string().date().optional(),
