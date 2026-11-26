@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Field, money, type API } from '../operations/UI';
 import { today } from './AccountUI';
-import { parseMoney } from '../../../src/finance/money';
+import { nextOccurrence, parseMoney } from '../../../src/finance/money';
 
 const PRESETS = [
   { name: 'Spotify Premium', supplier: 'Spotify', recurrence: 'monthly', amount: '499', category: 'subscriptions' },
@@ -15,6 +15,7 @@ const PRESETS = [
 
 function monthlyFactor(recurrence: string) {
   if (recurrence === 'weekly') return 52 / 12;
+  if (recurrence === 'biweekly') return 26 / 12;
   if (recurrence === 'quarterly') return 1 / 3;
   if (recurrence === 'yearly') return 1 / 12;
   if (recurrence === 'once') return 0;
@@ -28,6 +29,7 @@ export function PersonalSubscriptions({
   timezone = 'Africa/Nairobi',
   writable = true,
   onChanged,
+  onOpenExpenses,
 }: {
   api: API;
   scope: string;
@@ -35,6 +37,7 @@ export function PersonalSubscriptions({
   timezone?: string;
   writable?: boolean;
   onChanged?: () => void;
+  onOpenExpenses?: () => void;
 }) {
   const [items, setItems] = useState<any[]>([]),
     [loading, setLoading] = useState(true),
@@ -105,7 +108,7 @@ export function PersonalSubscriptions({
         category: 'subscriptions',
         reminder_days: '3',
       });
-      setNotice('Subscription saved with renewal tracking.');
+      setNotice('Subscription saved. Active subscriptions automatically feed into Expenses and Forecasts.');
       setRevision((v) => v + 1);
       onChanged?.();
     } catch (err) {
@@ -131,18 +134,48 @@ export function PersonalSubscriptions({
     }
   }
 
+  async function recordSingleRenewal(item: any) {
+    const localToday = today(timezone);
+    if (item.next_due_date && item.next_due_date <= localToday) {
+      await api(
+        '/obligations/' + item.id + '/fulfill',
+        'POST',
+        { action: 'fulfill', record_expense: true },
+        { 'Idempotency-Key': crypto.randomUUID() },
+      );
+      return;
+    }
+    // Early payment: record expense today linked to this subscription and advance next_due_date
+    await api(
+      '/expenses',
+      'POST',
+      {
+        description: item.description,
+        amount_minor: Number(item.amount_minor),
+        currency: item.currency,
+        occurred_on: localToday,
+        category: item.category || 'subscriptions',
+        supplier: item.supplier || '',
+        obligation_id: item.id,
+        notes: `Subscription renewal (${item.recurrence})`,
+      },
+      { 'Idempotency-Key': crypto.randomUUID() },
+    );
+    const next = nextOccurrence(
+      item.next_due_date || localToday,
+      item.recurrence,
+      item.anchor_day || Number((item.next_due_date || localToday).slice(8)),
+    );
+    await api('/obligations/' + item.id, 'PATCH', next ? { next_due_date: next } : { status: 'completed' });
+  }
+
   async function logRenewalPayment(item: any) {
     setBusy(true);
     setError('');
     setNotice('');
     try {
-      await api(
-        '/obligations/' + item.id + '/fulfill',
-        'POST',
-        { occurred_on: today(timezone) },
-        { 'Idempotency-Key': crypto.randomUUID() },
-      );
-      setNotice(`Recorded renewal payment for "${item.description}" into Expenses and advanced next due date.`);
+      await recordSingleRenewal(item);
+      setNotice(`Recorded "${item.description}" into Expenses and advanced the next renewal date.`);
       setRevision((v) => v + 1);
       onChanged?.();
     } catch (err) {
@@ -152,7 +185,30 @@ export function PersonalSubscriptions({
     }
   }
 
+  async function recordAllDue() {
+    const localToday = today(timezone);
+    const due = activeItems.filter((i) => i.next_due_date && i.next_due_date <= localToday);
+    if (!due.length) return;
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      for (const item of due) {
+        await recordSingleRenewal(item);
+      }
+      setNotice(`Recorded ${due.length} due subscription payment${due.length === 1 ? '' : 's'} into Expenses.`);
+      setRevision((v) => v + 1);
+      onChanged?.();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const localToday = today(timezone);
   const activeItems = items.filter((i) => i.status === 'active');
+  const dueNowItems = activeItems.filter((i) => i.next_due_date && i.next_due_date <= localToday);
   const inDisplayCurrency = activeItems.filter((i) => i.currency === currency);
   const monthlyRunRateMinor = Math.round(
     inDisplayCurrency.reduce((sum, i) => sum + Number(i.amount_minor || 0) * monthlyFactor(i.recurrence), 0),
@@ -174,7 +230,7 @@ export function PersonalSubscriptions({
         <section>
           <span>Monthly run rate</span>
           <strong>{money(monthlyRunRateMinor, currency)}</strong>
-          <small>{currency} · normalized monthly</small>
+          <small>{currency} · included in Forecasts</small>
         </section>
         <section>
           <span>Projected annual spend</span>
@@ -182,11 +238,32 @@ export function PersonalSubscriptions({
           <small>12-month estimate</small>
         </section>
         <section>
-          <span>Renewing in 7 days</span>
+          <span>Due within 7 days</span>
           <strong>{dueSoonCount}</strong>
-          <small>Upcoming bills</small>
+          <small>{dueNowItems.length > 0 ? `${dueNowItems.length} due now` : 'Upcoming renewals'}</small>
         </section>
       </div>
+
+      {dueNowItems.length > 0 && writable && (
+        <section className="panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          <div>
+            <strong>{dueNowItems.length} subscription{dueNowItems.length === 1 ? ' is' : 's are'} due now</strong>
+            <p style={{ margin: '4px 0 0', fontSize: 13 }}>
+              Recording due renewals logs each charge directly into Expenses and advances its next renewal date.
+            </p>
+          </div>
+          <div className="form-actions">
+            <button type="button" className="button" disabled={busy} onClick={() => void recordAllDue()}>
+              {busy ? 'Recording…' : `Record all due into Expenses (${dueNowItems.length})`}
+            </button>
+            {onOpenExpenses && (
+              <button type="button" className="secondary-button" onClick={onOpenExpenses}>
+                View Expenses
+              </button>
+            )}
+          </div>
+        </section>
+      )}
 
       {error && (
         <div className="alert error" role="alert">
@@ -206,8 +283,8 @@ export function PersonalSubscriptions({
         <section className="panel">
           <h3>Track a personal subscription or recurring bill</h3>
           <p>
-            Quick-fill a common service or enter your own. Logging a renewal automatically records
-            it in Expenses and advances the next due date.
+            Subscriptions are linked directly to Expenses and Forecasts. Recording a renewal logs an
+            expense entry automatically and advances the next renewal date.
           </p>
           <div className="account-type-tabs" aria-label="Quick subscription presets">
             {PRESETS.map((preset) => (
@@ -273,9 +350,10 @@ export function PersonalSubscriptions({
                 onChange={(e) => setDraft((p) => ({ ...p, recurrence: e.target.value }))}
               >
                 <option value="monthly">Monthly</option>
-                <option value="yearly">Yearly</option>
-                <option value="quarterly">Quarterly</option>
+                <option value="biweekly">Biweekly</option>
                 <option value="weekly">Weekly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="yearly">Yearly</option>
                 <option value="once">One-time bill</option>
               </select>
             </Field>
@@ -341,59 +419,67 @@ export function PersonalSubscriptions({
             your own recurring plan.
           </p>
         )}
-        {visible.map((item) => (
-          <article className="account-record" key={item.id}>
-            <div>
-              <strong>{item.description}</strong>
-              <p style={{ margin: '4px 0 0', fontSize: 13 }}>
-                {money(Number(item.amount_minor || 0), item.currency)} · {item.recurrence} · Next
-                due {item.next_due_date}
-                {item.supplier ? ` · ${item.supplier}` : ''} · {item.category}
-              </p>
-            </div>
-            <div className="form-actions">
-              <span className="badge">{item.status}</span>
-              {writable && item.status === 'active' && (
-                <>
-                  <button
-                    type="button"
-                    className="button"
-                    disabled={busy}
-                    onClick={() => void logRenewalPayment(item)}
-                  >
-                    Mark paid
-                  </button>
+        {visible.map((item) => {
+          const isDue = item.status === 'active' && item.next_due_date && item.next_due_date <= localToday;
+          return (
+            <article className="account-record" key={item.id}>
+              <div>
+                <strong>{item.description}</strong>
+                {isDue && (
+                  <span className="badge" style={{ marginLeft: 8 }}>
+                    Due now
+                  </span>
+                )}
+                <p style={{ margin: '4px 0 0', fontSize: 13 }}>
+                  {money(Number(item.amount_minor || 0), item.currency)} · {item.recurrence} · Next
+                  due {item.next_due_date}
+                  {item.supplier ? ` · ${item.supplier}` : ''} · {item.category}
+                </p>
+              </div>
+              <div className="form-actions">
+                <span className="badge">{item.status}</span>
+                {writable && item.status === 'active' && (
+                  <>
+                    <button
+                      type="button"
+                      className="button"
+                      disabled={busy}
+                      onClick={() => void logRenewalPayment(item)}
+                    >
+                      {isDue ? 'Mark paid → Expense' : 'Log payment today'}
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      disabled={busy}
+                      onClick={() => void updateStatus(item.id, 'paused')}
+                    >
+                      Pause
+                    </button>
+                    <button
+                      type="button"
+                      className="quiet-button"
+                      disabled={busy}
+                      onClick={() => void updateStatus(item.id, 'cancelled')}
+                    >
+                      Cancel
+                    </button>
+                  </>
+                )}
+                {writable && item.status !== 'active' && (
                   <button
                     type="button"
                     className="secondary-button"
                     disabled={busy}
-                    onClick={() => void updateStatus(item.id, 'paused')}
+                    onClick={() => void updateStatus(item.id, 'active')}
                   >
-                    Pause
+                    Resume
                   </button>
-                  <button
-                    type="button"
-                    className="quiet-button"
-                    disabled={busy}
-                    onClick={() => void updateStatus(item.id, 'cancelled')}
-                  >
-                    Cancel
-                  </button>
-                </>
-              )}
-              {writable && item.status !== 'active' && (
-                <button
-                  type="button"
-                  className="secondary-button"
-                  disabled={busy}
-                  onClick={() => void updateStatus(item.id, 'active')}
-                >
-                  Resume
-                </button>
-              )}
-            </div>
-          </article>
-        ))}
+                )}
+              </div>
+            </article>
+          );
+        })}
       </section>
     </div>
   );

@@ -7,6 +7,15 @@ import { trustEvents } from '../trust/contracts';
 import { reserveWorkspaceCreation } from './workspace-limits';
 import { activate } from '../marketplace/engine';
 import { stage2Events } from '../operations/events';
+import { personalBudgetSchema, recurringIncomeSchema } from '../operations/contracts';
+import {
+  all as allObjects,
+  atomic as atomicObject,
+  change as changeObject,
+  create as createObject,
+  get as getObject,
+} from '../operations/store';
+import { nextOccurrence } from '../finance/money';
 import { Router } from 'express';
 import { randomUUID, createHmac, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
@@ -105,6 +114,166 @@ platform.post(
     res.status(201).json({ id, ...d, source: 'manually_recorded', provider_verified: false });
   }),
 );
+const monthlyRecurrenceFactor = (recurrence: string) =>
+  recurrence === 'weekly'
+    ? 52 / 12
+    : recurrence === 'biweekly'
+      ? 26 / 12
+      : recurrence === 'quarterly'
+        ? 1 / 3
+        : recurrence === 'yearly'
+          ? 1 / 12
+          : recurrence === 'once'
+            ? 0
+            : 1;
+platform.get(
+  '/organizations/:org/personal-income/recurring',
+  route(async (req, res) => {
+    const a = await access(req);
+    if (!(await dbGet("SELECT id FROM ac_workspaces WHERE id=? AND kind='personal'", [a.org])))
+      fail(403, 'Personal workspace required');
+    const items = await allObjects(a, 'recurring_income');
+    res.json({
+      data: items.sort((x, y) => String(x.next_pay_date || '').localeCompare(String(y.next_pay_date || ''))),
+      source: 'manually_recorded',
+    });
+  }),
+);
+platform.post(
+  '/organizations/:org/personal-income/recurring',
+  route(async (req, res) => {
+    const a = await access(req, 'finance');
+    if (
+      a.api ||
+      !(await dbGet("SELECT id FROM ac_workspaces WHERE id=? AND kind='personal'", [a.org]))
+    )
+      fail(403, 'Personal session required');
+    const d = recurringIncomeSchema.parse(req.body);
+    const created = await createObject(a, 'recurring_income', {
+      ...d,
+      anchor_day: d.anchor_day || Number(d.next_pay_date.slice(8)),
+      provenance: 'self_reported',
+    });
+    res.status(201).json(created);
+  }),
+);
+platform.patch(
+  '/organizations/:org/personal-income/recurring/:id',
+  route(async (req, res) => {
+    const a = await access(req, 'finance');
+    if (
+      a.api ||
+      !(await dbGet("SELECT id FROM ac_workspaces WHERE id=? AND kind='personal'", [a.org]))
+    )
+      fail(403, 'Personal session required');
+    const patch = recurringIncomeSchema.partial().strict().parse(req.body);
+    const updated = await atomicObject(a, async () => {
+      const current = await getObject(a, String(req.params.id), 'recurring_income');
+      return changeObject(a, current, {
+        ...patch,
+        ...(patch.next_pay_date
+          ? { anchor_day: patch.anchor_day || Number(patch.next_pay_date.slice(8)) }
+          : {}),
+      });
+    });
+    res.json(updated);
+  }),
+);
+platform.post(
+  '/organizations/:org/personal-income/recurring/:id/receive',
+  route(async (req, res) => {
+    const a = await access(req, 'finance');
+    if (
+      a.api ||
+      !(await dbGet("SELECT id FROM ac_workspaces WHERE id=? AND kind='personal'", [a.org]))
+    )
+      fail(403, 'Personal session required');
+    const body = z
+      .object({
+        occurred_on: z.string().date().optional(),
+        amount_minor: z.number().int().positive().max(100000000000).optional(),
+      })
+      .strict()
+      .parse(req.body || {});
+    const result = await atomicObject(a, async () => {
+      const plan = await getObject(a, String(req.params.id), 'recurring_income');
+      if (plan.status !== 'active') fail(409, 'Only an active recurring income plan can be received');
+      const localDay = new Intl.DateTimeFormat('en-CA', {
+        timeZone: plan.timezone || 'Africa/Nairobi',
+      }).format(new Date());
+      const occurredOn = body.occurred_on || (plan.next_pay_date <= localDay ? plan.next_pay_date : localDay);
+      if (occurredOn > localDay) fail(400, 'Income cannot be recorded in the future');
+      const amountMinor = body.amount_minor ?? Number(plan.amount_minor);
+      const incomeId = randomUUID();
+      const label = plan.source ? `${plan.description} (${plan.source})` : plan.description;
+      await dbRun(
+        'INSERT INTO ac_personal_income(id,workspace_id,environment,description,amount_minor,currency,occurred_on,created_at,actor) VALUES (?,?,?,?,?,?,?,?,?)',
+        [
+          incomeId,
+          a.org,
+          a.environment,
+          label,
+          amountMinor,
+          plan.currency,
+          occurredOn,
+          now(),
+          a.actor,
+        ],
+      );
+      await audit(a.org, a.actor, 'personal_income.recurring_received', incomeId);
+      const next = nextOccurrence(
+        plan.next_pay_date,
+        plan.recurrence,
+        plan.anchor_day || Number(plan.next_pay_date.slice(8)),
+      );
+      const updated = await changeObject(a, plan, {
+        anchor_day: plan.anchor_day || Number(plan.next_pay_date.slice(8)),
+        last_received_on: occurredOn,
+        ...(next ? { next_pay_date: next } : { status: 'completed' }),
+      });
+      return {
+        income_id: incomeId,
+        occurred_on: occurredOn,
+        amount_minor: amountMinor,
+        currency: plan.currency,
+        plan: updated,
+      };
+    });
+    res.status(201).json(result);
+  }),
+);
+platform.get(
+  '/organizations/:org/personal-budgets',
+  route(async (req, res) => {
+    const a = await access(req);
+    if (!(await dbGet("SELECT id FROM ac_workspaces WHERE id=? AND kind='personal'", [a.org])))
+      fail(403, 'Personal workspace required');
+    const budgets = await allObjects(a, 'personal_budgets');
+    res.json({ data: budgets });
+  }),
+);
+platform.put(
+  '/organizations/:org/personal-budgets',
+  route(async (req, res) => {
+    const a = await access(req, 'finance');
+    if (
+      a.api ||
+      !(await dbGet("SELECT id FROM ac_workspaces WHERE id=? AND kind='personal'", [a.org]))
+    )
+      fail(403, 'Personal session required');
+    const d = personalBudgetSchema.parse(req.body);
+    const saved = await atomicObject(a, async () => {
+      const existing = (await allObjects(a, 'personal_budgets')).find(
+        (b) => b.category === d.category && b.currency === d.currency,
+      );
+      if (existing) {
+        return changeObject(a, existing, { monthly_limit_minor: d.monthly_limit_minor });
+      }
+      return createObject(a, 'personal_budgets', d);
+    });
+    res.json(saved);
+  }),
+);
 platform.get(
   '/organizations/:org/personal-summary',
   route(async (req, res) => {
@@ -176,6 +345,90 @@ platform.get(
         [a.org, a.environment],
       )
     ).map((r) => JSON.parse(r.data));
+    const [obligations, recurringIncomes, budgets] = await Promise.all([
+      allObjects(a, 'obligations'),
+      allObjects(a, 'recurring_income'),
+      allObjects(a, 'personal_budgets'),
+    ]);
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(
+      new Date(),
+    );
+    const in30Days = new Date(Date.parse(todayStr + 'T00:00:00Z') + 30 * 86400000)
+      .toISOString()
+      .slice(0, 10);
+    const activeObligations = obligations.filter(
+      (o) => o.status === 'active' && o.currency === q.currency,
+    );
+    const activeRecurringIncomes = recurringIncomes.filter(
+      (i) => i.status === 'active' && i.currency === q.currency,
+    );
+    const recurringIncomeMonthly = Math.round(
+      activeRecurringIncomes.reduce(
+        (acc, item) => acc + Number(item.amount_minor || 0) * monthlyRecurrenceFactor(item.recurrence),
+        0,
+      ),
+    );
+    const recurringExpensesMonthly = Math.round(
+      activeObligations.reduce(
+        (acc, item) => acc + Number(item.amount_minor || 0) * monthlyRecurrenceFactor(item.recurrence),
+        0,
+      ),
+    );
+    const effectiveExpenses = expenseRows
+      .filter((r) => !superseded.has(r.id))
+      .map((r) => JSON.parse(r.data))
+      .filter((r) => r.status !== 'archived' && r.currency === q.currency && within(r.occurred_on));
+    const budgetByCategory = new Map(
+      budgets
+        .filter((b) => b.currency === q.currency)
+        .map((b) => [String(b.category), Number(b.monthly_limit_minor || 0)]),
+    );
+    const categoryTotals = new Map<string, number>();
+    for (const exp of effectiveExpenses) {
+      const cat = String(exp.category || 'other');
+      categoryTotals.set(cat, sum([categoryTotals.get(cat) || 0, Number(exp.amount_minor || 0)]));
+    }
+    for (const cat of budgetByCategory.keys()) {
+      if (!categoryTotals.has(cat)) categoryTotals.set(cat, 0);
+    }
+    const expenseCategoriesSummary = [...categoryTotals.entries()]
+      .map(([cat, spent]) => ({
+        category: cat,
+        amount_minor: spent,
+        budget_limit_minor: budgetByCategory.get(cat) ?? null,
+        share_bps: out > 0 ? Math.round((spent / out) * 10000) : 0,
+      }))
+      .sort((x, y) => y.amount_minor - x.amount_minor);
+    const upcomingEvents = [
+      ...activeRecurringIncomes
+        .filter((i) => i.next_pay_date && i.next_pay_date <= in30Days)
+        .map((i) => ({
+          id: i.id,
+          kind: 'income' as const,
+          description: i.description,
+          counterparty: i.source || '',
+          category: i.category || 'salary',
+          date: i.next_pay_date,
+          amount_minor: Number(i.amount_minor || 0),
+          currency: i.currency,
+          recurrence: i.recurrence,
+          due: i.next_pay_date <= todayStr,
+        })),
+      ...activeObligations
+        .filter((o) => o.next_due_date && o.next_due_date <= in30Days)
+        .map((o) => ({
+          id: o.id,
+          kind: 'expense' as const,
+          description: o.description,
+          counterparty: o.supplier || '',
+          category: o.category || 'subscriptions',
+          date: o.next_due_date,
+          amount_minor: Number(o.amount_minor || 0),
+          currency: o.currency,
+          recurrence: o.recurrence,
+          due: o.next_due_date <= todayStr,
+        })),
+    ].sort((x, y) => x.date.localeCompare(y.date));
     res.json({
       currency: q.currency,
       environment: a.environment,
@@ -185,6 +438,18 @@ platform.get(
       manual_income_minor: manual,
       recorded_expenses_minor: out,
       recorded_net_minor: manual - out,
+      savings_rate_bps: manual > 0 ? Math.round(((manual - out) / manual) * 10000) : null,
+      recurring_income_monthly_minor: recurringIncomeMonthly,
+      recurring_expenses_monthly_minor: recurringExpensesMonthly,
+      recurring_net_monthly_minor: recurringIncomeMonthly - recurringExpensesMonthly,
+      due_subscriptions_count: activeObligations.filter(
+        (o) => o.next_due_date && o.next_due_date <= todayStr,
+      ).length,
+      due_income_count: activeRecurringIncomes.filter(
+        (i) => i.next_pay_date && i.next_pay_date <= todayStr,
+      ).length,
+      expense_categories: expenseCategoriesSummary,
+      upcoming_events: upcomingEvents,
       outstanding_invoices_minor: sum(
         invoices
           .filter(

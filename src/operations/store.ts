@@ -8,6 +8,8 @@ export const kinds = [
   'replenishment_suggestions',
   'expenses',
   'obligations',
+  'recurring_income',
+  'personal_budgets',
   'automations',
   'shipments',
   'protected_sales',

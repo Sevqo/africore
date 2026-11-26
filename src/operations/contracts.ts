@@ -39,7 +39,7 @@ export const obligationSchema = z
     amount_minor: minor,
     currency: currencySchema.default('KES'),
     next_due_date: z.string().date(),
-    recurrence: z.enum(['once', 'weekly', 'monthly', 'quarterly', 'yearly']),
+    recurrence: z.enum(['once', 'weekly', 'biweekly', 'monthly', 'quarterly', 'yearly']),
     anchor_day: z.number().int().min(1).max(31).optional(),
     category: z.enum(expenseCategories).default('other'),
     supplier: z.string().max(200).default(''),
@@ -57,6 +57,49 @@ export const obligationSchema = z
       }, 'Invalid timezone'),
     reminder_days: z.number().int().min(0).max(30).default(3),
     status: z.enum(['active', 'paused', 'completed', 'cancelled']).default('active'),
+  })
+  .strict();
+export const incomeCategories = [
+  'salary',
+  'freelance',
+  'business',
+  'rental',
+  'dividends',
+  'pension',
+  'side_hustle',
+  'allowance',
+  'other',
+] as const;
+export const recurringIncomeSchema = z
+  .object({
+    description: z.string().trim().min(1).max(300),
+    source: z.string().trim().max(200).default(''),
+    amount_minor: minor,
+    currency: currencySchema.default('KES'),
+    next_pay_date: z.string().date(),
+    recurrence: z.enum(['once', 'weekly', 'biweekly', 'monthly', 'quarterly', 'yearly']),
+    anchor_day: z.number().int().min(1).max(31).optional(),
+    category: z.enum(incomeCategories).default('salary'),
+    timezone: z
+      .string()
+      .max(100)
+      .default('Africa/Nairobi')
+      .refine((v) => {
+        try {
+          new Intl.DateTimeFormat('en', { timeZone: v });
+          return true;
+        } catch {
+          return false;
+        }
+      }, 'Invalid timezone'),
+    status: z.enum(['active', 'paused', 'completed', 'cancelled']).default('active'),
+  })
+  .strict();
+export const personalBudgetSchema = z
+  .object({
+    category: z.enum(expenseCategories),
+    monthly_limit_minor: minor,
+    currency: currencySchema.default('KES'),
   })
   .strict();
 export const analyticsQuery = z.object({

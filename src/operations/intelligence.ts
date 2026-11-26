@@ -587,6 +587,15 @@ export async function forecast(a: Access, input: unknown, asOf = day()) {
       };
     });
   let recurring = 0;
+  const projectedObligations: {
+    obligation_id: string;
+    description: string;
+    supplier: string;
+    category: string;
+    recurrence: string;
+    due_date: string;
+    expected_amount_minor: number;
+  }[] = [];
   for (const o of snapshot.inputs.obligations) {
     let date =
         o.recurrence === 'once' && o.next_due_date <= asOf ? addDays(asOf, 1) : o.next_due_date,
@@ -596,11 +605,63 @@ export async function forecast(a: Access, input: unknown, asOf = day()) {
         const amount = basisPoints(o.amount_minor, defaults.outflow);
         add(date, 'outflow_minor', amount);
         recurring += amount;
+        projectedObligations.push({
+          obligation_id: o.id,
+          description: o.description,
+          supplier: o.supplier || '',
+          category: o.category || 'other',
+          recurrence: o.recurrence,
+          due_date: date,
+          expected_amount_minor: amount,
+        });
       }
       const next = nextOccurrence(
         date,
         o.recurrence,
         o.anchor_day || Number(o.next_due_date.slice(8)),
+      );
+      if (!next) break;
+      date = next;
+    }
+  }
+  const activeRecurringIncomes = (await all(a, 'recurring_income')).filter(
+    (item) => item.currency === q.currency && item.status === 'active',
+  );
+  let recurringIncomeTotal = 0;
+  const projectedRecurringIncome: {
+    recurring_income_id: string;
+    description: string;
+    source: string;
+    category: string;
+    recurrence: string;
+    expected_date: string;
+    expected_amount_minor: number;
+  }[] = [];
+  for (const inc of activeRecurringIncomes) {
+    let date =
+        inc.recurrence === 'once' && inc.next_pay_date <= asOf
+          ? addDays(asOf, 1)
+          : inc.next_pay_date,
+      steps = 0;
+    while (date <= points[points.length - 1].date && steps++ < 400) {
+      if (date > asOf) {
+        const amount = basisPoints(inc.amount_minor, defaults.collection);
+        add(date, 'inflow_minor', amount);
+        recurringIncomeTotal += amount;
+        projectedRecurringIncome.push({
+          recurring_income_id: inc.id,
+          description: inc.description,
+          source: inc.source || '',
+          category: inc.category || 'salary',
+          recurrence: inc.recurrence,
+          expected_date: date,
+          expected_amount_minor: amount,
+        });
+      }
+      const next = nextOccurrence(
+        date,
+        inc.recurrence,
+        inc.anchor_day || Number(inc.next_pay_date.slice(8)),
       );
       if (!next) break;
       date = next;
@@ -669,8 +730,9 @@ export async function forecast(a: Access, input: unknown, asOf = day()) {
     projected_outflows_minor: sum(points, 'outflow_minor'),
     estimated_net_movement_minor: cumulative,
     confidence:
-      snapshot.quality.history_days >= 30 &&
-      snapshot.customers.filter((c) => !c.limited_data).length
+      (snapshot.quality.history_days >= 30 &&
+        snapshot.customers.filter((c) => !c.limited_data).length) ||
+      (activeRecurringIncomes.length > 0 && snapshot.inputs.obligations.length > 0)
         ? 'history_available'
         : 'limited_data',
     confidence_interval: null,
@@ -683,14 +745,24 @@ export async function forecast(a: Access, input: unknown, asOf = day()) {
       historical_window_days: Math.min(90, snapshot.quality.history_days),
       non_invoice_baseline_included: enough,
       recorded_obligations_minor: recurring,
+      recorded_recurring_income_minor: recurringIncomeTotal,
       no_opening_balance: true,
     },
     quality: snapshot.quality,
     projected_invoices: projectedInvoices,
+    projected_recurring_income: projectedRecurringIncome.sort((x, y) =>
+      x.expected_date.localeCompare(y.expected_date),
+    ),
+    projected_obligations: projectedObligations.sort((x, y) =>
+      x.due_date.localeCompare(y.due_date),
+    ),
     series: points,
     actions: [
-      ...(snapshot.quality.missing_expense_data
-        ? ['Record expenses and upcoming obligations for a fuller picture.']
+      ...(snapshot.quality.missing_expense_data && !snapshot.inputs.obligations.length
+        ? ['Record expenses and upcoming subscriptions or obligations for a fuller picture.']
+        : []),
+      ...(!projectedInvoices.length && !activeRecurringIncomes.length
+        ? ['Add recurring income sources (such as salary or freelance retainers) to project expected inflows.']
         : []),
       ...(snapshot.totals.overdue_minor > 0
         ? ['Review overdue invoices and customer follow-up.']

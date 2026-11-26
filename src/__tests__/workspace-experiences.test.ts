@@ -424,3 +424,160 @@ test('Personal subscriptions, expenses, and cash flow financial summary work cle
   assert.equal(list.status, 200);
   assert.equal(list.data.data.length, 1);
 });
+
+test('personal recurring income, subscription-to-expense reflection, budgets, and forecast integration', async () => {
+  const u = await identity();
+  const personal = await req(
+    '/api/auth/workspaces',
+    'POST',
+    {
+      ...setup('personal'),
+      services: ['income', 'expenses', 'cash_flow', 'forecasting'],
+    },
+    u.cookie,
+  );
+  assert.equal(personal.status, 201, JSON.stringify(personal.data));
+  const b = '/api/v1/organizations/' + personal.data.id;
+  const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(
+    new Date(),
+  );
+  const in10Days = new Date(Date.parse(todayStr + 'T00:00:00Z') + 10 * 86400000)
+    .toISOString()
+    .slice(0, 10);
+
+  // 1. Add recurring income due today & another due in 10 days
+  const salaryDue = await req(
+    b + '/personal-income/recurring',
+    'POST',
+    {
+      description: 'Monthly Salary',
+      source: 'Acme Tech',
+      amount_minor: 15000000,
+      currency: 'KES',
+      recurrence: 'monthly',
+      next_pay_date: todayStr,
+      category: 'salary',
+      timezone: 'Africa/Nairobi',
+    },
+    u.cookie,
+  );
+  assert.equal(salaryDue.status, 201, JSON.stringify(salaryDue.data));
+
+  const freelanceUpcoming = await req(
+    b + '/personal-income/recurring',
+    'POST',
+    {
+      description: 'Freelance Retainer',
+      source: 'Studio Client',
+      amount_minor: 5000000,
+      currency: 'KES',
+      recurrence: 'biweekly',
+      next_pay_date: in10Days,
+      category: 'freelance',
+      timezone: 'Africa/Nairobi',
+    },
+    u.cookie,
+  );
+  assert.equal(freelanceUpcoming.status, 201, JSON.stringify(freelanceUpcoming.data));
+
+  // Receive due recurring income -> records into personal-income and advances next_pay_date
+  const received = await req(
+    b + '/personal-income/recurring/' + salaryDue.data.id + '/receive',
+    'POST',
+    {},
+    u.cookie,
+  );
+  assert.equal(received.status, 201, JSON.stringify(received.data));
+  assert.ok(received.data.plan.next_pay_date > todayStr);
+
+  // 2. Add a due subscription and fulfill it -> automatically creates an Expense
+  const netflix = await req(
+    b + '/obligations',
+    'POST',
+    {
+      description: 'Netflix Standard',
+      supplier: 'Netflix',
+      amount_minor: 110000,
+      currency: 'KES',
+      recurrence: 'monthly',
+      next_due_date: todayStr,
+      category: 'subscriptions',
+      timezone: 'Africa/Nairobi',
+      reminder_days: 3,
+    },
+    u.cookie,
+    { 'Idempotency-Key': randomUUID() },
+  );
+  assert.equal(netflix.status, 201, JSON.stringify(netflix.data));
+
+  const fulfilled = await req(
+    b + '/obligations/' + netflix.data.id + '/fulfill',
+    'POST',
+    { action: 'fulfill', record_expense: true },
+    u.cookie,
+    { 'Idempotency-Key': randomUUID() },
+  );
+  assert.equal(fulfilled.status, 200, JSON.stringify(fulfilled.data));
+  assert.ok(fulfilled.data.expense_id);
+
+  // Verify subscription payment is now reflected in Expenses
+  const expenses = await req(b + '/expenses?category=subscriptions', 'GET', undefined, u.cookie);
+  assert.equal(expenses.status, 200);
+  assert.equal(expenses.data.data.length, 1);
+  assert.equal(expenses.data.data[0].obligation_id, netflix.data.id);
+
+  // 3. Add a subscription due in 10 days so it lands inside the 30-day forecast horizon
+  const fiber = await req(
+    b + '/obligations',
+    'POST',
+    {
+      description: 'Home Fiber Internet',
+      supplier: 'ISP',
+      amount_minor: 410000,
+      currency: 'KES',
+      recurrence: 'monthly',
+      next_due_date: in10Days,
+      category: 'utilities',
+      timezone: 'Africa/Nairobi',
+      reminder_days: 3,
+    },
+    u.cookie,
+    { 'Idempotency-Key': randomUUID() },
+  );
+  assert.equal(fiber.status, 201, JSON.stringify(fiber.data));
+
+  // 4. Set a monthly budget and verify personal-summary reflects recurring metrics & budgets
+  const budget = await req(
+    b + '/personal-budgets',
+    'PUT',
+    { category: 'subscriptions', monthly_limit_minor: 200000, currency: 'KES' },
+    u.cookie,
+  );
+  assert.equal(budget.status, 200, JSON.stringify(budget.data));
+
+  const summary = await req(b + '/personal-summary?currency=KES', 'GET', undefined, u.cookie);
+  assert.equal(summary.status, 200, JSON.stringify(summary.data));
+  assert.equal(summary.data.manual_income_minor, 15000000);
+  assert.equal(summary.data.recorded_expenses_minor, 110000);
+  assert.ok(summary.data.recurring_income_monthly_minor > 15000000);
+  assert.equal(summary.data.recurring_expenses_monthly_minor, 520000);
+  assert.ok(summary.data.savings_rate_bps > 9000);
+  const subCat = summary.data.expense_categories.find((c: any) => c.category === 'subscriptions');
+  assert.equal(subCat?.budget_limit_minor, 200000);
+  assert.ok(summary.data.upcoming_events.some((ev: any) => ev.kind === 'income'));
+  assert.ok(summary.data.upcoming_events.some((ev: any) => ev.kind === 'expense'));
+
+  // 5. Forecast reflects BOTH recurring income and subscriptions/obligations
+  const fc = await req(
+    b + '/forecasts',
+    'POST',
+    { currency: 'KES', horizon: 30, scenario: 'expected' },
+    u.cookie,
+  );
+  assert.equal(fc.status, 200, JSON.stringify(fc.data));
+  assert.ok(fc.data.projected_inflows_minor > 0, JSON.stringify(fc.data));
+  assert.ok(fc.data.projected_outflows_minor > 0, JSON.stringify(fc.data));
+  assert.ok(fc.data.assumptions.recorded_recurring_income_minor > 0);
+  assert.ok(fc.data.projected_recurring_income.length >= 1);
+  assert.ok(fc.data.projected_obligations.length >= 1);
+});

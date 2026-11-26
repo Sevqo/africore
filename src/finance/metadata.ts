@@ -42,7 +42,7 @@ bind(
 );
 bind(
   ['business', 'personal'],
-  ['cash_flow'],
+  ['cash_flow', 'expenses'],
   ['POST /obligations/:id/fulfill', 'GET /obligations/:id/history'],
 );
 

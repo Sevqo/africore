@@ -446,17 +446,17 @@ export function ForecastView({
             <MetricDefinition
               label="Projected inflows"
               value={money(data.projected_inflows_minor, currency)}
-              definition="Due invoices adjusted by observed delays and scenario assumptions."
+              definition="Scheduled recurring income and due invoices adjusted by scenario assumptions."
             />
             <MetricDefinition
               label="Projected outflows"
               value={money(data.projected_outflows_minor, currency)}
-              definition="Recorded obligations and eligible historical outflows; coverage may be incomplete."
+              definition="Active subscriptions, recorded obligations, and eligible historical outflows."
             />
             <MetricDefinition
               label="Estimated net movement"
               value={money(data.estimated_net_movement_minor, currency)}
-              definition="No opening bank balance is assumed."
+              definition="Projected inflows minus projected outflows. No opening bank balance is assumed."
             />
             <MetricDefinition
               label="Data sufficiency"
@@ -475,7 +475,14 @@ export function ForecastView({
             <p>
               Collection: {data.assumptions.collection_bps / 100}% · Additional delay:{' '}
               {data.assumptions.additional_delay_days} days · Outflows:{' '}
-              {data.assumptions.outflow_bps / 100}%.
+              {data.assumptions.outflow_bps / 100}%
+              {data.assumptions.recorded_recurring_income_minor > 0
+                ? ` · Recurring income: ${money(data.assumptions.recorded_recurring_income_minor, currency)}`
+                : ''}
+              {data.assumptions.recorded_obligations_minor > 0
+                ? ` · Subscriptions & obligations: ${money(data.assumptions.recorded_obligations_minor, currency)}`
+                : ''}
+              .
             </p>
             {data.actions.map((s: string) => (
               <p className="forecast-action" key={s}>
@@ -483,31 +490,97 @@ export function ForecastView({
               </p>
             ))}
           </section>
-          <section className="panel">
-            <h2>Projected receivables</h2>
-            <div className="table-scroll">
-              <DataTable>
-                <thead>
-                  <tr>
-                    <th>Invoice</th>
-                    <th>Expected date</th>
-                    <th>Estimated receipt</th>
-                    <th>Observed settlements</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.projected_invoices.map((i: any) => (
-                    <tr key={i.invoice_id}>
-                      <td>{i.invoice_id}</td>
-                      <td>{i.expected_date}</td>
-                      <td>{money(i.expected_receipt_minor, currency)}</td>
-                      <td>{i.delay_observations}</td>
+          {Array.isArray(data.projected_recurring_income) && data.projected_recurring_income.length > 0 && (
+            <section className="panel">
+              <h2>Projected recurring income</h2>
+              <div className="table-scroll">
+                <DataTable>
+                  <thead>
+                    <tr>
+                      <th>Income source</th>
+                      <th>Category</th>
+                      <th>Frequency</th>
+                      <th>Expected date</th>
+                      <th>Estimated receipt</th>
                     </tr>
-                  ))}
-                </tbody>
-              </DataTable>
-            </div>
-          </section>
+                  </thead>
+                  <tbody>
+                    {data.projected_recurring_income.map((item: any, idx: number) => (
+                      <tr key={`${item.recurring_income_id}-${item.expected_date}-${idx}`}>
+                        <td>
+                          {item.description}
+                          {item.source ? ` (${item.source})` : ''}
+                        </td>
+                        <td>{item.category}</td>
+                        <td>{item.recurrence}</td>
+                        <td>{item.expected_date}</td>
+                        <td>{money(item.expected_amount_minor, currency)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </DataTable>
+              </div>
+            </section>
+          )}
+          {Array.isArray(data.projected_obligations) && data.projected_obligations.length > 0 && (
+            <section className="panel">
+              <h2>Projected subscriptions &amp; obligations</h2>
+              <div className="table-scroll">
+                <DataTable>
+                  <thead>
+                    <tr>
+                      <th>Description</th>
+                      <th>Category</th>
+                      <th>Frequency</th>
+                      <th>Due date</th>
+                      <th>Estimated outflow</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.projected_obligations.map((item: any, idx: number) => (
+                      <tr key={`${item.obligation_id}-${item.due_date}-${idx}`}>
+                        <td>
+                          {item.description}
+                          {item.supplier ? ` (${item.supplier})` : ''}
+                        </td>
+                        <td>{item.category}</td>
+                        <td>{item.recurrence}</td>
+                        <td>{item.due_date}</td>
+                        <td>{money(item.expected_amount_minor, currency)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </DataTable>
+              </div>
+            </section>
+          )}
+          {Array.isArray(data.projected_invoices) && data.projected_invoices.length > 0 && (
+            <section className="panel">
+              <h2>Projected receivables</h2>
+              <div className="table-scroll">
+                <DataTable>
+                  <thead>
+                    <tr>
+                      <th>Invoice</th>
+                      <th>Expected date</th>
+                      <th>Estimated receipt</th>
+                      <th>Observed settlements</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.projected_invoices.map((i: any) => (
+                      <tr key={i.invoice_id}>
+                        <td>{i.invoice_id}</td>
+                        <td>{i.expected_date}</td>
+                        <td>{money(i.expected_receipt_minor, currency)}</td>
+                        <td>{i.delay_observations}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </DataTable>
+              </div>
+            </section>
+          )}
         </>
       )}
     </>

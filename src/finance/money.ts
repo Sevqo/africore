@@ -52,6 +52,10 @@ export function nextOccurrence(
     d.setUTCDate(d.getUTCDate() + 7);
     return d.toISOString().slice(0, 10);
   }
+  if (recurrence === 'biweekly') {
+    d.setUTCDate(d.getUTCDate() + 14);
+    return d.toISOString().slice(0, 10);
+  }
   const months = ({ monthly: 1, quarterly: 3, yearly: 12 } as Record<string, number>)[recurrence];
   if (!months) throw new Error('Unsupported recurrence');
   const target = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + months, 1));

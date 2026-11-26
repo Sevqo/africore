@@ -51,10 +51,25 @@ bind(
     'GET /evidence/:resource/:id/download',
   ],
 );
-bind(['income'], ['GET /personal-income', 'POST /personal-income'], 'income');
-bind(['expenses', 'cash_flow'], ['GET /expenses', 'POST /expenses'], 'expenses');
 bind(
-  ['cash_flow'],
+  ['income'],
+  [
+    'GET /personal-income',
+    'POST /personal-income',
+    'GET /personal-income/recurring',
+    'POST /personal-income/recurring',
+    'PATCH /personal-income/recurring/:id',
+    'POST /personal-income/recurring/:id/receive',
+  ],
+  'income',
+);
+bind(
+  ['expenses', 'cash_flow'],
+  ['GET /expenses', 'POST /expenses', 'GET /personal-budgets', 'PUT /personal-budgets'],
+  'expenses',
+);
+bind(
+  ['cash_flow', 'expenses'],
   ['GET /obligations', 'POST /obligations', 'PATCH /obligations/:id'],
   'cash_flow',
 );

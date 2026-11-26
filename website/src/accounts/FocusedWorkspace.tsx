@@ -14,6 +14,8 @@ import { AssistantView } from '../operations/AssistantView';
 import { OperationsWorkspace } from '../operations/OperationsWorkspace';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { PersonalSubscriptions } from './PersonalSubscriptions';
+import { PersonalIncome } from './PersonalIncome';
+import { PersonalExpenses } from './PersonalExpenses';
 import { CustomerTools } from '../finance/CustomerTools';
 import { FinancialOverview } from '../finance/FinancialOverview';
 import { PaymentCentre } from '../finance/PaymentCentre';
@@ -150,6 +152,8 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
         'Notifications',
         'Intelligence',
         'Forecasts',
+        'Income',
+        'Expenses',
         'Subscriptions',
         'Calendar',
         'Documents',
@@ -715,6 +719,90 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
                         </section>
                       ))}
                     </div>
+                    <div className="account-metrics">
+                      <section>
+                        <span>Monthly recurring income</span>
+                        <strong>
+                          {summary.recurring_income_monthly_minor === undefined
+                            ? '—'
+                            : money(Number(summary.recurring_income_monthly_minor), currency)}
+                        </strong>
+                        <small>Active salary &amp; recurring paydays</small>
+                      </section>
+                      <section>
+                        <span>Monthly subscriptions &amp; bills</span>
+                        <strong>
+                          {summary.recurring_expenses_monthly_minor === undefined
+                            ? '—'
+                            : money(Number(summary.recurring_expenses_monthly_minor), currency)}
+                        </strong>
+                        <small>Included in Expenses &amp; Forecasts</small>
+                      </section>
+                      <section>
+                        <span>Projected monthly surplus</span>
+                        <strong>
+                          {summary.recurring_net_monthly_minor === undefined
+                            ? '—'
+                            : money(Number(summary.recurring_net_monthly_minor), currency)}
+                        </strong>
+                        <small>Recurring income less bills</small>
+                      </section>
+                      <section>
+                        <span>Savings rate</span>
+                        <strong>
+                          {summary.savings_rate_bps === null || summary.savings_rate_bps === undefined
+                            ? '—'
+                            : `${(Number(summary.savings_rate_bps) / 100).toFixed(1)}%`}
+                        </strong>
+                        <small>From recorded income &amp; spending</small>
+                      </section>
+                    </div>
+                    {Array.isArray(summary.upcoming_events) && summary.upcoming_events.length > 0 && (
+                      <section className="panel">
+                        <div className="section-heading">
+                          <div>
+                            <h3>Upcoming 30-day paydays &amp; subscriptions</h3>
+                            <p style={{ margin: '4px 0 0', fontSize: 13 }}>
+                              Scheduled recurring income and subscription renewals that feed into your Forecasts.
+                            </p>
+                          </div>
+                          <div className="form-actions">
+                            <button type="button" className="secondary-button" onClick={() => setTab('Income')}>
+                              Manage Income
+                            </button>
+                            <button type="button" className="secondary-button" onClick={() => setTab('Subscriptions')}>
+                              Manage Subscriptions
+                            </button>
+                            <button type="button" className="secondary-button" onClick={() => setTab('Forecasts')}>
+                              Open Forecasts
+                            </button>
+                          </div>
+                        </div>
+                        {summary.upcoming_events.slice(0, 8).map((ev: any) => (
+                          <article className="account-record" key={`${ev.kind}-${ev.id}-${ev.date}`}>
+                            <div>
+                              <strong>{ev.description}</strong>
+                              <span className="badge" style={{ marginLeft: 8 }}>
+                                {ev.kind === 'income' ? 'Incoming' : 'Subscription / Bill'}
+                              </span>
+                              {ev.due && (
+                                <span className="badge" style={{ marginLeft: 6 }}>
+                                  Due now
+                                </span>
+                              )}
+                              <p style={{ margin: '4px 0 0', fontSize: 13 }}>
+                                {ev.date} · {ev.recurrence} · {ev.category}
+                                {ev.counterparty ? ` · ${ev.counterparty}` : ''}
+                              </p>
+                            </div>
+                            <strong>
+                              {ev.kind === 'income' ? '+' : '−'}
+                              {money(Number(ev.amount_minor || 0), ev.currency)}
+                            </strong>
+                          </article>
+                        ))}
+                      </section>
+                    )}
                     <section className="panel">
                       <InteractiveChart
                         variant="area"
@@ -815,74 +903,27 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
                     {list(data.clients, ['name', 'email', 'phone'])}
                   </>
                 )}
-                {(tab === 'Income' || tab === 'Expenses') && (
-                  <>
-                    <form
-                      className="account-inline-form"
-                      onSubmit={form((d) =>
-                        call(tab === 'Income' ? '/personal-income' : '/expenses', 'POST', {
-                          description: d.get('description'),
-                          amount_minor: amount(d.get('amount'), String(d.get('currency'))),
-                          currency: d.get('currency'),
-                          occurred_on: d.get('occurred_on'),
-                          ...(tab === 'Expenses' ? { category: d.get('category') } : {}),
-                        }),
-                      )}
-                    >
-                      <h3>Add {tab.toLowerCase()}</h3>
-                      <p>Manually recorded. This does not confirm a provider payment.</p>
-                      <Field label="Description">
-                        <input name="description" required maxLength={300} />
-                      </Field>
-                      <Field label="Amount">
-                        <input name="amount" type="number" required min="0.01" step="0.01" />
-                      </Field>
-                      <Field label="Currency">
-                        <Currency name="currency" defaultValue={currency} />
-                      </Field>
-                      <Field label="Date">
-                        <input
-                          name="occurred_on"
-                          type="date"
-                          defaultValue={today(account.profile?.timezone || 'Africa/Nairobi')}
-                          required
-                        />
-                      </Field>
-                      {tab === 'Expenses' && (
-                        <Field label="Category">
-                          <select name="category">
-                            {[
-                              'subscriptions',
-                              'groceries',
-                              'transport',
-                              'rent',
-                              'utilities',
-                              'software',
-                              'health',
-                              'education',
-                              'entertainment',
-                              'other',
-                            ].map((c) => (
-                              <option key={c}>{c}</option>
-                            ))}
-                          </select>
-                        </Field>
-                      )}
-                      <button className="button" disabled={busy}>
-                        Record {tab.toLowerCase()}
-                      </button>
-                    </form>
-                    {list(tab === 'Income' ? data.income : data.expenses, [
-                      'description',
-                      'amount_minor',
-                      'currency',
-                      'occurred_on',
-                    ])}
-                    <p>
-                      Showing up to 100 most recent records. Summary totals use all matching
-                      records.
-                    </p>
-                  </>
+                {tab === 'Income' && (
+                  <PersonalIncome
+                    api={call}
+                    scope={w.id + environment}
+                    currency={currency}
+                    timezone={account.profile?.timezone || 'Africa/Nairobi'}
+                    writable={['owner', 'admin', 'finance'].includes(w.role)}
+                    onChanged={() => setRevision((v) => v + 1)}
+                    onOpenForecasts={() => setTab('Forecasts')}
+                  />
+                )}
+                {tab === 'Expenses' && (
+                  <PersonalExpenses
+                    api={call}
+                    scope={w.id + environment}
+                    currency={currency}
+                    timezone={account.profile?.timezone || 'Africa/Nairobi'}
+                    writable={['owner', 'admin', 'finance'].includes(w.role)}
+                    onChanged={() => setRevision((v) => v + 1)}
+                    onOpenSubscriptions={() => setTab('Subscriptions')}
+                  />
                 )}
                 {tab === 'Invoices' && (
                   <>
@@ -975,6 +1016,7 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
                     timezone={account.profile?.timezone || 'Africa/Nairobi'}
                     writable={['owner', 'admin', 'finance'].includes(w.role)}
                     onChanged={() => setRevision((v) => v + 1)}
+                    onOpenExpenses={() => setTab('Expenses')}
                   />
                 )}
                 {tab === 'Cash Flow' && (
