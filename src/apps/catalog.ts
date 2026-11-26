@@ -287,8 +287,8 @@ export const appCatalog: AppDefinition[] = [
     description:
       'Organize private projects, shared task boards, dependencies, milestones and persistent discussions.',
     version: 1,
-    kinds: ['business', 'personal', 'developer'],
-    required: { business: ['work'], personal: ['work'], developer: ['work'] },
+    kinds: ['business'],
+    required: { business: ['work'] },
     optional: ['customers', 'orders', 'automations'],
     navigation: [
       { label: 'Projects', section: 'dashboard' },
@@ -619,10 +619,10 @@ export const appCatalog: AppDefinition[] = [
     name: 'AfriCore Knowledge & Learning',
     icon: 'book',
     description:
-      'Publish knowledge wikis, personal notes, engineering runbooks, training courses, and assessments.',
+      'Publish internal company knowledge wikis, run employee training courses, and grade assessments with certificates.',
     version: 1,
-    kinds: ['business', 'personal', 'developer'],
-    required: { business: ['customers'], personal: ['customers'], developer: ['customers'] },
+    kinds: ['business'],
+    required: { business: ['customers'] },
     optional: ['people', 'documents'],
     navigation: [
       { label: 'Knowledge Wiki', section: 'articles' },

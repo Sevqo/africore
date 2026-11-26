@@ -134,7 +134,7 @@ export const serviceCatalog: ServiceDefinition[] = [
     'work',
     'Projects and teamwork',
     'Run your business',
-    all,
+    business,
     ['Work'],
     'Organize participant-scoped projects, tasks and discussions.',
     'Project access is checked against current membership and explicit participants. Board moves use a shared expected version. Project access does not grant financial or personnel access.',

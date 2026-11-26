@@ -107,16 +107,17 @@
 .focused-account {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 230px minmax(0, 1fr);
-  background: #f6f6f6;
+  grid-template-columns: 224px minmax(0, 1fr);
+  background: #f8f9fa;
 }
 .account-nav {
-  background: #171717;
-  color: white;
-  padding: 21px 15px;
+  background: #171c20;
+  color: #e5e7eb;
+  border-right: 1px solid #273034;
+  padding: 18px 14px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
   position: sticky;
   top: 0;
   height: 100vh;
@@ -128,28 +129,87 @@
 }
 .account-nav p {
   font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.08em;
-  color: #bbb;
+  color: #9ca3af;
+  margin: 0;
 }
 .account-nav nav {
   display: grid;
   gap: 3px;
 }
-.account-nav nav a {
-  padding: 6.75px 9px;
+.account-nav nav a,
+.account-nav nav button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 38px;
+  padding: 7px 10px;
   text-decoration: none;
-  border-radius: 3px;
-  font-size: 14px;
-}
-.account-nav nav a[aria-current='page'] {
-  background: #343434;
-  border-left: 3px solid #76b900;
-}
-.account-nav button {
+  border: 0;
+  border-radius: 7px;
   background: transparent;
-  border: 1px solid #777;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #d1d5db;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+.account-nav nav a:hover,
+.account-nav nav button:hover {
+  background: #252c31;
+  color: #ffffff;
+}
+.account-nav nav a[aria-current='page'],
+.account-nav nav button[aria-current='page'],
+.account-nav nav button.active {
+  background: #166534;
+  color: #ffffff;
+  font-weight: 600;
+  border-left: 0;
+}
+.account-nav > button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
   text-align: left;
-  padding: 7.5px;
+  padding: 8px 10px;
+  color: #d1d5db;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.account-nav > button:hover {
+  background: #252c31;
+  color: #ffffff;
+}
+.focused-nav-group {
+  border-top: 1px solid #273034;
+  padding-top: 10px;
+}
+.focused-nav-group summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  list-style: none;
+  color: #c4cec8;
+  font-size: 13px;
+  font-weight: 600;
+}
+.focused-nav-group summary::-webkit-details-marker {
+  display: none;
+}
+.focused-nav-group summary .icon:last-child {
+  margin-left: auto;
+  width: 14px;
+  height: 14px;
+}
+.focused-nav-group nav {
+  margin-top: 4px;
 }
 .account-content {
   padding: 21px clamp(12px, 2.25vw, 30px);

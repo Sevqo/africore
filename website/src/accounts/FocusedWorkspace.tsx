@@ -1,7 +1,13 @@
 import { NotificationCentre } from '../apps/NotificationCentre';
 import { NotificationBell } from '../apps/NotificationBell';
 import { WorkspaceAccountMenu } from '../apps/WorkspaceAccountMenu';
-import { AppsWorkspace } from '../apps/AppsWorkspace';
+import {
+  AutomationsWorkspace,
+  CalendarWorkspace,
+  DocumentsWorkspace,
+  ExtendedAppWorkspace,
+  WebsiteWorkspace,
+} from '../apps/lazy-workspaces';
 import { ProductCatalog } from '../apps/ProductCatalog';
 import { DataPlatformView } from '../operations/DataPlatformView';
 import { AssistantView } from '../operations/AssistantView';
@@ -24,8 +30,7 @@ import { money, amount, today, Field, Alert, Currency } from './AccountUI';
 import { DeveloperPanels } from './DeveloperPanels';
 import { Overlay } from '../components/Overlay';
 import { Icon, type IconName } from '../components/Icon';
-import { AppContextNavigation, useAppContext } from '../apps/AppNavigation';
-import { WorkspaceAppLauncher } from '../apps/WorkspaceAppLauncher';
+import { Suspense } from 'react';
 import {
   useMarketplace,
   Services,
@@ -39,7 +44,6 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
   const personal = w.kind === 'personal';
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [navigationOpen, setNavigationOpen] = useState(false);
-  const [appInfoOpen, setAppInfoOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
       return localStorage.getItem('africore-focused-sidebar-collapsed') === 'true';
@@ -68,7 +72,6 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
   const visibleItems = [...new Set(items)].filter((t) => visibleServiceTab(market, t));
   const primaryItems = [
     { tab: 'Overview', label: 'Home', icon: 'home' },
-    { tab: 'Apps', label: 'Apps', icon: 'grid' },
     { tab: 'My Services', label: 'Services', icon: 'network' },
     { tab: 'Notifications', label: 'Notifications', icon: 'bell' },
   ] as const;
@@ -113,11 +116,6 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
       return result;
     });
   };
-  const appContext = useAppContext(call, w.id + '\0' + environment, true),
-    immersiveApp = !!(appContext.app || appContext.resolving) && tab === 'Apps',
-    appSectionLabel = appContext.app?.navigation.find(
-      (item: any) => item.section === appContext.section,
-    )?.label || 'Opening app';
   const navigateWorkspaceTab = (target: string) => {
     const url = new URL(location.href);
     url.searchParams.delete('app');
@@ -138,7 +136,6 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
   }, [personal]);
   useEffect(() => {
     setSelectedInvoice(null);
-    setAppInfoOpen(false);
     setKey('');
     setResult('');
   }, [w.id, environment, tab]);
@@ -148,9 +145,19 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
     setError('');
     setData({});
     if (
-      ['Apps', 'Products', 'Notifications', 'Intelligence', 'Forecasts', 'Subscriptions'].includes(
-        tab,
-      ) ||
+      [
+        'Products',
+        'Notifications',
+        'Intelligence',
+        'Forecasts',
+        'Subscriptions',
+        'Calendar',
+        'Documents',
+        'Website',
+        'Automations',
+        'Studio',
+        'Integrations Hub',
+      ].includes(tab) ||
       marketTabs.includes(tab) ||
       !canReadServiceTab(market, tab)
     ) {
@@ -365,17 +372,6 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
             </a>
           ))}
       </nav>
-      {appContext.app && (
-        <AppContextNavigation
-          app={appContext.app}
-          section={appContext.section}
-          tab={tab}
-          navigate={(target) => {
-            setTab(target);
-            setNavigationOpen(false);
-          }}
-        />
-      )}
       {toolItems.length > 0 && (
         <details className="focused-nav-group" open={toolItems.includes(tab) || undefined}>
           <summary>
@@ -459,10 +455,9 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
   );
   return (
     <div
-      className={'focused-account' + (immersiveApp ? ' is-app-immersive' : '')}
+      className="focused-account"
       data-platform-density
       data-workspace-kind={personal ? 'personal' : 'developer'}
-      data-app-immersive={immersiveApp ? 'true' : undefined}
     >
       <a
         className="workspace-skip"
@@ -478,7 +473,7 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
         {navigation}
       </aside>
       <main className="account-content" id="focused-workspace-main" tabIndex={-1}>
-        <div className={'focused-mobile-header' + (immersiveApp ? ' focused-app-header' : '')}>
+        <div className="focused-mobile-header">
           <button
             className="quiet-button"
             aria-label={navigationOpen ? 'Close app navigation' : 'Open workspace navigation'}
@@ -488,21 +483,7 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
           >
             <Icon name="menu" />
           </button>
-          <WorkspaceAppLauncher api={call} scope={w.id + '\0' + environment} navigate={setTab} />
-          <span>
-            {immersiveApp
-              ? `${appContext.app?.name.replace('AfriCore ', '') || 'App'} · ${appSectionLabel}`
-              : w.name}
-          </span>
-          {immersiveApp && (
-            <button
-              className="icon-button focused-app-info-trigger"
-              aria-label={'About ' + (appContext.app?.name || 'this app')}
-              onClick={() => setAppInfoOpen(true)}
-            >
-              <Icon name="document" />
-            </button>
-          )}
+          <span>{w.name}</span>
           <WorkspaceSwitcher
             currentId={w.id}
             workspaces={account?.workspaces}
@@ -589,7 +570,7 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
               ? 'Sandbox · test records only. No live funds move.'
               : 'Recorded personal activity. Manual entries are not provider confirmation.'}
         </p>
-        {!immersiveApp && <h2>{tab}</h2>}
+        <h2>{tab === 'Overview' ? (personal ? 'Personal Finance & Overview' : 'Developer Console Overview') : tab}</h2>
         <Alert error={error} />
         {busy && <p role="status">Updating workspace…</p>}
         {tab === 'Notifications' ? (
@@ -599,32 +580,60 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
             kind={w.kind}
             navigate={notificationNavigate}
           />
-        ) : tab === 'Apps' ? (
-          <AppsWorkspace
-            role={w.role}
-            api={call}
-            scope={w.id + '\0' + environment}
-            manager={['owner', 'admin'].includes(w.role)}
-            navigate={(nextTab) => {
-              setTab(
-                personal
-                  ? (
-                      {
-                        Customers: 'Clients',
-                        Payments: 'Payment Records',
-                        Reconciliation: 'Payment Records',
-                      } as Record<string, string>
-                    )[nextTab] || nextTab
-                  : items.includes(nextTab)
-                    ? nextTab
-                    : 'Overview',
-              );
-              setNavigationOpen(false);
-            }}
-            services={market.catalog?.services || []}
-            onServicesChanged={market.reload}
-            timezone={account?.profile?.timezone || 'Africa/Nairobi'}
-          />
+        ) : personal && tab === 'Calendar' ? (
+          <ServiceGate market={market} tab={tab} navigate={setTab}>
+            <Suspense fallback={<p role="status">Loading Calendar…</p>}>
+              <CalendarWorkspace api={call} scope={w.id + '\0' + environment} section="calendar" />
+            </Suspense>
+          </ServiceGate>
+        ) : personal && tab === 'Documents' ? (
+          <ServiceGate market={market} tab={tab} navigate={setTab}>
+            <Suspense fallback={<p role="status">Loading Documents…</p>}>
+              <DocumentsWorkspace embedded api={call} scope={w.id + '\0' + environment} section="all" />
+            </Suspense>
+          </ServiceGate>
+        ) : personal && tab === 'Website' ? (
+          <ServiceGate market={market} tab={tab} navigate={setTab}>
+            <Suspense fallback={<p role="status">Loading Website builder…</p>}>
+              <WebsiteWorkspace api={call} scope={w.id + '\0' + environment} section="overview" />
+            </Suspense>
+          </ServiceGate>
+        ) : !personal && tab === 'Automations' ? (
+          <ServiceGate market={market} tab={tab} navigate={setTab}>
+            <Suspense fallback={<p role="status">Loading Automations…</p>}>
+              <AutomationsWorkspace
+                role={w.role}
+                api={call}
+                scope={w.id + '\0' + environment}
+                navigate={setTab}
+                section="dashboard"
+              />
+            </Suspense>
+          </ServiceGate>
+        ) : !personal && tab === 'Studio' ? (
+          <ServiceGate market={market} tab={tab} navigate={setTab}>
+            <Suspense fallback={<p role="status">Loading Schema Studio…</p>}>
+              <ExtendedAppWorkspace
+                appId="studio"
+                section="apps"
+                api={call}
+                scope={w.id + '\0' + environment}
+                writable={['owner', 'admin', 'operations'].includes(w.role)}
+              />
+            </Suspense>
+          </ServiceGate>
+        ) : !personal && tab === 'Integrations Hub' ? (
+          <ServiceGate market={market} tab={tab} navigate={setTab}>
+            <Suspense fallback={<p role="status">Loading Integrations Hub…</p>}>
+              <ExtendedAppWorkspace
+                appId="integrations_hub"
+                section="topology"
+                api={call}
+                scope={w.id + '\0' + environment}
+                writable={['owner', 'admin', 'operations'].includes(w.role)}
+              />
+            </Suspense>
+          </ServiceGate>
         ) : personal && ['Intelligence', 'Forecasts'].includes(tab) ? (
           <ServiceGate market={market} tab={tab} navigate={setTab}>
             <OperationsWorkspace
@@ -747,14 +756,23 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
                       className="account-type-tabs personal-quick-actions"
                       aria-label="Personal quick actions"
                     >
-                      {['Income', 'Expenses', 'Subscriptions', 'Invoices', 'Clients'].map((t) => (
+                      {['Income', 'Expenses', 'Subscriptions', 'Calendar', 'Documents', 'Invoices', 'Clients'].map((t) => (
                         <a className="secondary-button" href={'#' + t} key={t}>
                           {t === 'Subscriptions'
                             ? 'Track subscriptions'
-                            : 'Add ' + (t === 'Clients' ? 'client' : t.toLowerCase())}
+                            : ['Calendar', 'Documents'].includes(t)
+                              ? 'Open ' + t.toLowerCase()
+                              : 'Add ' + (t === 'Clients' ? 'client' : t.toLowerCase())}
                         </a>
                       ))}
                     </div>
+                    {tab === 'Overview' && (
+                      <FinancialOverview
+                        api={call}
+                        scope={w.id + environment}
+                        timezone={account.profile?.timezone || 'Africa/Nairobi'}
+                      />
+                    )}
                     {list(data.income, ['description', 'amount_minor', 'currency', 'occurred_on'])}
                   </>
                 )}
@@ -1015,51 +1033,6 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
           </ServiceGate>
         )}
       </main>
-      {appInfoOpen && appContext.app && (
-        <Overlay portal onClose={() => setAppInfoOpen(false)}>
-          <section
-            className="panel immersive-app-info-panel"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="focused-app-info-title"
-          >
-            <div className="section-heading">
-              <div>
-                <span className="eyebrow">App information</span>
-                <h2 id="focused-app-info-title">{appContext.app.name}</h2>
-              </div>
-              <button
-                className="icon-button"
-                aria-label="Close app information"
-                onClick={() => setAppInfoOpen(false)}
-              >
-                <Icon name="close" />
-              </button>
-            </div>
-            <p>{appContext.app.description}</p>
-            <p className="environment-note">
-              {personal
-                ? 'Personal records · payment simulations stay separate from manual entries.'
-                : 'Developer sandbox · test records and isolated schemas only.'}
-            </p>
-            <h3>Required services</h3>
-            <ul className="immersive-app-services">
-              {(appContext.app.required_services || []).map((id: string) => {
-                const service = market.catalog?.services?.find((item: any) => item.id === id);
-                return (
-                  <li key={id}>
-                    <span>{service?.name || id.replaceAll('_', ' ')}</span>
-                    <small>{service?.status?.replaceAll('_', ' ') || 'Access managed by workspace'}</small>
-                  </li>
-                );
-              })}
-            </ul>
-            <button className="button" onClick={() => setAppInfoOpen(false)}>
-              Done
-            </button>
-          </section>
-        </Overlay>
-      )}
     </div>
   );
 }

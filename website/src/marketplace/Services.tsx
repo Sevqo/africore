@@ -174,15 +174,27 @@ const tabServices = (tab: string) =>
       ? ['expenses', 'cash_flow']
       : tab === 'Subscriptions'
         ? ['cash_flow', 'expenses']
-        : tab === 'Forecasts'
-          ? ['forecasting', 'intelligence']
-          : tab === 'Connect'
-            ? ['connect', 'data']
-            : tab === 'Business Passport'
-              ? trustServices
-              : tab === 'API Explorer'
-                ? apiExplorerServices
-                : [serviceForTab(tab)];
+        : tab === 'Calendar'
+          ? ['calendar']
+          : tab === 'Documents'
+            ? ['documents']
+            : tab === 'Website'
+              ? ['website']
+              : tab === 'Automations'
+                ? ['automations']
+                : tab === 'Studio'
+                  ? ['data', 'customers']
+                  : tab === 'Integrations Hub'
+                    ? ['connect', 'data']
+                    : tab === 'Forecasts'
+                      ? ['forecasting', 'intelligence']
+                      : tab === 'Connect'
+                        ? ['connect', 'data']
+                        : tab === 'Business Passport'
+                          ? trustServices
+                          : tab === 'API Explorer'
+                            ? apiExplorerServices
+                            : [serviceForTab(tab)];
 export function favoriteTabs(m: MarketplaceState): string[] {
   return (m.catalog?.services || [])
     .filter((s: any) => s.status === 'active' && s.entitlement?.favorite)

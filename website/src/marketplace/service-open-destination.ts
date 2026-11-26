@@ -45,31 +45,29 @@ const destinations: Record<string, ServiceOpenDestination> = {
   website: { tab: 'Apps', app: 'website', section: 'overview' },
 };
 
-/** Personal workspaces use different tab labels for the same canonical records. */
+/** Personal workspaces use bundled service interfaces directly (no separate Apps store). */
 const personalDestinations: Record<string, ServiceOpenDestination> = {
   customers: { tab: 'Clients' },
   payments: { tab: 'Payment Records' },
   reconciliation: { tab: 'Payment Records' },
-  documents: { tab: 'Apps', app: 'documents', section: 'all' },
-  work: { tab: 'Apps', app: 'work', section: 'dashboard' },
+  calendar: { tab: 'Calendar' },
+  documents: { tab: 'Documents' },
+  website: { tab: 'Website' },
 };
 
-/** The developer console is an API console, not a merchant workspace. Business
- * services reachable by a Developer container open the sandbox API surface; the
- * documented synthetic invoice/payment/reconciliation contract lives there. */
+/** The developer console bundles service tools directly (no separate Apps store). */
 const developerDestinations: Record<string, ServiceOpenDestination> = {
   customers: { tab: 'API Explorer' },
   orders: { tab: 'API Explorer' },
   invoicing: { tab: 'API Explorer' },
   payments: { tab: 'API Explorer' },
   reconciliation: { tab: 'API Explorer' },
-  connect: { tab: 'API Explorer' },
+  connect: { tab: 'Integrations Hub' },
   inventory: { tab: 'API Explorer' },
   fulfillment: { tab: 'API Explorer' },
   expenses: { tab: 'API Explorer' },
-  work: { tab: 'Apps', app: 'work', section: 'dashboard' },
-  intelligence: { tab: 'Apps', app: 'analytics', section: 'dashboard' },
-  automations: { tab: 'Apps', app: 'automations', section: 'dashboard' },
+  intelligence: { tab: 'Usage & Limits' },
+  automations: { tab: 'Automations' },
   developer_api: { tab: 'My Applications' },
 };
 

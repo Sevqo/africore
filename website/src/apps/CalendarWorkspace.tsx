@@ -225,7 +225,7 @@ export function CalendarWorkspace({
       const to = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 181).toISOString();
       const [e, m] = await Promise.all([
         api(`/calendar/events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`),
-        api('/team'),
+        api('/team').catch(() => ({ data: [] })),
       ]);
       setEvents(e.data || []);
       setMembers(

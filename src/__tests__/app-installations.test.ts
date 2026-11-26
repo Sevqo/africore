@@ -246,18 +246,9 @@ test('app compatibility offers tailored Personal and Developer registries, role-
   assert.equal(catalog.status, 200);
   assert.deepEqual(
     catalog.data.apps.map((a: any) => a.id),
-    [
-      'calendar',
-      'website',
-      'documents',
-      'work',
-      'finance',
-      'analytics',
-      'subscriptions',
-      'knowledge_learning',
-    ],
+    ['calendar', 'website', 'documents', 'finance', 'analytics', 'subscriptions'],
   );
-  assert.equal(catalog.data.total_workspace_apps, 8);
+  assert.equal(catalog.data.total_workspace_apps, 6);
   assert.equal(catalog.data.restricted_apps.length, 0);
   assert.equal((await api(pp + '/apps/sales/installation-preview')).status, 403);
   assert.equal((await api(pp + '/apps/people/installation-preview')).status, 403);
@@ -274,9 +265,9 @@ test('app compatibility offers tailored Personal and Developer registries, role-
   assert.equal(devCatalog.status, 200);
   assert.deepEqual(
     devCatalog.data.apps.map((a: any) => a.id),
-    ['work', 'analytics', 'automations', 'knowledge_learning', 'studio', 'integrations_hub'],
+    ['analytics', 'automations', 'studio', 'integrations_hub'],
   );
-  assert.equal(devCatalog.data.total_workspace_apps, 6);
+  assert.equal(devCatalog.data.total_workspace_apps, 4);
   assert.equal((await api(dp + '/apps/people/installation-preview')).status, 403);
   assert.equal((await api(dp + '/apps/pos/installation-preview')).status, 403);
   const studioPreview = await api(dp + '/apps/studio/installation-preview');

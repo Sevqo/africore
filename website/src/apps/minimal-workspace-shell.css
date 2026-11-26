@@ -28,10 +28,10 @@
   display: none !important;
 }
 
-/* Flush White Odoo Module Navigation Bar across ALL 26 Apps */
-.business-shell .app-section-tabs,
-.business-shell .crm-section-nav,
-.business-shell .acc-module-nav {
+/* Flush White Odoo Module Navigation Bar across Business, Personal, and Developer */
+:is(.business-shell, .focused-account) .app-section-tabs,
+:is(.business-shell, .focused-account) .crm-section-nav,
+:is(.business-shell, .focused-account) .acc-module-nav {
   display: flex;
   align-items: stretch;
   gap: 2px;
@@ -43,9 +43,9 @@
   scrollbar-width: thin;
 }
 
-.business-shell .app-section-tabs button,
-.business-shell .crm-section-nav button,
-.business-shell .acc-module-nav button {
+:is(.business-shell, .focused-account) .app-section-tabs button,
+:is(.business-shell, .focused-account) .crm-section-nav button,
+:is(.business-shell, .focused-account) .acc-module-nav button {
   flex: 0 0 auto;
   min-height: 42px;
   padding: 8px 14px !important;
@@ -60,27 +60,71 @@
   cursor: pointer;
 }
 
-.business-shell .app-section-tabs button:hover,
-.business-shell .crm-section-nav button:hover,
-.business-shell .acc-module-nav button:hover {
+:is(.business-shell, .focused-account) .app-section-tabs button:hover,
+:is(.business-shell, .focused-account) .crm-section-nav button:hover,
+:is(.business-shell, .focused-account) .acc-module-nav button:hover {
   color: #111827 !important;
   background: #f9fafb !important;
 }
 
-.business-shell .app-section-tabs button[aria-current='page'],
-.business-shell .crm-section-nav button.is-active,
-.business-shell .acc-module-nav button.active,
-.business-shell .acc-module-nav button[aria-current='page'] {
+:is(.business-shell, .focused-account) .app-section-tabs button[aria-current='page'],
+:is(.business-shell, .focused-account) .crm-section-nav button.is-active,
+:is(.business-shell, .focused-account) .acc-module-nav button.active,
+:is(.business-shell, .focused-account) .acc-module-nav button[aria-current='page'] {
   color: #166534 !important;
   font-weight: 700 !important;
   border-bottom-color: #166534 !important;
   background: transparent !important;
 }
 
-/* Crisp Primary & Secondary Buttons (Inspora / Salezify / Odoo Minimal) */
-.business-shell .button,
-.business-shell .sales-primary,
-.business-shell button.primary {
+/* Clean More dropdown menu inside section tabs (no raw borders) */
+:is(.business-shell, .focused-account) .app-section-overflow summary {
+  list-style: none;
+  cursor: pointer;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+:is(.business-shell, .focused-account) .app-section-overflow summary::-webkit-details-marker {
+  display: none;
+}
+:is(.business-shell, .focused-account) .app-section-overflow-menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  margin-top: 6px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
+}
+:is(.business-shell, .focused-account) .app-section-overflow-menu button {
+  min-height: 34px !important;
+  padding: 6px 12px !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  background: #f9fafb !important;
+  color: #1f2937 !important;
+}
+:is(.business-shell, .focused-account) .app-section-overflow-menu button:hover {
+  background: #ecfdf5 !important;
+  border-color: #bbf7d0 !important;
+  color: #166534 !important;
+}
+
+/* Crisp Primary & Secondary Buttons across Business, Personal, and Developer */
+:is(.business-shell, .focused-account) .button,
+:is(.business-shell, .focused-account) .sales-primary,
+:is(.business-shell, .focused-account) button.primary {
   background: #166534 !important;
   color: #ffffff !important;
   border: 1px solid #166534 !important;
@@ -92,13 +136,13 @@
   box-shadow: 0 1px 2px rgba(22, 101, 52, 0.14) !important;
 }
 
-.business-shell .button:hover:not(:disabled),
-.business-shell .sales-primary:hover:not(:disabled) {
+:is(.business-shell, .focused-account) .button:hover:not(:disabled),
+:is(.business-shell, .focused-account) .sales-primary:hover:not(:disabled) {
   background: #14532d !important;
   border-color: #14532d !important;
 }
 
-.business-shell .secondary-button {
+:is(.business-shell, .focused-account) .secondary-button {
   background: #ffffff !important;
   color: #111827 !important;
   border: 1px solid #d1d5db !important;
@@ -109,9 +153,30 @@
   min-height: 36px;
 }
 
-.business-shell .secondary-button:hover:not(:disabled) {
+:is(.business-shell, .focused-account) .secondary-button:hover:not(:disabled) {
   background: #f9fafb !important;
   border-color: #9ca3af !important;
+}
+
+:is(.business-shell, .focused-account) .secondary-button[aria-pressed='true'] {
+  background: #ecfdf5 !important;
+  border-color: #166534 !important;
+  color: #166534 !important;
+}
+
+:is(.business-shell, .focused-account) .quiet-button {
+  background: transparent !important;
+  color: #374151 !important;
+  border: 1px solid transparent !important;
+  border-radius: 7px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  padding: 6px 10px !important;
+}
+
+:is(.business-shell, .focused-account) .quiet-button:hover:not(:disabled) {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
 }
 
 /* Single-Row Odoo Control Panel (.ac-odoo-cp & .ac-control-panel) */

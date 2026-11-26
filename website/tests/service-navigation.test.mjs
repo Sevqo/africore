@@ -158,9 +158,13 @@ test('personal and developer workspaces use their own tab labels instead of dead
       .tab,
     'Payment Records',
   );
-  for (const id of ['orders', 'invoicing', 'payments', 'reconciliation', 'connect']) {
+  for (const id of ['orders', 'invoicing', 'payments', 'reconciliation']) {
     assert.equal(serviceOpenDestination({ id, tabs: [] }, 'developer').tab, 'API Explorer');
   }
+  assert.equal(
+    serviceOpenDestination({ id: 'connect', tabs: [] }, 'developer').tab,
+    'Integrations Hub',
+  );
   assert.equal(
     serviceOpenDestination({ id: 'developer_api', tabs: ['Developers'] }, 'developer').tab,
     'My Applications',

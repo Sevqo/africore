@@ -251,10 +251,17 @@ export function DocumentsWorkspace({
     setMemberError('');
     api('/team')
       .then((result) => {
-        if (current) setMembers(result.data);
+        if (current) setMembers(result.data || []);
       })
       .catch((e) => {
-        if (current) setMemberError(e.message || 'Current workspace members could not be loaded.');
+        if (current) {
+          const msg = String((e as Error).message || '');
+          if (/not available to this workspace type|403/i.test(msg)) {
+            setMembers([]);
+          } else {
+            setMemberError(msg || 'Current workspace members could not be loaded.');
+          }
+        }
       });
     return () => {
       current = false;
