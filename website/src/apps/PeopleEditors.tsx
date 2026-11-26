@@ -29,10 +29,10 @@ export function EmployeeEditor({
         aria-modal="true"
         aria-labelledby="employee-title"
       >
-        <h2 id="employee-title">{e ? 'Edit employee' : 'Create employee'}</h2>
+        <h2 id="employee-title">{e ? 'Edit employee' : 'Add employee'}</h2>
         <p>
-          Employment records are separate from login identities. Only an administrator can establish
-          a link to a current member. An established link cannot be reassigned here.
+          Link a workspace member to enable self-service attendance, leave requests, and synced
+          schedules, or create an employment-only profile.
         </p>
         <Form
           submit={async (d) => {

@@ -168,8 +168,8 @@ export async function currentMember(a: Access, write = false) {
     'SELECT m.role,w.kind,w.status FROM ac_memberships m JOIN ac_workspaces w ON w.id=m.org_id WHERE m.org_id=? AND m.user_id=?',
     [a.org, a.actor],
   );
-  if (!m || m.kind !== 'business' || m.status !== 'active')
-    fail(403, 'Current active Business membership required');
+  if (!m || !['business', 'personal', 'developer'].includes(m.kind) || m.status !== 'active')
+    fail(403, 'Current active workspace membership required');
   if (write && !permitted(m.role, 'operations')) fail(403, 'Operational write authority required');
   return m.role as string;
 }

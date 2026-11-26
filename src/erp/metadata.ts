@@ -157,6 +157,7 @@ for (const suffix of [
   'GET /work/projects/:id/updates',
   'POST /work/projects/:id/updates',
   'POST /work/projects/:id/tasks/:task/recurrence/generate',
+  'POST /work/meetings/:id/respond',
 ]) {
   const [method, path] = suffix.split(' '),
     key = method + ' /organizations/:org' + path;
@@ -175,8 +176,10 @@ for (const suffix of [
   'PUT /people/departments/:id',
   'GET /people/employees',
   'POST /people/employees',
+  'POST /people/employees/sync-team',
   'GET /people/employees/:id',
   'PUT /people/employees/:id',
+  'POST /people/employees/:id/remove',
   'GET /people/employees/:id/history',
   'GET /people/employees/:id/compensation',
   'POST /people/employees/:id/compensation',

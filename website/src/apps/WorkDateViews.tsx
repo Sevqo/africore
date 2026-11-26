@@ -201,21 +201,29 @@ export function WorkDateViews({
                     </p>
                   ))}
                 {meetings
-                  .filter((ev) => String(ev.starts_at || '').slice(0, 10) === date)
+                  .filter((ev) => String(ev.starts_at || ev.start || '').slice(0, 10) === date)
                   .map((ev) => (
                     <p
-                      key={`${ev.event_id || ev.id}:${ev.starts_at}`}
+                      key={`${ev.event_id || ev.id}:${ev.starts_at || ev.start}`}
+                      title={`${ev.title}${ev.location ? ' · ' + ev.location : ''}`}
                       style={{
                         margin: '4px 0 0',
                         padding: '3px 6px',
                         borderRadius: '6px',
                         background: '#ecfdf5',
-                        color: '#065f46',
+                        color: '#166534',
                         fontSize: '12px',
                         fontWeight: 500,
                       }}
                     >
-                      Meeting: {ev.title}
+                      {ev.starts_at || ev.start
+                        ? new Date(ev.starts_at || ev.start).toLocaleTimeString('en-KE', {
+                            timeZone: ev.timezone || 'Africa/Nairobi',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          }) + ' '
+                        : ''}
+                      {ev.title}
                     </p>
                   ))}
               </>

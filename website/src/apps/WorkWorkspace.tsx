@@ -52,7 +52,9 @@ export function WorkWorkspace({
     [messageOffset, setMessageOffset] = useState(0),
     [statusFilter, setStatusFilter] = useState('all'),
     [assigneeFilter, setAssigneeFilter] = useState('all'),
-    [workspaceMeetings, setWorkspaceMeetings] = useState<any[]>([]);
+    [workspaceMeetings, setWorkspaceMeetings] = useState<any[]>([]),
+    [workspaceActivities, setWorkspaceActivities] = useState<any[]>([]),
+    [myAssignedTasksCount, setMyAssignedTasksCount] = useState(0);
   const targetRequest = useRef(0);
   const [viewing, setViewing] = useState<any>(null),
     [targetTask, setTargetTask] = useState('');
@@ -129,10 +131,18 @@ export function WorkWorkspace({
     setTeamError('');
     api('/work/my-work')
       .then((res) => {
-        if (current) setWorkspaceMeetings(res?.meetings || []);
+        if (current) {
+          setWorkspaceMeetings(res?.meetings || []);
+          setWorkspaceActivities(res?.activities || []);
+          setMyAssignedTasksCount(Number(res?.total || 0));
+        }
       })
       .catch(() => {
-        if (current) setWorkspaceMeetings([]);
+        if (current) {
+          setWorkspaceMeetings([]);
+          setWorkspaceActivities([]);
+          setMyAssignedTasksCount(0);
+        }
       });
     void loadWorkDirectory(
       api,
@@ -487,7 +497,18 @@ export function WorkWorkspace({
             changeView('my-work');
           }}
         >
-          My Tasks
+          My Tasks &amp; Schedule
+          {workspaceMeetings.length + workspaceActivities.length + myAssignedTasksCount > 0
+            ? ` (${workspaceMeetings.length + workspaceActivities.length + myAssignedTasksCount})`
+            : ''}
+        </button>
+        <button
+          onClick={() => {
+            setSelected('');
+            changeView('calendar');
+          }}
+        >
+          Calendar
         </button>
         <button onClick={() => changeView(selected ? 'timeline' : 'planning')}>Planning</button>
         <button onClick={() => changeView('timesheets')}>Timesheets</button>
@@ -582,8 +603,73 @@ export function WorkWorkspace({
           {view === 'reporting' && (
             <WorkReports api={api} projects={directory.data} members={members} />
           )}
-          {view !== 'my-work' && !['reporting', 'planning', 'configuration'].includes(view) && (
-            <section className="panel">
+          {view === 'calendar' && (
+            <WorkDateViews
+              tasks={[]}
+              milestones={[]}
+              meetings={workspaceMeetings}
+              view="calendar"
+              onOpen={openTask}
+            />
+          )}
+          {view !== 'my-work' && !['reporting', 'planning', 'configuration', 'calendar'].includes(view) && (
+            <>
+              {(workspaceMeetings.length > 0 || workspaceActivities.length > 0) && (
+                <section className="panel" aria-label="Upcoming schedule and assigned work">
+                  <div className="section-heading">
+                    <div>
+                      <h2>Upcoming meetings &amp; assigned schedule</h2>
+                      <p>
+                        Synced directly from Workspace Calendar and cross-app assignments so every
+                        team member stays up to date inside Work.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => {
+                        setSelected('');
+                        changeView('my-work');
+                      }}
+                    >
+                      Open full schedule &amp; RSVP
+                    </button>
+                  </div>
+                  <div className="app-directory">
+                    {workspaceMeetings.slice(0, 4).map((m: any) => (
+                      <article className="panel" key={m.id}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                          <strong>{m.title}</strong>
+                          <span className="badge">
+                            {m.invited ? `Invited (${m.my_response})` : m.my_response}
+                          </span>
+                        </div>
+                        <p style={{ margin: '6px 0', fontSize: 13 }}>
+                          {new Date(m.start).toLocaleString('en-KE', {
+                            timeZone: m.timezone || 'Africa/Nairobi',
+                            dateStyle: 'medium',
+                            timeStyle: 'short',
+                          })}
+                          {m.location ? ` · ${m.location}` : ''}
+                        </p>
+                      </article>
+                    ))}
+                    {workspaceActivities.slice(0, 4).map((act: any) => (
+                      <article className="panel" key={act.kind + ':' + act.id}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                          <strong>{act.title}</strong>
+                          <span className="badge">{act.kind.replaceAll('_', ' ')}</span>
+                        </div>
+                        <p style={{ margin: '6px 0', fontSize: 13 }}>
+                          Status: {act.status}
+                          {act.due_on ? ` · Due ${act.due_on}` : ''}
+                        </p>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              )}
+              <section className="panel">
               <div className="section-heading">
                 <h2>Projects</h2>
                 <button
@@ -773,6 +859,7 @@ export function WorkWorkspace({
                 </p>
               )}
             </section>
+            </>
           )}
         </>
       )}

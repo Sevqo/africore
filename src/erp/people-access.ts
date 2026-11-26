@@ -44,8 +44,8 @@ export async function peopleContext(a: Access, write = false) {
     hr_view: admin || hrRole || !!grant,
     hr_write: admin || hrRole || (permitted(role, 'operations') && ['edit', 'manage'].includes(grant)),
     hr_manage: admin || hrRole || (permitted(role, 'operations') && grant === 'manage'),
-    comp_view: admin || !!comp,
-    comp_write: admin || (permitted(role, 'operations') && comp === 'edit'),
+    comp_view: admin || hrRole || !!comp,
+    comp_write: admin || hrRole || (permitted(role, 'operations') && comp === 'edit'),
     recruitment_view: admin || hrRole || !!grant || !!recruiter,
     recruitment_write:
       admin ||

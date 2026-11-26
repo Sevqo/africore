@@ -355,6 +355,8 @@ platform.post(
         [row.org_id, u.id, row.role],
       );
       await audit(row.org_id, u.id, 'invitation.accepted', row.id);
+      const { autoSyncMembersOnInvitationAccept } = await import('../erp/people-sync');
+      await autoSyncMembersOnInvitationAccept(row.org_id, u.id);
     });
     res.json({ accepted: true });
   }),
@@ -409,6 +411,8 @@ platform.delete(
         String(req.params.member),
       ]);
       await audit(a.org, a.actor, 'membership.removed', String(req.params.member));
+      const { archiveEmployeeForRemovedMember } = await import('../erp/people-sync');
+      await archiveEmployeeForRemovedMember(a.org, String(req.params.member), a.actor, a.role);
     });
     res.json({ removed: true });
   }),

@@ -296,12 +296,18 @@ export async function calendarEvents(a: Access, from?: string, to?: string) {
   const events = await visible(a, 'calendar_event');
   const role = await currentMember(a);
   if (!['owner', 'admin'].includes(role)) {
-    const owned = await dbAll(
-      "SELECT id FROM ac_erp_objects WHERE org_id=? AND environment=? AND kind='calendar_event' AND owner_id=? AND status='active'",
-      [a.org, a.environment, a.actor],
+    const allActive = await dbAll(
+      "SELECT id FROM ac_erp_objects WHERE org_id=? AND environment=? AND kind='calendar_event' AND status='active' ORDER BY created_at DESC LIMIT 500",
+      [a.org, a.environment],
     );
     const byId = new Map(events.map((event) => [event.id, event]));
-    for (const row of owned) byId.set(row.id, await read(a, row.id, 'calendar_event'));
+    for (const row of allActive) {
+      if (byId.has(row.id)) continue;
+      const ev = await read(a, row.id, 'calendar_event');
+      if (ev.owner_id === a.actor || ev.data.visibility !== 'private') {
+        byId.set(row.id, ev);
+      }
+    }
     events.splice(0, events.length, ...byId.values());
   }
   const nowMs = Date.now();
@@ -740,10 +746,10 @@ export async function respondCalendarInvite(
     async () => {
       const old = await read(a, id, 'calendar_event'),
         person = old.data.attendees.find((x: any) => x.user_id === a.actor);
-      if (!person) fail(404, 'Invitation not found');
-      const attendees = old.data.attendees.map((x: any) =>
-        x.user_id === a.actor ? { ...x, response } : x,
-      );
+      if (!person && old.data.visibility === 'private') fail(404, 'Invitation not found');
+      const attendees = person
+        ? old.data.attendees.map((x: any) => (x.user_id === a.actor ? { ...x, response } : x))
+        : [...old.data.attendees, { user_id: a.actor, response }];
       return update(a, old, { ...old.data, attendees });
     },
     { meter: false },

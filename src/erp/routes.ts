@@ -297,10 +297,12 @@ import {
   employeeDirectory,
   employeeDetails,
   saveEmployee,
+  removeEmployee,
   employeeHistory,
   compensationRecords,
   recordCompensation,
 } from './people-profiles';
+import { syncWorkspaceMembersToEmployees } from './people-sync';
 import {
   leaveTypes,
   saveLeaveType,
@@ -387,6 +389,7 @@ import {
 import { route, access } from '../platform/auth';
 import {
   myWork,
+  respondWorkMeeting,
   workTarget,
   workProjects,
   workProject,
@@ -865,6 +868,14 @@ erp.post(
       ),
   ),
 );
+erp.post(
+  '/organizations/:org/work/meetings/:id/respond',
+  route(async (req, res) =>
+    res.json(
+      await respondWorkMeeting(await access(req), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
 erp.get(
   '/organizations/:org/work/projects/:id/history/:resource',
   route(async (req, res) =>
@@ -923,6 +934,12 @@ erp.post(
     res.json(await saveEmployee(await access(req), null, req.body, key(req))),
   ),
 );
+erp.post(
+  '/organizations/:org/people/employees/sync-team',
+  route(async (req, res) =>
+    res.json(await syncWorkspaceMembersToEmployees(await access(req))),
+  ),
+);
 erp.get(
   '/organizations/:org/people/employees/:id',
   route(async (req, res) =>
@@ -933,6 +950,12 @@ erp.put(
   '/organizations/:org/people/employees/:id',
   route(async (req, res) =>
     res.json(await saveEmployee(await access(req), String(req.params.id), req.body, key(req))),
+  ),
+);
+erp.post(
+  '/organizations/:org/people/employees/:id/remove',
+  route(async (req, res) =>
+    res.json(await removeEmployee(await access(req), String(req.params.id), req.body, key(req))),
   ),
 );
 erp.get(

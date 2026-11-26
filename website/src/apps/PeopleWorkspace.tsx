@@ -54,13 +54,41 @@ export function PeopleWorkspace({
     [query, setQuery] = useState(''),
     [offset, setOffset] = useState(0),
     [directoryView, setDirectoryView] = useState<'cards' | 'list'>('cards'),
-    [directoryFilters, setDirectoryFilters] = useState({ status: '', department_id: '' });
+    [directoryFilters, setDirectoryFilters] = useState({ status: '', department_id: '' }),
+    [syncingTeam, setSyncingTeam] = useState(false),
+    [autoSyncedScope, setAutoSyncedScope] = useState(''),
+    [removingEmployee, setRemovingEmployee] = useState(false),
+    [removeMembership, setRemoveMembership] = useState(false),
+    [removeReason, setRemoveReason] = useState('');
   const saved = (message = 'Saved.') => {
     setRevision((v) => v + 1);
     setNotice(message);
     setEditing(null);
     setPreview(null);
+    setRemovingEmployee(false);
+    setRemoveMembership(false);
+    setRemoveReason('');
   };
+  async function syncTeamMembers(silent = false) {
+    if (syncingTeam) return;
+    setSyncingTeam(true);
+    setError('');
+    try {
+      const res = await api('/people/employees/sync-team', 'POST', {});
+      setRevision((v) => v + 1);
+      if (!silent || res?.synced > 0) {
+        setNotice(
+          res?.synced > 0
+            ? `Synced ${res.synced} workspace member${res.synced === 1 ? '' : 's'} into the People directory.`
+            : 'All current workspace members are already linked in People.',
+        );
+      }
+    } catch (e) {
+      if (!silent) setError((e as Error).message);
+    } finally {
+      setSyncingTeam(false);
+    }
+  }
   useEffect(() => {
     setConfig(null);
     setSelected('');
@@ -168,6 +196,37 @@ export function PeopleWorkspace({
       active = false;
     };
   }, [scope, selected, revision, config?.employee_id]);
+  const unlinkedMembersCount = members.filter(
+    (m) => !(directory?.data || []).some((e: any) => e.data?.linked_user_id === m.id),
+  ).length;
+  useEffect(() => {
+    if (
+      config?.access?.hr_write &&
+      config?.service_active &&
+      directory &&
+      directory.total === 0 &&
+      members.length > 0 &&
+      !query &&
+      !directoryFilters.status &&
+      !directoryFilters.department_id &&
+      autoSyncedScope !== scope &&
+      !syncingTeam
+    ) {
+      setAutoSyncedScope(scope);
+      void syncTeamMembers(true);
+    }
+  }, [
+    config?.access?.hr_write,
+    config?.service_active,
+    directory?.total,
+    members.length,
+    query,
+    directoryFilters.status,
+    directoryFilters.department_id,
+    scope,
+    autoSyncedScope,
+    syncingTeam,
+  ]);
   if (!config)
     return (
       <div>
@@ -224,10 +283,26 @@ export function PeopleWorkspace({
             activation.
           </p>
         )}
-        {!config.configured && (
+        {!config.configured && access.hr_write && (
           <p role="status">
-            An administrator must review employer policy before employee records can be created.
+            Default employer policy will be initialized automatically when you sync workspace
+            members or add an employee. You can customize working days and schedules anytime in
+            Settings.
           </p>
+        )}
+        {access.hr_write && config.service_active && unlinkedMembersCount > 0 && (
+          <div className="form-actions" style={{ marginTop: 10 }}>
+            <button
+              type="button"
+              className="button"
+              disabled={syncingTeam}
+              onClick={() => void syncTeamMembers(false)}
+            >
+              {syncingTeam
+                ? 'Syncing workspace members…'
+                : `Sync ${unlinkedMembersCount} workspace member${unlinkedMembersCount === 1 ? '' : 's'} into People`}
+            </button>
+          </div>
         )}
         {config.employee_id && (
           <button className="secondary-button" onClick={() => setSelected(config.employee_id)}>
@@ -272,13 +347,25 @@ export function PeopleWorkspace({
           <div className="section-heading">
             <h2>Authorized employee directory</h2>
             {access.hr_write && (
-              <button
-                className="button"
-                disabled={!config.configured}
-                onClick={() => setEditing({ new: true })}
-              >
-                Create employee
-              </button>
+              <div className="form-actions">
+                {members.length > 0 && (
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    disabled={syncingTeam || !config.service_active}
+                    onClick={() => void syncTeamMembers(false)}
+                  >
+                    {syncingTeam ? 'Syncing…' : 'Sync workspace team'}
+                  </button>
+                )}
+                <button
+                  className="button"
+                  disabled={!config.service_active}
+                  onClick={() => setEditing({ new: true })}
+                >
+                  Add employee
+                </button>
+              </div>
             )}
           </div>
           <Field label="Search visible work profiles">
@@ -465,11 +552,102 @@ export function PeopleWorkspace({
             <div className="section-heading">
               <h2>{detail.data.name}</h2>
               {access.hr_write && (
-                <button className="secondary-button" onClick={() => setEditing(detail)}>
-                  Edit employee
-                </button>
+                <div className="form-actions">
+                  <button className="secondary-button" onClick={() => setEditing(detail)}>
+                    Edit employee
+                  </button>
+                  {access.hr_manage && detail.status !== 'inactive' && (
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => setRemovingEmployee((v) => !v)}
+                    >
+                      {removingEmployee ? 'Cancel removal' : 'Remove / archive employee'}
+                    </button>
+                  )}
+                  {access.hr_manage && detail.status === 'inactive' && (
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={async () => {
+                        setError('');
+                        try {
+                          await api('/people/employees/' + detail.id, 'PUT', {
+                            ...detail.data,
+                            expected_version: detail.version,
+                            status: 'active',
+                          });
+                          saved('Employee reactivated.');
+                        } catch (e) {
+                          setError((e as Error).message);
+                        }
+                      }}
+                    >
+                      Reactivate employee
+                    </button>
+                  )}
+                </div>
               )}
             </div>
+            {removingEmployee && access.hr_manage && (
+              <div className="panel" style={{ margin: '12px 0', borderColor: '#d1d5db' }}>
+                <h3>Archive / remove {detail.data.name}</h3>
+                <p>
+                  Archiving sets the employee status to <strong>inactive</strong> while keeping
+                  their employment history intact.
+                </p>
+                <Field label="Reason (optional)">
+                  <input
+                    value={removeReason}
+                    maxLength={1000}
+                    placeholder="Role ended, resigned, offboarded…"
+                    onChange={(e) => setRemoveReason(e.target.value)}
+                  />
+                </Field>
+                {detail.workspace?.linked_member && detail.data.linked_user_id !== config.actor_id && (
+                  <label className="checkbox-field" style={{ margin: '10px 0' }}>
+                    <input
+                      type="checkbox"
+                      checked={removeMembership}
+                      onChange={(e) => setRemoveMembership(e.target.checked)}
+                    />
+                    Also remove this person&apos;s workspace access (Team membership)
+                  </label>
+                )}
+                <div className="form-actions">
+                  <button
+                    type="button"
+                    className="button"
+                    onClick={async () => {
+                      setError('');
+                      try {
+                        const res = await api('/people/employees/' + detail.id + '/remove', 'POST', {
+                          expected_version: detail.version,
+                          remove_membership: removeMembership,
+                          reason: removeReason,
+                        });
+                        saved(
+                          res?.membership_removed
+                            ? 'Employee archived and workspace access removed.'
+                            : 'Employee archived (set to inactive).',
+                        );
+                      } catch (e) {
+                        setError((e as Error).message);
+                      }
+                    }}
+                  >
+                    Confirm remove / archive
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => setRemovingEmployee(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
             <p>
               {detail.data.employee_number} · {detail.data.job_title} · {detail.status}
             </p>

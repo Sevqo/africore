@@ -16,7 +16,9 @@ export function MyWork({
   const [data, setData] = useState<any>(null),
     [offset, setOffset] = useState(0),
     [status, setStatus] = useState('open'),
-    [error, setError] = useState('');
+    [error, setError] = useState(''),
+    [localRevision, setLocalRevision] = useState(0),
+    [respondingId, setRespondingId] = useState('');
   useEffect(() => {
     let live = true;
     setData(null);
@@ -31,7 +33,20 @@ export function MyWork({
     return () => {
       live = false;
     };
-  }, [scope, revision, offset, status]);
+  }, [scope, revision, localRevision, offset, status]);
+
+  async function respondMeeting(eventId: string, response: 'accepted' | 'tentative' | 'declined') {
+    setRespondingId(eventId);
+    setError('');
+    try {
+      await api('/work/meetings/' + eventId + '/respond', 'POST', { response });
+      setLocalRevision((v) => v + 1);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setRespondingId('');
+    }
+  }
 
   function openAppSection(appId: string, section: string, param?: [string, string]) {
     const url = new URL(location.href);
@@ -82,20 +97,57 @@ export function MyWork({
                         timeStyle: 'short',
                       })}
                       {m.location ? ` · ${m.location}` : ''}
+                      {m.organizer_name ? ` · Organizer: ${m.organizer_name}` : ''}
                     </p>
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={() =>
-                        openAppSection(
-                          'calendar',
-                          m.invited ? 'invitations' : 'calendar',
-                          ['event', m.event_id],
-                        )
-                      }
-                    >
-                      Open in Calendar
-                    </button>
+                    {m.description && (
+                      <p style={{ margin: '4px 0 8px', fontSize: 13, color: '#4b5563' }}>
+                        {m.description}
+                      </p>
+                    )}
+                    <div className="form-actions" style={{ marginTop: 8 }}>
+                      {m.my_response !== 'organizer' && (
+                        <>
+                          {(['accepted', 'tentative', 'declined'] as const).map((choice) => (
+                            <button
+                              key={choice}
+                              type="button"
+                              className={m.my_response === choice ? 'button' : 'secondary-button'}
+                              disabled={respondingId === m.event_id}
+                              onClick={() => void respondMeeting(m.event_id, choice)}
+                            >
+                              {choice === 'accepted'
+                                ? 'Accept'
+                                : choice === 'tentative'
+                                  ? 'Tentative'
+                                  : 'Decline'}
+                            </button>
+                          ))}
+                        </>
+                      )}
+                      {m.meeting_url && (
+                        <a
+                          className="secondary-button"
+                          href={m.meeting_url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Join link
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        className="quiet-button"
+                        onClick={() =>
+                          openAppSection(
+                            'calendar',
+                            m.invited ? 'invitations' : 'calendar',
+                            ['event', m.event_id],
+                          )
+                        }
+                      >
+                        Open in Calendar
+                      </button>
+                    </div>
                   </article>
                 ))}
               </div>

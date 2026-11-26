@@ -4,6 +4,8 @@ import { dbAll, dbGet, dbRun } from '../db/adapter';
 import { type Access, fail } from '../platform/auth';
 import { permitted } from '../platform/domain';
 import { insert, update, read, decode as decodeERP, operation, history } from './store';
+import { ensurePeopleSettings } from './people-sync';
+import { audit } from '../platform/auth';
 import {
   peopleContext,
   requireHR,
@@ -57,9 +59,9 @@ export async function peopleConfiguration(a: Access) {
     configured: !!c.settings,
     service_active: c.service_active,
     version: c.settings?.version || 0,
-    policy: c.admin ? c.policy : publicPolicy,
+    policy: c.admin || c.role === 'hr' ? c.policy : publicPolicy,
     access: {
-      can_configure: c.admin && c.service_active,
+      can_configure: (c.admin || c.role === 'hr') && c.service_active,
       hr_view: c.hr_view,
       hr_write: c.hr_write && c.service_active,
       hr_manage: c.hr_manage && c.service_active,
@@ -88,7 +90,8 @@ export async function savePeopleConfiguration(a: Access, input: unknown, key: st
     d,
     async () => {
       const c = await peopleContext(a, true);
-      if (!c.admin) fail(403, 'Current owner or administrator required to delegate HR access');
+      if (!c.admin && c.role !== 'hr')
+        fail(403, 'Current owner, administrator, or HR manager required to configure People policy');
     },
     async () => {
       const c = await peopleContext(a, true);
@@ -159,7 +162,7 @@ export async function saveDepartment(
     () => requireHR(a, true),
     async () => {
       const c = await requireHR(a, true);
-      if (!c.settings) return fail(409, 'Review People policy first');
+      const settings = c.settings || (await ensurePeopleSettings(a));
       const old = departmentId ? await read(a, departmentId, 'department') : null;
       if ((old?.version || 0) !== d.expected_version) fail(409, 'Department changed; reload');
       if (d.manager_id && (await employeeRow(a, d.manager_id)).status !== 'active')
@@ -200,7 +203,7 @@ export async function saveDepartment(
       return old
         ? update(a, old, d, { status: d.active ? 'active' : 'archived' })
         : insert(a, 'department', d, {
-            root: c.settings.id,
+            root: settings.id,
             status: d.active ? 'active' : 'archived',
           });
     },
@@ -302,12 +305,13 @@ export async function saveEmployee(
     () => requireHR(a, true),
     async () => {
       const c = await requireHR(a, true);
-      if (!c.settings) return fail(409, 'Review People policy first');
+      const settings = c.settings || (await ensurePeopleSettings(a));
       const old = employeeId ? await read(a, employeeId, 'employee') : null;
       if ((old?.version || 0) !== d.expected_version) fail(409, 'Employee changed; reload');
       if (Number(d.start_on.slice(0, 4)) < 1900) fail(400, 'Use a supported employment start date');
       if ((old?.data.linked_user_id || null) !== d.linked_user_id) {
-        if (!c.admin) fail(403, 'Only an owner or administrator may establish a login link');
+        if (!c.hr_manage)
+          fail(403, 'Only an owner, administrator, or HR manager may establish a login link');
         if (old?.data.linked_user_id)
           fail(
             409,
@@ -386,7 +390,7 @@ export async function saveEmployee(
             { status: d.status, owner_id: d.linked_user_id || old.owner_id },
           )
         : await insert(a, 'employee', employeeData, {
-            root: c.settings.id,
+            root: settings.id,
             owner: d.linked_user_id || a.actor,
             status: d.status,
           });
@@ -516,6 +520,77 @@ export async function recordCompensation(
         { ...d, employee_id: employeeId },
         { root: employeeId, parent: d.supersedes_id, status: 'recorded' },
       );
+    },
+  );
+}
+export async function removeEmployee(
+  a: Access,
+  employeeId: string,
+  input: unknown,
+  key: string,
+) {
+  const d = z
+    .object({
+      expected_version: z.number().int().min(1),
+      remove_membership: z.boolean().default(false),
+      reason: z.string().trim().max(1000).default(''),
+    })
+    .strict()
+    .parse(input);
+  return operation(
+    a,
+    'people.employee.remove:' + employeeId,
+    key,
+    d,
+    () => requireHR(a, true, true),
+    async () => {
+      const c = await requireHR(a, true, true);
+      const old = await read(a, employeeId, 'employee');
+      if (old.version !== d.expected_version) fail(409, 'Employee changed; reload');
+      const linkedUserId = old.data.linked_user_id || null;
+      let membershipRemoved = false;
+      if (d.remove_membership && linkedUserId) {
+        if (linkedUserId === a.actor)
+          fail(403, 'You cannot remove your own workspace membership');
+        const targetMember = await dbGet(
+          'SELECT role FROM ac_memberships WHERE org_id=? AND user_id=?',
+          [a.org, linkedUserId],
+        );
+        if (targetMember) {
+          if (targetMember.role === 'owner') {
+            if (c.role !== 'owner') fail(403, 'Owner permission required to remove a workspace owner');
+            const owners = await dbGet(
+              "SELECT COUNT(*) AS n FROM ac_memberships WHERE org_id=? AND role='owner'",
+              [a.org],
+            );
+            if (Number(owners.n) <= 1) fail(409, 'The last workspace owner cannot be removed');
+          }
+          await dbRun('DELETE FROM ac_memberships WHERE org_id=? AND user_id=?', [
+            a.org,
+            linkedUserId,
+          ]);
+          await audit(a.org, a.actor, 'membership.removed', linkedUserId);
+          membershipRemoved = true;
+        }
+      }
+      const nextNotes = d.reason
+        ? [old.data.hr_notes || '', `Offboarded: ${d.reason}`].filter(Boolean).join('\n')
+        : old.data.hr_notes || '';
+      await update(
+        a,
+        old,
+        { ...old.data, status: 'inactive', hr_notes: nextNotes },
+        { status: 'inactive' },
+        'archived',
+      );
+      await dbRun(
+        "UPDATE ac_people_employees SET status='inactive' WHERE employee_id=? AND org_id=? AND environment=?",
+        [employeeId, a.org, a.environment],
+      );
+      return {
+        ...(await employeeDetails(a, employeeId)),
+        membership_removed: membershipRemoved,
+      };
     },
   );
 }

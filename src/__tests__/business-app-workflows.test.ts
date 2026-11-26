@@ -1457,7 +1457,15 @@ test('notification preferences stay private and work without business apps in Pe
       ),
       0,
     );
-    if (kind === 'developer') assert.equal((await api(base + '/apps')).status, 403);
+    if (kind === 'developer') {
+      const devApps = await api(base + '/apps');
+      assert.equal(devApps.status, 200);
+      assert.deepEqual(
+        devApps.data.apps.map((app: any) => app.id),
+        ['analytics', 'automations', 'studio', 'integrations_hub'],
+      );
+      assert.equal((await api(base + '/apps/people/installation-preview')).status, 403);
+    }
   }
 });
 

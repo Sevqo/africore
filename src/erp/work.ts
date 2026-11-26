@@ -779,15 +779,22 @@ export async function myWork(a: Access, input: unknown) {
     if (!projects.has(t.root_id)) projects.set(t.root_id, await project(a, t.root_id));
 
   // Include upcoming Calendar meetings & workspace events visible to this worker
+  // Shared workspace events (visibility !== 'private') are visible to every current member,
+  // even if they joined after the event was scheduled or have minimal role access.
   const nowIso = new Date(Date.now() - 12 * 3600 * 1000).toISOString();
   const horizonIso = new Date(Date.now() + 30 * 86400 * 1000).toISOString();
-  const calRows = await dbAll(
-    "SELECT o.* FROM ac_erp_objects o WHERE o.org_id=? AND o.environment=? AND o.kind='calendar_event' AND o.status='active'" +
-      (!admin
-        ? ' AND (o.owner_id=? OR EXISTS(SELECT 1 FROM ac_erp_grants g WHERE g.org_id=o.org_id AND g.environment=o.environment AND g.resource_id=o.id AND g.user_id=?))'
-        : '') +
-      ' ORDER BY o.created_at DESC LIMIT 200',
-    [a.org, a.environment, ...(!admin ? [a.actor, a.actor] : [])],
+  const [calRows, memberProfiles] = await Promise.all([
+    dbAll(
+      "SELECT o.* FROM ac_erp_objects o WHERE o.org_id=? AND o.environment=? AND o.kind='calendar_event' AND o.status='active' ORDER BY o.created_at DESC LIMIT 200",
+      [a.org, a.environment],
+    ),
+    dbAll(
+      'SELECT u.id,u.email,p.display_name FROM ac_memberships m JOIN ac_users u ON u.id=m.user_id LEFT JOIN ac_profiles p ON p.user_id=u.id WHERE m.org_id=?',
+      [a.org],
+    ),
+  ]);
+  const memberNameById = new Map<string, string>(
+    memberProfiles.map((m: any) => [String(m.id), String(m.display_name || m.email || 'Team member')]),
   );
   const { expandCalendarSeries } = await import('../apps/calendar-recurrence');
   const meetings = calRows
@@ -806,12 +813,17 @@ export async function myWork(a: Access, input: unknown) {
           id: occ.id,
           event_id: ev.id,
           title: occ.data.title,
+          description: occ.data.description || '',
           start: occ.data.start,
+          starts_at: occ.data.start,
           end: occ.data.end,
+          ends_at: occ.data.end,
           timezone: occ.data.timezone,
           location: occ.data.location || '',
           meeting_url: occ.data.meeting_url || '',
+          visibility: ev.data.visibility || 'default',
           organizer_id: ev.data.organizer_id,
+          organizer_name: memberNameById.get(String(ev.data.organizer_id)) || 'Workspace organizer',
           invited: !!invited,
           my_response: invited?.response || (ev.data.organizer_id === a.actor ? 'organizer' : 'shared'),
         };
@@ -820,8 +832,8 @@ export async function myWork(a: Access, input: unknown) {
     .sort((left, right) => Date.parse(left.start) - Date.parse(right.start))
     .slice(0, 25);
 
-  // Include assigned CRM follow-ups, pending approvals, and field dispatches for this worker
-  const [crmRows, approvalRows, dispatchRows, actorProfile] = await Promise.all([
+  // Include assigned CRM follow-ups, pending approvals, field dispatches, and support tickets for this worker
+  const [crmRows, approvalRows, dispatchRows, ticketRows, actorProfile] = await Promise.all([
     dbAll(
       "SELECT id,kind,status,data,updated_at FROM ac_crm_entries WHERE org_id=? AND environment=? AND status NOT IN ('completed','cancelled','archived') ORDER BY updated_at DESC LIMIT 100",
       [a.org, a.environment],
@@ -832,6 +844,10 @@ export async function myWork(a: Access, input: unknown) {
     ),
     dbAll(
       "SELECT * FROM ac_erp_objects WHERE org_id=? AND environment=? AND kind='field_dispatch' AND status NOT IN ('completed','cancelled') ORDER BY created_at DESC LIMIT 50",
+      [a.org, a.environment],
+    ),
+    dbAll(
+      "SELECT * FROM ac_erp_objects WHERE org_id=? AND environment=? AND kind='support_ticket' AND status NOT IN ('resolved','closed','cancelled') ORDER BY created_at DESC LIMIT 50",
       [a.org, a.environment],
     ),
     dbGet(
@@ -887,6 +903,25 @@ export async function myWork(a: Access, input: unknown) {
       });
     }
   }
+  for (const row of ticketRows) {
+    const decoded = decode(a, row);
+    const assignee = String(decoded.data.assignee || decoded.data.assigned_to || '').toLowerCase();
+    if (
+      decoded.owner_id === a.actor ||
+      decoded.data.assignee_id === a.actor ||
+      (assignee && actorNames.some((n) => n.includes(assignee) || assignee.includes(n)))
+    ) {
+      activities.push({
+        id: decoded.id,
+        kind: 'support_ticket',
+        app_id: 'support',
+        section: 'tickets',
+        title: decoded.data.subject || decoded.data.title || 'Support ticket',
+        status: decoded.status,
+        due_on: decoded.data.sla_due_on || null,
+      });
+    }
+  }
 
   return {
     data: page.map((t) => ({ ...t, project_name: projects.get(t.root_id)!.data.name })),
@@ -900,6 +935,44 @@ export async function myWork(a: Access, input: unknown) {
     definition:
       'Tasks assigned to your current login across currently authorized projects, plus scheduled workspace meetings and assigned operational activities.',
   };
+}
+export async function respondWorkMeeting(
+  a: Access,
+  eventId: string,
+  input: unknown,
+  key: string,
+) {
+  const d = z
+    .object({ response: z.enum(['accepted', 'declined', 'tentative']) })
+    .strict()
+    .parse(input);
+  return operation(
+    a,
+    'work.meeting.respond:' + eventId,
+    key,
+    d,
+    async () => {
+      await authorize(a, 'work');
+    },
+    async () => {
+      const old = await read(a, eventId, 'calendar_event');
+      if (old.status !== 'active' || old.data.cancelled_at)
+        fail(409, 'This meeting is no longer active');
+      const attendees: { user_id: string; response: string }[] = Array.isArray(old.data.attendees)
+        ? old.data.attendees
+        : [];
+      const existing = attendees.find((x) => x.user_id === a.actor);
+      const isOrganizer = old.data.organizer_id === a.actor;
+      if (old.data.visibility === 'private' && !existing && !isOrganizer)
+        fail(404, 'Meeting not found');
+      const nextAttendees = existing
+        ? attendees.map((x) => (x.user_id === a.actor ? { ...x, response: d.response } : x))
+        : [...attendees, { user_id: a.actor, response: d.response }];
+      const updated = await update(a, old, { ...old.data, attendees: nextAttendees });
+      return { event_id: updated.id, response: d.response };
+    },
+    { meter: false },
+  );
 }
 export async function workTarget(a: Access, id: string) {
   await authorize(a, 'work');

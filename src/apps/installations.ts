@@ -202,6 +202,10 @@ export async function installApp(a: Access, id: string, input: unknown, key: str
       const { reviewAppBusinessPolicy } = await import('../operations/business-policy');
       await reviewAppBusinessPolicy(a, id);
     }
+    if (id === 'people' && preview.kind === 'business') {
+      const { syncWorkspaceMembersToEmployees } = await import('../erp/people-sync');
+      await syncWorkspaceMembersToEmployees(a);
+    }
     const at = now();
     await dbRun(
       "INSERT INTO ac_app_installations(org_id,environment,app_id,version,status,origin,configuration,preferences,installed_by,installed_at,updated_at) VALUES (?,?,?,?,'installed','workspace_apps',?,'{}',?,?,?) ON CONFLICT(org_id,environment,app_id) DO UPDATE SET version=excluded.version,status=excluded.status,configuration=excluded.configuration,installed_by=excluded.installed_by,installed_at=excluded.installed_at,updated_at=excluded.updated_at",
