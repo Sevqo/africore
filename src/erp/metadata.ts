@@ -158,6 +158,10 @@ for (const suffix of [
   'POST /work/projects/:id/updates',
   'POST /work/projects/:id/tasks/:task/recurrence/generate',
   'POST /work/meetings/:id/respond',
+  'GET /work/channels',
+  'POST /work/channels',
+  'GET /work/channels/:channelId/messages',
+  'POST /work/channels/:channelId/messages',
 ]) {
   const [method, path] = suffix.split(' '),
     key = method + ' /organizations/:org' + path;

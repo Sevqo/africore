@@ -1,5 +1,11 @@
 import { workRules, saveWorkRules } from './work-automation';
 import {
+  createWorkChannel,
+  listWorkChannelMessages,
+  listWorkChannels,
+  postWorkChannelMessage,
+} from './work-discussions';
+import {
   setProjectTemplate,
   workTemplates,
   workSalesSources,
@@ -874,6 +880,36 @@ erp.post(
     res.json(
       await respondWorkMeeting(await access(req), String(req.params.id), req.body, key(req)),
     ),
+  ),
+);
+erp.get(
+  '/organizations/:org/work/channels',
+  route(async (req, res) => res.json(await listWorkChannels(await access(req)))),
+);
+erp.post(
+  '/organizations/:org/work/channels',
+  route(async (req, res) =>
+    res.status(201).json(await createWorkChannel(await access(req, 'operations'), req.body)),
+  ),
+);
+erp.get(
+  '/organizations/:org/work/channels/:channelId/messages',
+  route(async (req, res) =>
+    res.json(await listWorkChannelMessages(await access(req), String(req.params.channelId))),
+  ),
+);
+erp.post(
+  '/organizations/:org/work/channels/:channelId/messages',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(
+        await postWorkChannelMessage(
+          await access(req, 'operations'),
+          String(req.params.channelId),
+          req.body,
+        ),
+      ),
   ),
 );
 erp.get(

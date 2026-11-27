@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { api } from '../lib/api-client';
+import { navigate } from '../lib/navigation';
+import { Icon } from '../components/Icon';
 import { Overlay } from '../components/Overlay';
 import { Logo } from '../components/Logo';
 import { managedClient, managedSignOut } from './auth';
@@ -8,10 +10,47 @@ import { describeSession, sessionDate } from './session-presentation';
 import { changeAccountPassword } from './security-password';
 import { PasswordInput } from './PasswordInput';
 import { types, Field, Alert, Currency } from './AccountUI';
+
+async function compressAvatarFile(file: File): Promise<string> {
+  if (!/^image\/(png|jpeg|webp|gif)$/i.test(file.type)) {
+    throw new Error('Choose a PNG, JPEG, or WebP image file.');
+  }
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Could not read the selected image.'));
+    reader.readAsDataURL(file);
+  });
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = () => reject(new Error('Selected file is not a valid image.'));
+    el.src = dataUrl;
+  });
+  const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Image processing unavailable in this browser.');
+  const minSide = Math.min(img.width, img.height);
+  const sx = Math.round((img.width - minSide) / 2);
+  const sy = Math.round((img.height - minSide) / 2);
+  ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+  const encoded = canvas.toDataURL('image/jpeg', 0.84);
+  if (encoded.length > 210000) {
+    return canvas.toDataURL('image/jpeg', 0.65);
+  }
+  return encoded;
+}
+
 export function AccountSettings({ account }: { account: any }) {
   const [sessions, setSessions] = useState<any[]>([]);
   const [sessionsLoaded, setSessionsLoaded] = useState(false),
     [confirmAll, setConfirmAll] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string>(account.profile?.avatar_url || '');
+  const [avatarError, setAvatarError] = useState('');
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const applicationRevoked = useRef(false);
   const sessionController = useRef<ReturnType<typeof providerSessions> | null>(null);
   const [sessionRevision, setSessionRevision] = useState(0),
@@ -61,14 +100,43 @@ export function AccountSettings({ account }: { account: any }) {
       setBusy(false);
     }
   }
+  const backDestination =
+    typeof account?.destination === 'string' && account.destination.startsWith('/app')
+      ? account.destination
+      : '/app/workspaces';
+  const backLabel = account?.workspace?.name
+    ? `Back to ${account.workspace.name}`
+    : 'Back to workspace';
+  const displayInitials = (account.profile?.display_name || account.user?.email || 'U')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s: string) => s[0])
+    .join('')
+    .toUpperCase();
+
   return (
     <main className="account-entry security-center" data-platform-density>
-      <Logo />
-      <a href="/app/workspaces">All workspaces</a>
-      <h1>Account & security</h1>
+      <div className="account-entry-topbar">
+        <Logo />
+        <div className="workspace-switcher-group">
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => navigate(backDestination)}
+          >
+            <Icon name="left" width={16} height={16} />
+            <span>{backLabel}</span>
+          </button>
+          <a className="quiet-button" href="/app/workspaces">
+            All workspaces
+          </a>
+        </div>
+      </div>
+      <h1>Account &amp; security</h1>
       <nav className="account-settings-sections" aria-label="Account settings sections">
         {[
-          ['profile-preferences', 'Profile'],
+          ['profile-preferences', 'Profile & Photo'],
           ['account-email', 'Email'],
           ['account-password', 'Password'],
           ['account-sessions', 'Sessions'],
@@ -79,10 +147,15 @@ export function AccountSettings({ account }: { account: any }) {
           </a>
         ))}
       </nav>
-      <Alert error={error} />
+      <Alert error={error || avatarError} />
+      {notice && (
+        <div className="alert one-time" role="status">
+          {notice}
+        </div>
+      )}
       <p>
-        Account defaults apply to new workspaces. Existing workspaces retain their own currency and
-        timezone.
+        Account defaults apply to new workspaces. Your profile picture and username appear across
+        Work Discussions and team directories.
       </p>
       <p>
         {account.user.email} ·{' '}
@@ -93,15 +166,114 @@ export function AccountSettings({ account }: { account: any }) {
         onSubmit={(e) => {
           e.preventDefault();
           const d = Object.fromEntries(new FormData(e.currentTarget));
-          action(
-            () => api('/api/auth/account', 'PATCH', d),
-            'Preferences saved. Permissions remain based on your memberships.',
-          );
+          action(async () => {
+            const updated = await api('/api/auth/account', 'PATCH', {
+              ...d,
+              avatar_url: avatarUrl,
+            });
+            window.dispatchEvent(
+              new CustomEvent('africore:profile-updated', { detail: updated }),
+            );
+          }, 'Profile photo and preferences saved.');
         }}
       >
-        <h2 id="profile-preferences">Profile preferences</h2>
+        <h2 id="profile-preferences">Profile picture &amp; preferences</h2>
+        <div
+          style={{
+            gridColumn: '1 / -1',
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 16,
+            padding: '12px 14px',
+            borderRadius: 10,
+            border: '1px solid var(--line, #e5e7eb)',
+            background: 'var(--surface, #f8f9fa)',
+          }}
+        >
+          <div
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: '50%',
+              overflow: 'hidden',
+              background: '#166534',
+              color: '#ffffff',
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: 22,
+              fontWeight: 700,
+              flexShrink: 0,
+            }}
+          >
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Your profile picture"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
+            ) : (
+              <span>{displayInitials}</span>
+            )}
+          </div>
+          <div style={{ display: 'grid', gap: 6, flex: 1, minWidth: 200 }}>
+            <strong>Profile picture</strong>
+            <small style={{ color: 'var(--muted, #6b7280)' }}>
+              Shown next to your messages in Work Discussions and your account menu. PNG, JPEG, or
+              WebP (auto-cropped to square).
+            </small>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                style={{ display: 'none' }}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setAvatarError('');
+                  try {
+                    const encoded = await compressAvatarFile(file);
+                    setAvatarUrl(encoded);
+                  } catch (err) {
+                    setAvatarError((err as Error).message);
+                  } finally {
+                    if (avatarInputRef.current) avatarInputRef.current.value = '';
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={busy}
+                onClick={() => avatarInputRef.current?.click()}
+              >
+                {avatarUrl ? 'Change photo' : 'Upload profile photo'}
+              </button>
+              {avatarUrl && (
+                <button
+                  type="button"
+                  className="quiet-button"
+                  disabled={busy}
+                  onClick={() => setAvatarUrl('')}
+                >
+                  Remove photo
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
         <Field label="Display name">
           <input name="display_name" defaultValue={account.profile?.display_name || ''} required />
+        </Field>
+        <Field label="Username (shown in Work Discussions)">
+          <input
+            name="username"
+            defaultValue={account.profile?.username || ''}
+            placeholder="e.g. c.p.rian"
+            pattern="[a-zA-Z0-9._-]{2,32}"
+            title="2-32 letters, numbers, dots, hyphens, or underscores"
+          />
         </Field>
         <Field label="Default currency">
           <Currency name="currency" defaultValue={account.profile?.currency || 'KES'} />
@@ -126,7 +298,7 @@ export function AccountSettings({ account }: { account: any }) {
           </select>
         </Field>
         <button className="button" disabled={busy}>
-          Save preferences
+          Save profile &amp; preferences
         </button>
       </form>
       <form

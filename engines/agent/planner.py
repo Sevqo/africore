@@ -740,6 +740,21 @@ def evaluate_permissions_update(payload: dict[str, Any]) -> dict[str, Any]:
         )
     )
 
+    raw_handle = patch.get("agent_handle") if "agent_handle" in patch and patch["agent_handle"] is not None else current.get("agent_handle")
+    next_handle = None
+    if raw_handle is not None:
+        cleaned_handle = re.sub(r"^@+", "", str(raw_handle).strip().lower())
+        if not re.match(r"^[a-z0-9][a-z0-9_-]{1,30}$", cleaned_handle):
+            return {
+                "ok": False,
+                "status": 400,
+                "reason": "Agent username must be 2-31 lowercase letters, numbers, hyphens, or underscores (e.g. continua-agent).",
+            }
+        next_handle = cleaned_handle
+
+    raw_display = patch.get("agent_display_name") if "agent_display_name" in patch and patch["agent_display_name"] is not None else current.get("agent_display_name")
+    next_display = str(raw_display).strip()[:60] if raw_display else None
+
     return {
         "ok": True,
         "status": 200,
@@ -748,6 +763,8 @@ def evaluate_permissions_update(payload: dict[str, Any]) -> dict[str, Any]:
             "computer_use_enabled": next_cu,
             "cross_dev_bridge_enabled": next_bridge,
             "permissions": next_permissions,
+            **({"agent_handle": next_handle} if next_handle else {}),
+            **({"agent_display_name": next_display} if next_display else {}),
         },
     }
 

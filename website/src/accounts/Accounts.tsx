@@ -42,7 +42,17 @@ export function AccountApp() {
       setError('Your session or workspace permissions changed. Sign in to resolve current access.');
     };
     window.addEventListener('africore:access-changed', changed);
-    return () => window.removeEventListener('africore:access-changed', changed);
+    const profileUpdated = (ev: Event) => {
+      const detail = (ev as CustomEvent).detail;
+      if (detail?.profile) {
+        setAccount((prev: any) => (prev ? { ...prev, ...detail } : prev));
+      }
+    };
+    window.addEventListener('africore:profile-updated', profileUpdated);
+    return () => {
+      window.removeEventListener('africore:access-changed', changed);
+      window.removeEventListener('africore:profile-updated', profileUpdated);
+    };
   }, []);
   useEffect(() => {
     if (!account || !['/app', '/auth/callback'].includes(path)) return;

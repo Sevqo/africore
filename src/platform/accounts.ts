@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { currencySchema } from './domain';
 import { reserveWorkspaceCreation } from './workspace-limits';
 import { activate } from '../marketplace/engine';
+import { deriveUsername, getUserAvatarProfile } from './profile-avatar';
 
 export const workspaceInput = z
   .object({
@@ -136,7 +137,7 @@ export async function createWorkspace(userId: string, input: unknown) {
 
 /** Preferences are hints only; every resolution rechecks live membership. */
 export async function resolveWorkspace(userId: string) {
-  const [rows, profile] = await Promise.all([
+  const [rows, profile, avatarProfile, userRow] = await Promise.all([
     dbAll(
       `SELECT w.id,w.kind,o.name,m.role,o.profile AS workspace_settings
  FROM ac_workspaces w JOIN ac_organizations o ON o.id=w.id
@@ -145,6 +146,8 @@ export async function resolveWorkspace(userId: string) {
       [userId],
     ),
     dbGet('SELECT * FROM ac_profiles WHERE user_id=?', [userId]),
+    getUserAvatarProfile(userId),
+    dbGet('SELECT email FROM ac_users WHERE id=?', [userId]).catch(() => null),
   ]);
   const memberships = rows.map(({ workspace_settings, ...w }) => {
     let settings: any = {};
@@ -164,7 +167,14 @@ export async function resolveWorkspace(userId: string) {
     memberships.find((w) => w.kind === profile?.primary_experience) ||
     memberships[0];
   return {
-    profile: profile || null,
+    profile: profile
+      ? {
+          ...profile,
+          avatar_url: avatarProfile.avatar_url,
+          username:
+            avatarProfile.username || deriveUsername(profile.display_name, userRow?.email),
+        }
+      : null,
     workspaces: memberships,
     workspace: workspace || null,
     destination: destination(workspace),

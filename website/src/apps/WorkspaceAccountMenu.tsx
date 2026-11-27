@@ -6,10 +6,12 @@ export function WorkspaceAccountMenu({
   name,
   email,
   role,
+  avatarUrl,
 }: {
   name?: string;
   email?: string;
   role?: string;
+  avatarUrl?: string;
 }) {
   const [open, setOpen] = useState(false),
     [error, setError] = useState(''),
@@ -31,8 +33,16 @@ export function WorkspaceAccountMenu({
         aria-haspopup="dialog"
         onClick={() => setOpen(true)}
       >
-        <span className="initial-avatar" aria-hidden="true">
-          {initials}
+        <span className="initial-avatar" aria-hidden="true" style={{ overflow: 'hidden' }}>
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt=""
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          ) : (
+            initials
+          )}
         </span>
         <span className="workspace-account-label">
           <strong>{label}</strong>

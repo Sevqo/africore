@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { dbRun } from '../db/adapter';
+import { dbGet, dbRun } from '../db/adapter';
 import { audit, fail, type Access } from '../platform/auth';
 import { hash, now, seal, unseal } from '../platform/crypto';
 import { canonical } from '../finance/service';
@@ -34,9 +34,23 @@ export interface AgentPolicyRecord {
   autonomy_mode: 'read_only' | 'supervised' | 'autonomous';
   computer_use_enabled: boolean;
   cross_dev_bridge_enabled: boolean;
+  agent_handle: string;
+  agent_display_name: string;
   permissions: Record<string, AgentPermissionMode>;
   updated_by: string;
   updated_at: string;
+}
+
+function defaultAgentIdentity(workspaceName: string | null | undefined, kind: string) {
+  const cleanName = String(workspaceName || kind || 'workspace').trim();
+  const slug = cleanName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 22);
+  const handle = `${slug || 'workspace'}-agent`;
+  const displayName = `${cleanName} Agent`.slice(0, 60);
+  return { handle, displayName };
 }
 
 const sealCtx = (a: Access, kind: string, id: string) =>
@@ -65,11 +79,15 @@ function decodeMemory(a: Access, row: any): string {
 }
 
 export async function getAgentPolicy(a: Access): Promise<AgentPolicyRecord> {
-  const kind = await workspaceKindFor(a.org);
+  const [kind, orgRow] = await Promise.all([
+    workspaceKindFor(a.org),
+    dbGet('SELECT name FROM ac_organizations WHERE id=?', [a.org]).catch(() => null),
+  ]);
   const pyTools = await runPythonAgent<{ tools: any[]; defaults: Record<string, AgentPermissionMode> }>({
     op: 'list_tools',
     workspace_kind: kind,
   });
+  const defaultsId = defaultAgentIdentity(orgRow?.name, kind);
   const stored = (await all(a, 'agent_policy'))[0];
   if (!stored) {
     return {
@@ -78,6 +96,8 @@ export async function getAgentPolicy(a: Access): Promise<AgentPolicyRecord> {
       autonomy_mode: 'supervised',
       computer_use_enabled: true,
       cross_dev_bridge_enabled: kind !== 'business',
+      agent_handle: defaultsId.handle,
+      agent_display_name: defaultsId.displayName,
       permissions: pyTools.defaults,
       updated_by: 'system_default',
       updated_at: now(),
@@ -89,6 +109,8 @@ export async function getAgentPolicy(a: Access): Promise<AgentPolicyRecord> {
     autonomy_mode: stored.autonomy_mode || 'supervised',
     computer_use_enabled: stored.computer_use_enabled !== false,
     cross_dev_bridge_enabled: kind === 'business' ? false : stored.cross_dev_bridge_enabled !== false,
+    agent_handle: stored.agent_handle || defaultsId.handle,
+    agent_display_name: stored.agent_display_name || defaultsId.displayName,
     permissions: { ...pyTools.defaults, ...(stored.permissions || {}) },
     updated_by: stored.updated_by || 'owner',
     updated_at: stored.updated_at,

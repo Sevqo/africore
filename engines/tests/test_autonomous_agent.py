@@ -158,6 +158,34 @@ class TestPythonAutonomousAgent(unittest.TestCase):
         self.assertIn("Recommended Agent Actions", diag["summary"])
         self.assertGreaterEqual(len(diag["recommended_actions"]), 1)
 
+    def test_discussion_channel_mention_qa_and_action_delegation(self) -> None:
+        recap = run_agent_py({
+            "op": "handle_discussion_mention",
+            "message_body": "@continua-agent summarize this channel",
+            "agent_handle": "continua-agent",
+            "agent_display_name": "Continua Agent",
+            "channel_name": "general-questions",
+            "author_name": "Cyprian",
+            "recent_messages": [
+                {"author_name": "Alice", "is_agent": False, "body": "We should finalize Q4 supplier quotes by Friday."},
+                {"author_name": "Bob", "is_agent": False, "body": "Agreed, let us sync tomorrow morning."},
+            ],
+        })
+        self.assertEqual(recap["mode"], "direct_reply")
+        self.assertIn("general-questions", recap["reply_body"])
+        self.assertIn("Alice", recap["reply_body"])
+
+        delegate = run_agent_py({
+            "op": "handle_discussion_mention",
+            "message_body": "@continua-agent schedule a supplier review meeting tomorrow at 10am",
+            "agent_handle": "continua-agent",
+            "agent_display_name": "Continua Agent",
+            "channel_name": "general-questions",
+            "author_name": "Cyprian",
+        })
+        self.assertEqual(delegate["mode"], "delegate_action")
+        self.assertIn("schedule a supplier review meeting", delegate["clean_prompt"].lower())
+
     def test_separate_agent_billing_and_hard_stop_cap(self) -> None:
         summary = run_agent_py({
             "op": "summarize_billing",

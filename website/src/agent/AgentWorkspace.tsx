@@ -122,6 +122,9 @@ export function AgentWorkspace({
   // Memory form state
   const [memoryCategory, setMemoryCategory] = useState<'preference' | 'business_context' | 'workflow_rule' | 'tone'>('business_context');
   const [memoryText, setMemoryText] = useState('');
+  // Agent username/identity form state
+  const [agentHandleDraft, setAgentHandleDraft] = useState('');
+  const [agentNameDraft, setAgentNameDraft] = useState('');
 
   const alive = useRef(true);
 
@@ -136,6 +139,12 @@ export function AgentWorkspace({
       }
       if (!routineTool && data.tools?.length) {
         setRoutineTool(data.tools[0].id);
+      }
+      if (data.policy?.agent_handle) {
+        setAgentHandleDraft(data.policy.agent_handle);
+      }
+      if (data.policy?.agent_display_name) {
+        setAgentNameDraft(data.policy.agent_display_name);
       }
       if (data.billing?.monthly_spend_cap_minor !== undefined) {
         setCapInput(
@@ -730,6 +739,55 @@ export function AgentWorkspace({
 
       {overview && subTab === 'permissions' && (
         <div style={{ display: 'grid', gap: 16 }}>
+          <section className="agent-card">
+            <h3>Agent Identity &amp; Work Discussions @Username</h3>
+            <p className="agent-card-muted">
+              Set the handle employees use to mention this agent inside Work Discussions (for
+              example <code>@{policy?.agent_handle || 'continua-agent'}</code>).
+            </p>
+            <form
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+                gap: 12,
+                alignItems: 'end',
+              }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                void updatePermissions({
+                  agent_handle: agentHandleDraft.replace(/^@+/, '').trim().toLowerCase(),
+                  agent_display_name: agentNameDraft.trim(),
+                });
+              }}
+            >
+              <label className="field">
+                <span>Agent @username</span>
+                <input
+                  disabled={!overview.can_manage_policy || busy}
+                  value={agentHandleDraft}
+                  onChange={(e) => setAgentHandleDraft(e.target.value)}
+                  placeholder="continua-agent"
+                  required
+                />
+              </label>
+              <label className="field">
+                <span>Agent display name</span>
+                <input
+                  disabled={!overview.can_manage_policy || busy}
+                  value={agentNameDraft}
+                  onChange={(e) => setAgentNameDraft(e.target.value)}
+                  placeholder="Continua Agent"
+                  required
+                />
+              </label>
+              {overview.can_manage_policy && (
+                <button className="button" disabled={busy || agentHandleDraft.trim().length < 2}>
+                  Save @{agentHandleDraft.replace(/^@+/, '') || 'agent'}
+                </button>
+              )}
+            </form>
+          </section>
+
           <section className="agent-card">
             <h3>Workspace Sandboxing & Autonomy Policy</h3>
             <p className="agent-card-muted">{boundary?.sandbox_policy}</p>

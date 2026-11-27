@@ -1242,6 +1242,7 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
                 name={account?.profile?.display_name}
                 email={me?.email}
                 role={organization?.role}
+                avatarUrl={account?.profile?.avatar_url}
               />
             ) : (
               <span>{me?.email}</span>
@@ -2280,6 +2281,58 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
                 )}
                 {tab === 'Settings' && (
                   <>
+                    <div style={{ marginBottom: 12, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => setTab('Overview')}
+                      >
+                        <Icon name="left" width={16} height={16} />
+                        <span>Back to Overview</span>
+                      </button>
+                      <a className="button" href="/app/account">
+                        Edit profile picture &amp; account settings
+                      </a>
+                    </div>
+                    <section className="panel">
+                      <h2>Your profile &amp; workspace identity</h2>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                        <div
+                          style={{
+                            width: 52,
+                            height: 52,
+                            borderRadius: '50%',
+                            overflow: 'hidden',
+                            background: '#166534',
+                            color: '#ffffff',
+                            display: 'grid',
+                            placeItems: 'center',
+                            fontWeight: 700,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {account?.profile?.avatar_url ? (
+                            <img
+                              src={account.profile.avatar_url}
+                              alt={account.profile.display_name || 'Profile'}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                          ) : (
+                            <span>
+                              {(account?.profile?.display_name || me?.email || 'U')
+                                .slice(0, 2)
+                                .toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <strong>{account?.profile?.display_name || me?.email}</strong>
+                          <p style={{ margin: '2px 0 0', fontSize: 13 }}>
+                            @{account?.profile?.username || 'member'} · Shown in Work Discussions
+                          </p>
+                        </div>
+                      </div>
+                    </section>
                     <section className="panel">
                       <h2>Business profile</h2>
                       <p>

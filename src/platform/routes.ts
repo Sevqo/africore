@@ -34,6 +34,7 @@ import {
   update,
 } from './payments';
 import { isAllowedWebhookTarget } from '../services/webhookService';
+import { deriveUsername, getUserAvatarProfiles } from './profile-avatar';
 export const platform = Router();
 async function lockTeam(a: { org: string; actor: string; role: string }) {
   await dbGet('SELECT id FROM ac_organizations WHERE id=?' + (isPostgres ? ' FOR UPDATE' : ''), [
@@ -540,11 +541,20 @@ platform.get(
   '/organizations/:org/team',
   route(async (req, res) => {
     const a = await access(req);
+    const rows = await dbAll(
+      'SELECT u.id,u.email,m.role,p.display_name FROM ac_memberships m JOIN ac_users u ON u.id=m.user_id LEFT JOIN ac_profiles p ON p.user_id=u.id WHERE m.org_id=? ORDER BY u.email',
+      [a.org],
+    );
+    const avatarMap = await getUserAvatarProfiles(rows.map((r: any) => String(r.id)));
     res.json({
-      data: await dbAll(
-        'SELECT u.id,u.email,m.role,p.display_name FROM ac_memberships m JOIN ac_users u ON u.id=m.user_id LEFT JOIN ac_profiles p ON p.user_id=u.id WHERE m.org_id=? ORDER BY u.email',
-        [a.org],
-      ),
+      data: rows.map((r: any) => {
+        const extra = avatarMap.get(String(r.id));
+        return {
+          ...r,
+          avatar_url: extra?.avatar_url || '',
+          username: extra?.username || deriveUsername(r.display_name, r.email),
+        };
+      }),
       invitations: await dbAll(
         "SELECT i.id,i.email,i.role,i.expires_at,i.accepted_at,(SELECT COUNT(*) FROM ac_audit a WHERE a.resource_id=i.id AND a.org_id=i.org_id AND a.action='invitation.revoked') AS revoked FROM ac_invitations i WHERE i.org_id=? ORDER BY i.expires_at DESC",
         [a.org],

@@ -29,6 +29,9 @@ export const kinds = [
   'agent_billing_account',
   'agent_credit_ledger',
   'agent_memory',
+  'work_channel',
+  'work_channel_message',
+  'user_avatar',
 ] as const;
 export type Kind = (typeof kinds)[number];
 export interface DomainObject {

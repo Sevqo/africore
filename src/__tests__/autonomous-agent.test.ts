@@ -312,3 +312,66 @@ test('Townie-style routines, workspace memory, and separate Agent Credit Billing
   });
   assert.equal(capped.status, 429);
 });
+
+test('User profile picture, custom agent @username, and Discord-style Work Discussions with live @agent mentions work end-to-end', async () => {
+  // 1. Update user profile picture & username (zero migration)
+  const tinyPng =
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  const savedProfile = await api('/api/auth/account', 'PATCH', {
+    display_name: 'Cyprian Owner',
+    username: 'c.p.rian',
+    avatar_url: tinyPng,
+    currency: 'KES',
+    timezone: 'Africa/Nairobi',
+    primary_experience: 'business',
+  });
+  assert.equal(savedProfile.status, 200);
+  assert.equal(savedProfile.data.profile.username, 'c.p.rian');
+  assert.equal(savedProfile.data.profile.avatar_url, tinyPng);
+
+  // Team endpoint hydrates avatar_url & username
+  const teamRes = await api(`/api/v1/organizations/${businessOrg1}/team`);
+  assert.equal(teamRes.status, 200);
+  assert.equal(teamRes.data.data[0].username, 'c.p.rian');
+  assert.equal(teamRes.data.data[0].avatar_url, tinyPng);
+
+  // 2. Owner configures custom agent @username (@continua-agent)
+  const handleRes = await api(`/api/v1/organizations/${businessOrg1}/agent/permissions`, 'PUT', {
+    agent_handle: 'continua-agent',
+    agent_display_name: 'Continua Agent',
+  });
+  assert.equal(handleRes.status, 200);
+  assert.equal(handleRes.data.agent_handle, 'continua-agent');
+
+  // 3. List Discord-style Work Channels (auto-seeded) and create a custom channel
+  const chList = await api(`/api/v1/organizations/${businessOrg1}/work/channels`);
+  assert.equal(chList.status, 200);
+  assert.equal(chList.data.agent.handle, 'continua-agent');
+  assert.ok(chList.data.channels.some((c: any) => c.slug === 'general-questions'));
+  assert.equal(chList.data.current_user.avatar_url, tinyPng);
+
+  const customCh = await api(`/api/v1/organizations/${businessOrg1}/work/channels`, 'POST', {
+    name: 'ops-standup',
+    category: 'DISCUSSIONS',
+    topic: 'Daily team standup',
+  });
+  assert.equal(customCh.status, 201);
+  assert.equal(customCh.data.slug, 'ops-standup');
+
+  // 4. Post a message mentioning @continua-agent -> Python agent replies automatically in thread!
+  const posted = await api(
+    `/api/v1/organizations/${businessOrg1}/work/channels/${customCh.data.id}/messages`,
+    'POST',
+    {
+      body: 'Hey @continua-agent what meetings are coming up?',
+      currency: 'KES',
+    },
+  );
+  assert.equal(posted.status, 201);
+  assert.equal(posted.data.message.author_username, 'c.p.rian');
+  assert.equal(posted.data.message.author_avatar_url, tinyPng);
+  assert.ok(posted.data.agent_reply, 'Agent must reply when mentioned via @continua-agent');
+  assert.equal(posted.data.agent_reply.is_agent, true);
+  assert.equal(posted.data.agent_reply.author_username, 'continua-agent');
+  assert.equal(posted.data.agent_reply.reply_to, posted.data.message.id);
+});

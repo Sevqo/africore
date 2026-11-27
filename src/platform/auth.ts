@@ -10,6 +10,11 @@ import { hash, now, passwordHash, passwordMatches, secret } from './crypto';
 import { permitted } from './domain';
 import { createWorkspace, resolveWorkspace, selectWorkspace } from './accounts';
 import { neonAuthURL, neonIdentity } from './neon-auth';
+import {
+  isValidAvatarDataUrl,
+  isValidUsername,
+  saveUserAvatarProfile,
+} from './profile-avatar';
 
 export const auth = Router();
 auth.get('/config', (_req, res) => {
@@ -323,6 +328,17 @@ auth.patch(
             }
           }, 'Invalid timezone'),
         primary_experience: z.enum(['personal', 'business', 'developer']),
+        username: z
+          .string()
+          .trim()
+          .max(32)
+          .refine(isValidUsername, 'Username must be 2-32 letters, numbers, dots, hyphens, or underscores')
+          .optional(),
+        avatar_url: z
+          .string()
+          .max(225000)
+          .refine(isValidAvatarDataUrl, 'Upload a PNG, JPEG, or WebP profile photo under 150 KB')
+          .optional(),
       })
       .strict()
       .parse(req.body);
@@ -330,6 +346,12 @@ auth.patch(
       `UPDATE ac_profiles SET display_name=?,currency=?,timezone=?,primary_experience=?,updated_at=? WHERE user_id=?`,
       [d.display_name, d.currency, d.timezone, d.primary_experience, now(), u.id],
     );
+    if (d.avatar_url !== undefined || d.username !== undefined) {
+      await saveUserAvatarProfile(u.id, {
+        ...(d.avatar_url !== undefined ? { avatar_url: d.avatar_url } : {}),
+        ...(d.username !== undefined ? { username: d.username } : {}),
+      });
+    }
     res.json(await resolveWorkspace(u.id));
   }),
 );

@@ -15,6 +15,7 @@ import { WorkTimesheets } from './WorkTimesheets';
 import { WorkProjectUpdates } from './WorkProjectUpdates';
 import { WorkReports } from './WorkReports';
 import { WorkSchedulePlanner } from './WorkSchedulePlanner';
+import { WorkDiscussions } from './WorkDiscussions';
 
 export function WorkWorkspace({
   api: provided,
@@ -510,6 +511,15 @@ export function WorkWorkspace({
         >
           Calendar
         </button>
+        <button
+          aria-current={view === 'discussions' ? 'page' : undefined}
+          onClick={() => {
+            setSelected('');
+            changeView('discussions');
+          }}
+        >
+          Discussions
+        </button>
         <button onClick={() => changeView(selected ? 'timeline' : 'planning')}>Planning</button>
         <button onClick={() => changeView('timesheets')}>Timesheets</button>
         <button onClick={() => changeView(selected ? 'report' : 'reporting')}>Reporting</button>
@@ -612,7 +622,8 @@ export function WorkWorkspace({
               onOpen={openTask}
             />
           )}
-          {view !== 'my-work' && !['reporting', 'planning', 'configuration', 'calendar'].includes(view) && (
+          {view === 'discussions' && <WorkDiscussions api={api} scope={scope} />}
+          {view !== 'my-work' && !['reporting', 'planning', 'configuration', 'calendar', 'discussions'].includes(view) && (
             <>
               {(workspaceMeetings.length > 0 || workspaceActivities.length > 0) && (
                 <section className="panel" aria-label="Upcoming schedule and assigned work">

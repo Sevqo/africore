@@ -39,6 +39,14 @@ export const agentPermissionsUpdateInput = z
     autonomy_mode: z.enum(['read_only', 'supervised', 'autonomous']).optional(),
     computer_use_enabled: z.boolean().optional(),
     cross_dev_bridge_enabled: z.boolean().optional(),
+    agent_handle: z
+      .string()
+      .trim()
+      .min(2)
+      .max(32)
+      .regex(/^@?[a-zA-Z0-9][a-zA-Z0-9_-]{1,30}$/, 'Use 2-31 letters, numbers, hyphens, or underscores')
+      .optional(),
+    agent_display_name: z.string().trim().min(2).max(60).optional(),
     permissions: z.record(z.string(), agentPermissionMode).optional(),
   })
   .strict();

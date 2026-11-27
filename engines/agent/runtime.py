@@ -18,6 +18,7 @@ if _ENGINES_ROOT not in sys.path:
 from agent.analyzer import analyze_workspace_operations  # noqa: E402
 from agent.billing import AGENT_CREDIT_COSTS, evaluate_credit_charge, summarize_billing  # noqa: E402
 from agent.computer_use import build_execution_steps  # noqa: E402
+from agent.discussion import handle_discussion_mention  # noqa: E402
 from agent.isolation import check_target_access, evaluate_boundary  # noqa: E402
 from agent.planner import (  # noqa: E402
     default_permissions_for_kind,
@@ -56,6 +57,8 @@ def dispatch(payload: dict[str, Any]) -> dict[str, Any]:
         return plan_agent_run(payload)
     if op == "analyze_operations":
         return analyze_workspace_operations(payload)
+    if op == "handle_discussion_mention":
+        return handle_discussion_mention(payload)
     if op == "evaluate_permissions":
         return evaluate_permissions_update(payload)
     if op == "summarize_billing":
