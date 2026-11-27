@@ -23,7 +23,7 @@ export interface AgentDestination {
 export interface SandboxEditableField {
   key: string;
   label: string;
-  type: 'text' | 'number';
+  type: 'text' | 'number' | 'textarea';
   value: string | number;
 }
 

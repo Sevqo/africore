@@ -175,15 +175,30 @@ test('Personal agent bridges owned Personal + Developer workspaces and permanent
 });
 
 test('Business agent enforces restraint-first approval, executes real meetings & projects with Computer Use, and respects owner autonomy', async () => {
-  // Default schedule_meeting requires approval
-  const planned = await api(`/api/v1/organizations/${businessOrg1}/agent/runs`, 'POST', {
-    prompt: 'Schedule a meeting for "Q4 Supplier Review" tomorrow',
+  // Default schedule_meeting requires approval AND vague requests trigger `needs_input` slot-filling first!
+  const vagueMeeting = await api(`/api/v1/organizations/${businessOrg1}/agent/runs`, 'POST', {
+    prompt: 'can you schedule a meeting for me for tommorow on the calenders app',
     currency: 'KES',
     computer_use: true,
+    stage_in_sandbox: true,
+  });
+  assert.equal(vagueMeeting.status, 201);
+  assert.equal(vagueMeeting.data.status, 'needs_input');
+  assert.equal(vagueMeeting.data.credits_used, 0);
+  assert.ok(vagueMeeting.data.summary.includes('What is the meeting about'));
+
+  // User replies naturally describing the topic -> agent synthesizes crisp Title + Agenda and opens Sandbox Clone!
+  const planned = await api(`/api/v1/organizations/${businessOrg1}/agent/runs`, 'POST', {
+    prompt: 'Discussing Q4 supplier pricing and delivery timelines at 11am',
+    currency: 'KES',
+    computer_use: true,
+    stage_in_sandbox: true,
   });
   assert.equal(planned.status, 201);
   assert.equal(planned.data.status, 'awaiting_approval');
   assert.equal(planned.data.tool_name, 'schedule_meeting');
+  assert.ok(!planned.data.result.planned_params.title.toLowerCase().includes('tommorow'));
+  assert.ok(String(planned.data.result.planned_params.description || '').includes('Agenda'));
   assert.ok(planned.data.result.approval_id);
   assert.equal(planned.data.result.sandbox_clone?.clone_kind, 'calendar');
   assert.ok(Array.isArray(planned.data.steps) && planned.data.steps.length >= 3);
@@ -380,4 +395,25 @@ test('User profile picture, custom agent @username, and Discord-style Work Discu
   assert.equal(posted.data.agent_reply.is_agent, true);
   assert.equal(posted.data.agent_reply.author_username, 'continua-agent');
   assert.equal(posted.data.agent_reply.reply_to, posted.data.message.id);
+
+  // 5. Strategic growth & customer acquisition advisory question in channel (after lifting Growth cap)
+  await api(`/api/v1/organizations/${businessOrg1}/agent/billing`, 'PUT', {
+    monthly_spend_cap_minor: null,
+    hard_stop: false,
+  });
+  const strategicAsk = await api(
+    `/api/v1/organizations/${businessOrg1}/work/channels/${customCh.data.id}/messages`,
+    'POST',
+    {
+      body: '@continua-agent what do you think of the business how is it fairing about and how can we improve sales and getting more customers',
+      currency: 'KES',
+    },
+  );
+  assert.equal(strategicAsk.status, 201);
+  assert.ok(strategicAsk.data.agent_reply);
+  assert.ok(
+    strategicAsk.data.agent_reply.body.toLowerCase().includes('crm') &&
+      strategicAsk.data.agent_reply.body.toLowerCase().includes('customer'),
+    'Agent must synthesize strategic sales & customer growth reasoning instead of a generic KPI readout',
+  );
 });

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Field, today } from '../operations/UI';
+
 export function WorkDateViews({
   tasks,
   milestones,
@@ -19,6 +20,7 @@ export function WorkDateViews({
   const timestamp = (value: string) => Date.parse(value + 'T00:00:00Z');
   const dated = tasks.filter((t) => t.data.starts_on || t.due_on),
     undated = tasks.filter((t) => !t.data.starts_on && !t.due_on);
+
   if (view === 'timeline') {
     const [year, number] = anchor.split('-').map(Number),
       date = new Date(anchor + 'T00:00:00Z'),
@@ -44,7 +46,7 @@ export function WorkDateViews({
       <section className="panel work-gantt">
         <div className="form-actions">
           <button className="secondary-button" onClick={() => change(-1)}>
-            Previous
+            ‹ Previous
           </button>
           <Field label="Timeline scale">
             <select value={scale} onChange={(e) => setScale(e.target.value)}>
@@ -66,16 +68,16 @@ export function WorkDateViews({
             Today
           </button>
           <button className="secondary-button" onClick={() => change(1)}>
-            Next
+            Next ›
           </button>
         </div>
-        <p>
+        <p className="muted" style={{ margin: '4px 0 8px', fontSize: 12 }}>
           Recorded task dates. Bars show planned date spans; estimates are not actual time worked.
         </p>
         <div className="work-gantt-scroll">
           <div
             className="work-gantt-axis"
-            style={{ gridTemplateColumns: '220px repeat(' + count + ',42px)' }}
+            style={{ gridTemplateColumns: '200px repeat(' + count + ',38px)' }}
           >
             <strong>Planning</strong>
             {Array.from({ length: count }, (_, i) => (
@@ -100,7 +102,7 @@ export function WorkDateViews({
               <div
                 className="work-gantt-row"
                 key={t.id}
-                style={{ gridTemplateColumns: '220px repeat(' + count + ',42px)' }}
+                style={{ gridTemplateColumns: '200px repeat(' + count + ',38px)' }}
               >
                 <button className="quiet-button" onClick={() => onOpen(t)}>
                   {t.data.title}
@@ -122,7 +124,7 @@ export function WorkDateViews({
               <div
                 key={m.id}
                 className="work-gantt-row work-gantt-milestone"
-                style={{ gridTemplateColumns: '220px repeat(' + count + ',42px)' }}
+                style={{ gridTemplateColumns: '200px repeat(' + count + ',38px)' }}
               >
                 <strong>{m.name}</strong>
                 <span
@@ -134,17 +136,22 @@ export function WorkDateViews({
               </div>
             ))}
         </div>
-        <h4>Unscheduled tasks</h4>
-        {undated.map((t) => (
-          <p key={t.id}>
-            <button className="quiet-button" onClick={() => onOpen(t)}>
-              {t.data.title}
-            </button>
-          </p>
-        ))}
+        {undated.length > 0 && (
+          <>
+            <h4>Unscheduled tasks</h4>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {undated.map((t) => (
+                <button key={t.id} className="secondary-button" onClick={() => onOpen(t)}>
+                  {t.data.title}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </section>
     );
   }
+
   const [year, number] = month.split('-').map(Number),
     firstDate = new Date(Date.UTC(year, number - 1, 1)),
     leading = (firstDate.getUTCDay() + 6) % 7,
@@ -153,95 +160,152 @@ export function WorkDateViews({
       const day = index - leading + 1;
       return day >= 1 && day <= days ? month + '-' + String(day).padStart(2, '0') : null;
     });
+
+  const shiftMonth = (delta: number) => {
+    const d = new Date(Date.UTC(year, number - 1 + delta, 1));
+    setMonth(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`);
+  };
+  const monthHeading = firstDate.toLocaleDateString(undefined, {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+
   return (
-    <section className="panel">
-      <h3>Task calendar</h3>
-      <p>
-        Task start/due dates and project milestones. All dates use the workspace's recorded calendar
-        dates.
-      </p>
-      <Field label="Calendar month">
-        <input
-          type="month"
-          required
-          value={month}
-          onChange={(e) => {
-            if (/^\d{4}-\d{2}$/.test(e.target.value)) setMonth(e.target.value);
-          }}
-        />
-      </Field>
-      <div className="work-calendar" role="group" aria-label={'Project calendar ' + month}>
+    <section className="panel o-work-calendar-panel">
+      <header className="o-work-calendar-bar">
+        <div className="o-work-calendar-left">
+          <h3>Work &amp; Meetings Schedule</h3>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => setMonth(today().slice(0, 7))}
+          >
+            Today
+          </button>
+          <div className="o-calendar-arrows" role="group" aria-label="Navigate month">
+            <button
+              type="button"
+              className="secondary-button"
+              aria-label="Previous month"
+              onClick={() => shiftMonth(-1)}
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              className="secondary-button"
+              aria-label="Next month"
+              onClick={() => shiftMonth(1)}
+            >
+              ›
+            </button>
+          </div>
+          <strong className="o-calendar-heading-label">{monthHeading}</strong>
+        </div>
+        <div className="o-work-calendar-right">
+          <span className="o-legend-chip is-task">Task</span>
+          <span className="o-legend-chip is-meeting">Meeting</span>
+          <span className="o-legend-chip is-milestone">Milestone</span>
+          <input
+            type="month"
+            aria-label="Calendar month"
+            required
+            value={month}
+            onChange={(e) => {
+              if (/^\d{4}-\d{2}$/.test(e.target.value)) setMonth(e.target.value);
+            }}
+          />
+        </div>
+      </header>
+
+      <div className="work-calendar o-work-grid" role="group" aria-label={'Project calendar ' + month}>
         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
           <strong className="work-weekday" key={day}>
             {day}
           </strong>
         ))}
-        {cells.map((date, index) => (
-          <section
-            className={'work-calendar-day' + (date === today() ? ' today' : '')}
-            key={date || 'blank-' + index}
-            aria-label={date || 'Outside this month'}
-          >
-            {date && (
-              <>
-                <time dateTime={date}>{Number(date.slice(-2))}</time>
-                {tasks
-                  .filter((t) => t.due_on === date || t.data.starts_on === date)
-                  .map((t) => (
-                    <button key={t.id} className="quiet-button" onClick={() => onOpen(t)}>
-                      {t.due_on === date ? 'Due: ' : 'Start: '}
-                      {t.data.title}
-                    </button>
-                  ))}
-                {milestones
-                  .filter((m) => m.due_on === date)
-                  .map((m) => (
-                    <p key={m.id}>
-                      Milestone: {m.name} · {m.completed ? 'Completed' : 'Planned'}
-                    </p>
-                  ))}
-                {meetings
-                  .filter((ev) => String(ev.starts_at || ev.start || '').slice(0, 10) === date)
-                  .map((ev) => (
-                    <p
-                      key={`${ev.event_id || ev.id}:${ev.starts_at || ev.start}`}
-                      title={`${ev.title}${ev.location ? ' · ' + ev.location : ''}`}
-                      style={{
-                        margin: '4px 0 0',
-                        padding: '3px 6px',
-                        borderRadius: '6px',
-                        background: '#ecfdf5',
-                        color: '#166534',
-                        fontSize: '12px',
-                        fontWeight: 500,
-                      }}
+        {cells.map((date, index) => {
+          const isTodayCell = date === today();
+          return (
+            <section
+              className={
+                'work-calendar-day' +
+                (isTodayCell ? ' today' : '') +
+                (!date ? ' is-outside' : '')
+              }
+              key={date || 'blank-' + index}
+              aria-label={date || 'Outside this month'}
+            >
+              {date && (
+                <>
+                  <div className="o-work-day-top">
+                    <time
+                      dateTime={date}
+                      className={isTodayCell ? 'o-work-day-badge is-today' : 'o-work-day-badge'}
                     >
-                      {ev.starts_at || ev.start
-                        ? new Date(ev.starts_at || ev.start).toLocaleTimeString('en-KE', {
-                            timeZone: ev.timezone || 'Africa/Nairobi',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          }) + ' '
-                        : ''}
-                      {ev.title}
-                    </p>
-                  ))}
-              </>
-            )}
-          </section>
-        ))}
+                      {Number(date.slice(-2))}
+                    </time>
+                  </div>
+                  <div className="o-work-day-items">
+                    {tasks
+                      .filter((t) => t.due_on === date || t.data.starts_on === date)
+                      .map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          className="o-work-chip is-task"
+                          onClick={() => onOpen(t)}
+                          title={t.data.title}
+                        >
+                          {t.due_on === date ? 'Due · ' : 'Start · '}
+                          {t.data.title}
+                        </button>
+                      ))}
+                    {milestones
+                      .filter((m) => m.due_on === date)
+                      .map((m) => (
+                        <div key={m.id} className="o-work-chip is-milestone" title={m.name}>
+                          ◆ {m.name}
+                        </div>
+                      ))}
+                    {meetings
+                      .filter((ev) => String(ev.starts_at || ev.start || '').slice(0, 10) === date)
+                      .map((ev) => (
+                        <div
+                          key={`${ev.event_id || ev.id}:${ev.starts_at || ev.start}`}
+                          className="o-work-chip is-meeting"
+                          title={`${ev.title}${ev.location ? ' · ' + ev.location : ''}`}
+                        >
+                          {ev.starts_at || ev.start
+                            ? new Date(ev.starts_at || ev.start).toLocaleTimeString('en-KE', {
+                                timeZone: ev.timezone || 'Africa/Nairobi',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              }) + ' '
+                            : ''}
+                          {ev.title}
+                        </div>
+                      ))}
+                  </div>
+                </>
+              )}
+            </section>
+          );
+        })}
       </div>
+
       {undated.length > 0 && (
-        <>
-          <h4>Unscheduled tasks</h4>
-          {undated.map((t) => (
-            <p key={t.id}>
-              <button className="quiet-button" onClick={() => onOpen(t)}>
+        <footer className="o-work-unscheduled">
+          <strong>Unscheduled tasks ({undated.length}):</strong>
+          <div className="o-work-unscheduled-list">
+            {undated.map((t) => (
+              <button key={t.id} type="button" className="secondary-button" onClick={() => onOpen(t)}>
                 {t.data.title}
               </button>
-            </p>
-          ))}
-        </>
+            ))}
+          </div>
+        </footer>
       )}
     </section>
   );

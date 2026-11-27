@@ -16,25 +16,25 @@ html:has([data-platform-density]) {
   --website-primary: #166534;
   --workspace-border: #e5e7eb;
   --workspace-shadow: 0 1px 2px rgba(17, 24, 39, 0.03);
-  --app-panel: 14px;
-  --app-panel-compact: 11px;
-  --app-panel-large: 16px;
-  --app-radius-card: 12px;
-  --app-radius-record: 10px;
-  --app-radius-large: 12px;
+  --app-panel: 12px;
+  --app-panel-compact: 9px;
+  --app-panel-large: 14px;
+  --app-radius-card: 8px;
+  --app-radius-record: 7px;
+  --app-radius-large: 9px;
 }
 .business-shell[data-platform-density].business-shell[data-platform-density],
 .focused-account[data-platform-density].focused-account[data-platform-density] {
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.44;
   background: var(--surface);
   color: var(--text);
 }
 .business-shell[data-platform-density] .sidebar,
 .focused-account[data-platform-density] .account-nav {
-  width: 224px;
-  flex: 0 0 224px;
-  padding: 22px 14px;
+  width: 208px;
+  flex: 0 0 208px;
+  padding: 16px 11px;
   background: #1c2225;
   color: #e8ede9;
   border-right: 1px solid #30383b;
@@ -43,35 +43,35 @@ html:has([data-platform-density]) {
 .business-shell[data-platform-density] .sidebar .logo,
 .focused-account[data-platform-density] .account-nav .logo {
   color: #fff;
-  font-size: 25px;
-  letter-spacing: -1px;
+  font-size: 21px;
+  letter-spacing: -0.04em;
 }
 .business-shell[data-platform-density] .sidebar nav {
-  gap: 5px;
+  gap: 3px;
 }
 .business-shell[data-platform-density] .sidebar .workspace-label,
 .focused-account[data-platform-density] .account-nav > p {
   color: #aab5af;
-  font-size: 11px;
+  font-size: 10.5px;
   letter-spacing: 0.05em;
-  margin: 20px 10px 12px;
+  margin: 14px 8px 8px;
 }
 .business-shell[data-platform-density] .sidebar nav button,
 .focused-account[data-platform-density] .account-nav nav a {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 9px;
   width: 100%;
-  min-height: 38px;
-  padding: 8px 12px;
+  min-height: 33px;
+  padding: 6px 10px;
   border: 0;
-  border-radius: 7px;
+  border-radius: 6px;
   background: transparent;
   color: #e1e8e3;
-  font-size: 13px;
+  font-size: 12.5px;
   text-align: left;
   text-decoration: none;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 .business-shell[data-platform-density] .sidebar nav button:hover,
 .focused-account[data-platform-density] .account-nav nav a:hover {
@@ -245,7 +245,7 @@ html:has([data-platform-density]) {
   container: workspace-main / inline-size;
 }
 .focused-account[data-platform-density]:has(> .agent-sandbox-pane) {
-  grid-template-columns: 224px minmax(0, 1fr) auto;
+  grid-template-columns: 208px minmax(0, 1fr) auto;
 }
 @media (max-width: 1024px) {
   .focused-account[data-platform-density]:has(> .agent-sandbox-pane) {
@@ -320,65 +320,68 @@ html:has([data-platform-density]) {
   }
 }
 .business-shell[data-platform-density] .app-header {
-  height: 68px;
-  min-height: 68px;
-  padding: 12px 26px;
-  gap: 14px;
+  height: 52px;
+  min-height: 52px;
+  padding: 8px 18px;
+  gap: 10px;
   background: white;
   border-bottom: 1px solid var(--line);
   box-shadow: none;
 }
 .business-shell[data-platform-density] .app-header > div {
-  gap: 10px;
+  gap: 8px;
 }
 .business-shell[data-platform-density] .app-header select {
-  height: 38px;
-  min-height: 38px;
-  font-size: 13px;
+  height: 32px;
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 12.5px;
   background: #fafbfa;
-  max-width: 260px;
+  max-width: 240px;
   border: 1px solid var(--line);
+  border-radius: 6px;
 }
 .business-shell[data-platform-density] .app-header > div:first-of-type > .quiet-button {
   display: none;
 }
 .business-shell[data-platform-density] .workspace-search-trigger {
-  height: 38px;
-  min-height: 38px;
-  padding: 8px 12px;
+  height: 32px;
+  min-height: 32px;
+  padding: 5px 10px;
   background: #f7f9f8;
   border-color: var(--line);
-  font-size: 13px;
-  max-width: 560px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  max-width: 480px;
 }
 .business-shell[data-platform-density] .workspace-content,
 .focused-account[data-platform-density] .account-content {
-  padding: 24px 28px;
+  padding: 14px 18px;
   max-width: none;
   min-width: 0;
 }
 .business-shell[data-platform-density] .workspace-title {
-  margin-bottom: 22px;
+  margin-bottom: 12px;
   align-items: center;
 }
 .business-shell[data-platform-density] h1,
 .focused-account[data-platform-density] h1 {
-  font-size: 28px;
-  line-height: 1.18;
-  letter-spacing: -0.035em;
-  font-weight: 720;
+  font-size: 21px;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  font-weight: 700;
 }
 .business-shell[data-platform-density] h2,
 .focused-account[data-platform-density] h2 {
-  font-size: 20px;
-  line-height: 1.3;
-  letter-spacing: -0.025em;
+  font-size: 16.5px;
+  line-height: 1.28;
+  letter-spacing: -0.02em;
 }
 .business-shell[data-platform-density] h3,
 .focused-account[data-platform-density] h3 {
-  font-size: 15px;
-  line-height: 1.4;
-  letter-spacing: -0.015em;
+  font-size: 13.5px;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
 }
 .business-shell[data-platform-density] :is(.panel, .account-panel),
 .focused-account[data-platform-density] :is(.panel, .account-panel) {
@@ -388,23 +391,26 @@ html:has([data-platform-density]) {
   box-shadow: none;
   background: white;
 }
+/* Odoo-inspired crisp compact operational controls across all desktop surfaces */
 .business-shell[data-platform-density] :is(button, .button, .secondary-button, .quiet-button),
 .focused-account[data-platform-density] :is(button, .button, .secondary-button, .quiet-button) {
-  min-height: 34px;
-  padding: 6px 10px;
-  border-radius: 8px;
-  font-size: 13px;
-  line-height: 1.35;
+  min-height: 30px;
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: 12.5px;
+  line-height: 1.3;
+  font-weight: 550;
 }
 .business-shell[data-platform-density] .button,
 .focused-account[data-platform-density] .button {
-  min-height: 39px;
-  padding: 8px 14px;
-  border-radius: 8px;
+  min-height: 31px;
+  padding: 5px 12px;
+  border-radius: 5px;
   background: var(--accent);
   color: white;
-  border-color: var(--accent);
-  font-weight: 650;
+  border: 1px solid var(--accent);
+  font-weight: 600;
+  box-shadow: 0 1px 1px rgba(17, 24, 39, 0.06);
 }
 .business-shell[data-platform-density] .button:hover,
 .focused-account[data-platform-density] .button:hover {
@@ -414,70 +420,79 @@ html:has([data-platform-density]) {
 }
 .business-shell[data-platform-density] .secondary-button,
 .focused-account[data-platform-density] .secondary-button {
-  min-height: 36px;
-  padding: 7px 12px;
-  border-radius: 8px;
-  color: var(--text);
+  min-height: 30px;
+  padding: 4px 11px;
+  border-radius: 5px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #1f2937;
+  font-weight: 550;
+}
+.business-shell[data-platform-density] .secondary-button:hover,
+.focused-account[data-platform-density] .secondary-button:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
 }
 .business-shell[data-platform-density] .quiet-button,
 .focused-account[data-platform-density] .quiet-button {
-  min-height: 32px;
-  padding: 5px 8px;
-  border-radius: 8px;
-  color: var(--text);
+  min-height: 28px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  color: #374151;
 }
 .business-shell[data-platform-density] .icon-button,
 .focused-account[data-platform-density] .icon-button {
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  min-height: 34px;
-  padding: 6px;
-  border-radius: 9px;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  padding: 5px;
+  border-radius: 6px;
 }
 .business-shell[data-platform-density] .button.small,
 .focused-account[data-platform-density] .button.small {
-  min-height: 32px;
-  padding: 5px 10px;
-  border-radius: 8px;
-  font-size: 13px;
+  min-height: 27px;
+  padding: 3px 9px;
+  border-radius: 5px;
+  font-size: 12px;
 }
 .business-shell[data-platform-density] .sidebar nav button,
 .focused-account[data-platform-density] .account-nav nav a {
-  min-height: 38px;
-  border-radius: 7px;
+  min-height: 33px;
+  border-radius: 6px;
 }
 .business-shell[data-platform-density]
   :is(input:not([type='checkbox']):not([type='radio']), select, textarea),
 .focused-account[data-platform-density]
   :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
-  font-size: 14px;
-  min-height: 38px;
-  padding: 8px 10px;
-  border: 1px solid #dce3dd;
+  font-size: 13px;
+  min-height: 32px;
+  padding: 5px 9px;
+  border: 1px solid #d1d5db;
   background: #fff;
-  border-radius: 7px;
+  border-radius: 5px;
 }
 .business-shell[data-platform-density] .field > span,
 .focused-account[data-platform-density] .field > span {
-  font-size: 12px;
-  font-weight: 550;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #374151;
 }
 .business-shell[data-platform-density] table,
 .focused-account[data-platform-density] table {
-  font-size: 13px;
+  font-size: 12.5px;
 }
 .business-shell[data-platform-density] thead th,
 .focused-account[data-platform-density] thead th {
   font-size: 11px;
-  letter-spacing: 0;
+  letter-spacing: 0.02em;
   text-transform: none;
-  background: #f7f9f7;
-  padding: 11px 12px;
+  background: #f8faf8;
+  padding: 8px 10px;
 }
 .business-shell[data-platform-density] tbody td,
 .focused-account[data-platform-density] tbody td {
-  padding: 12px;
+  padding: 8px 10px;
   border-bottom: 1px solid #edf0ed;
 }
 .business-shell[data-platform-density] .badge,
@@ -515,11 +530,11 @@ html:has([data-platform-density]) {
   z-index: 50;
   background: #fff;
   border-bottom: 1px solid var(--line);
-  margin: -24px -28px 24px;
-  padding: 12px 28px;
+  margin: -14px -18px 14px;
+  padding: 8px 18px;
   align-items: center;
   justify-content: space-between;
-  min-height: 68px;
+  min-height: 52px;
 }
 .focused-account[data-platform-density] .focused-mobile-header > .quiet-button {
   display: none;
@@ -644,12 +659,20 @@ html:has([data-platform-density]) {
 }
 .business-shell[data-platform-density] :is(.metric-grid strong, .account-metrics strong),
 .focused-account[data-platform-density] .account-metrics strong {
-  font-size: 25px;
-  letter-spacing: -0.035em;
+  font-size: 20px;
+  letter-spacing: -0.03em;
+}
+.business-shell[data-platform-density] :is(.metric-grid, .account-metrics),
+.focused-account[data-platform-density] .account-metrics {
+  gap: 10px !important;
+}
+.business-shell[data-platform-density] :is(.metric-grid > *, .account-metrics > *),
+.focused-account[data-platform-density] .account-metrics > * {
+  padding: 11px 13px !important;
 }
 .business-shell[data-platform-density] :is(.account-form, .form-grid),
 .focused-account[data-platform-density] :is(.account-form, .form-grid) {
-  gap: 14px;
+  gap: 10px;
 }
 .business-shell[data-platform-density] .panel > .panel,
 .focused-account[data-platform-density] .panel > .panel {
@@ -658,22 +681,24 @@ html:has([data-platform-density]) {
 .business-shell[data-platform-density] .apps-workspace .app-identity > .app-mark {
   background: #3d981d;
   color: white;
-  width: 58px;
-  height: 58px;
-  border-radius: 12px;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
   box-shadow:
     inset 0 1px 1px #ffffff40,
-    0 3px 6px #28610015;
+    0 2px 4px #28610012;
 }
 .business-shell[data-platform-density] .apps-workspace .app-identity {
-  padding: 0 0 8px;
-  gap: 16px;
+  padding: 0 0 6px;
+  gap: 11px;
+  align-items: center;
 }
 .business-shell[data-platform-density] .apps-workspace .app-title h1 {
-  font-size: 28px;
+  font-size: 20px;
 }
 .business-shell[data-platform-density] .apps-workspace .app-identity p {
-  font-size: 13px;
+  font-size: 12px;
+  margin: 1px 0 0;
 }
 .business-shell[data-platform-density] .apps-workspace .app-section-tabs {
   padding: 0;
@@ -7180,6 +7205,172 @@ html:has([data-platform-density]) {
 }
 .work-app .work-task-sheet > .form-actions {
   justify-content: flex-start;
+}
+
+/* Odoo-Inspired Work Calendar Grid & Schedule Controls */
+.o-work-calendar-panel {
+  padding: 12px 14px !important;
+  display: grid;
+  gap: 10px;
+}
+.o-work-calendar-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line, #e5e7eb);
+}
+.o-work-calendar-left,
+.o-work-calendar-right {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.o-work-calendar-left h3 {
+  margin: 0 6px 0 0;
+  font-size: 15px;
+  font-weight: 650;
+}
+.o-legend-chip {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.o-legend-chip.is-task {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-left: 3px solid #2563eb;
+}
+.o-legend-chip.is-meeting {
+  background: #ecfdf5;
+  color: #166534;
+  border-left: 3px solid #166534;
+}
+.o-legend-chip.is-milestone {
+  background: #fef3c7;
+  color: #92400e;
+  border-left: 3px solid #d97706;
+}
+.o-work-grid.work-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0 !important;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #ffffff;
+}
+.o-work-grid .work-weekday {
+  padding: 6px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #4b5563;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  border-right: 1px solid #eef2f7;
+}
+.o-work-grid .work-weekday:nth-child(7) {
+  border-right: 0;
+}
+.o-work-grid .work-calendar-day {
+  min-height: 92px;
+  padding: 5px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-right: 1px solid #eef2f7 !important;
+  border-bottom: 1px solid #eef2f7 !important;
+  border-radius: 0 !important;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.o-work-grid .work-calendar-day:nth-child(7n) {
+  border-right: 0 !important;
+}
+.o-work-grid .work-calendar-day.is-outside {
+  background: #f9fafb;
+}
+.o-work-grid .work-calendar-day.today {
+  background: rgba(240, 253, 244, 0.5);
+}
+.o-work-day-top {
+  display: flex;
+  justify-content: flex-end;
+}
+.o-work-day-badge {
+  min-width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #374151;
+}
+.o-work-day-badge.is-today {
+  background: #166534;
+  color: #ffffff;
+}
+.o-work-day-items {
+  display: grid;
+  gap: 3px;
+}
+.o-work-chip {
+  display: block;
+  width: 100%;
+  min-height: 20px !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  font-size: 11px !important;
+  font-weight: 550 !important;
+  line-height: 1.25 !important;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.o-work-chip.is-task {
+  background: #eff6ff !important;
+  color: #1e40af !important;
+  border: 0 !important;
+  border-left: 3px solid #2563eb !important;
+  cursor: pointer;
+}
+.o-work-chip.is-task:hover {
+  background: #dbeafe !important;
+}
+.o-work-chip.is-meeting {
+  background: #ecfdf5;
+  color: #14532d;
+  border-left: 3px solid #166534;
+}
+.o-work-chip.is-milestone {
+  background: #fef3c7;
+  color: #92400e;
+  border-left: 3px solid #d97706;
+}
+.o-work-unscheduled {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #eef2f7;
+  font-size: 12px;
+}
+.o-work-unscheduled-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
 }
 
 @media print {

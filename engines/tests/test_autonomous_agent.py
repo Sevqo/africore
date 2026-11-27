@@ -155,8 +155,72 @@ class TestPythonAutonomousAgent(unittest.TestCase):
             "customers": [{"id": "c1"}],
         })
         self.assertIn("Mombasa Wholesalers", diag["summary"])
-        self.assertIn("Recommended Agent Actions", diag["summary"])
         self.assertGreaterEqual(len(diag["recommended_actions"]), 1)
+
+        # Strategic sales & customer growth question (Hermes-caliber advisory, NOT generic KPI dump)
+        growth = run_agent_py({
+            "op": "handle_discussion_mention",
+            "message_body": "@continua-agent what do you think of the business how is it fairing about and how can we improve and make it much better like improving the sales and getting more customers",
+            "agent_handle": "continua-agent",
+            "agent_display_name": "Continua Agent",
+            "channel_name": "general-questions",
+            "author_name": "Cyprian",
+            "currency": "KES",
+            "workspace_context": {
+                "totals": {"confirmed_inflows_minor": 9132000, "recorded_outflows_minor": 0, "outstanding_minor": 0, "overdue_minor": 0},
+                "customers": [{"id": "c1", "name": "Savannah Retail"}, {"id": "c2", "name": "Nairobi Traders"}],
+                "crm_entries": [],
+                "invoices": [{"status": "paid", "total_minor": 9132000, "outstanding_minor": 0}],
+            },
+        })
+        self.assertEqual(growth["mode"], "direct_reply")
+        self.assertIn("customer", growth["reply_body"].lower())
+        self.assertIn("crm", growth["reply_body"].lower())
+        self.assertNotIn("Operational Intelligence Brief", growth["reply_body"])
+
+    def test_slot_filling_clarification_and_title_synthesis(self) -> None:
+        # 1. Vague prompt without a topic must NEVER use filler ("tomorrow" / "can you schedule...") as the title!
+        vague = run_agent_py({
+            "op": "plan_run",
+            "boundary_input": {
+                "source_workspace_id": "biz-1",
+                "source_kind": "business",
+                "source_name": "Continua",
+            },
+            "prompt": "can you schedule a meeting for me for tommorow on the calenders app",
+            "currency": "KES",
+            "computer_use": True,
+            "stage_in_sandbox": True,
+        })
+        self.assertTrue(vague["ok"])
+        self.assertEqual(vague["execution_mode"], "needs_input")
+        self.assertIsNone(vague["sandbox_clone"])
+        self.assertIn("What is the meeting about", vague["clarification"]["question"])
+        pending = vague["clarification"]["pending_intent"]
+        self.assertEqual(pending["tool_id"], "schedule_meeting")
+
+        # 2. Follow-up natural description synthesizes a crisp Title + structured Agenda and opens Sandbox Clone!
+        resumed = run_agent_py({
+            "op": "plan_run",
+            "boundary_input": {
+                "source_workspace_id": "biz-1",
+                "source_kind": "business",
+                "source_name": "Continua",
+            },
+            "prompt": "It is about reviewing Q4 marketing leads and customer acquisition strategy at 2pm in Zoom",
+            "pending_intent": pending,
+            "currency": "KES",
+            "computer_use": True,
+            "stage_in_sandbox": True,
+        })
+        self.assertTrue(resumed["ok"])
+        self.assertEqual(resumed["execution_mode"], "approval_required")
+        self.assertEqual(resumed["params"]["preferred_hour"], 14)
+        self.assertEqual(resumed["params"]["location"], "Zoom")
+        self.assertIn("Q4", resumed["params"]["title"])
+        self.assertIn("Suggested Agenda", resumed["params"]["description"])
+        self.assertNotIn("tommorow", resumed["params"]["title"].lower())
+        self.assertIsNotNone(resumed["sandbox_clone"])
 
     def test_discussion_channel_mention_qa_and_action_delegation(self) -> None:
         recap = run_agent_py({

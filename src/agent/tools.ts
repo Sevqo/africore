@@ -437,7 +437,7 @@ export async function executeAgentTool(
 
   if (tool.id === 'analyze_business') {
     const snapshot = await financialSnapshot(targetAccess, { currency });
-    const [rawCrmRows, workList, calList, customerRows] = await Promise.all([
+    const [rawCrmRows, workList, calList, customerRowsRaw, productRowsRaw, quoteRowsRaw, orderRowsRaw] = await Promise.all([
       dbAll(
         "SELECT id, kind, status, data FROM ac_crm_entries WHERE org_id=? AND environment=? AND status<>'archived'",
         [targetAccess.org, targetAccess.environment],
@@ -445,10 +445,30 @@ export async function executeAgentTool(
       workProjects(targetAccess).catch(() => ({ data: [] })),
       calendarEvents(targetAccess).catch(() => ({ data: [] })),
       dbAll(
-        "SELECT id FROM ac_records WHERE org_id=? AND environment=? AND kind='customers'",
+        "SELECT id, data FROM ac_records WHERE org_id=? AND environment=? AND kind='customers'",
+        [targetAccess.org, targetAccess.environment],
+      ).catch(() => []),
+      dbAll(
+        "SELECT id FROM ac_records WHERE org_id=? AND environment=? AND kind='products'",
+        [targetAccess.org, targetAccess.environment],
+      ).catch(() => []),
+      dbAll(
+        "SELECT id FROM ac_erp_objects WHERE org_id=? AND environment=? AND kind='sales_quotation'",
+        [targetAccess.org, targetAccess.environment],
+      ).catch(() => []),
+      dbAll(
+        "SELECT id FROM ac_records WHERE org_id=? AND environment=? AND kind='orders'",
         [targetAccess.org, targetAccess.environment],
       ).catch(() => []),
     ]);
+    const customerRows = customerRowsRaw.map((c: any) => {
+      try {
+        const parsed = JSON.parse(c.data || '{}');
+        return { id: c.id, name: parsed.name || parsed.company_name || '' };
+      } catch {
+        return { id: c.id, name: '' };
+      }
+    });
     const crmRows = rawCrmRows.map((r: any) => {
       let parsed: any = {};
       try {
@@ -493,6 +513,9 @@ export async function executeAgentTool(
       tasks: allTasks,
       calendar_events: eventRows,
       customers: customerRows,
+      products: productRowsRaw,
+      quotations: quoteRowsRaw,
+      orders: orderRowsRaw,
     });
 
     return {

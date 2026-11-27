@@ -10,41 +10,50 @@ import {
 import type { API } from '../operations/UI';
 import './agent.css';
 
-const FLOAT_PROMPTS: Record<'business' | 'personal' | 'developer', string[]> = {
+const FLOAT_PROMPTS: Record<'business' | 'personal' | 'developer', { label: string; prompt: string }[]> = {
   business: [
-    'Analyze my business operations & priorities',
-    'Schedule a meeting for Client Review tomorrow at 10am',
-    'Set up a Q4 Launch project and schedule kickoff meeting',
-    'Create a CRM lead for Savannah Retail KES 65000',
+    {
+      label: 'Growth & sales diagnosis',
+      prompt: 'How is our business faring and how can we improve sales and win more customers?',
+    },
+    { label: 'Schedule meeting', prompt: 'Schedule a meeting tomorrow' },
+    {
+      label: 'Q4 Launch project',
+      prompt: 'Set up a Q4 Launch project and schedule kickoff meeting',
+    },
+    { label: 'Log CRM lead', prompt: 'Create a CRM lead for Savannah Retail KES 65000' },
   ],
   personal: [
-    'Analyze my personal finances & savings rate',
-    'Schedule a Personal Budget Review tomorrow at 9am',
-    'Check my linked Developer workspace API health',
-    'Record an expense of KES 2500 for groceries',
+    { label: 'Savings & budget check', prompt: 'Analyze my personal finances & savings rate' },
+    { label: 'Schedule check-in', prompt: 'Schedule a Personal Budget Review tomorrow at 9am' },
+    { label: 'Dev API health', prompt: 'Check my linked Developer workspace API health' },
+    { label: 'Log expense', prompt: 'Record an expense of KES 2500 for groceries' },
   ],
   developer: [
-    'Diagnose my sandbox API logs & error rate',
-    'Create a sandbox developer app called Checkout Sync',
-    'Inspect my linked Personal workspace summary',
+    { label: 'API & webhook audit', prompt: 'Diagnose my sandbox API logs & error rate' },
+    { label: 'New sandbox app', prompt: 'Create a sandbox developer app called Checkout Sync' },
+    { label: 'Personal summary', prompt: 'Inspect my linked Personal workspace summary' },
   ],
 };
 
-/**
- * Persistent Floating Agent + Resizable Split-Screen Sandbox Clone Orchestrator.
- *
- * Choreography:
- * 1. User types or taps a task in the Floating Agent window.
- * 2. When Computer Use opens a Sandbox Clone (write / compound task):
- *    - Right-side resizable Green Sandbox Clone opens with a live clone of the target page
- *      (Calendar, Work, CRM, Invoices, Expenses, etc.).
- *    - Floating chat window minimizes down out of the way while the agent populates the clone.
- *    - When staging finishes, the bottom Approval Dock rises up with "Approve & Send to Workspace"
- *      and "Discard Sandbox".
- * 3. On Approve: commits to canonical backend, closes the sandbox cleanly, navigates & refreshes
- *    the live workspace so the newly created record renders immediately!
- * 4. Closing or dismissing ALWAYS tears down the sandbox cleanly (zero stuck green screen).
- */
+function renderCompactAgentMarkdown(text: string) {
+  return text.split('\n').map((line, idx) => {
+    if (!line.trim()) return <div key={idx} style={{ height: 4 }} />;
+    const parts = line.split(/(\*\*[^*]+\*\*)/g);
+    return (
+      <div key={idx}>
+        {parts.map((p, pIdx) =>
+          p.startsWith('**') && p.endsWith('**') ? (
+            <strong key={pIdx}>{p.slice(2, -2)}</strong>
+          ) : (
+            <span key={pIdx}>{p}</span>
+          ),
+        )}
+      </div>
+    );
+  });
+}
+
 export function FloatingAgent({
   api,
   workspaceId,
@@ -62,13 +71,11 @@ export function FloatingAgent({
 }) {
   const [open, setOpen] = useState(false);
   const [minimizedForSandbox, setMinimizedForSandbox] = useState(false);
-  const [approvalDockReady, setApprovalDockReady] = useState(false);
   const [overview, setOverview] = useState<any>(null);
   const [prompt, setPrompt] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  // Active Sandbox Clone state (mounted as flex/grid sibling inside workspace shell ONLY while active)
   const [sandboxRun, setSandboxRun] = useState<{
     runId: string;
     approvalId: string | null;
@@ -79,17 +86,15 @@ export function FloatingAgent({
     destination?: AgentDestination;
   } | null>(null);
   const [editedParams, setEditedParams] = useState<Record<string, any>>({});
-  const [sandboxWidth, setSandboxWidth] = useState<number>(500);
+  const [sandboxWidth, setSandboxWidth] = useState<number>(480);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const closeAllSandbox = useCallback(() => {
     setSandboxRun(null);
     setMinimizedForSandbox(false);
-    setApprovalDockReady(false);
     setEditedParams({});
   }, []);
 
-  // Reset sandbox cleanly when switching workspaces
   useEffect(() => {
     closeAllSandbox();
   }, [workspaceId, workspaceKind, closeAllSandbox]);
@@ -109,12 +114,11 @@ export function FloatingAgent({
     if (open) void refresh();
   }, [open, workspaceId, workspaceKind]);
 
-  // Auto-grow textarea fallback for browsers without CSS field-sizing: content
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${Math.min(148, Math.max(52, el.scrollHeight))}px`;
+    el.style.height = `${Math.min(116, Math.max(38, el.scrollHeight))}px`;
   }, [prompt, open]);
 
   async function submitPrompt(text?: string) {
@@ -139,12 +143,7 @@ export function FloatingAgent({
 
       const clone: SandboxCloneBlueprint | undefined = run?.result?.sandbox_clone;
       if (clone && run.status === 'awaiting_approval') {
-        // Choreographed Computer Use takeover:
-        // 1. Open resizable right-side Sandbox Clone of target page
-        // 2. Dismiss/minimize chat window down while agent populates sandbox
-        // 3. Rise up approval dock once playback finishes!
         setEditedParams({});
-        setApprovalDockReady(false);
         setOpen(false);
         setMinimizedForSandbox(true);
         setSandboxRun({
@@ -158,6 +157,9 @@ export function FloatingAgent({
         });
       } else {
         setOpen(true);
+        if (run?.status === 'needs_input') {
+          window.setTimeout(() => textareaRef.current?.focus(), 40);
+        }
       }
     } catch (e) {
       setError((e as Error).message);
@@ -203,19 +205,20 @@ export function FloatingAgent({
     }
   }
 
-  const handlePlaybackDone = useCallback(() => {
-    setApprovalDockReady(true);
-  }, []);
+  const noopDone = useCallback(() => {}, []);
 
   const pendingApprovals: any[] = (overview?.approvals || []).filter(
     (item: any) => item.status === 'pending',
   );
+  const runs: any[] = overview?.runs || [];
+  const activeClarificationRun = runs.find((r) => r.status === 'needs_input');
   const creditsRemaining = overview?.billing?.credits_remaining;
+  const agentHandle = overview?.policy?.agent_handle;
   const isolationLabel =
     overview?.boundary?.isolation_label ||
     (workspaceKind === 'business'
       ? 'Business Sandboxed'
-      : 'Personal + Dev Bridge · Business Blocked');
+      : 'Personal + Dev · Business Blocked');
 
   return (
     <>
@@ -225,92 +228,25 @@ export function FloatingAgent({
           steps={sandboxRun.steps}
           status={sandboxRun.status}
           editedParams={editedParams}
-          onChangeParam={(key, val) =>
-            setEditedParams((prev) => ({ ...prev, [key]: val }))
-          }
-          onPlaybackDone={handlePlaybackDone}
+          onChangeParam={(key, val) => setEditedParams((prev) => ({ ...prev, [key]: val }))}
+          onPlaybackDone={noopDone}
           onDismiss={closeAllSandbox}
           widthPx={sandboxWidth}
           onWidthChange={setSandboxWidth}
-        />
-      )}
-
-      {/* Choreographed Rising Bottom Approval Dock when Sandbox Clone finishes staging */}
-      {sandboxRun && sandboxRun.approvalId && (
-        <section
-          className={
-            approvalDockReady
-              ? 'agent-approval-dock is-risen'
-              : 'agent-approval-dock is-working'
+          approvalId={sandboxRun.approvalId}
+          busy={busy}
+          error={error}
+          onApprove={
+            sandboxRun.approvalId ? () => void decide(sandboxRun.approvalId!, 'approve') : undefined
           }
-          role="region"
-          aria-label="Sandbox Approval Controls"
-        >
-          {!approvalDockReady ? (
-            <div className="agent-approval-dock-working">
-              <span className="agent-sandbox-live-dot" aria-hidden="true" />
-              <span>
-                Agent is staging <strong>{sandboxRun.blueprint.page_title}</strong> in the isolated
-                sandbox…
-              </span>
-              <button
-                type="button"
-                className="quiet-button agent-cu-btn"
-                onClick={() => setApprovalDockReady(true)}
-              >
-                Skip animation
-              </button>
-            </div>
-          ) : (
-            <div className="agent-approval-dock-ready">
-              <div className="agent-approval-dock-copy">
-                <span className="agent-dock-kicker">SANDBOX READY · REVIEW &amp; APPROVE</span>
-                <strong>
-                  Send staged changes to live {sandboxRun.blueprint.page_title}?
-                </strong>
-                <p>
-                  Once approved, this record is saved to your live workspace and visible to
-                  authorized members.
-                </p>
-              </div>
-              {error && (
-                <div className="alert error" role="alert">
-                  {error}
-                </div>
-              )}
-              <div className="agent-approval-dock-buttons">
-                <button
-                  type="button"
-                  className="button"
-                  disabled={busy}
-                  onClick={() => void decide(sandboxRun.approvalId!, 'approve')}
-                >
-                  <Icon name="check" width={16} height={16} />
-                  {busy ? 'Sending to workspace…' : sandboxRun.blueprint.primary_cta}
-                </button>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  disabled={busy}
-                  onClick={() => void decide(sandboxRun.approvalId!, 'reject')}
-                >
-                  Discard sandbox
-                </button>
-                <button
-                  type="button"
-                  className="quiet-button"
-                  disabled={busy}
-                  onClick={() => {
-                    setOpen(true);
-                    setMinimizedForSandbox(false);
-                  }}
-                >
-                  Open chat
-                </button>
-              </div>
-            </div>
-          )}
-        </section>
+          onReject={
+            sandboxRun.approvalId ? () => void decide(sandboxRun.approvalId!, 'reject') : undefined
+          }
+          onOpenChat={() => {
+            setOpen(true);
+            setMinimizedForSandbox(false);
+          }}
+        />
       )}
 
       {open && (
@@ -322,7 +258,13 @@ export function FloatingAgent({
         >
           <header className="agent-float-header">
             <div className="agent-float-header-title">
-              <strong id="floating-agent-title">AfriCore Autonomous Agent</strong>
+              <div className="agent-float-title-row">
+                <span className="agent-float-pulse" aria-hidden="true" />
+                <strong id="floating-agent-title">
+                  {overview?.policy?.agent_display_name || 'AfriCore Agent'}
+                </strong>
+                {agentHandle && <code className="agent-float-handle">@{agentHandle}</code>}
+              </div>
               <span>
                 {isolationLabel}
                 {typeof creditsRemaining === 'number' ? ` · ${creditsRemaining} cr` : ''}
@@ -340,7 +282,7 @@ export function FloatingAgent({
                   onOpenFullStudio();
                 }}
               >
-                <Icon name="external" width={16} height={16} />
+                <Icon name="external" width={14} height={14} />
               </button>
               <button
                 type="button"
@@ -354,7 +296,7 @@ export function FloatingAgent({
                   }
                 }}
               >
-                <Icon name="close" width={16} height={16} />
+                <Icon name="close" width={14} height={14} />
               </button>
             </div>
           </header>
@@ -366,16 +308,16 @@ export function FloatingAgent({
               </div>
             )}
 
-            <div className="agent-quick-chips">
-              {(FLOAT_PROMPTS[workspaceKind] || FLOAT_PROMPTS.business).map((chip) => (
+            <div className="agent-quick-chips" aria-label="Quick agent actions">
+              {(FLOAT_PROMPTS[workspaceKind] || FLOAT_PROMPTS.business).map((item) => (
                 <button
-                  key={chip}
+                  key={item.label}
                   type="button"
                   className="agent-quick-chip"
                   disabled={busy}
-                  onClick={() => void submitPrompt(chip)}
+                  onClick={() => void submitPrompt(item.prompt)}
                 >
-                  {chip}
+                  {item.label}
                 </button>
               ))}
             </div>
@@ -394,7 +336,7 @@ export function FloatingAgent({
                       disabled={busy}
                       onClick={() => {
                         setOpen(false);
-                        setApprovalDockReady(true);
+                        setMinimizedForSandbox(true);
                         setSandboxRun({
                           runId: item.run_id,
                           approvalId: item.id,
@@ -405,7 +347,7 @@ export function FloatingAgent({
                         });
                       }}
                     >
-                      Inspect Sandbox Clone
+                      Open Sandbox
                     </button>
                   )}
                   <button
@@ -414,7 +356,7 @@ export function FloatingAgent({
                     disabled={busy}
                     onClick={() => void decide(item.id, 'approve')}
                   >
-                    Approve &amp; Send
+                    Approve
                   </button>
                   <button
                     type="button"
@@ -428,18 +370,28 @@ export function FloatingAgent({
               </article>
             ))}
 
-            {(overview?.runs || []).slice(0, 4).map((run: any) => (
-              <article key={run.id} className="agent-run-card">
+            {runs.slice(0, 5).map((run: any) => (
+              <article
+                key={run.id}
+                className={
+                  run.status === 'needs_input'
+                    ? 'agent-run-card agent-run-clarify'
+                    : 'agent-run-card'
+                }
+              >
                 <div className="agent-run-top">
                   <span>
-                    <code>{run.tool_name}</code> · {run.credits_used} cr
+                    <code>{run.tool_name}</code>
+                    {run.credits_used > 0 ? ` · ${run.credits_used} cr` : ' · Clarifying'}
                   </span>
                   <span className={`agent-status-chip agent-status-${run.status}`}>
-                    {String(run.status).replace(/_/g, ' ')}
+                    {run.status === 'needs_input'
+                      ? 'Needs details'
+                      : String(run.status).replace(/_/g, ' ')}
                   </span>
                 </div>
                 <p className="agent-run-prompt">{run.prompt}</p>
-                <p className="agent-run-summary">{run.summary}</p>
+                <div className="agent-run-summary">{renderCompactAgentMarkdown(run.summary || '')}</div>
                 {Array.isArray(run.result?.data?.recommended_actions) &&
                   run.result.data.recommended_actions.length > 0 && (
                     <div className="agent-followup-chips">
@@ -451,7 +403,7 @@ export function FloatingAgent({
                           disabled={busy}
                           onClick={() => void submitPrompt(act.action_prompt)}
                         >
-                          <Icon name="bolt" width={13} height={13} />
+                          <Icon name="bolt" width={12} height={12} />
                           <span>{act.title}</span>
                         </button>
                       ))}
@@ -473,9 +425,13 @@ export function FloatingAgent({
                 ref={textareaRef}
                 className="agent-chat-textarea"
                 aria-label="Tell AfriCore Agent what to do"
-                placeholder="Ask your agent to schedule a meeting, set up a project, draft an invoice, or diagnose operations…"
+                placeholder={
+                  activeClarificationRun
+                    ? 'Reply with the topic, title, or preferred time…'
+                    : 'Ask a strategic question or tell your agent what to execute…'
+                }
                 value={prompt}
-                rows={2}
+                rows={1}
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
@@ -487,15 +443,17 @@ export function FloatingAgent({
               />
               <div className="agent-composer-bar">
                 <span className="agent-composer-hint">
-                  Enter to run · Opens sandbox clone before changes
+                  {activeClarificationRun
+                    ? 'Replying to agent question · Auto-crafts title & agenda'
+                    : 'Enter to send · Stages writes in Sandbox Clone'}
                 </span>
                 <button
                   type="submit"
                   className="button agent-send-btn"
                   disabled={busy || prompt.trim().length < 2}
                 >
-                  <Icon name="bolt" width={15} height={15} />
-                  <span>{busy ? 'Working…' : 'Send'}</span>
+                  <Icon name="bolt" width={13} height={13} />
+                  <span>{busy ? '…' : 'Send'}</span>
                 </button>
               </div>
             </form>
@@ -506,13 +464,15 @@ export function FloatingAgent({
       {!minimizedForSandbox || !sandboxRun ? (
         <button
           type="button"
-          className="agent-float-launcher"
+          className={open ? 'agent-float-launcher is-open' : 'agent-float-launcher'}
           aria-expanded={open}
           aria-label={open ? 'Close AfriCore Autonomous Agent' : 'Open AfriCore Autonomous Agent'}
           onClick={() => setOpen((prev) => !prev)}
         >
-          <Icon name="bolt" width={18} height={18} />
-          <span>Agent</span>
+          <span className="agent-launcher-orb" aria-hidden="true">
+            <Icon name="bolt" width={14} height={14} />
+          </span>
+          <span className="agent-launcher-label">Agent</span>
           {pendingApprovals.length > 0 && (
             <span className="agent-float-badge">{pendingApprovals.length}</span>
           )}

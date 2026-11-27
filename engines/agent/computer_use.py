@@ -100,10 +100,11 @@ def build_sandbox_clone_blueprint(
     tid = tool["id"]
     if tid == "schedule_meeting":
         editable_fields = [
-            {"key": "title", "label": "Meeting title", "type": "text", "value": str(params.get("title") or "Team Sync Meeting")},
+            {"key": "title", "label": "Meeting title", "type": "text", "value": str(params.get("title") or "Team Strategy Sync")},
+            {"key": "preferred_hour", "label": "Start hour (0–23)", "type": "number", "value": int(params.get("preferred_hour") if params.get("preferred_hour") is not None else 10)},
             {"key": "duration_minutes", "label": "Duration (min)", "type": "number", "value": int(params.get("duration_minutes") or 45)},
             {"key": "location", "label": "Location / Room", "type": "text", "value": str(params.get("location") or "Workspace Meeting Room")},
-            {"key": "timezone", "label": "Timezone", "type": "text", "value": str(params.get("timezone") or "Africa/Nairobi")},
+            {"key": "description", "label": "Agenda & notes", "type": "textarea", "value": str(params.get("description") or "")},
         ]
     elif tid == "create_project":
         editable_fields = [

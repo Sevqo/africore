@@ -176,7 +176,23 @@ export async function runAgent(
     crossDevBridgeEnabled: policy.cross_dev_bridge_enabled,
   });
 
-  // Delegate planning, intent extraction, isolation check, permissions & credit estimation to Python!
+  // Check if this actor has a recent unresolved `needs_input` slot-filling prompt (<30 min old)
+  const sortedActorRuns = existingRuns
+    .filter((r) => r.actor === a.actor)
+    .sort((x, y) => String(y.created_at).localeCompare(String(x.created_at)));
+  const latestActorRun = sortedActorRuns[0];
+  let activePendingIntent: any = null;
+  if (
+    !opts.routineId &&
+    latestActorRun &&
+    latestActorRun.status === 'needs_input' &&
+    latestActorRun.result?.pending_intent &&
+    Date.now() - Date.parse(String(latestActorRun.created_at || '')) < 30 * 60_000
+  ) {
+    activePendingIntent = latestActorRun.result.pending_intent;
+  }
+
+  // Delegate planning, intent extraction, slot-filling, isolation check, permissions & credit estimation to Python!
   const plan = await runPythonAgent<any>({
     op: 'plan_run',
     boundary_input: boundaryInput,
@@ -187,6 +203,7 @@ export async function runAgent(
     params: d.params || {},
     policy,
     memory,
+    pending_intent: activePendingIntent,
     computer_use: d.computer_use,
     stage_in_sandbox: d.stage_in_sandbox,
     routine_id: opts.routineId || null,
@@ -212,6 +229,54 @@ export async function runAgent(
 
   const runId = randomUUID();
   const promptSealed = seal(d.prompt, sealCtx(a, 'run', runId));
+
+  // Mark prior `needs_input` run as resolved once the user replies!
+  if (activePendingIntent && latestActorRun) {
+    await change(a, latestActorRun, { status: 'answered' }).catch(() => {});
+  }
+
+  if (plan.execution_mode === 'needs_input') {
+    const clarification = plan.clarification || {};
+    const savedClarification = await create(
+      a,
+      'agent_run',
+      {
+        engine: plan.engine || 'python_autonomous_agent_v2',
+        workspace_kind: plan.boundary.source_kind,
+        actor: a.actor,
+        idempotency_key: idempotencyKey,
+        fingerprint,
+        prompt_sealed: promptSealed,
+        status: 'needs_input',
+        isolation_boundary: plan.boundary,
+        target_workspace_id: target.access.org,
+        tool_name: plan.tool.id,
+        summary: String(
+          clarification.question ||
+            'Could you share a title or short description so I can stage this cleanly?',
+        ),
+        steps: [],
+        result: {
+          clarification_needed: true,
+          missing_fields: clarification.missing_fields || [],
+          suggestions: clarification.suggestions || [],
+          pending_intent: clarification.pending_intent || null,
+          data: {
+            recommended_actions: (clarification.suggestions || []).map((s: string) => ({
+              title: s,
+              action_prompt: s,
+            })),
+          },
+        },
+        credits_used: 0,
+        estimated_minor: 0,
+        currency: 'KES',
+        routine_id: null,
+      },
+      runId,
+    );
+    return formatRun(a, savedClarification);
+  }
 
   if (plan.execution_mode === 'approval_required') {
     const billing = await consumeAgentCredits(a, {

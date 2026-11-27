@@ -102,20 +102,33 @@ function channelIcon(icon: string): IconName | null {
 }
 
 function renderFormattedBody(body: string, agentHandle: string) {
-  const parts = body.split(/(@[a-zA-Z0-9._-]+)/g);
-  return parts.map((part, idx) => {
-    if (part.startsWith('@') && part.length > 2) {
-      const isAgent = part.slice(1).toLowerCase() === agentHandle.toLowerCase();
-      return (
-        <span
-          key={idx}
-          className={isAgent ? 'dc-mention dc-mention-agent' : 'dc-mention'}
-        >
-          {part}
-        </span>
-      );
-    }
-    return <span key={idx}>{part}</span>;
+  return body.split('\n').map((line, lIdx) => {
+    if (!line.trim()) return <div key={lIdx} style={{ height: 5 }} />;
+    const tokens = line.split(/(\*\*[^*]+\*\*|`[^`]+`|@[a-zA-Z0-9._-]+)/g);
+    return (
+      <div key={lIdx}>
+        {tokens.map((part, idx) => {
+          if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+            return <strong key={idx}>{part.slice(2, -2)}</strong>;
+          }
+          if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
+            return <code key={idx}>{part.slice(1, -1)}</code>;
+          }
+          if (part.startsWith('@') && part.length > 2) {
+            const isAgent = part.slice(1).toLowerCase() === agentHandle.toLowerCase();
+            return (
+              <span
+                key={idx}
+                className={isAgent ? 'dc-mention dc-mention-agent' : 'dc-mention'}
+              >
+                {part}
+              </span>
+            );
+          }
+          return <span key={idx}>{part}</span>;
+        })}
+      </div>
+    );
   });
 }
 

@@ -187,6 +187,7 @@ export function CalendarWorkspace({
     [search, setSearch] = useState(''),
     [date, setDate] = useState(() => new Date()),
     [view, setView] = useState<'day' | 'week' | 'month'>('week'),
+    [showWeekends, setShowWeekends] = useState(true),
     [form, setForm] = useState<any>(null),
     [busy, setBusy] = useState(false),
     [calendarSettings, setCalendarSettings] = useState<any>(null),
@@ -370,12 +371,9 @@ export function CalendarWorkspace({
       return;
     const frame = requestAnimationFrame(() => {
       const root = calendarGrid.current;
-      const hours = root?.querySelector('.calendar-hour-grid');
-      if (!root || !hours) return;
-      const rootTop = root.getBoundingClientRect().top;
-      const hoursTop = hours.getBoundingClientRect().top - rootTop + root.scrollTop;
-      const headerHeight = root.querySelector('.calendar-grid-header')?.getBoundingClientRect().height || 0;
-      root.scrollTop = Math.max(0, hoursTop + 6 * 54 - headerHeight);
+      if (!root) return;
+      // Scroll cleanly to 08:00 AM working hours (8 * 48px = 384px) without clipping hour labels!
+      root.scrollTop = 8 * 48;
     });
     return () => cancelAnimationFrame(frame);
   }, [date, section, view]);
@@ -599,7 +597,7 @@ export function CalendarWorkspace({
             const d = startOfWeek(date);
             d.setDate(d.getDate() + i);
             return d;
-          })
+          }).filter((d) => showWeekends || (d.getDay() !== 0 && d.getDay() !== 6))
         : Array.from({ length: 42 }, (_, i) => {
             const d = new Date(date.getFullYear(), date.getMonth(), 1);
             d.setDate(d.getDate() - d.getDay() + i);
@@ -608,14 +606,14 @@ export function CalendarWorkspace({
   const heading =
     view === 'day'
       ? date.toLocaleDateString(undefined, {
-          weekday: 'long',
-          month: 'long',
+          weekday: 'short',
+          month: 'short',
           day: 'numeric',
           year: 'numeric',
         })
       : view === 'month'
         ? date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
-        : `${days[0].toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${days[6].toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+        : `${days[0].toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${days[days.length - 1].toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
   async function save() {
     if (!form) return;
     setBusy(true);
@@ -810,87 +808,108 @@ export function CalendarWorkspace({
     <main
       className={`phase3-workspace calendar-workspace ${section === 'settings' ? 'calendar-full-width' : ''}`}
     >
-      <header className="phase3-toolbar">
-        <div>
-          <h2>
-            {invitations
-              ? 'Invitations'
-              : section === 'settings'
-                ? 'Settings'
-                : section === 'availability'
-                  ? 'Availability'
-                  : section === 'appointments'
-                    ? 'Appointments'
-                  : section === 'mine'
-                    ? 'My Calendar'
-                    : section === 'team'
-                      ? 'Team Calendar'
-                      : 'Meetings'}
-          </h2>
-          <p>
-            {section === 'settings'
-              ? 'Personal working hours and team sharing'
-              : section === 'availability'
-                ? 'Free/busy windows from shared work hours and scheduled events'
-                : section === 'appointments'
-                  ? 'Manage member appointment types and confirm a time against staff availability'
-                : 'Workspace meetings · timezone-aware event times · in-app invitations'}
-          </p>
-          {peopleLeaveState === 'unavailable' && section !== 'settings' && section !== 'availability' && section !== 'appointments' && (
-            <small className="calendar-leave-note">People leave is hidden because the current account cannot read the People leave calendar.</small>
+      <header className="phase3-toolbar o-calendar-cp">
+        <div className="o-calendar-cp-left">
+          {section !== 'settings' && section !== 'availability' && section !== 'appointments' && (
+            <button
+              className="button o-cp-new-btn"
+              onClick={() => {
+                setEventHistory(null);
+                setForm(initial());
+              }}
+            >
+              + New Meeting
+            </button>
+          )}
+          <div className="o-calendar-title-group">
+            <h2>
+              {invitations
+                ? 'Invitations'
+                : section === 'settings'
+                  ? 'Settings'
+                  : section === 'availability'
+                    ? 'Availability'
+                    : section === 'appointments'
+                      ? 'Appointments'
+                      : section === 'mine'
+                        ? 'My Calendar'
+                        : section === 'team'
+                          ? 'Team Calendar'
+                          : 'Meetings'}
+            </h2>
+            {peopleLeaveState === 'unavailable' &&
+              section !== 'settings' &&
+              section !== 'availability' &&
+              section !== 'appointments' && (
+                <small className="calendar-leave-note">
+                  People leave hidden for current role.
+                </small>
+              )}
+          </div>
+          {section !== 'settings' && section !== 'appointments' && (
+            <div className="o-calendar-nav-group">
+              <button className="secondary-button" onClick={() => setDate(new Date())}>
+                Today
+              </button>
+              <div className="o-calendar-arrows" role="group" aria-label="Navigate calendar period">
+                <button
+                  className="secondary-button"
+                  aria-label="Previous date range"
+                  onClick={() => move(-1)}
+                >
+                  ‹
+                </button>
+                <button
+                  className="secondary-button"
+                  aria-label="Next date range"
+                  onClick={() => move(1)}
+                >
+                  ›
+                </button>
+              </div>
+              <strong className="o-calendar-heading-label">{heading}</strong>
+            </div>
           )}
         </div>
-        <div className="phase3-actions">
+
+        <div className="phase3-actions o-calendar-cp-right">
           {section !== 'settings' && section !== 'availability' && section !== 'appointments' && (
-            <label className="field calendar-search">
-              <span>Search meetings</span>
+            <label className="o-calendar-search" aria-label="Search meetings">
               <input
                 type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Meeting title or location"
+                placeholder="Filter meetings…"
               />
             </label>
           )}
-          {section !== 'settings' && section !== 'appointments' && (
-            <button className="secondary-button" onClick={() => setDate(new Date())}>
-              Today
-            </button>
-          )}
-          {section !== 'settings' && section !== 'appointments' && (
-            <button
-              className="secondary-button"
-              aria-label="Previous date range"
-              onClick={() => move(-1)}
-            >
-              ‹
-            </button>
-          )}
-          {section !== 'settings' && section !== 'appointments' && (
-            <button
-              className="secondary-button"
-              aria-label="Next date range"
-              onClick={() => move(1)}
-            >
-              ›
-            </button>
-          )}
-          {section !== 'settings' && section !== 'appointments' && <strong>{heading}</strong>}
+          {section !== 'settings' &&
+            section !== 'availability' &&
+            section !== 'appointments' &&
+            view === 'week' && (
+              <label className="o-weekends-toggle">
+                <input
+                  type="checkbox"
+                  checked={showWeekends}
+                  onChange={(e) => setShowWeekends(e.target.checked)}
+                />
+                <span>Weekends</span>
+              </label>
+            )}
           {section !== 'settings' && section !== 'availability' && section !== 'appointments' && (
-            <select
-              aria-label="Calendar view"
-              value={view}
-              onChange={(e) => setView(e.target.value as any)}
-            >
-              <option value="day">Day</option>
-              <option value="week">Week</option>
-              <option value="month">Month</option>
-            </select>
-          )}
-          {section !== 'settings' && section !== 'availability' && section !== 'appointments' && (
-            <button className="button" onClick={() => { setEventHistory(null); setForm(initial()); }}>
-              New Meeting
-            </button>
+            <div className="o-view-switcher" role="group" aria-label="Calendar view">
+              {(['day', 'week', 'month'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  className={view === mode ? 'o-view-btn is-active' : 'o-view-btn'}
+                  aria-pressed={view === mode}
+                  onClick={() => setView(mode)}
+                >
+                  {mode[0].toUpperCase() + mode.slice(1)}
+                </button>
+              ))}
+            </div>
           )}
         </div>
       </header>
@@ -1255,22 +1274,31 @@ export function CalendarWorkspace({
         >
           <div className="calendar-grid-header">
             <div className="calendar-day-head">
-              <span>Time</span>
-              {days.map((d) => (
-                <strong key={dayKey(d)}>
-                  {d.toLocaleDateString(undefined, {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </strong>
-              ))}
+              <span className="calendar-tz-corner">EAT</span>
+              {days.map((d) => {
+                const isTodayCol = dayKey(d) === dayKey(new Date());
+                return (
+                  <div
+                    key={dayKey(d)}
+                    className={
+                      isTodayCol ? 'calendar-col-head is-today' : 'calendar-col-head'
+                    }
+                  >
+                    <span className="calendar-col-weekday">
+                      {d.toLocaleDateString(undefined, { weekday: 'short' })}
+                    </span>
+                    <strong className="calendar-col-daynum">{d.getDate()}</strong>
+                  </div>
+                );
+              })}
             </div>
             {visible.some((e) => e.source === 'people_leave' && e.data.all_day) && (
-              <p className="calendar-leave-note">Approved leave shown here follows the People app's access rules. Private reasons are not displayed.</p>
+              <p className="calendar-leave-note">
+                Approved leave shown here follows the People app's access rules.
+              </p>
             )}
             <div className="calendar-allday-grid" aria-label="All-day events">
-              <span className="calendar-allday-label">All day</span>
+              <span className="calendar-allday-label">All-day</span>
               {layoutCalendarAllDay(visible, days).map(({ event, first, last, lane }) => (
                 <button
                   type="button"
@@ -1288,54 +1316,76 @@ export function CalendarWorkspace({
           <div className="calendar-hour-grid">
             <div className="calendar-hours">
               {Array.from({ length: 24 }, (_, i) => (
-                <span key={i}>{String(i).padStart(2, '0')}:00</span>
+                <span key={i}>{i === 0 ? '' : `${String(i).padStart(2, '0')}:00`}</span>
               ))}
             </div>
-            {days.map((d) => (
-              <div className="calendar-day-column" key={dayKey(d)}>
-                {Array.from({ length: 24 }, (_, i) => (
-                  <button
-                    className="calendar-hour"
-                    key={i}
-                    type="button"
-                    aria-label={`Create meeting ${d.toLocaleDateString()} ${String(i).padStart(2, '0')}:00`}
-                    onClick={() => {
-                      const start = new Date(d);
-                      start.setHours(i, 0, 0, 0);
-                      const end = new Date(start);
-                      end.setHours(end.getHours() + 1);
-                      setForm({ ...initial(), start: localInput(start), end: localInput(end) });
-                    }}
-                  />
-                ))}
-                {layoutOverlappingEvents(visible, d).map(({ event: e, start, end, lane, lanes }) => {
+            {days.map((d) => {
+              const isTodayCol = dayKey(d) === dayKey(new Date());
+              return (
+                <div
+                  className={
+                    isTodayCol ? 'calendar-day-column is-today' : 'calendar-day-column'
+                  }
+                  key={dayKey(d)}
+                >
+                  {Array.from({ length: 24 }, (_, i) => (
+                    <button
+                      className="calendar-hour"
+                      key={i}
+                      type="button"
+                      aria-label={`Create meeting ${d.toLocaleDateString()} ${String(i).padStart(2, '0')}:00`}
+                      onClick={() => {
+                        const start = new Date(d);
+                        start.setHours(i, 0, 0, 0);
+                        const end = new Date(start);
+                        end.setHours(end.getHours() + 1);
+                        setForm({ ...initial(), start: localInput(start), end: localInput(end) });
+                      }}
+                    />
+                  ))}
+                  {layoutOverlappingEvents(visible, d).map(({ event: e, start, end, lane, lanes }) => {
                     const s = new Date(start),
                       en = new Date(end),
-                      top = (s.getHours() + s.getMinutes() / 60) * 54,
-                      height = Math.max(32, ((end - start) / 3600000) * 54);
+                      top = (s.getHours() + s.getMinutes() / 60) * 48,
+                      height = Math.max(26, ((end - start) / 3600000) * 48 - 2);
                     return (
                       <button
                         key={e.id}
                         className="calendar-event"
                         disabled={e.read_only}
-                        style={{ top, height, left: `calc(${(lane * 100) / lanes}% + 4px)`, width: `calc(${100 / lanes}% - 8px)`, right: 'auto' }}
-                        title={`${e.data.title} · ${e.data.visibility === 'private' ? 'Private' : ''}`}
+                        style={{
+                          top,
+                          height,
+                          left: `calc(${(lane * 100) / lanes}% + 2px)`,
+                          width: `calc(${100 / lanes}% - 4px)`,
+                          right: 'auto',
+                        }}
+                        title={`${e.data.title} (${s.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}–${en.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})${e.data.location ? ' · ' + e.data.location : ''}`}
                         onClick={() => !e.read_only && editEvent(e)}
                       >
                         <strong>{e.data.title}</strong>
                         <small>
                           {s.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}–
                           {en.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {e.data.location ? ` · ${e.data.location}` : ''}
                         </small>
                       </button>
                     );
                   })}
-                {dayKey(d) === dayKey(new Date()) && (() => {
-                  const now = new Date();
-                  return <span className="calendar-now-marker" style={{ top: (now.getHours() + now.getMinutes() / 60) * 54 }} aria-label="Current time" />;
-                })()}
-              </div>
-            ))}
+                  {isTodayCol &&
+                    (() => {
+                      const now = new Date();
+                      return (
+                        <span
+                          className="calendar-now-marker"
+                          style={{ top: (now.getHours() + now.getMinutes() / 60) * 48 }}
+                          aria-label="Current time"
+                        />
+                      );
+                    })()}
+                </div>
+              );
+            })}
           </div>
         </section>
       )}

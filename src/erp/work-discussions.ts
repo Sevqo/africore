@@ -514,7 +514,7 @@ export async function postWorkChannelMessage(a: Access, channelId: string, input
 
   if (messageMentionsAgent(d.body, policy.agent_handle)) {
     try {
-      const [snapshot, workList, calList, rawCrmRows, customerRows] = await Promise.all([
+      const [snapshot, workList, calList, rawCrmRows, customerRowsRaw, productRowsRaw, quoteRowsRaw, orderRowsRaw, allAgentRuns] = await Promise.all([
         financialSnapshot(a, { currency: d.currency }).catch(() => null),
         workProjects(a).catch(() => ({ data: [] })),
         calendarEvents(a).catch(() => ({ data: [] })),
@@ -523,10 +523,40 @@ export async function postWorkChannelMessage(a: Access, channelId: string, input
           [a.org, a.environment],
         ).catch(() => []),
         dbAll(
-          "SELECT id FROM ac_records WHERE org_id=? AND environment=? AND kind='customers'",
+          "SELECT id, data FROM ac_records WHERE org_id=? AND environment=? AND kind='customers'",
           [a.org, a.environment],
         ).catch(() => []),
+        dbAll(
+          "SELECT id FROM ac_records WHERE org_id=? AND environment=? AND kind='products'",
+          [a.org, a.environment],
+        ).catch(() => []),
+        dbAll(
+          "SELECT id FROM ac_erp_objects WHERE org_id=? AND environment=? AND kind='sales_quotation'",
+          [a.org, a.environment],
+        ).catch(() => []),
+        dbAll(
+          "SELECT id FROM ac_records WHERE org_id=? AND environment=? AND kind='orders'",
+          [a.org, a.environment],
+        ).catch(() => []),
+        all(a, 'agent_run').catch(() => []),
       ]);
+      const customerRows = customerRowsRaw.map((c: any) => {
+        try {
+          const parsed = JSON.parse(c.data || '{}');
+          return { id: c.id, name: parsed.name || parsed.company_name || '' };
+        } catch {
+          return { id: c.id, name: '' };
+        }
+      });
+      const actorLatestRun = allAgentRuns
+        .filter((r: any) => r.actor === a.actor)
+        .sort((x: any, y: any) => String(y.created_at).localeCompare(String(x.created_at)))[0];
+      const hasPendingIntent = !!(
+        actorLatestRun &&
+        actorLatestRun.status === 'needs_input' &&
+        actorLatestRun.result?.pending_intent &&
+        Date.now() - Date.parse(String(actorLatestRun.created_at || '')) < 30 * 60_000
+      );
 
       const crmRows = rawCrmRows.map((r: any) => {
         let parsed: any = {};
@@ -589,6 +619,7 @@ export async function postWorkChannelMessage(a: Access, channelId: string, input
         channel_name: channel.name,
         author_name: author?.display_name || 'Team member',
         currency: d.currency,
+        has_pending_intent: hasPendingIntent,
         recent_messages: recentForPy,
         workspace_context: {
           totals: snapshot?.totals || {},
@@ -601,6 +632,9 @@ export async function postWorkChannelMessage(a: Access, channelId: string, input
           tasks,
           calendar_events: events,
           customers: customerRows,
+          products: productRowsRaw,
+          quotations: quoteRowsRaw,
+          orders: orderRowsRaw,
           members: members.map((m) => ({
             display_name: m.display_name,
             username: m.username,
