@@ -44,6 +44,7 @@ import {
   canReadServiceTab,
 } from '../marketplace/Services';
 import { personalTabs, developerTabs } from '../workspace-navigation';
+import '../odoo-unified-ui.css';
 export function FocusedWorkspace({ workspace: w, account }: { workspace: any; account: any }) {
   const personal = w.kind === 'personal';
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
@@ -485,23 +486,48 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
         {navigation}
       </aside>
       <main className="account-content" id="focused-workspace-main" tabIndex={-1}>
-        <div className="focused-mobile-header">
-          <button
-            className="quiet-button"
-            aria-label={navigationOpen ? 'Close app navigation' : 'Open workspace navigation'}
-            aria-expanded={navigationOpen}
-            aria-controls="focused-workspace-nav"
-            onClick={() => setNavigationOpen(true)}
-          >
-            <Icon name="menu" />
-          </button>
-          <span>{w.name}</span>
-          <WorkspaceSwitcher
-            currentId={w.id}
-            workspaces={account?.workspaces}
-            onError={setError}
-          />
-          <div className="focused-user-actions">
+        <header className="app-header focused-unified-header">
+          <div className="o-navbar-left">
+            <button
+              className="icon-button app-nav-toggle"
+              aria-label={navigationOpen ? 'Close app navigation' : 'Open workspace navigation'}
+              aria-expanded={navigationOpen}
+              aria-controls="focused-workspace-nav"
+              onClick={() => setNavigationOpen(true)}
+            >
+              <Icon name="menu" />
+            </button>
+            <div className="immersive-app-context" aria-live="polite">
+              <strong>{w.name}</strong>
+              <span>{tab === 'Overview' ? (personal ? 'Overview' : 'Console') : tab}</span>
+            </div>
+          </div>
+          <div className="o-navbar-systray">
+            {!personal && (
+              <select
+                aria-label="Environment"
+                className="o-systray-select"
+                value={environment}
+                onChange={(e) => setEnvironment(e.target.value)}
+              >
+                <option value="sandbox">Sandbox</option>
+              </select>
+            )}
+            <div className="workspace-switcher-group">
+              <WorkspaceSwitcher
+                currentId={w.id}
+                workspaces={account?.workspaces}
+                onError={setError}
+              />
+              <a
+                href="/app/workspaces"
+                className="icon-button o-new-workspace-btn"
+                title="All workspaces"
+                aria-label="All workspaces"
+              >
+                <Icon name="grid" width={14} height={14} />
+              </a>
+            </div>
             <NotificationBell
               kind={w.kind}
               api={call}
@@ -512,9 +538,10 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
               name={account.profile?.display_name}
               email={account.user?.email}
               role={w.role}
+              avatarUrl={account.profile?.avatar_url}
             />
           </div>
-        </div>
+        </header>
         {navigationOpen && (
           <Overlay onClose={() => setNavigationOpen(false)}>
             <aside
@@ -531,30 +558,25 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
             </aside>
           </Overlay>
         )}
-        <header className="account-top">
-          <div>
-            <span className="eyebrow">
-              {w.role} · {w.kind}
-            </span>
-            <h1>{w.name}</h1>
+        <div className="o-focused-pagebar">
+          <div className="o-focused-pagebar-left">
+            <span className="o-kind-pill">{personal ? 'Personal' : 'Developer'}</span>
+            <h1>
+              {tab === 'Overview'
+                ? personal
+                  ? 'Personal Finance & Overview'
+                  : 'Developer Console Overview'
+                : tab}
+            </h1>
           </div>
-          <div>
-            <WorkspaceSwitcher
-              currentId={w.id}
-              workspaces={account?.workspaces}
-              onError={setError}
-            />
-            {!personal && (
-              <label>
-                Environment{' '}
-                <select value={environment} onChange={(e) => setEnvironment(e.target.value)}>
-                  <option value="sandbox">Sandbox</option>
-                </select>
-              </label>
-            )}
-            <a href="/app/workspaces">All workspaces</a>
-          </div>
-        </header>
+          <span className="environment-note">
+            {personal
+              ? 'Personal records · Simulations stay separate from manual entries'
+              : environment === 'sandbox'
+                ? 'Sandbox · Test records only · No live funds move'
+                : 'Recorded personal activity'}
+          </span>
+        </div>
         {selectedInvoice && (
           <Overlay onClose={() => setSelectedInvoice(null)}>
             <section
@@ -575,14 +597,6 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
             </section>
           </Overlay>
         )}
-        <p className="environment-note">
-          {personal
-            ? 'Personal records · payment simulations stay separate from manual entries.'
-            : environment === 'sandbox'
-              ? 'Sandbox · test records only. No live funds move.'
-              : 'Recorded personal activity. Manual entries are not provider confirmation.'}
-        </p>
-        <h2>{tab === 'Overview' ? (personal ? 'Personal Finance & Overview' : 'Developer Console Overview') : tab}</h2>
         <Alert error={error} />
         {busy && <p role="status">Updating workspace…</p>}
         {tab === 'Notifications' ? (
