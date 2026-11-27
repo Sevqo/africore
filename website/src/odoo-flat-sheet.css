@@ -1,0 +1,606 @@
+/* ==========================================================================
+ * AfriCore Flat Cardless Odoo UI System (Matches Screenshot 1 Calendar UI)
+ * - ZERO nested card-in-card boxes on content pages
+ * - Exact Screenshot 1 Top Bar (`[☰] [⊞] Title/Subtitle ... [Workspace ▾] [?] [🔔] [Profile]`)
+ * - Full-bleed flush white module menu bar across all apps
+ * - Continuous flat white operational sheet with hairline dividers
+ * - NEVER touches `.calendar-workspace` internal grid/buttons (kept 100% pure!)
+ * ========================================================================== */
+
+/* --------------------------------------------------------------------------
+ * 1. Exact Screenshot 1 Top Header Bar Across Business, Personal & Developer
+ * -------------------------------------------------------------------------- */
+:is(.business-shell, .focused-account) .app-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-height: 48px !important;
+  height: 48px !important;
+  padding: 0 16px !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  box-shadow: none !important;
+}
+
+/* Always show crisp 2-line Title / Subtitle in top bar on every page (like Screenshot 1) */
+:is(.business-shell, .focused-account) .app-header > .immersive-app-context {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 0 !important;
+  min-width: 80px;
+  line-height: 1.2 !important;
+}
+
+:is(.business-shell, .focused-account) .app-header .immersive-app-context strong {
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:is(.business-shell, .focused-account) .app-header .immersive-app-context span {
+  font-size: 11px !important;
+  font-weight: 450 !important;
+  color: #6b7280 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Compact Search Icon Button (Never a wide grey input bar in the top header!) */
+:is(.business-shell, .focused-account) .app-header > .workspace-search-trigger {
+  flex: 0 0 32px !important;
+  width: 32px !important;
+  min-width: 32px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 6px !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  color: #4b5563 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+:is(.business-shell, .focused-account) .app-header > .workspace-search-trigger:hover {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+}
+
+:is(.business-shell, .focused-account) .app-header > .workspace-search-trigger span,
+:is(.business-shell, .focused-account) .app-header > .workspace-search-trigger kbd {
+  display: none !important;
+}
+
+/* Crisp Systray Icon Buttons */
+:is(.business-shell, .focused-account) .app-header .icon-button,
+:is(.business-shell, .focused-account) .app-header .workspace-launcher-trigger,
+:is(.business-shell, .focused-account) .app-header .notification-bell {
+  flex: 0 0 32px;
+  width: 32px !important;
+  min-width: 32px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  padding: 0 !important;
+  border-radius: 6px !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #374151 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative;
+}
+
+:is(.business-shell, .focused-account) .app-header .icon-button:hover,
+:is(.business-shell, .focused-account) .app-header .workspace-launcher-trigger:hover,
+:is(.business-shell, .focused-account) .app-header .notification-bell:hover {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+}
+
+@media (min-width: 1025px) {
+  .business-shell:not(.is-app-immersive) .app-header > .app-nav-toggle,
+  .focused-account .app-header > .app-nav-toggle {
+    display: none !important;
+  }
+}
+
+/* Notification Badge Matching Screenshot 1 */
+:is(.business-shell, .focused-account) .notification-count {
+  background: #2e7d32 !important;
+  color: #ffffff !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  min-width: 16px !important;
+  height: 16px !important;
+  line-height: 16px !important;
+  padding: 0 4px !important;
+  border-radius: 999px !important;
+  top: 0 !important;
+  right: 0 !important;
+}
+
+/* Workspace Switcher Dropdown Matching Screenshot 1 */
+:is(.business-shell, .focused-account) .app-header .workspace-switcher-group {
+  flex: 0 0 auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+:is(.business-shell, .focused-account) .app-header .workspace-switcher-select,
+:is(.business-shell, .focused-account) .app-header select {
+  min-height: 32px !important;
+  height: 32px !important;
+  padding: 4px 26px 4px 10px !important;
+  border-radius: 6px !important;
+  border: 1px solid #e5e7eb !important;
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  width: auto !important;
+  min-width: 150px;
+  max-width: 210px;
+}
+
+:is(.business-shell, .focused-account) .app-header > div:last-child {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex: 0 0 auto !important;
+}
+
+/* Compact Profile Control Matching Screenshot 1 */
+:is(.business-shell, .focused-account) .app-header .workspace-account-button {
+  min-height: 34px !important;
+  height: 34px !important;
+  padding: 3px 9px 3px 5px !important;
+  border-radius: 7px !important;
+  border: 1px solid #e5e7eb !important;
+  background: #ffffff !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  box-shadow: none !important;
+}
+
+:is(.business-shell, .focused-account) .app-header .workspace-account-button:hover {
+  background: #f9fafb !important;
+  border-color: #d1d5db !important;
+}
+
+:is(.business-shell, .focused-account) .app-header .workspace-account-button .initial-avatar {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  border-radius: 50% !important;
+  background: #ecfdf5 !important;
+  color: #166534 !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+}
+
+:is(.business-shell, .focused-account) .app-header .workspace-account-label {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  line-height: 1.15 !important;
+  gap: 0 !important;
+}
+
+:is(.business-shell, .focused-account) .app-header .workspace-account-label strong {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #111827 !important;
+}
+
+:is(.business-shell, .focused-account) .app-header .workspace-account-label small {
+  font-size: 10px !important;
+  color: #6b7280 !important;
+}
+
+/* --------------------------------------------------------------------------
+ * 2. Flush Edge-to-Edge White Sub-Module Bar Across ALL 26 Apps
+ *    (Identical to Screenshot 1's `Calendar | My Calendar | Team Calendar...`)
+ * -------------------------------------------------------------------------- */
+:is(.business-shell, .focused-account) :is(
+    .ac-app-menubar,
+    .sales-nav,
+    .sales-module-nav,
+    .app-section-tabs,
+    .crm-section-nav,
+    .acc-module-nav,
+    .proc-app-nav,
+    .inventory-module-nav,
+    .pos-app-module
+  ) {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 4px !important;
+  min-height: 40px !important;
+  background: #ffffff !important;
+  border: 0 !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  border-radius: 0 !important;
+  margin: -12px -22px 12px !important;
+  padding: 4px 16px !important;
+  box-shadow: none !important;
+}
+
+/* Hide redundant Accounting / App inner title blocks above module bar */
+.business-shell .acc-context {
+  display: none !important;
+}
+
+/* Hide bottom clutter accordions ("Switch to another app", "Installation settings")
+   since App Launcher [⊞] and Info [📄] in the top bar already provide them cleanly! */
+.business-shell.is-app-immersive .apps-workspace > details.related-apps,
+.business-shell.is-app-immersive .apps-workspace > details.panel {
+  display: none !important;
+}
+
+/* --------------------------------------------------------------------------
+ * 3. Cardless Flat Odoo Operational Sheet Across EVERY Page & App
+ *    Eliminates "cards inside cards everywhere" — flat hairlines & clean sheets!
+ * -------------------------------------------------------------------------- */
+.business-shell .workspace-content {
+  padding: 12px 18px 24px !important;
+  background: #f8f9fa !important;
+}
+
+.focused-account .account-content {
+  padding: 0 !important;
+  background: #f8f9fa !important;
+}
+
+.focused-account .focused-sheet-body {
+  margin: 12px 16px 24px;
+  padding: 12px 16px 20px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Non-immersive Business tabs (Overview, Invoices, Customers, Analytics, Services, etc.):
+   Compact single-line Odoo Control Header instead of giant stacked breadcrumbs + paragraphs */
+.business-shell:not(.is-app-immersive) .workspace-breadcrumbs {
+  display: none !important;
+}
+
+.business-shell:not(.is-app-immersive) .workspace-title {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px 16px !important;
+  margin: -12px -18px 12px !important;
+  padding: 8px 18px !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+.business-shell:not(.is-app-immersive) .workspace-title .eyebrow {
+  display: none !important;
+}
+
+.business-shell:not(.is-app-immersive) .workspace-title > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.business-shell:not(.is-app-immersive) .workspace-title h1 {
+  font-size: 16px !important;
+  font-weight: 650 !important;
+  margin: 0 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.business-shell:not(.is-app-immersive) .workspace-title p {
+  font-size: 12px !important;
+  margin: 0 !important;
+  color: #6b7280 !important;
+}
+
+/* Flatten `.panel` boxes inside pages into clean Odoo flat sections with hairline dividers
+   (Preserving modal dialogs `[role="dialog"]` and Calendar's own `.phase3-workspace` sheet!) */
+:is(.business-shell, .focused-account)
+  .panel:not([role='dialog']):not(.workspace-launcher):not(.workspace-search-dialog):not(.workspace-account-menu):not(.immersive-app-info-panel):not(.app-install-review) {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  padding: 12px 14px !important;
+  box-shadow: none !important;
+}
+
+/* Nested panels inside panels or sheets become 100% FLAT (ZERO card-in-card!) */
+:is(.business-shell, .focused-account) :is(.panel, .focused-sheet-body, .phase3-workspace) .panel:not([role='dialog']) {
+  border: 0 !important;
+  border-top: 1px solid #eef2f7 !important;
+  border-radius: 0 !important;
+  padding: 10px 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Flatten KPI Strips into One Clean Odoo Horizontal Hairline Bar (No separate KPI boxes!) */
+:is(
+    .business-shell .business-metric-strip,
+    .business-shell .app-metric-grid,
+    .business-shell .finance-app-metrics,
+    .business-shell .commerce-metrics,
+    .focused-account .account-metrics
+  ) {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important;
+  gap: 0 !important;
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  overflow: hidden !important;
+  margin: 0 0 10px 0 !important;
+}
+
+:is(
+    .business-shell .business-metric-strip > .business-metric,
+    .business-shell .app-metric-grid > article,
+    .business-shell .finance-app-metrics > .panel,
+    .business-shell .commerce-metrics > .panel,
+    .focused-account .account-metrics > section
+  ) {
+  border: 0 !important;
+  border-right: 1px solid #eef2f7 !important;
+  border-radius: 0 !important;
+  min-height: 0 !important;
+  padding: 10px 14px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+  gap: 2px 8px !important;
+}
+
+:is(
+    .business-shell .business-metric-strip > .business-metric:last-child,
+    .business-shell .app-metric-grid > article:last-child,
+    .business-shell .finance-app-metrics > .panel:last-child,
+    .business-shell .commerce-metrics > .panel:last-child,
+    .focused-account .account-metrics > section:last-child
+  ) {
+  border-right: 0 !important;
+}
+
+:is(
+    .business-shell .business-metric strong,
+    .business-shell .app-metric-grid strong,
+    .business-shell .finance-app-metrics > .panel > strong,
+    .focused-account .account-metrics strong
+  ) {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+}
+
+/* Flatten Personal & Developer Record Rows into Continuous Hairline Table-List (Zero separate boxes!) */
+.focused-account .account-record {
+  margin: 0 !important;
+  padding: 8px 4px !important;
+  border: 0 !important;
+  border-bottom: 1px solid #eef2f7 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  font-size: 12.5px !important;
+}
+
+.focused-account .account-inline-form {
+  border: 0 !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  border-radius: 0 !important;
+  padding: 8px 0 12px !important;
+  margin: 0 0 8px !important;
+  background: transparent !important;
+  max-width: none !important;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important;
+  gap: 8px 12px !important;
+  align-items: end !important;
+}
+
+.o-flat-cp {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.o-flat-cp h2 {
+  margin: 0 !important;
+  font-size: 16px !important;
+  font-weight: 650 !important;
+}
+
+.o-flat-note {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* --------------------------------------------------------------------------
+ * 4. Calendar-Exact Buttons, Inputs & Inline Selects (Safe Selectors Only!)
+ *    NEVER targets generic `button` so Calendar hour cells stay untouched!
+ * -------------------------------------------------------------------------- */
+:is(.business-shell, .focused-account, .account-entry) :is(
+    .button,
+    button.primary,
+    .sales-primary,
+    .acc-primary,
+    .sales-new
+  ) {
+  min-height: 30px !important;
+  padding: 5px 12px !important;
+  border-radius: 6px !important;
+  border: 1px solid #166534 !important;
+  background: #166534 !important;
+  color: #ffffff !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  line-height: 1.25 !important;
+  box-shadow: none !important;
+}
+
+:is(.business-shell, .focused-account, .account-entry) :is(
+    .secondary-button,
+    .acc-secondary
+  ) {
+  min-height: 30px !important;
+  padding: 4px 10px !important;
+  border-radius: 6px !important;
+  border: 1px solid #d1d5db !important;
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  font-size: 12.5px !important;
+  font-weight: 550 !important;
+  line-height: 1.25 !important;
+  box-shadow: none !important;
+}
+
+.o-cp-inline-select {
+  min-height: 30px !important;
+  height: 30px !important;
+  padding: 3px 24px 3px 9px !important;
+  font-size: 12px !important;
+  border-radius: 6px !important;
+  border: 1px solid #d1d5db !important;
+  background-color: #f9fafb !important;
+  color: #374151 !important;
+  width: auto !important;
+}
+
+:is(.business-shell, .focused-account, .account-entry) .field input,
+:is(.business-shell, .focused-account, .account-entry) .field select,
+:is(.business-shell, .focused-account) .table-toolbar input,
+:is(.business-shell, .focused-account) .operations-toolbar select {
+  min-height: 31px !important;
+  height: 31px;
+  padding: 4px 9px !important;
+  font-size: 12.5px !important;
+  border-radius: 6px !important;
+  border: 1px solid #d1d5db !important;
+}
+
+/* Compact Inline Toolbars Everywhere */
+:is(.business-shell, .focused-account) :is(
+    .operations-toolbar,
+    .table-toolbar,
+    .finance-toolbar,
+    .stock-toolbar,
+    .inventory-toolbar,
+    .people-directory-toolbar,
+    .service-filters,
+    .date-range
+  ) {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 6px 0 8px !important;
+  margin: 0 0 8px !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  background: transparent !important;
+}
+
+/* Fix Work Project Kanban Card Layout (Prevent Narrow 36px Column Text Squishing!) */
+.work-projects-sheet > .phase3-toolbar {
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.o-flat-schedule-table {
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 8px;
+}
+
+.o-flat-section-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0 6px;
+  font-size: 12.5px;
+}
+
+.business-shell .project-directory {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+  gap: 10px !important;
+  margin: 8px 0 !important;
+}
+
+.business-shell .project-directory-card {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 10px !important;
+  width: 100%;
+  padding: 10px 12px !important;
+  border: 1px solid #e5e7eb !important;
+  border-left: 3px solid #166534 !important;
+  border-radius: 6px !important;
+  background: #ffffff !important;
+  text-align: left !important;
+}
+
+.business-shell .project-directory-icon {
+  flex: 0 0 30px !important;
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+}
+
+.business-shell .project-directory-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+/* Clean Compact Tables Across Every App & Workspace */
+:is(.business-shell, .focused-account, .account-entry) table th {
+  padding: 7px 10px !important;
+  font-size: 11px !important;
+  background: #f9fafb !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+:is(.business-shell, .focused-account, .account-entry) table td {
+  padding: 7px 10px !important;
+  font-size: 12.5px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+/* Mobile Safeguards */
+@media (max-width: 767px) {
+  :is(.business-shell, .focused-account) .app-header .workspace-account-label {
+    display: none !important;
+  }
+  :is(.business-shell, .focused-account, .account-entry)
+    :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
+    font-size: 16px !important;
+  }
+}

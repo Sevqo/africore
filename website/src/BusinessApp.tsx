@@ -1156,20 +1156,33 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
           {!isDemo() && org && (
             <WorkspaceAppLauncher api={call} scope={org + '\0' + environment} navigate={setTab} />
           )}
+          <div className="immersive-app-context" aria-live="polite">
+            <strong>
+              {immersiveApp
+                ? appContext.app?.name.replace('AfriCore ', '') || 'App'
+                : tab === 'Overview'
+                  ? 'Home'
+                  : tab}
+            </strong>
+            <span>{immersiveApp ? appSectionLabel : organization?.name || 'Business'}</span>
+          </div>
           {immersiveApp && (
-            <>
-              <div className="immersive-app-context" aria-live="polite">
-                <strong>{appContext.app?.name.replace('AfriCore ', '') || 'App'}</strong>
-                <span>{appSectionLabel}</span>
-              </div>
-              <button
-                className="icon-button immersive-app-info"
-                aria-label={'About ' + (appContext.app?.name || 'this app')}
-                onClick={() => setAppInfoOpen(true)}
-              >
-                <Icon name="document" />
-              </button>
-            </>
+            <button
+              className="icon-button immersive-app-info"
+              aria-label={'About ' + (appContext.app?.name || 'this app')}
+              onClick={() => setAppInfoOpen(true)}
+            >
+              <Icon name="document" />
+            </button>
+          )}
+          {!isDemo() && org && (
+            <WorkspaceSearch
+              api={call}
+              scope={org + '\0' + environment}
+              services={market.catalog?.services || []}
+              navigate={setTab}
+              openRecord={openRecord}
+            />
           )}
           <div className="workspace-switcher-group">
             <WorkspaceSwitcher
@@ -1189,23 +1202,7 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
               }}
               onError={setError}
             />
-            <button
-              type="button"
-              className="quiet-button"
-              onClick={() => setCreating('workspace' as any)}
-            >
-              + Workspace
-            </button>
           </div>
-          {!isDemo() && org && (
-            <WorkspaceSearch
-              api={call}
-              scope={org + '\0' + environment}
-              services={market.catalog?.services || []}
-              navigate={setTab}
-              openRecord={openRecord}
-            />
-          )}
           <div>
             {(isDemo() || tab === 'Developers') && (
               <select

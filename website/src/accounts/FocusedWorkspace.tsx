@@ -44,6 +44,7 @@ import {
   canReadServiceTab,
 } from '../marketplace/Services';
 import { personalTabs, developerTabs } from '../workspace-navigation';
+import '../odoo-flat-sheet.css';
 export function FocusedWorkspace({ workspace: w, account }: { workspace: any; account: any }) {
   const personal = w.kind === 'personal';
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
@@ -485,9 +486,9 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
         {navigation}
       </aside>
       <main className="account-content" id="focused-workspace-main" tabIndex={-1}>
-        <div className="focused-mobile-header">
+        <header className="app-header focused-unified-bar">
           <button
-            className="quiet-button"
+            className="icon-button app-nav-toggle"
             aria-label={navigationOpen ? 'Close app navigation' : 'Open workspace navigation'}
             aria-expanded={navigationOpen}
             aria-controls="focused-workspace-nav"
@@ -495,13 +496,27 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
           >
             <Icon name="menu" />
           </button>
-          <span>{w.name}</span>
-          <WorkspaceSwitcher
-            currentId={w.id}
-            workspaces={account?.workspaces}
-            onError={setError}
-          />
-          <div className="focused-user-actions">
+          <div className="immersive-app-context" aria-live="polite">
+            <strong>{tab === 'Overview' ? 'Home' : tab}</strong>
+            <span>{w.name}</span>
+          </div>
+          <div className="workspace-switcher-group">
+            <WorkspaceSwitcher
+              currentId={w.id}
+              workspaces={account?.workspaces}
+              onError={setError}
+            />
+          </div>
+          <div>
+            {!personal && (
+              <select
+                aria-label="Environment"
+                value={environment}
+                onChange={(e) => setEnvironment(e.target.value)}
+              >
+                <option value="sandbox">Sandbox</option>
+              </select>
+            )}
             <NotificationBell
               kind={w.kind}
               api={call}
@@ -512,9 +527,10 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
               name={account.profile?.display_name}
               email={account.user?.email}
               role={w.role}
+              avatarUrl={account.profile?.avatar_url}
             />
           </div>
-        </div>
+        </header>
         {navigationOpen && (
           <Overlay onClose={() => setNavigationOpen(false)}>
             <aside
@@ -531,59 +547,49 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
             </aside>
           </Overlay>
         )}
-        <header className="account-top">
-          <div>
-            <span className="eyebrow">
-              {w.role} · {w.kind}
-            </span>
-            <h1>{w.name}</h1>
+        <div className="focused-sheet-body">
+          {selectedInvoice && (
+            <Overlay onClose={() => setSelectedInvoice(null)}>
+              <section
+                className="service-detail print-invoice"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Invoice financial details"
+              >
+                <h2>{selectedInvoice.reference}</h2>
+                <RecordFinanceDetails
+                  row={{ ...selectedInvoice, kind: 'invoices' }}
+                  printDocument
+                  api={call}
+                  writable={['owner', 'admin', 'finance'].includes(w.role)}
+                  onChanged={() => setRevision((v) => v + 1)}
+                />
+                <button onClick={() => setSelectedInvoice(null)}>Close</button>
+              </section>
+            </Overlay>
+          )}
+          <div className="o-flat-cp">
+            <div className="o-calendar-cp-left">
+              <h2>
+                {tab === 'Overview'
+                  ? personal
+                    ? 'Personal Overview'
+                    : 'Developer Console'
+                  : tab}
+              </h2>
+            </div>
+            <div className="o-calendar-cp-right">
+              <span className="o-flat-note">
+                {personal
+                  ? 'Personal records · Simulations stay separate'
+                  : 'Sandbox · Test records only'}
+              </span>
+              <a className="quiet-button" href="/app/workspaces">
+                All workspaces
+              </a>
+            </div>
           </div>
-          <div>
-            <WorkspaceSwitcher
-              currentId={w.id}
-              workspaces={account?.workspaces}
-              onError={setError}
-            />
-            {!personal && (
-              <label>
-                Environment{' '}
-                <select value={environment} onChange={(e) => setEnvironment(e.target.value)}>
-                  <option value="sandbox">Sandbox</option>
-                </select>
-              </label>
-            )}
-            <a href="/app/workspaces">All workspaces</a>
-          </div>
-        </header>
-        {selectedInvoice && (
-          <Overlay onClose={() => setSelectedInvoice(null)}>
-            <section
-              className="service-detail print-invoice"
-              role="dialog"
-              aria-modal="true"
-              aria-label="Invoice financial details"
-            >
-              <h2>{selectedInvoice.reference}</h2>
-              <RecordFinanceDetails
-                row={{ ...selectedInvoice, kind: 'invoices' }}
-                printDocument
-                api={call}
-                writable={['owner', 'admin', 'finance'].includes(w.role)}
-                onChanged={() => setRevision((v) => v + 1)}
-              />
-              <button onClick={() => setSelectedInvoice(null)}>Close</button>
-            </section>
-          </Overlay>
-        )}
-        <p className="environment-note">
-          {personal
-            ? 'Personal records · payment simulations stay separate from manual entries.'
-            : environment === 'sandbox'
-              ? 'Sandbox · test records only. No live funds move.'
-              : 'Recorded personal activity. Manual entries are not provider confirmation.'}
-        </p>
-        <h2>{tab === 'Overview' ? (personal ? 'Personal Finance & Overview' : 'Developer Console Overview') : tab}</h2>
-        <Alert error={error} />
+          <Alert error={error} />
         {busy && <p role="status">Updating workspace…</p>}
         {tab === 'Notifications' ? (
           <NotificationCentre
@@ -1091,6 +1097,7 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
             )}
           </ServiceGate>
         )}
+        </div>
       </main>
       <FloatingAgent
         api={call}

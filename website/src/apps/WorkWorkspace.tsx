@@ -16,6 +16,7 @@ import { WorkProjectUpdates } from './WorkProjectUpdates';
 import { WorkReports } from './WorkReports';
 import { WorkSchedulePlanner } from './WorkSchedulePlanner';
 import { WorkDiscussions } from './WorkDiscussions';
+import { AppModuleMenuBar } from './MinimalAppChrome';
 
 export function WorkWorkspace({
   api: provided,
@@ -45,7 +46,7 @@ export function WorkWorkspace({
     [query, setQuery] = useState(''),
     [quickFilter, setQuickFilter] = useState('all'),
     [projectFilter, setProjectFilter] = useState('all'),
-    [projectMode, setProjectMode] = useState('cards'),
+    [projectMode, setProjectMode] = useState('list'),
     [projectGroup, setProjectGroup] = useState('none'),
     [statusFilter, setStatusFilter] = useState('all'),
     [assigneeFilter, setAssigneeFilter] = useState('all'),
@@ -451,93 +452,101 @@ export function WorkWorkspace({
         }}
       />
     );
+  const workMenus = [
+    {
+      id: 'projects',
+      label: 'Projects',
+      active: ![
+        'my-work',
+        'calendar',
+        'discussions',
+        'planning',
+        'timeline',
+        'timesheets',
+        'report',
+        'reporting',
+        'configuration',
+      ].includes(view),
+      onSelect: () => {
+        setSelected('');
+        setViewing(null);
+        setQuery('');
+        setView('board');
+        const url = new URL(location.href);
+        url.searchParams.delete('work_target');
+        history.pushState(null, '', url.pathname + url.search + url.hash);
+      },
+    },
+    {
+      id: 'my-work',
+      label:
+        'My Tasks' +
+        (workspaceMeetings.length + workspaceActivities.length + myAssignedTasksCount > 0
+          ? ` (${workspaceMeetings.length + workspaceActivities.length + myAssignedTasksCount})`
+          : ''),
+      active: view === 'my-work',
+      onSelect: () => {
+        setSelected('');
+        changeView('my-work');
+      },
+    },
+    {
+      id: 'calendar',
+      label: 'Calendar',
+      active: view === 'calendar',
+      onSelect: () => {
+        setSelected('');
+        changeView('calendar');
+      },
+    },
+    {
+      id: 'discussions',
+      label: 'Discussions',
+      active: view === 'discussions',
+      onSelect: () => {
+        setSelected('');
+        changeView('discussions');
+      },
+    },
+    {
+      id: 'planning',
+      label: 'Planning',
+      active: ['planning', 'timeline'].includes(view),
+      onSelect: () => changeView(selected ? 'timeline' : 'planning'),
+    },
+    {
+      id: 'timesheets',
+      label: 'Timesheets',
+      active: view === 'timesheets',
+      onSelect: () => changeView('timesheets'),
+    },
+    {
+      id: 'reporting',
+      label: 'Reporting',
+      active: ['report', 'reporting'].includes(view),
+      onSelect: () => changeView(selected ? 'report' : 'reporting'),
+    },
+    ...(selected && board?.permissions.manage
+      ? [
+          {
+            id: 'configuration',
+            label: 'Configuration',
+            active: view === 'configuration',
+            onSelect: () => setEditingProject(p),
+          },
+        ]
+      : []),
+  ];
   if (view === 'timesheets')
     return (
       <div className="apps-workspace work-app">
-        <nav className="work-module-nav" aria-label="Work modules">
-          <button onClick={() => changeView('board')}>Projects</button>
-          <button
-            onClick={() => {
-              setSelected('');
-              changeView('my-work');
-            }}
-          >
-            My Tasks
-          </button>
-          <button
-            onClick={() => {
-              setSelected('');
-              changeView('discussions');
-            }}
-          >
-            Discussions
-          </button>
-          <button onClick={() => changeView('planning')}>Planning</button>
-          <button aria-current="page" onClick={() => changeView('timesheets')}>
-            Timesheets
-          </button>
-          <button onClick={() => changeView(selected ? 'report' : 'reporting')}>Reporting</button>
-          <button disabled={!board?.permissions.manage} onClick={() => setEditingProject(p)}>
-            Configuration
-          </button>
-        </nav>
+        <AppModuleMenuBar ariaLabel="Work modules" menus={workMenus} />
         <WorkTimesheets api={api} revision={revision} members={members} />
       </div>
     );
   return (
     <div className="apps-workspace work-app">
-      <nav className="work-module-nav" aria-label="Work modules">
-        <button
-          onClick={() => {
-            setSelected('');
-            setViewing(null);
-            setQuery('');
-            setView('board');
-            const url = new URL(location.href);
-            url.searchParams.delete('work_target');
-            history.pushState(null, '', url.pathname + url.search + url.hash);
-          }}
-        >
-          Projects
-        </button>
-        <button
-          onClick={() => {
-            setSelected('');
-            changeView('my-work');
-          }}
-        >
-          My Tasks &amp; Schedule
-          {workspaceMeetings.length + workspaceActivities.length + myAssignedTasksCount > 0
-            ? ` (${workspaceMeetings.length + workspaceActivities.length + myAssignedTasksCount})`
-            : ''}
-        </button>
-        <button
-          onClick={() => {
-            setSelected('');
-            changeView('calendar');
-          }}
-        >
-          Calendar
-        </button>
-        <button
-          aria-current={view === 'discussions' ? 'page' : undefined}
-          onClick={() => {
-            setSelected('');
-            changeView('discussions');
-          }}
-        >
-          Discussions
-        </button>
-        <button onClick={() => changeView(selected ? 'timeline' : 'planning')}>Planning</button>
-        <button onClick={() => changeView('timesheets')}>Timesheets</button>
-        <button onClick={() => changeView(selected ? 'report' : 'reporting')}>Reporting</button>
-        <button
-          disabled={!selected || !board?.permissions.manage}
-          onClick={() => setEditingProject(p)}
-        >
-          Configuration
-        </button>
-      </nav>
+      <AppModuleMenuBar ariaLabel="Work modules" menus={workMenus} />
       {teamError && (
         <p className="alert" role="status">
           Member information unavailable: {teamError}{' '}
@@ -635,123 +644,153 @@ export function WorkWorkspace({
           )}
           {view !== 'my-work' && !['reporting', 'planning', 'configuration', 'calendar', 'discussions'].includes(view) && (
             <>
-              {(workspaceMeetings.length > 0 || workspaceActivities.length > 0) && (
-                <section className="panel" aria-label="Upcoming schedule and assigned work">
-                  <div className="section-heading">
-                    <div>
-                      <h2>Upcoming meetings &amp; assigned schedule</h2>
-                      <p>
-                        Synced directly from Workspace Calendar and cross-app assignments so every
-                        team member stays up to date inside Work.
-                      </p>
-                    </div>
+              <section className="phase3-workspace work-projects-sheet">
+                <header className="phase3-toolbar o-calendar-cp">
+                  <div className="o-calendar-cp-left">
                     <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={() => {
-                        setSelected('');
-                        changeView('my-work');
-                      }}
+                      className="button o-cp-new-btn"
+                      disabled={!directory.can_create || !members.length}
+                      onClick={() => setEditingProject({ new: true })}
                     >
-                      Open full schedule &amp; RSVP
+                      + New Project
                     </button>
+                    <div className="o-calendar-title-group">
+                      <h2>Projects</h2>
+                    </div>
+                    {(workspaceMeetings.length > 0 || workspaceActivities.length > 0) && (
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => {
+                          setSelected('');
+                          changeView('my-work');
+                        }}
+                      >
+                        Schedule ({workspaceMeetings.length + workspaceActivities.length})
+                      </button>
+                    )}
                   </div>
-                  <div className="app-directory">
-                    {workspaceMeetings.slice(0, 4).map((m: any) => (
-                      <article className="panel" key={m.id}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                          <strong>{m.title}</strong>
-                          <span className="badge">
-                            {m.invited ? `Invited (${m.my_response})` : m.my_response}
-                          </span>
-                        </div>
-                        <p style={{ margin: '6px 0', fontSize: 13 }}>
-                          {new Date(m.start).toLocaleString('en-KE', {
-                            timeZone: m.timezone || 'Africa/Nairobi',
-                            dateStyle: 'medium',
-                            timeStyle: 'short',
-                          })}
-                          {m.location ? ` · ${m.location}` : ''}
-                        </p>
-                      </article>
-                    ))}
-                    {workspaceActivities.slice(0, 4).map((act: any) => (
-                      <article className="panel" key={act.kind + ':' + act.id}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                          <strong>{act.title}</strong>
-                          <span className="badge">{act.kind.replaceAll('_', ' ')}</span>
-                        </div>
-                        <p style={{ margin: '6px 0', fontSize: 13 }}>
-                          Status: {act.status}
-                          {act.due_on ? ` · Due ${act.due_on}` : ''}
-                        </p>
-                      </article>
-                    ))}
+                  {!selected && (
+                    <div className="phase3-actions o-calendar-cp-right">
+                      <label className="o-calendar-search" aria-label="Search projects">
+                        <input
+                          type="search"
+                          placeholder="Filter projects…"
+                          value={query}
+                          onChange={(e) => setQuery(e.target.value)}
+                        />
+                      </label>
+                      <select
+                        aria-label="Project filter"
+                        className="o-cp-inline-select"
+                        value={projectFilter}
+                        onChange={(e) => setProjectFilter(e.target.value)}
+                      >
+                        {['all', 'mine', 'active', 'on_hold', 'completed', 'archived'].map((v) => (
+                          <option key={v} value={v}>
+                            {v === 'mine'
+                              ? 'My projects'
+                              : v === 'all'
+                                ? 'All projects'
+                                : v.replaceAll('_', ' ')}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        aria-label="Group projects by"
+                        className="o-cp-inline-select"
+                        value={projectGroup}
+                        onChange={(e) => setProjectGroup(e.target.value)}
+                      >
+                        <option value="none">Group: None</option>
+                        <option value="owner">Group: Owner</option>
+                        <option value="status">Group: Status</option>
+                      </select>
+                      <div className="o-view-switcher" role="group" aria-label="Project view">
+                        <button
+                          type="button"
+                          className={projectMode === 'list' ? 'o-view-btn is-active' : 'o-view-btn'}
+                          aria-pressed={projectMode === 'list'}
+                          onClick={() => setProjectMode('list')}
+                        >
+                          List
+                        </button>
+                        <button
+                          type="button"
+                          className={projectMode === 'cards' ? 'o-view-btn is-active' : 'o-view-btn'}
+                          aria-pressed={projectMode === 'cards'}
+                          onClick={() => setProjectMode('cards')}
+                        >
+                          Kanban
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </header>
+                {directory.truncated && (
+                  <p role="status">Showing the first {directory.limit} authorized projects.</p>
+                )}
+                {(workspaceMeetings.length > 0 || workspaceActivities.length > 0) && (
+                  <div className="o-flat-schedule-table" aria-label="Upcoming schedule and assigned work">
+                    <div className="o-flat-section-bar">
+                      <strong>Upcoming Schedule &amp; Assigned Work</strong>
+                      <button
+                        type="button"
+                        className="quiet-button"
+                        onClick={() => {
+                          setSelected('');
+                          changeView('my-work');
+                        }}
+                      >
+                        Open full schedule &amp; RSVP →
+                      </button>
+                    </div>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Title</th>
+                          <th>When / Due</th>
+                          <th>Location / Kind</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {workspaceMeetings.slice(0, 4).map((m: any) => (
+                          <tr key={m.id}>
+                            <td>
+                              <strong>{m.title}</strong>
+                            </td>
+                            <td>
+                              {new Date(m.start).toLocaleString('en-KE', {
+                                timeZone: m.timezone || 'Africa/Nairobi',
+                                dateStyle: 'medium',
+                                timeStyle: 'short',
+                              })}
+                            </td>
+                            <td>{m.location || 'Workspace Calendar'}</td>
+                            <td>
+                              <span className="badge">
+                                {m.invited ? `Invited (${m.my_response})` : m.my_response}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                        {workspaceActivities.slice(0, 4).map((act: any) => (
+                          <tr key={act.kind + ':' + act.id}>
+                            <td>
+                              <strong>{act.title}</strong>
+                            </td>
+                            <td>{act.due_on ? `Due ${act.due_on}` : 'Open'}</td>
+                            <td>{act.kind.replaceAll('_', ' ')}</td>
+                            <td>
+                              <span className="badge">{act.status}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                </section>
-              )}
-              <section className="panel">
-              <div className="section-heading">
-                <h2>Projects</h2>
-                <button
-                  className="button"
-                  disabled={!directory.can_create || !members.length}
-                  onClick={() => setEditingProject({ new: true })}
-                >
-                  Create project
-                </button>
-              </div>
-              <p>
-                Projects are private to their participants and workspace administrators. Task counts
-                cover the selected project.
-              </p>
-              {directory.truncated && (
-                <p role="status">Showing the first {directory.limit} authorized projects.</p>
-              )}
-              {!selected && (
-                <div className="work-toolbar">
-                  <Field label="Search projects">
-                    <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
-                  </Field>
-                  <Field label="Project filter">
-                    <select
-                      value={projectFilter}
-                      onChange={(e) => setProjectFilter(e.target.value)}
-                    >
-                      {['all', 'mine', 'active', 'on_hold', 'completed', 'archived'].map((v) => (
-                        <option key={v} value={v}>
-                          {v === 'mine'
-                            ? 'My projects'
-                            : v === 'all'
-                              ? 'All authorized projects'
-                              : v.replaceAll('_', ' ')}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Group projects by">
-                    <select value={projectGroup} onChange={(e) => setProjectGroup(e.target.value)}>
-                      <option value="none">None</option>
-                      <option value="owner">Owner</option>
-                      <option value="status">Status</option>
-                    </select>
-                  </Field>
-                  <button
-                    className="secondary-button"
-                    aria-pressed={projectMode === 'cards'}
-                    onClick={() => setProjectMode('cards')}
-                  >
-                    Cards
-                  </button>
-                  <button
-                    className="secondary-button"
-                    aria-pressed={projectMode === 'list'}
-                    onClick={() => setProjectMode('list')}
-                  >
-                    List
-                  </button>
-                </div>
-              )}
+                )}
               {!selected && projectMode === 'cards' && (
                 <div className="project-directory">
                   {projects.map((project: any, index: number) => (
@@ -779,34 +818,36 @@ export function WorkWorkspace({
                         <span className="project-directory-icon" aria-hidden="true">
                           {project.data.name.slice(0, 1).toUpperCase()}
                         </span>
-                        <strong>{project.data.name}</strong>
-                        <p>{project.data.description || 'Private project workspace'}</p>
-                        <p>
-                          {name(project.owner_id)}
-                          {project.due_on ? ' · Due ' + project.due_on : ''}
-                        </p>
-                        <small>
-                          <strong>{project.task_summary?.total ?? '—'} Tasks</strong> ·{' '}
-                          {project.task_summary?.completed ?? '—'} completed ·{' '}
-                          {project.task_summary?.overdue ?? '—'} overdue · {project.status} ·{' '}
-                          {project.data.milestones.filter((m: any) => m.completed).length}/
-                          {project.data.milestones.length} milestones
-                        </small>
-                        <span className="work-card-members" aria-label="Project participants">
-                          {project.data.members.slice(0, 5).map((m: any) => (
-                            <span
-                              className="work-assignee-avatar"
-                              key={m.user_id}
-                              title={name(m.user_id)}
-                            >
-                              {name(m.user_id)
-                                .split(' ')
-                                .map((v: string) => v[0])
-                                .slice(0, 2)
-                                .join('')}
-                            </span>
-                          ))}
-                        </span>
+                        <div className="project-directory-body">
+                          <strong>{project.data.name}</strong>
+                          <p>{project.data.description || 'Private project workspace'}</p>
+                          <p>
+                            {name(project.owner_id)}
+                            {project.due_on ? ' · Due ' + project.due_on : ''}
+                          </p>
+                          <small>
+                            <strong>{project.task_summary?.total ?? '—'} Tasks</strong> ·{' '}
+                            {project.task_summary?.completed ?? '—'} completed ·{' '}
+                            {project.task_summary?.overdue ?? '—'} overdue · {project.status} ·{' '}
+                            {project.data.milestones.filter((m: any) => m.completed).length}/
+                            {project.data.milestones.length} milestones
+                          </small>
+                          <span className="work-card-members" aria-label="Project participants">
+                            {project.data.members.slice(0, 5).map((m: any) => (
+                              <span
+                                className="work-assignee-avatar"
+                                key={m.user_id}
+                                title={name(m.user_id)}
+                              >
+                                {name(m.user_id)
+                                  .split(' ')
+                                  .map((v: string) => v[0])
+                                  .slice(0, 2)
+                                  .join('')}
+                              </span>
+                            ))}
+                          </span>
+                        </div>
                       </button>
                     </div>
                   ))}
@@ -850,25 +891,6 @@ export function WorkWorkspace({
                 </div>
               )}
               {!projects.length && <p>No projects match the current search and filters.</p>}
-              <Field label="Open project">
-                <select
-                  value={selected}
-                  onChange={(e) => {
-                    setBoard(null);
-                    setViewing(null);
-                    setSelected(e.target.value);
-                    setQuery('');
-                    if (e.target.value) recordUrl(e.target.value, 'board');
-                  }}
-                >
-                  <option value="">Choose a project</option>
-                  {directory.data.map((n: any) => (
-                    <option key={n.id} value={n.id}>
-                      {n.data.name} · {n.status}
-                    </option>
-                  ))}
-                </select>
-              </Field>
               {!directory.data.length && (
                 <p>
                   No projects are visible to you yet.{' '}
@@ -886,10 +908,10 @@ export function WorkWorkspace({
       )}
       {selected && !board && !error && <p role="status">Loading project tasks…</p>}
       {board && !viewing && !editingProject && !editingTask && (
-        <>
-          <section className="panel">
-            <div className="section-heading">
-              <h2>{p.data.name}</h2>
+        <section className="phase3-workspace work-projects-sheet">
+          <div className="section-heading">
+            <h2>{p.data.name}</h2>
+            <div className="phase3-actions">
               {openRecord && p.data.customer_id && (
                 <button
                   className="quiet-button"
@@ -929,122 +951,152 @@ export function WorkWorkspace({
                 Project settings
               </button>
             </div>
-            <details className="work-project-information">
-              <summary>
-                Project information · {tasks.length} loaded tasks · {p.status}
-              </summary>
-              <p>{p.data.description}</p>
-              <details className="work-management">
-                <summary>Project reviews and workflows</summary>
-                <WorkAutomation
-                  key={'rules:' + p.id}
-                  api={api}
-                  scope={scope}
-                  project={p}
-                  expanded={view === 'workflows'}
-                  onSaved={() =>
-                    saved('Private workflow policy saved. A fresh separate review is required.')
-                  }
-                />
-                <WorkReviews
-                  key={p.id}
-                  api={api}
-                  project={p}
-                  members={members}
-                  actor={directory?.actor_id}
-                  canRequest={board.permissions.manage}
-                  onSaved={() =>
-                    saved('Exact project review saved. Financial actions remain separate.')
-                  }
-                />
-              </details>
-              <p>
-                {p.status.replaceAll('_', ' ')} · Owner {name(p.owner_id)} ·{' '}
-                {p.due_on ? 'Deadline ' + p.due_on : 'No deadline'} · Board version {p.version}
-              </p>
-              <div className="work-summary-strip">
+          </div>
+          <details className="work-project-information">
+            <summary>
+              Project information · {tasks.length} loaded tasks · {p.status}
+            </summary>
+            <p>{p.data.description}</p>
+            <details className="work-management">
+              <summary>Project reviews and workflows</summary>
+              <WorkAutomation
+                key={'rules:' + p.id}
+                api={api}
+                scope={scope}
+                project={p}
+                expanded={view === 'workflows'}
+                onSaved={() =>
+                  saved('Private workflow policy saved. A fresh separate review is required.')
+                }
+              />
+              <WorkReviews
+                key={p.id}
+                api={api}
+                project={p}
+                members={members}
+                actor={directory?.actor_id}
+                canRequest={board.permissions.manage}
+                onSaved={() =>
+                  saved('Exact project review saved. Financial actions remain separate.')
+                }
+              />
+            </details>
+            <p>
+              {p.status.replaceAll('_', ' ')} · Owner {name(p.owner_id)} ·{' '}
+              {p.due_on ? 'Deadline ' + p.due_on : 'No deadline'} · Board version {p.version}
+            </p>
+            <div className="work-summary-strip">
+              {[
+                ['Open tasks', tasks.filter((t: any) => t.status === 'open').length],
+                [
+                  'Assigned to me',
+                  tasks.filter(
+                    (t: any) => t.data.assignee_id === directory?.actor_id && t.status === 'open',
+                  ).length,
+                ],
+                [
+                  'Overdue tasks',
+                  tasks.filter((t: any) => t.status === 'open' && t.due_on && t.due_on < today())
+                    .length,
+                ],
+                ['Completed', tasks.filter((t: any) => t.status === 'completed').length],
+              ].map(([label, value]) => (
+                <article key={String(label)}>
+                  <span>{label}</span>
+                  <strong>{value}</strong>
+                </article>
+              ))}
+            </div>
+            {p.data.milestones.length > 0 && (
+              <>
+                <h3>Milestones</h3>
+                {p.data.milestones.map((m: any) => (
+                  <p key={m.id}>
+                    {m.name} · {m.due_on} · {m.completed ? 'Completed' : 'Upcoming'}
+                  </p>
+                ))}
+              </>
+            )}
+            <p>{board.coverage}</p>
+            {(board.tasks_truncated ?? board.truncated) && (
+              <p className="alert">This view is truncated; totals cover returned records.</p>
+            )}
+          </details>
+          <header className="phase3-toolbar o-calendar-cp">
+            <div className="o-calendar-cp-left">
+              {!['workload', 'updates'].includes(view) && (
+                <button
+                  className="button o-cp-new-btn"
+                  disabled={!board.permissions.write || busy || p.status !== 'active'}
+                  onClick={() => setEditingTask({ new: true })}
+                >
+                  + New Task
+                </button>
+              )}
+              <div className="o-view-switcher" role="group" aria-label="Project views">
                 {[
-                  ['Open tasks', tasks.filter((t: any) => t.status === 'open').length],
-                  [
-                    'Assigned to me',
-                    tasks.filter(
-                      (t: any) => t.data.assignee_id === directory?.actor_id && t.status === 'open',
-                    ).length,
-                  ],
-                  [
-                    'Overdue tasks',
-                    tasks.filter((t: any) => t.status === 'open' && t.due_on && t.due_on < today())
-                      .length,
-                  ],
-                  ['Completed', tasks.filter((t: any) => t.status === 'completed').length],
-                ].map(([label, value]) => (
-                  <article key={String(label)}>
-                    <span>{label}</span>
-                    <strong>{value}</strong>
-                  </article>
+                  'board',
+                  'list',
+                  'calendar',
+                  'timeline',
+                  'my-work',
+                  'workload',
+                  'report',
+                  'updates',
+                ].map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    className={view === v ? 'o-view-btn is-active' : 'o-view-btn'}
+                    aria-current={view === v ? 'page' : undefined}
+                    onClick={() => changeView(v)}
+                  >
+                    {v.replaceAll('-', ' ')}
+                  </button>
                 ))}
               </div>
-              {p.data.milestones.length > 0 && (
-                <>
-                  <h3>Milestones</h3>
-                  {p.data.milestones.map((m: any) => (
-                    <p key={m.id}>
-                      {m.name} · {m.due_on} · {m.completed ? 'Completed' : 'Upcoming'}
-                    </p>
-                  ))}
-                </>
-              )}
-              <p>{board.coverage}</p>
-              {(board.tasks_truncated ?? board.truncated) && (
-                <p className="alert">This view is truncated; totals cover returned records.</p>
-              )}
-            </details>
-          </section>
-          <nav className="app-service-chips" aria-label="Project views">
-            {[
-              'board',
-              'list',
-              'calendar',
-              'timeline',
-              'my-work',
-              'workload',
-              'report',
-              'updates',
-            ].map((v) => (
-              <button
-                key={v}
-                className="secondary-button"
-                aria-current={view === v ? 'page' : undefined}
-                onClick={() => changeView(v)}
-              >
-                {v.replaceAll('-', ' ')}
-              </button>
-            ))}
-          </nav>
-          {!['workload', 'updates'].includes(view) && (
-            <div className="work-toolbar">
-              <Field label="Search loaded project tasks">
-                <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
-              </Field>
-              <Field label="Quick filter">
-                <select value={quickFilter} onChange={(e) => setQuickFilter(e.target.value)}>
+            </div>
+            {!['workload', 'updates'].includes(view) && (
+              <div className="phase3-actions o-calendar-cp-right">
+                <label className="o-calendar-search" aria-label="Search loaded project tasks">
+                  <input
+                    type="search"
+                    placeholder="Filter tasks…"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                </label>
+                <select
+                  aria-label="Quick filter"
+                  className="o-cp-inline-select"
+                  value={quickFilter}
+                  onChange={(e) => setQuickFilter(e.target.value)}
+                >
                   <option value="all">All tasks</option>
                   <option value="overdue">Overdue</option>
                   <option value="priority">High priority</option>
-                  <option value="blocked">Blocked completion</option>
+                  <option value="blocked">Blocked</option>
                   <option value="week">Due this week</option>
                 </select>
-              </Field>
-              <Field label="Status">
-                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <select
+                  aria-label="Status"
+                  className="o-cp-inline-select"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
                   {['all', 'open', 'completed', 'cancelled'].map((s) => (
-                    <option key={s}>{s}</option>
+                    <option key={s} value={s}>
+                      Status: {s}
+                    </option>
                   ))}
                 </select>
-              </Field>
-              <Field label="Assignee">
-                <select value={assigneeFilter} onChange={(e) => setAssigneeFilter(e.target.value)}>
-                  <option value="all">All project assignees</option>
+                <select
+                  aria-label="Assignee"
+                  className="o-cp-inline-select"
+                  value={assigneeFilter}
+                  onChange={(e) => setAssigneeFilter(e.target.value)}
+                >
+                  <option value="all">All assignees</option>
                   <option value="unassigned">Unassigned</option>
                   {p.data.members.map((m: any) => (
                     <option key={m.user_id} value={m.user_id}>
@@ -1052,16 +1104,9 @@ export function WorkWorkspace({
                     </option>
                   ))}
                 </select>
-              </Field>
-              <button
-                className="button"
-                disabled={!board.permissions.write || busy || p.status !== 'active'}
-                onClick={() => setEditingTask({ new: true })}
-              >
-                Create task
-              </button>
-            </div>
-          )}
+              </div>
+            )}
+          </header>
           {view === 'board' ? (
             <div className="work-board">
               {p.data.stages.map((s: any) => (
@@ -1194,7 +1239,7 @@ export function WorkWorkspace({
               ))}
             </section>
           )}
-        </>
+        </section>
       )}
       {viewing && p && (
         <WorkTaskDetails
