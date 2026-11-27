@@ -240,8 +240,84 @@ html:has([data-platform-density]) {
   font-size: 12px;
 }
 .business-shell[data-platform-density] .app-main {
-  flex: 1;
+  flex: 1 1 0%;
   min-width: 0;
+  container: workspace-main / inline-size;
+}
+.focused-account[data-platform-density]:has(> .agent-sandbox-pane) {
+  grid-template-columns: 224px minmax(0, 1fr) auto;
+}
+@media (max-width: 1024px) {
+  .focused-account[data-platform-density]:has(> .agent-sandbox-pane) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.focused-account[data-platform-density] .account-content {
+  container: workspace-main / inline-size;
+}
+
+/* Container-aware Split-Screen Responsiveness:
+ * Prevents KPI numbers (Ksh 91,320.00), dashboard 2-column panels, and chart range buttons
+ * from squeezing or overflowing when the right-side Computer Use Sandbox narrows the main column. */
+:is(.business-shell, .focused-account) :is(.metric-grid, .account-metrics) > * {
+  min-width: 0;
+}
+:is(.business-shell, .focused-account) :is(.metric-grid strong, .account-metrics strong) {
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:is(.business-shell, .focused-account) .dashboard-columns > * {
+  min-width: 0;
+}
+:is(.business-shell, .focused-account) .chart-ranges {
+  flex-wrap: wrap !important;
+  gap: 4px !important;
+}
+:is(.business-shell, .focused-account) .chart-ranges button {
+  flex: 1 1 auto !important;
+  min-width: 40px !important;
+}
+:is(.business-shell, .focused-account) .chart-readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+:is(.business-shell, .focused-account) .chart-readout > div {
+  min-width: 0;
+}
+
+@container workspace-main (max-width: 960px) {
+  :is(.business-shell, .focused-account) :is(.metric-grid, .account-metrics) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  :is(.business-shell, .focused-account) .dashboard-columns {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  :is(.business-shell, .focused-account) .date-range {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  :is(.business-shell, .focused-account) .date-range-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@container workspace-main (max-width: 560px) {
+  :is(.business-shell, .focused-account) :is(.metric-grid, .account-metrics) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  :is(.business-shell, .focused-account) :is(.workspace-content, .account-content) {
+    padding: 16px !important;
+  }
+  :is(.business-shell, .focused-account) .date-range {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  :is(.business-shell, .focused-account) :is(.metric-grid strong, .account-metrics strong) {
+    font-size: 21px !important;
+  }
 }
 .business-shell[data-platform-density] .app-header {
   height: 68px;

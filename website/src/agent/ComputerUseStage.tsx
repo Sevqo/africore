@@ -1,21 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '../components/Icon';
 import {
-  dispatchAgentComputerUse,
   type AgentDestination,
   type ComputerUseStep,
 } from './computer-use';
 
 export function ComputerUseStage({
-  workspaceId,
   steps,
   status,
   destination,
-  driveLive,
   compact = false,
   onOpenDestination,
 }: {
-  workspaceId: string;
+  workspaceId?: string;
   steps: ComputerUseStep[];
   status: string;
   destination?: AgentDestination;
@@ -33,26 +30,15 @@ export function ComputerUseStage({
 
   useEffect(() => {
     if (!playing || !steps.length) return;
-    const current = steps[activeIndex];
-    if (driveLive && current) {
-      dispatchAgentComputerUse({
-        action: activeIndex === 0 ? 'banner' : 'navigate',
-        workspaceId,
-        tab: current.target_tab,
-        app: current.target_app,
-        label: current.label,
-        detail: current.detail,
-      });
-    }
     if (activeIndex >= steps.length - 1) {
       setPlaying(false);
       return;
     }
     const timer = window.setTimeout(() => {
       setActiveIndex((idx) => Math.min(steps.length - 1, idx + 1));
-    }, compact ? 750 : 900);
+    }, compact ? 650 : 800);
     return () => window.clearTimeout(timer);
-  }, [activeIndex, playing, steps, driveLive, workspaceId, compact]);
+  }, [activeIndex, playing, steps, compact]);
 
   if (!steps.length) return null;
   const active = steps[Math.min(activeIndex, steps.length - 1)];
@@ -65,7 +51,7 @@ export function ComputerUseStage({
       <div className="agent-cu-chrome">
         <div className="agent-cu-chrome-left">
           <span className="agent-cu-dot" aria-hidden="true" />
-          <strong>Live Computer Use</strong>
+          <strong>Execution Trace</strong>
           <span className="agent-cu-route">
             {active.target_tab}
             {active.target_app ? ` · ${active.target_app}` : ''}
@@ -82,7 +68,7 @@ export function ComputerUseStage({
           >
             Replay
           </button>
-          {destination && onOpenDestination && (
+          {destination && onOpenDestination && status === 'completed' && (
             <button
               type="button"
               className="secondary-button agent-cu-btn"
@@ -98,7 +84,7 @@ export function ComputerUseStage({
         <div className="agent-cu-mock-bar">
           <span>{active.target_element}</span>
           <span className={`agent-status-chip agent-status-${active.status}`}>
-            {active.phase.replaceAll('_', ' ')}
+            {active.phase.replace(/_/g, ' ')}
           </span>
         </div>
 
@@ -115,7 +101,7 @@ export function ComputerUseStage({
               <dl className="agent-cu-fields">
                 {Object.entries(active.preview_fields).map(([key, value]) => (
                   <div key={key} className="agent-cu-field-row">
-                    <dt>{key.replaceAll('_', ' ')}</dt>
+                    <dt>{key.replace(/_/g, ' ')}</dt>
                     <dd>{String(value)}</dd>
                   </div>
                 ))}
@@ -155,7 +141,7 @@ export function ComputerUseStage({
               <span className="agent-cu-step-num">{step.step_index}</span>
               <span className="agent-cu-step-label">{step.label}</span>
               <span className="agent-cu-step-phase">
-                {step.status === 'pending_approval' ? 'Approval' : `${step.duration_ms}ms`}
+                {step.status === 'pending_approval' ? 'Staged' : `${step.duration_ms}ms`}
               </span>
             </button>
           </li>
@@ -163,7 +149,7 @@ export function ComputerUseStage({
       </ol>
       {status === 'awaiting_approval' && (
         <p className="agent-cu-note">
-          Execution is paused on Step {steps.length} until you approve or reject this action.
+          Staged in isolated sandbox — review and approve to commit to your live workspace.
         </p>
       )}
     </section>

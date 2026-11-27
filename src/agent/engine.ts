@@ -21,7 +21,12 @@ import {
   workspaceKindFor,
 } from './isolation';
 import { runPythonAgent } from './python-bridge';
-import { executeAgentTool, toolById, type ComputerUseStep } from './tools';
+import {
+  executeAgentTool,
+  fetchSandboxCloneContext,
+  toolById,
+  type ComputerUseStep,
+} from './tools';
 
 export interface AgentPolicyRecord {
   org_id: string;
@@ -144,7 +149,7 @@ export async function runAgent(
     return formatRun(a, existing);
   }
 
-  const policy = await getAgentPolicy(a);
+  const [policy, memory] = await Promise.all([getAgentPolicy(a), listAgentMemory(a)]);
   const boundaryInput = await buildBoundaryInput(a, {
     crossDevBridgeEnabled: policy.cross_dev_bridge_enabled,
   });
@@ -159,7 +164,9 @@ export async function runAgent(
     target_workspace_id: d.target_workspace_id || null,
     params: d.params || {},
     policy,
+    memory,
     computer_use: d.computer_use,
+    stage_in_sandbox: d.stage_in_sandbox,
     routine_id: opts.routineId || null,
     override_mode: opts.overrideMode || null,
   });
@@ -189,16 +196,23 @@ export async function runAgent(
       credits: 1,
       runId,
       entryType: 'analysis_read',
-      reason: `Python planner paused for approval: ${plan.tool.name}`,
+      reason: `Python planner staged in sandbox: ${plan.tool.name}`,
     });
     const approvalId = randomUUID();
-    const summary = `Ready to execute "${plan.action_summary}". Owner permission for ${plan.tool.name} is set to Approval Required — approve below to run it live.`;
+    const cloneContext = plan.sandbox_clone?.clone_kind
+      ? await fetchSandboxCloneContext(target.access, String(plan.sandbox_clone.clone_kind))
+      : {};
+    const enrichedClone = plan.sandbox_clone
+      ? { ...plan.sandbox_clone, live_context: cloneContext }
+      : null;
+
+    const summary = `Staged "${plan.action_summary}" inside the isolated ${plan.sandbox_clone?.page_title || plan.tool.target_tab} sandbox clone. Review the preview and click Approve to commit it to your live workspace.`;
 
     const savedRun = await create(
       a,
       'agent_run',
       {
-        engine: plan.engine || 'python_autonomous_agent_v1',
+        engine: plan.engine || 'python_autonomous_agent_v2',
         workspace_kind: plan.boundary.source_kind,
         actor: a.actor,
         idempotency_key: idempotencyKey,
@@ -213,9 +227,14 @@ export async function runAgent(
         result: {
           approval_id: approvalId,
           planned_params: plan.params,
+          chained_actions: plan.chained_actions || [],
+          sandbox_clone: enrichedClone,
+          matched_skill: plan.matched_skill || null,
+          memory_applied: plan.memory_applied || [],
           destination: {
-            tab: plan.tool.target_tab,
+            tab: plan.tool.target_tab === 'Calendar' && target.targetKind === 'business' ? 'Apps' : plan.tool.target_tab,
             app: plan.tool.target_app,
+            section: plan.tool.target_app === 'calendar' ? 'calendar' : undefined,
             workspace_id: target.access.org,
             workspace_kind: target.targetKind,
           },
@@ -240,6 +259,8 @@ export async function runAgent(
         action_summary: plan.action_summary,
         payload: {
           params: plan.params,
+          chained_actions: plan.chained_actions || [],
+          sandbox_clone: enrichedClone,
           currency: d.currency,
           computer_use: plan.computer_use,
           consent_to_provider: d.consent_to_provider,
@@ -256,7 +277,7 @@ export async function runAgent(
     return formatRun(a, savedRun);
   }
 
-  // Execute tool against canonical AfriCore services + synthesize Python Computer Use trace
+  // Execute tool (+ any chained compound steps) against canonical AfriCore services
   const toolDef = toolById(plan.tool.id);
   if (!toolDef) return fail(400, 'Tool unavailable: ' + plan.tool.id);
 
@@ -264,10 +285,29 @@ export async function runAgent(
     target.access,
     target.targetKind,
     toolDef,
-    plan.params,
+    { ...plan.params, prompt: d.prompt },
     d.currency,
     runId,
   );
+  const chainedOutputs: string[] = [];
+  for (let i = 0; i < (plan.chained_actions || []).length; i++) {
+    const ch = plan.chained_actions[i];
+    const chDef = toolById(ch.tool?.id || ch.tool_id);
+    if (!chDef) continue;
+    const chOut = await executeAgentTool(
+      target.access,
+      target.targetKind,
+      chDef,
+      ch.params || {},
+      d.currency,
+      `${runId}-chain-${i}`,
+    );
+    chainedOutputs.push(chOut.summary);
+  }
+  const combinedSummary = chainedOutputs.length
+    ? [execution.summary, ...chainedOutputs.map((s) => `• Chained: ${s}`)].join('\n')
+    : execution.summary;
+
   const trace = await runPythonAgent<{ steps: ComputerUseStep[]; llm_narrative: string | null }>({
     op: 'synthesize_trace',
     tool_id: toolDef.id,
@@ -277,7 +317,7 @@ export async function runAgent(
     preview_fields: plan.params,
     verify_detail: execution.summary.split('\n')[0] || 'Verified canonical record.',
     prompt: d.prompt,
-    summary: execution.summary,
+    summary: combinedSummary,
     evidence: execution.data,
     consent_to_provider: d.consent_to_provider,
   });
@@ -293,7 +333,7 @@ export async function runAgent(
     a,
     'agent_run',
     {
-      engine: plan.engine || 'python_autonomous_agent_v1',
+      engine: plan.engine || 'python_autonomous_agent_v2',
       workspace_kind: plan.boundary.source_kind,
       actor: a.actor,
       idempotency_key: idempotencyKey,
@@ -303,12 +343,14 @@ export async function runAgent(
       isolation_boundary: plan.boundary,
       target_workspace_id: target.access.org,
       tool_name: plan.tool.id,
-      summary: trace.llm_narrative || execution.summary,
+      summary: trace.llm_narrative || combinedSummary,
       steps: trace.steps?.length ? trace.steps : execution.steps,
       result: {
         record_id: execution.record_id || null,
         destination: execution.destination,
         data: execution.data,
+        sandbox_clone: plan.sandbox_clone || null,
+        matched_skill: plan.matched_skill || null,
         computer_use: plan.computer_use,
         remaining_credits: billing.remaining_after,
       },
@@ -360,14 +402,37 @@ export async function decideAgentApproval(a: Access, approvalId: string, input: 
   if (!tool) return fail(400, 'Tool no longer available');
 
   const payload = approval.payload || {};
+  const mergedParams = {
+    ...(payload.params || {}),
+    ...(d.edited_params || {}),
+  };
   const execution = await executeAgentTool(
     target.access,
     target.targetKind,
     tool,
-    payload.params || {},
+    mergedParams,
     payload.currency || 'KES',
     approval.run_id,
   );
+
+  const chainedOutputs: string[] = [];
+  for (let i = 0; i < (payload.chained_actions || []).length; i++) {
+    const ch = payload.chained_actions[i];
+    const chDef = toolById(ch.tool?.id || ch.tool_id);
+    if (!chDef) continue;
+    const chOut = await executeAgentTool(
+      target.access,
+      target.targetKind,
+      chDef,
+      ch.params || {},
+      payload.currency || 'KES',
+      `${approval.run_id}-approved-chain-${i}`,
+    );
+    chainedOutputs.push(chOut.summary);
+  }
+  const combinedSummary = chainedOutputs.length
+    ? [execution.summary, ...chainedOutputs.map((s) => `• Chained: ${s}`)].join('\n')
+    : execution.summary;
 
   const trace = await runPythonAgent<{ steps: ComputerUseStep[]; llm_narrative: string | null }>({
     op: 'synthesize_trace',
@@ -375,10 +440,10 @@ export async function decideAgentApproval(a: Access, approvalId: string, input: 
     target_tab: execution.destination.tab,
     target_app: execution.destination.app || null,
     isolation_label: target.boundary.isolation_label,
-    preview_fields: payload.params || {},
+    preview_fields: mergedParams,
     verify_detail: execution.summary.split('\n')[0] || 'Approved execution verified.',
     prompt: decodePrompt(a, runRow),
-    summary: execution.summary,
+    summary: combinedSummary,
     evidence: execution.data,
     consent_to_provider: !!payload.consent_to_provider,
   });
@@ -403,13 +468,14 @@ export async function decideAgentApproval(a: Access, approvalId: string, input: 
 
   const updatedRun = await change(a, runRow, {
     status: 'completed',
-    summary: trace.llm_narrative || execution.summary,
+    summary: trace.llm_narrative || combinedSummary,
     steps: trace.steps?.length ? trace.steps : execution.steps,
     result: {
       approval_id: approvalId,
       record_id: execution.record_id || null,
       destination: execution.destination,
       data: execution.data,
+      sandbox_clone: payload.sandbox_clone || null,
       computer_use: !!payload.computer_use,
       remaining_credits: billing.remaining_after,
     },

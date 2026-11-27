@@ -185,17 +185,23 @@ test('Business agent enforces restraint-first approval, executes real meetings &
   assert.equal(planned.data.status, 'awaiting_approval');
   assert.equal(planned.data.tool_name, 'schedule_meeting');
   assert.ok(planned.data.result.approval_id);
-  assert.ok(Array.isArray(planned.data.steps) && planned.data.steps.length >= 2);
+  assert.equal(planned.data.result.sandbox_clone?.clone_kind, 'calendar');
+  assert.ok(Array.isArray(planned.data.steps) && planned.data.steps.length >= 3);
 
-  // Approve & execute live -> creates a real calendar event in ac_erp_objects
+  // Approve & execute live (with user-edited title in sandbox!) -> creates a real calendar event in ac_erp_objects
   const approved = await api(
     `/api/v1/organizations/${businessOrg1}/agent/approvals/${planned.data.result.approval_id}/decide`,
     'POST',
-    { decision: 'approve', note: 'Proceed with booking' },
+    {
+      decision: 'approve',
+      note: 'Proceed with booking',
+      edited_params: { title: 'Q4 Supplier Review (Confirmed)' },
+    },
   );
   assert.equal(approved.status, 200);
   assert.equal(approved.data.status, 'approved');
   assert.equal(approved.data.run.status, 'completed');
+  assert.ok(approved.data.run.summary.includes('Q4 Supplier Review (Confirmed)'));
   assert.ok(approved.data.run.result.record_id);
   const calRow = await dbGet(
     "SELECT id FROM ac_erp_objects WHERE id=? AND org_id=? AND kind='calendar_event'",
@@ -221,11 +227,23 @@ test('Business agent enforces restraint-first approval, executes real meetings &
     computer_use: true,
   });
   assert.equal(projRun.status, 201);
-  assert.equal(projRun.data.engine, 'python_autonomous_agent_v1');
+  assert.equal(projRun.data.engine, 'python_autonomous_agent_v2');
   assert.equal(projRun.data.status, 'completed');
   assert.equal(projRun.data.tool_name, 'create_project');
   assert.ok(projRun.data.result.record_id);
   assert.ok(projRun.data.steps.some((s: any) => s.target_tab === 'Work'));
+
+  // Even when create_project is autonomous, UI stage_in_sandbox=true stages in the Clone Sandbox first!
+  const stagedProj = await api(`/api/v1/organizations/${businessOrg1}/agent/runs`, 'POST', {
+    prompt: 'Set up a project for "Mombasa Hub" and schedule a kickoff meeting tomorrow',
+    currency: 'KES',
+    computer_use: true,
+    stage_in_sandbox: true,
+  });
+  assert.equal(stagedProj.status, 201);
+  assert.equal(stagedProj.data.status, 'awaiting_approval');
+  assert.equal(stagedProj.data.result.sandbox_clone?.clone_kind, 'work');
+  assert.equal(stagedProj.data.result.chained_actions?.length, 1);
 
   // Disabled tool fails closed with 403
   const blockedExpense = await api(`/api/v1/organizations/${businessOrg1}/agent/runs`, 'POST', {

@@ -105,8 +105,58 @@ class TestPythonAutonomousAgent(unittest.TestCase):
         self.assertEqual(plan["tool"]["id"], "schedule_meeting")
         self.assertEqual(plan["execution_mode"], "approval_required")
         self.assertEqual(plan["params"]["title"], "Q4 Supplier Review")
-        self.assertGreaterEqual(len(plan["preview_steps"]), 2)
+        self.assertIsNotNone(plan["sandbox_clone"])
+        self.assertEqual(plan["sandbox_clone"]["clone_kind"], "calendar")
+        self.assertGreaterEqual(len(plan["preview_steps"]), 3)
         self.assertEqual(plan["preview_steps"][-1]["phase"], "awaiting_approval")
+
+    def test_compound_workflows_memory_recall_and_deep_analyzer(self) -> None:
+        compound = run_agent_py({
+            "op": "plan_run",
+            "boundary_input": {
+                "source_workspace_id": "biz-1",
+                "source_kind": "business",
+                "source_name": "Savannah Supplies",
+            },
+            "prompt": 'Set up a project for "Q4 East Africa Launch" and schedule a kickoff meeting tomorrow',
+            "memory": [{"content": "Prefer morning meetings at 09:00 in Zoom."}],
+            "currency": "KES",
+            "computer_use": True,
+            "stage_in_sandbox": True,
+        })
+        self.assertTrue(compound["ok"])
+        self.assertEqual(compound["tool"]["id"], "create_project")
+        self.assertEqual(compound["execution_mode"], "approval_required")
+        self.assertEqual(len(compound["chained_actions"]), 1)
+        self.assertEqual(compound["chained_actions"][0]["tool"]["id"], "schedule_meeting")
+        self.assertEqual(compound["chained_actions"][0]["params"]["preferred_hour"], 9)
+        self.assertEqual(compound["sandbox_clone"]["clone_kind"], "work")
+
+        diag = run_agent_py({
+            "op": "analyze_operations",
+            "workspace_kind": "business",
+            "currency": "KES",
+            "totals": {
+                "confirmed_inflows_minor": 9132000,
+                "recorded_outflows_minor": 1200000,
+                "outstanding_minor": 450000,
+                "overdue_minor": 450000,
+            },
+            "period": {"from": "2026-10-01", "to": "2026-11-27"},
+            "invoices": [
+                {"customer_name": "Mombasa Wholesalers", "outstanding_minor": 450000, "overdue_days": 18, "status": "issued"}
+            ],
+            "expenses": [{"category": "logistics", "amount_minor": 1200000}],
+            "obligations": [{"amount_minor": 300000}],
+            "crm_entries": [{"status": "open", "amount_minor": 2500000}],
+            "projects": [{"id": "p1"}],
+            "tasks": [{"stage": "planned", "priority": "urgent"}],
+            "calendar_events": [{"id": "e1"}],
+            "customers": [{"id": "c1"}],
+        })
+        self.assertIn("Mombasa Wholesalers", diag["summary"])
+        self.assertIn("Recommended Agent Actions", diag["summary"])
+        self.assertGreaterEqual(len(diag["recommended_actions"]), 1)
 
     def test_separate_agent_billing_and_hard_stop_cap(self) -> None:
         summary = run_agent_py({

@@ -60,6 +60,7 @@ import { VerificationConsole } from './marketplace/VerificationConsole';
 import { startDemo, isDemo } from './demo/transport';
 import { OperationsWorkspace, operationsTabs } from './operations/OperationsWorkspace';
 import { FloatingAgent } from './agent/FloatingAgent';
+import { subscribeAgentWorkspaceCommitted } from './agent/computer-use';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Logo } from './components/Logo';
 import { api } from './lib/api-client';
@@ -544,6 +545,13 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
     setSearch('');
     setCreating(false);
     setCustomers([]);
+  }, [org, tab, environment]);
+  useEffect(() => {
+    return subscribeAgentWorkspaceCommitted((detail) => {
+      if (detail.workspaceId && detail.workspaceId !== org) return;
+      setUrlRevision((n) => n + 1);
+      void load();
+    });
   }, [org, tab, environment]);
   async function action(fn: () => Promise<any>) {
     if (currentScope.current !== viewScope) return;
@@ -1434,6 +1442,7 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
             onboardingForm()
           ) : tab === 'Apps' ? (
             <AppsWorkspace
+              key={`${org}-${environment}-${urlRevision}`}
               openRecord={openRecord}
               role={organization?.role}
               api={call}
@@ -1550,6 +1559,7 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
                 )}
                 {tab === 'Customer Relationships' && (
                   <CrmWorkspace
+                    key={org + '\0' + environment + '\0' + urlRevision}
                     admin={adminWritable}
                     writable={!!writable}
                     api={call}
@@ -1622,7 +1632,7 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
                 {tab === 'Work' && (
                   <WorkWorkspace
                     openRecord={openRecord}
-                    key={org + '\0' + environment}
+                    key={org + '\0' + environment + '\0' + urlRevision}
                     api={call}
                     scope={org + '\0' + environment}
                   />

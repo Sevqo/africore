@@ -21,6 +21,7 @@ export const agentRunInput = z
     target_workspace_id: z.string().uuid().optional(),
     params: z.record(z.string(), z.unknown()).optional(),
     computer_use: z.boolean().default(true),
+    stage_in_sandbox: z.boolean().default(false),
     consent_to_provider: z.boolean().default(false),
   })
   .strict();
@@ -29,6 +30,7 @@ export const agentApprovalDecisionInput = z
   .object({
     decision: z.enum(['approve', 'reject']),
     note: z.string().trim().max(500).default(''),
+    edited_params: z.record(z.string(), z.unknown()).optional(),
   })
   .strict();
 

@@ -12,6 +12,7 @@ import { ProductCatalog } from '../apps/ProductCatalog';
 import { DataPlatformView } from '../operations/DataPlatformView';
 import { AssistantView } from '../operations/AssistantView';
 import { FloatingAgent } from '../agent/FloatingAgent';
+import { subscribeAgentWorkspaceCommitted } from '../agent/computer-use';
 import { OperationsWorkspace } from '../operations/OperationsWorkspace';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { PersonalSubscriptions } from './PersonalSubscriptions';
@@ -246,6 +247,12 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
       generation.current++;
     };
   }, [w.id, environment, currency, from, to, revision, tab, market.catalog]);
+  useEffect(() => {
+    return subscribeAgentWorkspaceCommitted((detail) => {
+      if (detail.workspaceId && detail.workspaceId !== w.id) return;
+      setRevision((n) => n + 1);
+    });
+  }, [w.id]);
   async function mutate(fn: () => Promise<any>) {
     const version = generation.current;
     setBusy(true);
@@ -588,7 +595,7 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
         ) : personal && tab === 'Calendar' ? (
           <ServiceGate market={market} tab={tab} navigate={setTab}>
             <Suspense fallback={<p role="status">Loading Calendar…</p>}>
-              <CalendarWorkspace api={call} scope={w.id + '\0' + environment} section="calendar" />
+              <CalendarWorkspace key={`${w.id}-${environment}-${revision}`} api={call} scope={w.id + '\0' + environment} section="calendar" />
             </Suspense>
           </ServiceGate>
         ) : personal && tab === 'Documents' ? (

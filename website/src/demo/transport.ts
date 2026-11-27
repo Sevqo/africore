@@ -784,30 +784,54 @@ export async function transport(path: string, options: RequestInit = {}): Promis
       const perm = ag.policy.autonomy_mode === 'autonomous' ? 'autonomous' : ag.policy.permissions[toolName] || (isWrite ? 'approval_required' : 'autonomous');
       const runId = id();
       const targetTab = toolName === 'schedule_meeting' ? 'Apps' : toolName === 'create_project' ? 'Work' : toolName === 'create_crm_lead' ? 'Customer Relationships' : 'Intelligence';
-      const credits = perm === 'approval_required' ? 1 : isWrite ? 5 : 1;
+      const cloneKind = toolName === 'schedule_meeting' ? 'calendar' : toolName === 'create_project' ? 'work' : toolName === 'create_crm_lead' ? 'crm' : 'intelligence';
+      const pageTitle = toolName === 'schedule_meeting' ? 'AfriCore Calendar' : toolName === 'create_project' ? 'AfriCore Work · Projects' : toolName === 'create_crm_lead' ? 'Customer Relationships · Pipeline' : 'Intelligence';
+      const shouldStage = isWrite && (input.stage_in_sandbox || perm === 'approval_required');
+      const credits = shouldStage ? 1 : isWrite ? 5 : 1;
       ag.billing.credits_used += credits;
       ag.billing.credits_remaining = Math.max(0, ag.billing.total_credits_pool - ag.billing.credits_used);
       ag.billing.ledger.unshift({ id: id(), entry_type: isWrite ? 'computer_use_session' : 'analysis_read', credits_delta: -credits, estimated_minor: 0, currency: 'KES', reason: `Demo run: ${toolName}`, created_at: now() });
+      const approvalId = shouldStage ? id() : null;
+      const sandboxClone = isWrite
+        ? {
+            clone_kind: cloneKind,
+            page_title: pageTitle,
+            section_label: 'Isolated Sandbox Staging',
+            primary_cta: `Approve & Send to ${pageTitle}`,
+            tool_id: toolName,
+            target_tab: targetTab,
+            target_app: toolName === 'schedule_meeting' ? 'calendar' : toolName === 'create_project' ? 'work' : toolName === 'create_crm_lead' ? 'crm' : undefined,
+            currency: input.currency || 'KES',
+            staged_params: { title: prompt, name: prompt, duration_minutes: 45, location: 'Workspace Meeting Room' },
+            editable_fields: [
+              { key: 'title', label: 'Title', type: 'text', value: prompt },
+            ],
+          }
+        : null;
       const run: any = {
         id: runId,
         prompt,
         tool_name: toolName,
-        status: perm === 'approval_required' ? 'awaiting_approval' : 'completed',
+        status: shouldStage ? 'awaiting_approval' : 'completed',
         summary:
-          perm === 'approval_required'
-            ? `Planned "${prompt}". Approve below to execute live in this browser demo.`
-            : `Executed "${prompt}" inside your sandboxed Business workspace.`,
+          shouldStage
+            ? `Staged "${prompt}" inside the isolated ${pageTitle} sandbox clone. Approve to send to workspace.`
+            : `Operational Intelligence Brief: Analyzed live receivables, CRM pipeline, projects, and upcoming schedule.`,
         credits_used: credits,
         steps: [
-          { step_index: 1, phase: 'observe', label: 'Verify Business Sandbox Lock', detail: 'Confirmed strict Business-only boundary.', target_tab: targetTab, target_element: 'Isolation Shield', cursor_hint: { x_pct: 22, y_pct: 20 }, status: 'completed', duration_ms: 50 },
-          { step_index: 2, phase: perm === 'approval_required' ? 'awaiting_approval' : 'verify', label: perm === 'approval_required' ? 'Awaiting Owner Approval' : `Completed on ${targetTab}`, detail: prompt, target_tab: targetTab, target_element: 'Workspace Action Panel', cursor_hint: { x_pct: 58, y_pct: 58 }, status: perm === 'approval_required' ? 'pending_approval' : 'completed', duration_ms: 110 },
+          { step_index: 1, phase: 'observe', label: 'Boot Isolated Sandbox Clone', detail: 'Confirmed strict Business-only boundary.', target_tab: targetTab, target_element: 'Isolation Shield', cursor_hint: { x_pct: 22, y_pct: 20 }, status: 'completed', duration_ms: 50 },
+          { step_index: 2, phase: shouldStage ? 'awaiting_approval' : 'verify', label: shouldStage ? `Staged on ${pageTitle}` : `Completed on ${targetTab}`, detail: prompt, target_tab: targetTab, target_element: 'Sandbox Composer', cursor_hint: { x_pct: 58, y_pct: 58 }, status: shouldStage ? 'pending_approval' : 'completed', duration_ms: 110 },
         ],
-        result: { destination: { tab: targetTab } },
+        result: {
+          ...(approvalId ? { approval_id: approvalId } : {}),
+          ...(sandboxClone ? { sandbox_clone: sandboxClone } : {}),
+          destination: { tab: targetTab, ...(toolName === 'schedule_meeting' ? { app: 'calendar', section: 'calendar' } : {}) },
+        },
         created_at: now(),
       };
       ag.runs.unshift(run);
-      if (perm === 'approval_required') {
-        ag.approvals.unshift({ id: id(), run_id: runId, tool_name: toolName, target_workspace_id: state['/organization'].id, action_summary: prompt, status: 'pending', created_at: now() });
+      if (shouldStage && approvalId) {
+        ag.approvals.unshift({ id: approvalId, run_id: runId, tool_name: toolName, target_workspace_id: state['/organization'].id, action_summary: prompt, payload: { sandbox_clone: sandboxClone }, status: 'pending', created_at: now() });
       }
       return finish(run, 201);
     }

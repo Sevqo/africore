@@ -14,6 +14,7 @@ import { createCrmEntry, crmOverview } from '../operations/crm';
 import { createCalendarEvent, calendarEvents } from '../apps/phase3';
 import { createProject, saveTask, workProjects } from '../erp/work';
 import { sumMinor } from '../finance/money';
+import { runPythonAgent } from './python-bridge';
 import type { AgentCreditCategory } from './billing';
 import type { AgentPermissionMode } from './contracts';
 
@@ -303,11 +304,88 @@ function todayDate(tz = 'Africa/Nairobi') {
   return new Date().toLocaleDateString('en-CA', { timeZone: tz });
 }
 
-function futureIso(hoursFromNow = 24, durationMinutes = 45) {
+function futureIso(hoursFromNow = 24, durationMinutes = 45, preferredHour?: number) {
   const start = new Date(Date.now() + hoursFromNow * 3600_000);
-  start.setMinutes(0, 0, 0);
+  if (typeof preferredHour === 'number' && preferredHour >= 0 && preferredHour <= 23) {
+    start.setHours(preferredHour, 0, 0, 0);
+    if (start.getTime() < Date.now() + 10 * 60_000) {
+      start.setTime(start.getTime() + 24 * 3600_000);
+    }
+  } else {
+    start.setMinutes(0, 0, 0);
+  }
   const end = new Date(start.getTime() + durationMinutes * 60_000);
   return { start: start.toISOString(), end: end.toISOString() };
+}
+
+export async function fetchSandboxCloneContext(
+  targetAccess: Access,
+  cloneKind: string,
+): Promise<Record<string, unknown>> {
+  try {
+    if (cloneKind === 'calendar') {
+      const cal = await calendarEvents(targetAccess).catch(() => ({ data: [] }));
+      return {
+        existing_events: (cal.data || []).slice(0, 5).map((e: any) => ({
+          id: e.id,
+          title: e.title,
+          start: e.start,
+          end: e.end,
+          location: e.location || 'Workspace',
+        })),
+      };
+    }
+    if (cloneKind === 'work') {
+      const list = await workProjects(targetAccess).catch(() => ({ data: [] }));
+      return {
+        existing_projects: (list.data || []).slice(0, 4).map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          status: p.status || 'active',
+          deadline: p.deadline || null,
+        })),
+      };
+    }
+    if (cloneKind === 'crm') {
+      const rows = await dbAll(
+        "SELECT id, title, stage, amount_minor, currency FROM ac_crm_entries WHERE org_id=? AND environment=? AND status<>'archived' ORDER BY updated_at DESC LIMIT 5",
+        [targetAccess.org, targetAccess.environment],
+      ).catch(() => []);
+      return { existing_leads: rows };
+    }
+    if (cloneKind === 'invoices' || cloneKind === 'customers') {
+      const [custs, invs] = await Promise.all([
+        dbAll(
+          "SELECT id, data FROM ac_records WHERE org_id=? AND environment=? AND kind='customers' ORDER BY created_at DESC LIMIT 5",
+          [targetAccess.org, targetAccess.environment],
+        ).catch(() => []),
+        dbAll(
+          "SELECT id, data FROM ac_records WHERE org_id=? AND environment=? AND kind='invoices' ORDER BY created_at DESC LIMIT 4",
+          [targetAccess.org, targetAccess.environment],
+        ).catch(() => []),
+      ]);
+      return {
+        existing_customers: custs.map((c: any) => {
+          try {
+            return { id: c.id, name: JSON.parse(c.data).name };
+          } catch {
+            return { id: c.id, name: 'Customer' };
+          }
+        }),
+        existing_invoices: invs.map((i: any) => {
+          try {
+            const d = JSON.parse(i.data);
+            return { id: i.id, reference: d.reference, customer_name: d.customer_name, status: d.status, total_minor: d.total_minor };
+          } catch {
+            return { id: i.id, reference: 'INV', status: 'draft', total_minor: 0 };
+          }
+        }),
+      };
+    }
+  } catch {
+    // Non-blocking context enrichment for sandbox clone UI
+  }
+  return {};
 }
 
 export interface ToolExecutionOutput {
@@ -343,36 +421,49 @@ export async function executeAgentTool(
 
   if (tool.id === 'analyze_business') {
     const snapshot = await financialSnapshot(targetAccess, { currency });
-    const [crmRows, projectRows, eventRows] = await Promise.all([
+    const [crmRows, workList, calList, customerRows] = await Promise.all([
       dbAll(
-        "SELECT kind, status FROM ac_crm_entries WHERE org_id=? AND environment=? AND status<>'archived'",
+        "SELECT id, kind, title, stage, status, amount_minor, currency FROM ac_crm_entries WHERE org_id=? AND environment=? AND status<>'archived'",
         [targetAccess.org, targetAccess.environment],
       ).catch(() => []),
+      workProjects(targetAccess).catch(() => ({ data: [] })),
+      calendarEvents(targetAccess).catch(() => ({ data: [] })),
       dbAll(
-        "SELECT id, status FROM ac_erp_objects WHERE org_id=? AND environment=? AND kind='work_project'",
-        [targetAccess.org, targetAccess.environment],
-      ).catch(() => []),
-      dbAll(
-        "SELECT id, status FROM ac_erp_objects WHERE org_id=? AND environment=? AND kind='calendar_event' AND status='active'",
+        "SELECT id FROM ac_records WHERE org_id=? AND environment=? AND kind='customers'",
         [targetAccess.org, targetAccess.environment],
       ).catch(() => []),
     ]);
 
+    const projectRows = workList.data || [];
+    const allTasks = projectRows.flatMap((p: any) => p.tasks || []);
+    const eventRows = calList.data || [];
     const openInvoices = snapshot.invoices.filter((i: any) => i.outstanding_minor > 0);
     const overdueInvoices = openInvoices.filter((i: any) => i.overdue_days > 0);
-    const summary = [
-      `Business Health Brief (${currency}, ${snapshot.period.from} to ${snapshot.period.to}):`,
-      `• Confirmed inflows: ${moneyFmt(snapshot.totals.confirmed_inflows_minor, currency)}`,
-      `• Recorded outflows: ${moneyFmt(snapshot.totals.recorded_outflows_minor, currency)}`,
-      `• Outstanding receivables: ${moneyFmt(snapshot.totals.outstanding_minor, currency)} (${overdueInvoices.length} overdue totalling ${moneyFmt(snapshot.totals.overdue_minor, currency)})`,
-      `• Active CRM items: ${crmRows.length} · Projects: ${projectRows.length} · Upcoming calendar events: ${eventRows.length}`,
-      overdueInvoices.length
-        ? `Recommended next action: Follow up on ${overdueInvoices.length} overdue invoice(s) or schedule a receivables review meeting.`
-        : 'Receivables are current. You can ask me to schedule a team review, set up a project, or run a 30-day cash-flow forecast.',
-    ].join('\n');
+
+    const pyIntel = await runPythonAgent<{
+      summary: string;
+      highlights?: string[];
+      recommended_actions?: { title: string; action_prompt: string }[];
+      metrics?: Record<string, unknown>;
+    }>({
+      op: 'analyze_operations',
+      workspace_kind: 'business',
+      currency,
+      prompt: String(params.prompt || ''),
+      totals: snapshot.totals,
+      period: snapshot.period,
+      invoices: snapshot.invoices,
+      expenses: snapshot.inputs.expenses || [],
+      obligations: snapshot.inputs.obligations || [],
+      crm_entries: crmRows,
+      projects: projectRows,
+      tasks: allTasks,
+      calendar_events: eventRows,
+      customers: customerRows,
+    });
 
     return {
-      summary,
+      summary: pyIntel.summary,
       destination: dest('Intelligence'),
       data: {
         currency,
@@ -384,6 +475,8 @@ export async function executeAgentTool(
         project_count: projectRows.length,
         calendar_event_count: eventRows.length,
         quality: snapshot.quality,
+        recommended_actions: pyIntel.recommended_actions || [],
+        highlights: pyIntel.highlights || [],
       },
       steps: [
         {
@@ -400,10 +493,10 @@ export async function executeAgentTool(
         {
           step_index: 2,
           phase: 'navigate',
-          label: 'Open Financial Intelligence & Operations',
-          detail: `Reading ${currency} receivables, expenses, CRM, and project metrics.`,
+          label: 'Cross-Scan Invoices, CRM, Work & Calendar',
+          detail: `Analyzed ${snapshot.invoices.length} invoices, ${crmRows.length} CRM items, ${projectRows.length} projects, and ${eventRows.length} events in Python.`,
           target_tab: 'Intelligence',
-          target_element: 'Intelligence Metrics Grid',
+          target_element: 'Cross-Module Operational Diagnostic',
           cursor_hint: { x_pct: 48, y_pct: 38 },
           status: 'completed',
           duration_ms: 120,
@@ -411,10 +504,10 @@ export async function executeAgentTool(
         {
           step_index: 3,
           phase: 'verify',
-          label: 'Synthesize Executive Brief',
-          detail: `Verified ${openInvoices.length} open invoices and ${projectRows.length} projects with exact integer arithmetic.`,
+          label: 'Synthesize Operational Playbook',
+          detail: `Verified ${openInvoices.length} open receivables and ${allTasks.length} project tasks with exact integer arithmetic.`,
           target_tab: 'Intelligence',
-          target_element: 'Executive Summary Panel',
+          target_element: 'Executive Action Plan',
           cursor_hint: { x_pct: 64, y_pct: 68 },
           status: 'completed',
           duration_ms: 80,
@@ -482,6 +575,7 @@ export async function executeAgentTool(
     const defaults = futureIso(
       Number(params.hours_from_now || 24),
       Number(params.duration_minutes || 45),
+      params.preferred_hour !== undefined ? Number(params.preferred_hour) : undefined,
     );
     const start = typeof params.start === 'string' && !Number.isNaN(Date.parse(params.start))
       ? params.start
@@ -510,9 +604,18 @@ export async function executeAgentTool(
       'agent-cal-' + idempotencySeed,
     );
 
+    await notify(targetAccess, {
+      category: 'calendar_scheduled',
+      title: `Meeting Scheduled: ${title}`,
+      body: `${new Date(start).toLocaleString('en-KE', { timeZone: timezone })} (${timezone}) · ${location}`,
+      key: 'agent-cal-notify:' + created.id,
+      severity: 'informational',
+      capability: 'read',
+    }).catch(() => {});
+
     const calTab = targetKind === 'business' ? 'Apps' : 'Calendar';
     return {
-      summary: `Meeting scheduled in AfriCore Calendar: "${title}" on ${new Date(start).toLocaleString('en-KE', { timeZone: timezone })} (${timezone}) at ${location}.`,
+      summary: `Meeting scheduled in AfriCore Calendar: "${title}" on ${new Date(start).toLocaleString('en-KE', { timeZone: timezone })} (${timezone}) at ${location}. Workspace members now have visibility.`,
       record_id: created.id,
       destination:
         targetKind === 'business'
