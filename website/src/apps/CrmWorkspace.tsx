@@ -461,8 +461,9 @@ export function CrmWorkspace({
               qualify={(outcome, notes, reason) => write('/crm/entries/' + selectedEntry.id + '/qualify', { expected_version: selectedEntry.version, outcome, notes, reason }, 'POST').then((result) => setExtraSelected(result))}
             />
           )}{' '}
-          {!selectedEntry &&
-            (section === 'report' ? (
+          {!selectedEntry && (
+            <div className="o-app-sheet">
+              {section === 'report' ? (
               <CrmReport
                 api={api}
                 configuration={data.configuration}
@@ -1167,7 +1168,9 @@ export function CrmWorkspace({
                   </Form>
                 </details>
               </>
-            ))}
+              )}
+            </div>
+          )}
           {hasMore && ['pipeline', 'leads', 'followups'].includes(section) && (
             <button
               className="secondary-button"

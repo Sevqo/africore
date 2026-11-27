@@ -83,29 +83,27 @@ export function POSRegisterEditor({
   const toggle = (list: string[], id: string, checked: boolean) =>
     checked ? [...list.filter((value) => value !== id), id] : list.filter((value) => value !== id);
   return (
-    <section className="panel pos-register-editor">
-      <h3>{record ? 'Revise register policy' : 'Set up a register'}</h3>
-      <p>
-        Choose the shared walk-in contact, assign current workspace members, and authorize test
-        invoices and recorded cash. Currency and time zone become fixed after the first shift.
-      </p>
+    <div className="pos-register-editor">
       {error && (
         <p className="alert error" role="alert">
           {error}
         </p>
       )}
-      <Field label="Find the walk-in contact">
-        <input
-          value={customerQuery}
-          onChange={(e) => setCustomerQuery(e.target.value)}
-          maxLength={100}
-          placeholder="Search existing customers"
-        />
-      </Field>
-      <button type="button" className="quiet-button" onClick={() => navigate('Customers')}>
-        Open shared customers
-      </button>
+      <div className="pos-customer-lookup" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 10, marginBottom: 12 }}>
+        <Field label="Find the walk-in contact">
+          <input
+            value={customerQuery}
+            onChange={(e) => setCustomerQuery(e.target.value)}
+            maxLength={100}
+            placeholder="Search existing customers"
+          />
+        </Field>
+        <button type="button" className="secondary-button" onClick={() => navigate('Customers')}>
+          Open shared customers
+        </button>
+      </div>
       <Form
+        className="pos-register-form"
         disabled={disabled}
         submit={async (d) => {
           if (d.cash !== 'on' && d.electronic === 'disabled' && d.pending !== 'on')
@@ -374,6 +372,6 @@ export function POSRegisterEditor({
           {record ? 'Save reviewed policy' : 'Create reviewed register'}
         </button>
       </Form>
-    </section>
+    </div>
   );
 }

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { DonutChart } from '../charts/DonutChart';
 import { InteractiveChart } from '../charts/InteractiveChart';
-import { MetricStrip, MetricTile } from '../charts/MetricTile';
 import { vizPalette } from '../charts/viz';
 import { DataTable } from '../components/DataTable';
 import { Field, money, type API } from '../operations/UI';
@@ -42,7 +41,7 @@ export function FinanceDashboard({
   navigate,
   openRecord,
   section = 'dashboard',
-  writable = false,
+  writable: _writable = false,
   timezone = 'Africa/Nairobi',
 }: {
   openRecord?: (tab: string, id: string) => void;
@@ -91,7 +90,7 @@ export function FinanceDashboard({
   return (
     <div className="apps-workspace finance-workspace">
       <div className="finance-toolbar" aria-label="Finance report controls">
-        <Field label="Reporting currency">
+        <Field label="Currency">
           <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
             {['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF'].map((value) => (
               <option key={value}>{value}</option>
@@ -99,14 +98,26 @@ export function FinanceDashboard({
           </select>
         </Field>
         <SegmentedControl
-          label="Reporting period"
+          label="Period"
           value={months}
           options={[1, 3, 6, 12].map((value) => ({ value, label: value + 'M' }))}
           onChange={setMonths}
         />
-        <button className="quiet-button" onClick={() => setRevision((v) => v + 1)}>
-          Refresh
-        </button>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginLeft: 'auto', alignItems: 'center' }}>
+          {[
+            ['Invoices', 'Invoices'],
+            ['Expenses', 'Expenses'],
+            ['Payments', 'Payments'],
+            ['Reconciliation', 'Reconciliation'],
+          ].map(([tab, label]) => (
+            <button type="button" className="secondary-button" key={tab} onClick={() => navigate(tab)}>
+              {label}
+            </button>
+          ))}
+          <button className="quiet-button" onClick={() => setRevision((v) => v + 1)}>
+            Refresh
+          </button>
+        </div>
       </div>
       {error && (
         <p className="alert error" role="alert">
@@ -116,59 +127,25 @@ export function FinanceDashboard({
       {!data && !error && <p role="status">Loading covered financial records…</p>}
       {data && (
         <>
-          <MetricStrip label="Financial summary">
+          <div className="o-kpi-row" aria-label="Financial summary">
             {[
-              [
-                'Confirmed collections',
-                data.totals.confirmed_inflows_minor,
-                data.definitions?.confirmed_inflows,
-                data.series.map((p: any) => Number(p.confirmed_inflows_minor || 0)),
-                vizPalette[0],
-              ],
-              [
-                'Recorded outflows',
-                data.totals.recorded_outflows_minor,
-                data.definitions?.recorded_outflows,
-                data.series.map((p: any) => Number(p.recorded_outflows_minor || 0)),
-                vizPalette[3],
-              ],
-              [
-                'Net movement',
-                data.totals.net_movement_minor,
-                data.definitions?.net_movement,
-                data.series.map(
-                  (p: any) =>
-                    Number(p.confirmed_inflows_minor || 0) - Number(p.recorded_outflows_minor || 0),
-                ),
-                vizPalette[2],
-              ],
-              [
-                'Receivables',
-                data.totals.outstanding_minor,
-                data.definitions?.receivables,
-                undefined,
-                vizPalette[1],
-              ],
-            ].map(([label, value, definition, spark, color]) => (
-              <MetricTile
-                key={String(label)}
-                label={String(label)}
-                value={money(Number(value), currency)}
-                definition={definition ? String(definition) : undefined}
-                spark={spark as number[] | undefined}
-                color={String(color)}
-                caption={`${data.period.from} — ${data.period.to} · ${currency}`}
-              />
+              ['Confirmed collections', data.totals.confirmed_inflows_minor, `${data.period.from} — ${data.period.to}`],
+              ['Recorded outflows', data.totals.recorded_outflows_minor, 'Recorded expenses'],
+              ['Net movement', data.totals.net_movement_minor, 'Collections minus outflows'],
+              ['Receivables', data.totals.outstanding_minor, 'Open customer balances'],
+            ].map(([label, value, sub]) => (
+              <div className="o-kpi-cell" key={String(label)}>
+                <span>{String(label)}</span>
+                <strong>{money(Number(value), currency)}</strong>
+                <small>{String(sub)}</small>
+              </div>
             ))}
-          </MetricStrip>
-          <div className="finance-app-main">
+          </div>
+          <div className="finance-app-main" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(280px, 1fr)', gap: 20, alignItems: 'start' }}>
             <section className="panel finance-trend-panel">
-              <div className="finance-panel-heading">
-                <div>
-                  <span className="eyebrow">CASH FLOW</span>
-                  <h2>Financial performance</h2>
-                </div>
-                <span className="finance-period-label">
+              <div className="finance-panel-heading" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                <h2 style={{ margin: 0, fontSize: 15 }}>Financial performance</h2>
+                <span className="finance-period-label" style={{ fontSize: 12, color: '#6b7280' }}>
                   {data.period.from} — {data.period.to}
                 </span>
               </div>
@@ -198,44 +175,9 @@ export function FinanceDashboard({
                 description={data.definitions.net_movement}
               />
             </section>
-            <section className="panel finance-quick-actions">
-              <div className="finance-panel-heading">
-                <div>
-                  <span className="eyebrow">WORKSPACE</span>
-                  <h2>Quick actions</h2>
-                </div>
-                <span className="dashboard-action-mark">
-                  <Icon name="bolt" />
-                </span>
-              </div>
-              {[
-                ['Invoices', 'Create or manage invoices'],
-                ['Expenses', 'Record an expense'],
-                ['Payments', 'Review payment requests'],
-                ['Reconciliation', 'Match payments'],
-              ].map(([tab, label]) => (
-                <button className="finance-action-row" key={tab} onClick={() => navigate(tab)}>
-                  <span>{writable ? label : 'View ' + tab.toLowerCase()}</span>
-                  <Icon name="right" />
-                </button>
-              ))}
-            </section>
-          </div>
-          <div className="finance-app-bottom">
-            <Breakdown
-              title="Receivables aging"
-              currency={currency}
-              rows={Object.entries(data.aging).map(([label, amount]) => ({
-                label: label.replaceAll('_', ' '),
-                amount: Number(amount),
-              }))}
-            />
-            <section className="panel finance-invoice-panel">
-              <div className="section-heading">
-                <div>
-                  <span className="eyebrow">ACCOUNTS RECEIVABLE</span>
-                  <h2>Recent invoices</h2>
-                </div>
+            <section className="panel finance-invoice-panel" style={{ borderLeft: '1px solid #eef2f7', paddingLeft: 18 }}>
+              <div className="section-heading" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <h2 style={{ margin: 0, fontSize: 15 }}>Recent invoices</h2>
                 <button className="quiet-button" onClick={() => navigate('Invoices')}>
                   All invoices <Icon name="right" />
                 </button>
@@ -271,8 +213,18 @@ export function FinanceDashboard({
                   ))}
                 </tbody>
               </DataTable>
-              {!invoices.length && <p>No invoices in this currency yet.</p>}
+              {!invoices.length && <p className="o-flat-note">No invoices in this currency yet.</p>}
             </section>
+          </div>
+          <div className="finance-app-bottom" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20, borderTop: '1px solid #eef2f7', paddingTop: 10 }}>
+            <Breakdown
+              title="Receivables aging"
+              currency={currency}
+              rows={Object.entries(data.aging).map(([label, amount]) => ({
+                label: label.replaceAll('_', ' '),
+                amount: Number(amount),
+              }))}
+            />
             <Breakdown
               title="Expense mix"
               currency={currency}
@@ -282,41 +234,24 @@ export function FinanceDashboard({
               }))}
             />
           </div>
-          <div className="finance-evidence-grid">
-            <section className="panel">
-              <h2>Recorded cash</h2>
-              {typeof data.totals.recorded_cash_receipts_minor === 'number' ? (
-                <>
-                  <p>
-                    Receipts {money(data.totals.recorded_cash_receipts_minor, currency)} · Returns{' '}
-                    {money(data.totals.recorded_cash_returns_minor, currency)} · Net{' '}
-                    {money(data.totals.recorded_cash_net_minor, currency)}
-                  </p>
-                  <small>{data.definitions.recorded_cash}</small>
-                </>
-              ) : (
-                <p>Recorded cash coverage is not available from this backend version.</p>
-              )}
-            </section>
-            <details className="panel">
-              <summary>Sources and accounting definitions</summary>
-              <p>{data.definitions.net_movement}</p>
-              <p>
-                Provider returns: {money(data.totals.returned_minor || 0, currency)} ·{' '}
-                {data.quality.history_days} observed history days ·{' '}
-                {data.quality.unreconciled_count} unresolved exceptions.
+          <details className="panel">
+            <summary style={{ cursor: 'pointer', fontSize: 12.5, fontWeight: 600, color: '#4b5563' }}>
+              Recorded cash &amp; accounting definitions
+            </summary>
+            {typeof data.totals.recorded_cash_receipts_minor === 'number' && (
+              <p className="o-flat-note">
+                Recorded cash: Receipts {money(data.totals.recorded_cash_receipts_minor, currency)} · Returns{' '}
+                {money(data.totals.recorded_cash_returns_minor, currency)} · Net{' '}
+                {money(data.totals.recorded_cash_net_minor, currency)}. {data.definitions.recorded_cash}
               </p>
-              <p>
-                Net movement is not profit or a bank balance. Expenses retain merchant-stated
-                assurance. Currencies remain separate. Test provider events remain simulations.
-                Receivable aging reflects covered allocations and credits.
-              </p>
-              <p>
-                {data.quality.unknown_provider_occurrence_dates || 0} provider events have
-                observation dates only.
-              </p>
-            </details>
-          </div>
+            )}
+            <p className="o-flat-note">{data.definitions.net_movement}</p>
+            <p className="o-flat-note">
+              Provider returns: {money(data.totals.returned_minor || 0, currency)} ·{' '}
+              {data.quality.history_days} observed history days ·{' '}
+              {data.quality.unreconciled_count} unresolved exceptions.
+            </p>
+          </details>
         </>
       )}
     </div>

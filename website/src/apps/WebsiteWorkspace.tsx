@@ -791,7 +791,7 @@ export function WebsiteWorkspace({
     };
   }, [selectedMediaIds, scope, api]);
   return (
-    <main className="phase3-workspace website-workspace">
+    <div className="phase3-workspace website-workspace o-app-sheet">
       <header className="phase3-toolbar">
         <div>
           <h2>{selected ? data?.title || 'Website Editor' : 'AfriCore Website Builder'}</h2>
@@ -816,7 +816,7 @@ export function WebsiteWorkspace({
               ))}
             </select>
           )}
-          <button className="secondary-button" onClick={() => setShowTemplates(true)}>
+          <button className={selected ? 'secondary-button' : 'button'} onClick={() => setShowTemplates(true)}>
             + New Page
           </button>
           <button
@@ -1851,9 +1851,6 @@ export function WebsiteWorkspace({
                 <option value="published">Published</option>
               </select>
             </Field>
-            <button className="button" onClick={() => setShowTemplates(true)}>
-              New
-            </button>
           </div>
           <div className="phase3-table-wrap">
             <table className="phase3-table">
@@ -1961,29 +1958,16 @@ export function WebsiteWorkspace({
               </div>
               <div className="website-media-grid">
                 {media.map((asset: any) => (
-                  <article className="website-media-card" key={asset.id}>
+                  <div className="website-media-card" key={asset.id}>
                     {mediaPreviews[asset.id] ? <img src={mediaPreviews[asset.id]} alt={asset.alt_text || asset.label} /> : <button className="secondary-button" onClick={() => void previewMedia(asset.id)}>Load preview</button>}
                     <strong>{asset.label}</strong><span>{asset.alt_text || 'Alternative text missing'}</span>
                     <span>{asset.status === 'active' ? 'Active public media' : 'Withdrawn'}</span>
                     {asset.status === 'active' && <button className="secondary-button" disabled={busy} onClick={() => void withdrawMedia(asset)}>Withdraw public media</button>}
-                  </article>
+                  </div>
                 ))}
               </div>
             </section>
-          ) : (
-            <div className="phase3-workspace-grid">
-              {['Menus', 'Theme', 'Media', 'Forms', 'SEO', 'Publication', 'Settings'].map((x) => (
-                <button
-                  className="panel website-section-link"
-                  key={x}
-                  onClick={() => choosePanel(x)}
-                >
-                  <h3>{x}</h3>
-                  <span>Open {x.toLowerCase()} settings</span>
-                </button>
-              ))}
-            </div>
-          )}
+          ) : null}
         </>
       )}
       {fullPreviewOpen && selected && (
@@ -2185,6 +2169,6 @@ export function WebsiteWorkspace({
           </section>
         </Overlay>
       )}
-    </main>
+    </div>
   );
 }

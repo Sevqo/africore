@@ -68,9 +68,10 @@ export function AppModuleMenuBar({
           {brandLabel}
         </button>
       )}
-      {menus.map((entry) => {
+      {menus.map((entry, idx) => {
         const hasChildren = !!entry.children && entry.children.length > 0;
         const isOpen = openMenu === entry.id;
+        const alignRight = entry.id === '__more_sections' || (idx >= menus.length - 1 && menus.length >= 5);
         if (!hasChildren) {
           return (
             <button
@@ -102,7 +103,7 @@ export function AppModuleMenuBar({
               </span>
             </button>
             {isOpen && (
-              <div className="ac-menubar-popover" role="menu">
+              <div className={`ac-menubar-popover${alignRight ? ' align-right' : ''}`} role="menu">
                 {entry.children!.map((child) => (
                   <button
                     type="button"

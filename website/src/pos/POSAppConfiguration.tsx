@@ -34,7 +34,7 @@ export function POSAppConfiguration({
   const customersReady = status('customers') === 'active';
   if (!manager)
     return (
-      <div className="pos-app-config">
+      <div className="pos-app-config o-app-sheet">
         <header className="pos-app-page-head">
           <div>
             <span className="eyebrow">Configuration</span>
@@ -48,7 +48,7 @@ export function POSAppConfiguration({
       </div>
     );
   return (
-    <div className="pos-app-config">
+    <div className="pos-app-config o-app-sheet">
       <header className="pos-app-page-head">
         <div>
           <span className="eyebrow">Configuration</span>

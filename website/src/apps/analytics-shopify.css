@@ -1,68 +1,68 @@
-/* Shopify Admin Analytics Workspace Redesign */
+/* AfriCore Flat Analytics Operational Sheet */
 .analytics-workspace.sh-analytics {
-  --sh-bg: #f1f2f4;
-  --sh-card: #ffffff;
-  --sh-border: #e3e3e3;
-  --sh-border-strong: #c9cccf;
-  --sh-ink: #1f1f1f;
-  --sh-muted: #616161;
-  --sh-accent: #303030;
-  --sh-blue: #3c8ceb;
-  --sh-radius: 12px;
-  --sh-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.06);
-  --analytics-ink: #1f1f1f;
-  --analytics-teal: #1f1f1f;
-  --analytics-line: #e3e3e3;
-  background: var(--sh-bg);
+  --sh-bg: #ffffff;
+  --sh-card: transparent;
+  --sh-border: #e5e7eb;
+  --sh-border-strong: #d1d5db;
+  --sh-ink: #111827;
+  --sh-muted: #6b7280;
+  --sh-accent: #166534;
+  --sh-blue: #166534;
+  --sh-radius: 6px;
+  --sh-shadow: none;
+  --analytics-ink: #111827;
+  --analytics-teal: #166534;
+  --analytics-line: #e5e7eb;
+  background: #ffffff;
   color: var(--sh-ink);
-  min-height: calc(100vh - 120px);
+  min-height: 0;
 }
 
-/* Sticky Shopify Analytics Top Controls Bar */
+/* Flat Analytics Top Controls Bar */
 .sh-analytics .analytics-toolbar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  min-height: 52px;
-  padding: 8px 20px;
-  background: #f7f7f7;
+  min-height: 36px;
+  padding: 0 0 10px;
+  background: transparent;
   border-bottom: 1px solid var(--sh-border);
-  position: sticky;
-  top: 0;
-  z-index: 6;
+  position: relative;
+  overflow: visible !important;
+  z-index: 20;
 }
 .sh-analytics .sh-pill-group {
   display: inline-flex;
   align-items: center;
   background: #ffffff;
-  border: 1px solid #d4d4d4;
-  border-radius: 8px;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  box-shadow: none;
   overflow: hidden;
-  height: 32px;
+  height: 30px;
 }
 .sh-analytics .sh-pill-group select {
   border: 0;
   background: transparent;
-  height: 30px;
-  min-height: 30px;
-  padding: 0 26px 0 10px;
-  font-size: 12.5px;
-  font-weight: 600;
+  height: 28px;
+  min-height: 28px;
+  padding: 0 24px 0 9px;
+  font-size: 12px;
+  font-weight: 550;
   color: var(--sh-ink);
   cursor: pointer;
 }
 .sh-analytics .sh-pill-step {
   border: 0 !important;
-  border-left: 1px solid #e6e6e6 !important;
+  border-left: 1px solid #e5e7eb !important;
   background: transparent !important;
-  width: 28px;
-  min-width: 28px !important;
-  height: 30px !important;
-  min-height: 30px !important;
+  width: 26px;
+  min-width: 26px !important;
+  height: 28px !important;
+  min-height: 28px !important;
   padding: 0 !important;
-  font-size: 15px !important;
+  font-size: 14px !important;
   color: var(--sh-muted) !important;
   display: inline-flex;
   align-items: center;
@@ -70,71 +70,77 @@
   cursor: pointer;
 }
 .sh-analytics .sh-pill-step:hover:not(:disabled) {
-  background: #f3f3f3 !important;
+  background: #f3f4f6 !important;
   color: var(--sh-ink) !important;
 }
 .sh-analytics .sh-pill-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 32px;
-  min-height: 32px !important;
-  padding: 0 11px !important;
-  border-radius: 8px !important;
-  border: 1px solid #d4d4d4 !important;
+  gap: 5px;
+  height: 30px;
+  min-height: 30px !important;
+  padding: 0 10px !important;
+  border-radius: 6px !important;
+  border: 1px solid #d1d5db !important;
   background: #ffffff !important;
-  color: var(--sh-ink) !important;
-  font-size: 12.5px !important;
+  color: #1f2937 !important;
+  font-size: 12px !important;
   font-weight: 550 !important;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+  box-shadow: none !important;
   cursor: pointer;
 }
 .sh-analytics .sh-pill-btn:hover:not(:disabled) {
-  background: #f6f6f7 !important;
+  background: #f9fafb !important;
 }
 .sh-analytics .sh-pill-btn[aria-pressed='true'] {
-  background: #eaf3ff !important;
-  border-color: #9bc4f7 !important;
-  color: #1353a3 !important;
+  background: #ecfdf5 !important;
+  border-color: #bbf7d0 !important;
+  color: #166534 !important;
 }
 .sh-analytics .sh-pill-btn--primary {
-  background: #303030 !important;
-  border-color: #1f1f1f !important;
+  background: #166534 !important;
+  border-color: #166534 !important;
   color: #ffffff !important;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.16);
+  box-shadow: none !important;
 }
 .sh-analytics .sh-pill-btn--primary:hover:not(:disabled) {
-  background: #1a1a1a !important;
+  background: #14532d !important;
 }
 
 .sh-analytics .analytics-search {
-  width: min(260px, 32vw);
-  min-width: 170px;
-  height: 32px;
-  border: 1px solid #d4d4d4;
-  border-radius: 8px;
+  width: min(230px, 30vw);
+  min-width: 150px;
+  height: 30px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
   background: #ffffff;
-  padding: 0 8px 0 10px;
+  padding: 0 8px;
   gap: 6px;
   margin-left: auto;
+  display: inline-flex;
+  align-items: center;
 }
 .sh-analytics .analytics-search > span {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--sh-muted);
 }
 .sh-analytics .analytics-search input {
   font-size: 12.5px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  width: 100%;
 }
 .sh-analytics .analytics-star {
   margin-left: 0;
-  width: 32px;
-  min-width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: 1px solid #d4d4d4;
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
   background: #ffffff;
-  font-size: 16px;
-  color: #e09b00;
+  font-size: 14px;
+  color: #d97706;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -146,120 +152,93 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  padding: 6px 20px;
-  background: #f7f7f7;
-  border-bottom: 1px solid var(--sh-border);
+  padding: 0 0 8px;
+  background: transparent;
+  border-bottom: 1px solid #eef2f7;
 }
 .sh-analytics .analytics-filter-chips span {
-  background: #ffffff;
-  border: 1px solid #dcdcdc;
-  border-radius: 6px;
-  padding: 3px 8px;
-  font-size: 11.5px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 5px;
+  padding: 2px 7px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--sh-muted);
 }
 .sh-analytics .analytics-filter-chips .sh-compare-chip {
-  border-style: dashed;
-  border-color: #9bc4f7;
-  background: #f4f9ff;
-  color: #1659b0;
+  border-color: #bbf7d0;
+  background: #ecfdf5;
+  color: #166534;
 }
 
 /* Filter Popover */
 .sh-analytics .analytics-filter-popover {
-  top: 46px;
-  left: 20px;
-  border-radius: 12px;
-  border: 1px solid var(--sh-border);
-  box-shadow:
-    0 12px 28px rgba(0, 0, 0, 0.14),
-    0 1px 3px rgba(0, 0, 0, 0.06);
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 300;
+  width: min(520px, 90vw);
+  padding: 14px;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.12);
 }
 
-/* Left Shopify Navigation Rail + Main Canvas */
+/* Full-width Main Canvas inside Flat Sheet (No Duplicate Left Sidebar!) */
 .sh-analytics .analytics-layout {
-  grid-template-columns: 204px minmax(0, 1fr);
+  display: block;
 }
 .sh-analytics .analytics-sidebar {
-  background: #ebebeb;
-  border-right: 1px solid #dfe1e4;
-  padding: 14px 10px;
-  gap: 2px;
-}
-.sh-analytics .analytics-sidebar h3 {
-  margin: 14px 10px 4px;
-  font-size: 10.5px;
-  font-weight: 650;
-  letter-spacing: 0.04em;
-  color: #6b7177;
-  text-transform: uppercase;
-}
-.sh-analytics .analytics-sidebar button {
-  min-height: 30px;
-  padding: 5px 10px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #303030;
-}
-.sh-analytics .analytics-sidebar button:hover {
-  background: rgba(0, 0, 0, 0.05);
-}
-.sh-analytics .analytics-sidebar button.selected {
-  background: #ffffff;
-  color: #1f1f1f;
-  font-weight: 650;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  display: none !important;
 }
 
 /* Main Content Area */
 .sh-analytics .analytics-main {
-  padding: 20px clamp(16px, 3vw, 36px) 48px;
-  max-width: 1440px;
+  padding: 4px 0 8px;
+  max-width: none;
 }
 .sh-analytics .analytics-dashboard-heading,
 .sh-analytics .analytics-page-heading {
-  margin: 0 0 16px;
+  margin: 0 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eef2f7;
 }
 .sh-analytics .analytics-dashboard-heading > div:first-child > p,
 .sh-analytics .analytics-page-heading > div:first-child > p {
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--sh-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin: 0 0 2px;
+  display: none;
 }
 .sh-analytics .analytics-dashboard-heading h1,
 .sh-analytics .analytics-page-heading h1 {
-  font-size: 21px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
   color: var(--sh-ink);
   margin: 0;
 }
 .sh-analytics .analytics-dashboard-actions select {
-  min-height: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: 1px solid #d4d4d4;
-  padding: 0 10px;
-  font-size: 12.5px;
-  font-weight: 600;
+  min-height: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  padding: 0 9px;
+  font-size: 12px;
+  font-weight: 550;
   background: #ffffff;
 }
 
-/* Crisp White Polaris Cards inside Analytics */
+/* Flat Hairline Sections inside Analytics (Zero Boxed Cards!) */
 .sh-analytics .panel,
 .sh-analytics .analytics-primary-chart,
 .sh-analytics .analytics-panel,
 .sh-analytics .analytics-widget,
 .sh-analytics .analytics-report-chart {
-  background: var(--sh-card);
-  border: 0;
-  border-radius: var(--sh-radius);
-  box-shadow: var(--sh-shadow);
+  background: transparent !important;
+  border: 0 !important;
+  border-top: 1px solid #eef2f7 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 12px 0 !important;
 }
 .sh-analytics .analytics-primary-chart {
   padding: 18px 20px 14px;

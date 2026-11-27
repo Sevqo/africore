@@ -814,27 +814,24 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
   function metricView() {
     if (!data) return null;
     const metrics = [
-      ['Confirmed inflows', data.confirmed_inflows_minor, 'payment'],
-      ['Receivables', data.outstanding_minor, 'document'],
-      ['Overdue', data.overdue_minor, 'document'],
-      ['Recorded outflows', data.recorded_outflows_minor, 'chart'],
+      ['Confirmed inflows', data.confirmed_inflows_minor],
+      ['Receivables', data.outstanding_minor],
+      ['Overdue', data.overdue_minor],
+      ['Recorded outflows', data.recorded_outflows_minor],
     ];
     return (
-      <div className="business-dashboard" aria-label="Business dashboard">
-        <div className="metric-grid business-metric-strip">
-          {metrics.map(([label, value, icon]) => (
-            <article key={label} className="panel business-metric">
-              <span className="business-metric-icon">
-                <Icon name={icon as IconName} />
-              </span>
-              <span className="business-metric-label">{label}</span>
+      <div className="business-dashboard o-app-sheet" aria-label="Business dashboard">
+        <div className="o-kpi-row">
+          {metrics.map(([label, value]) => (
+            <div key={String(label)} className="o-kpi-cell">
+              <span>{String(label)}</span>
               <strong>{money(Number(value), data.currency)}</strong>
               <small>
                 {environment === 'sandbox' && label === 'Confirmed inflows'
                   ? 'Test payment events'
                   : data.currency + ' · covered records'}
               </small>
-            </article>
+            </div>
           ))}
         </div>
         <div className="business-dashboard-main">

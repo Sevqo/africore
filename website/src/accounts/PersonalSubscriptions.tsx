@@ -220,28 +220,28 @@ export function PersonalSubscriptions({
   const visible = items.filter((i) => (filter === 'all' ? true : i.status === filter));
 
   return (
-    <div className="apps-workspace">
-      <div className="account-metrics">
-        <section>
+    <div className="apps-workspace o-app-sheet">
+      <div className="o-kpi-row">
+        <div className="o-kpi-cell">
           <span>Active subscriptions</span>
           <strong>{activeItems.length}</strong>
           <small>Tracked recurring plans</small>
-        </section>
-        <section>
+        </div>
+        <div className="o-kpi-cell">
           <span>Monthly run rate</span>
           <strong>{money(monthlyRunRateMinor, currency)}</strong>
           <small>{currency} · included in Forecasts</small>
-        </section>
-        <section>
+        </div>
+        <div className="o-kpi-cell">
           <span>Projected annual spend</span>
           <strong>{money(annualSpendMinor, currency)}</strong>
           <small>12-month estimate</small>
-        </section>
-        <section>
+        </div>
+        <div className="o-kpi-cell">
           <span>Due within 7 days</span>
           <strong>{dueSoonCount}</strong>
           <small>{dueNowItems.length > 0 ? `${dueNowItems.length} due now` : 'Upcoming renewals'}</small>
-        </section>
+        </div>
       </div>
 
       {dueNowItems.length > 0 && writable && (

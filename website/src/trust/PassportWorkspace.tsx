@@ -399,25 +399,13 @@ export function PassportWorkspace({
       </section>
     );
   return (
-    <div className="passport-workspace">
+    <div className={holderOnly ? 'passport-workspace o-app-sheet' : 'passport-workspace'}>
       {holderOnly && (
         <>
           <header className="business-id-record-toolbar">
             <div className="business-id-record-title">
               <span><button type="button" onClick={() => selectBusinessTab('Overview')}>Business ID</button> /</span>
               <strong>{p?.display_name || 'New Business Passport'}</strong>
-            </div>
-            <div className="business-id-record-actions">
-              {p ? (
-                <>
-                  <button type="button" className="secondary-button" onClick={() => selectBusinessTab('Business Profile')}>Edit profile</button>
-                  <button type="button" className="secondary-button" onClick={() => selectBusinessTab('Business Passport')}>View Passport</button>
-                </>
-              ) : (
-                <button type="button" className="secondary-button" onClick={() => selectBusinessTab('Business Profile')}>New Passport</button>
-              )}
-              {p && <Provenance label={p.verification_status || 'not_submitted'} />}
-              <button type="button" aria-label="Refresh Business ID records" onClick={() => void load()}>↻</button>
             </div>
             {p && (
               <div className="business-id-smart-buttons" aria-label="Related Business ID records">
@@ -434,12 +422,19 @@ export function PassportWorkspace({
                 ))}
               </div>
             )}
+            <div className="business-id-record-actions">
+              {p ? (
+                <>
+                  <button type="button" className="secondary-button" onClick={() => selectBusinessTab('Business Profile')}>Edit profile</button>
+                  <button type="button" className="secondary-button" onClick={() => selectBusinessTab('Business Passport')}>View Passport</button>
+                </>
+              ) : (
+                <button type="button" className="secondary-button" onClick={() => selectBusinessTab('Business Profile')}>New Passport</button>
+              )}
+              {p && <Provenance label={p.verification_status || 'not_submitted'} />}
+              <button type="button" className="quiet-button" aria-label="Refresh Business ID records" onClick={() => void load()}>↻</button>
+            </div>
           </header>
-          <nav className="business-id-tabs" aria-label="Business ID sections">
-            {businessTabs.map(([label]) => (
-              <button type="button" key={label} aria-current={tab === label || (label === 'Verification' && tab === 'Business Identity') || (label === 'Evidence' && tab === 'Trust Evidence') || (label === 'Relationships' && tab === 'Business Network') || (label === 'History' && tab === 'Activity History') || (label === 'Settings' && tab === 'Privacy & Security') ? 'page' : undefined} onClick={() => selectBusinessTab(label)}>{label}</button>
-            ))}
-          </nav>
         </>
       )}
       {isDemo() && (

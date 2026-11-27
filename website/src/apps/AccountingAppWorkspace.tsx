@@ -262,15 +262,17 @@ export function AccountingAppWorkspace({
       {!configuration && !error && <p role="status">Loading authorized accounting records…</p>}
 
       {configuration && !ready && (
-        <AccountingConfiguration
-          configuration={configuration}
-          api={api}
-          manager={manager}
-          onSaved={() => refresh('Accounting start reviewed.')}
-        />
+        <div className="o-app-sheet">
+          <AccountingConfiguration
+            configuration={configuration}
+            api={api}
+            manager={manager}
+            onSaved={() => refresh('Accounting start reviewed.')}
+          />
+        </div>
       )}
       {configuration && ready && (
-        <>
+        <div className="o-app-sheet">
           {!configuration.writable && (
             <p role="status" className="alert">
               Accounting is inactive. Authorized history and reports remain available; new drafts
@@ -587,7 +589,7 @@ export function AccountingAppWorkspace({
               onClose={() => setEditor(null)}
             />
           )}
-        </>
+        </div>
       )}
     </div>
   );
@@ -604,121 +606,117 @@ function Dashboard({ counts, journals, entries, invoices, bills, go }: any) {
   });
   return (
     <>
-      <div className="acc-journal-grid">
-        {cards.map((card: any) => (
-          <article className="acc-journal-card" key={card.id}>
-            <header>
-              <span className="acc-journal-mark" data-type={card.type} />
-              <h2>{journalLabel(card.type)}</h2>
-              <span className="acc-code">{card.code}</span>
-            </header>
-            <div className="acc-journal-body">
-              <button
-                className="acc-primary"
-                onClick={() =>
-                  card.type === 'sales'
-                    ? go('invoices')
-                    : card.type === 'purchase'
-                      ? go('bills')
-                      : go('entries')
-                }
-              >
-                {card.type === 'sales'
-                  ? 'Invoices'
-                  : card.type === 'purchase'
-                    ? 'Bills'
-                    : 'Journal entries'}
-              </button>
-              <dl>
-                <dt>Draft entries</dt>
-                <dd>{card.draft}</dd>
-                <dt>Posted entries</dt>
-                <dd>{card.posted}</dd>
-              </dl>
-            </div>
-            <footer>
-              <button onClick={() => go('entries')}>View journal</button>
-              <span>{card.active ? 'Active' : 'Archived'}</span>
-            </footer>
-          </article>
-        ))}
-        {!cards.length && (
-          <article className="acc-journal-card empty">
-            <h2>No journals configured</h2>
-            <p>Accounting setup creates the general, sales, purchase and cash journals.</p>
-            <button className="acc-secondary" onClick={() => go('journals')}>
-              Configure journals
-            </button>
-          </article>
-        )}
-      </div>
-      <div className="acc-dashboard-split">
-        <section className="acc-panel">
-          <header>
-            <h2>Customers</h2>
-            <span>{counts.unpaidInvoices} unpaid</span>
-          </header>
-          <div className="acc-mini-metrics">
-            <div>
-              <strong>{counts.draftInvoices}</strong>
-              <span>To validate</span>
-            </div>
-            <div>
-              <strong>{counts.overdueInvoices}</strong>
-              <span>Late</span>
-            </div>
-            <div>
-              <strong>{invoices.filter((i: any) => invoiceOutstanding(i) > 0).length}</strong>
-              <span>Open on page</span>
-            </div>
-          </div>
-          <button className="acc-link" onClick={() => go('invoices')}>
-            Open customer invoices
+      <header className="o-flat-cp">
+        <div>
+          <h2>Accounting Overview</h2>
+          <span className="o-flat-note">
+            Authoritative journals, customer receivables, vendor payables, and period balances.
+          </span>
+        </div>
+        <div className="form-actions">
+          <button className="secondary-button" onClick={() => go('invoices')}>
+            Customer invoices
           </button>
-        </section>
-        <section className="acc-panel">
-          <header>
-            <h2>Vendors</h2>
-            <span>{bills.filter((b: any) => billStatus(b) === 'approved').length} payable</span>
-          </header>
-          <div className="acc-mini-metrics">
-            <div>
-              <strong>{bills.filter((b: any) => billStatus(b) === 'draft').length}</strong>
-              <span>To validate</span>
-            </div>
-            <div>
-              <strong>{bills.filter((b: any) => billStatus(b) === 'approved').length}</strong>
-              <span>Open on page</span>
-            </div>
-          </div>
-          <button className="acc-link" onClick={() => go('bills')}>
-            Open vendor bills
+          <button className="secondary-button" onClick={() => go('bills')}>
+            Vendor bills
           </button>
-        </section>
-        <section className="acc-panel">
-          <header>
-            <h2>Accounting</h2>
-            <span>{counts.openPeriods} open periods</span>
-          </header>
-          <div className="acc-mini-metrics">
-            <div>
-              <strong>{counts.draftEntries}</strong>
-              <span>Draft entries</span>
-            </div>
-            <div>
-              <strong>{counts.postedEntries}</strong>
-              <span>Posted on page</span>
-            </div>
-          </div>
-          <button className="acc-link" onClick={() => go('entries')}>
-            Open journal entries
+          <button className="button" onClick={() => go('entries')}>
+            Journal entries
           </button>
-        </section>
+        </div>
+      </header>
+      <div className="o-kpi-row" aria-label="Accounting summary">
+        <div className="o-kpi-cell">
+          <span>Unpaid invoices</span>
+          <strong>{counts.unpaidInvoices}</strong>
+          <small>{counts.draftInvoices} draft · {counts.overdueInvoices} overdue</small>
+        </div>
+        <div className="o-kpi-cell">
+          <span>Open receivables</span>
+          <strong>{invoices.filter((i: any) => invoiceOutstanding(i) > 0).length}</strong>
+          <small>Loaded on page</small>
+        </div>
+        <div className="o-kpi-cell">
+          <span>Payable bills</span>
+          <strong>{bills.filter((b: any) => billStatus(b) === 'approved').length}</strong>
+          <small>{bills.filter((b: any) => billStatus(b) === 'draft').length} draft to validate</small>
+        </div>
+        <div className="o-kpi-cell">
+          <span>Open periods</span>
+          <strong>{counts.openPeriods}</strong>
+          <small>Fiscal posting windows</small>
+        </div>
+        <div className="o-kpi-cell">
+          <span>Journal entries</span>
+          <strong>{counts.postedEntries}</strong>
+          <small>{counts.draftEntries} draft entries</small>
+        </div>
       </div>
       <section className="acc-panel">
-        <header>
-          <h2>Recent journal entries</h2>
-          <button className="acc-secondary" onClick={() => go('entries')}>
+        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <h3 style={{ margin: 0, fontSize: 14.5 }}>Active journals</h3>
+          <button className="quiet-button" onClick={() => go('journals')}>
+            Configure journals
+          </button>
+        </header>
+        {cards.length ? (
+          <DataTable>
+            <thead>
+              <tr>
+                <th>Journal</th>
+                <th>Code</th>
+                <th>Type</th>
+                <th className="num">Draft entries</th>
+                <th className="num">Posted entries</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cards.map((card: any) => (
+                <tr key={card.id}>
+                  <td>
+                    <strong>{card.name || journalLabel(card.type)}</strong>
+                  </td>
+                  <td>{card.code}</td>
+                  <td>{journalLabel(card.type)}</td>
+                  <td className="num">{card.draft}</td>
+                  <td className="num">{card.posted}</td>
+                  <td>
+                    <span className="badge">{card.active ? 'Active' : 'Archived'}</span>
+                  </td>
+                  <td>
+                    <button
+                      className="secondary-button"
+                      onClick={() =>
+                        card.type === 'sales'
+                          ? go('invoices')
+                          : card.type === 'purchase'
+                            ? go('bills')
+                            : go('entries')
+                      }
+                    >
+                      {card.type === 'sales'
+                        ? 'Invoices'
+                        : card.type === 'purchase'
+                          ? 'Bills'
+                          : 'Entries'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </DataTable>
+        ) : (
+          <p className="o-flat-note">
+            No journals configured. Accounting setup creates the general, sales, purchase and cash journals.
+          </p>
+        )}
+      </section>
+      <section className="acc-panel">
+        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <h3 style={{ margin: 0, fontSize: 14.5 }}>Recent journal entries</h3>
+          <button className="secondary-button" onClick={() => go('entries')}>
             All entries
           </button>
         </header>
@@ -754,7 +752,7 @@ function Dashboard({ counts, journals, entries, invoices, bills, go }: any) {
           </tbody>
         </DataTable>
         {!recent.length && (
-          <p>No journal entries yet. Create accounts and an open period before posting.</p>
+          <p className="o-flat-note">No journal entries yet. Create accounts and an open period before posting.</p>
         )}
       </section>
     </>

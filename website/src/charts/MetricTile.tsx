@@ -57,7 +57,7 @@ export function MetricTile({
     </>
   );
   return (
-    <article
+    <div
       className={`sv-root sv-metric ${onSelect ? 'sv-metric--interactive' : ''} ${selected ? 'sv-metric--selected' : ''} ${className}`}
     >
       {onSelect ? (
@@ -68,7 +68,7 @@ export function MetricTile({
         body
       )}
       {children}
-    </article>
+    </div>
   );
 }
 

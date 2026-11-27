@@ -58,6 +58,7 @@ export function DocumentsWorkspace({
   api: provided,
   scope,
   section = 'all',
+  embedded = false,
 }: {
   api: API;
   scope: string;
@@ -107,7 +108,7 @@ export function DocumentsWorkspace({
     [previewError, setPreviewError] = useState(''),
     [requestCreating, setRequestCreating] = useState(false),
     [newMenu, setNewMenu] = useState(false),
-    [layout, setLayout] = useState<'grid' | 'list'>('grid'),
+    [layout, setLayout] = useState<'grid' | 'list'>('list'),
     [showFilters, setShowFilters] = useState(false),
     [showDetails, setShowDetails] = useState(false),
     [mobileFoldersOpen, setMobileFoldersOpen] = useState(false),
@@ -534,7 +535,7 @@ export function DocumentsWorkspace({
   }
 
   return (
-    <div className="apps-workspace documents-workspace">
+    <div className="apps-workspace documents-workspace o-app-sheet">
       <header className="documents-toolbar">
         <div className="documents-toolbar-title">
           <div className="documents-new-menu">
@@ -711,86 +712,96 @@ export function DocumentsWorkspace({
           {notice && <p role="status">{notice}</p>}
         </div>
       )}
-      <div className="documents-layout">
-        <aside className="documents-sidebar" aria-label="Document folders and workspaces">
-          <nav className="documents-sidebar-nav">
-            {views.slice(0, 6).map(([id, label, icon], index) => (
-              <button
-                key={index}
-                className={view === id && folderPath.length === 0 ? 'is-active' : ''}
-                aria-current={view === id && folderPath.length === 0 ? 'page' : undefined}
-                onClick={() => changeView(id)}
-              >
-                <span aria-hidden="true">{icon}</span>
-                {label}
-              </button>
-            ))}
-          </nav>
-          <div className="documents-sidebar-divider" />
-          <div className="documents-sidebar-heading">
-            <strong>Folders</strong>
-            <button
-              className="quiet-button documents-mobile-folder-toggle"
-              aria-expanded={mobileFoldersOpen}
-              onClick={() => setMobileFoldersOpen((open) => !open)}
-            >
-              {mobileFoldersOpen ? 'Hide folders' : 'Browse folders'}
-            </button>
-            <button
-              className="quiet-button"
-              disabled={!canCreateHere}
-              onClick={() => {
-                setCreateKind('folder');
-                setCreating(true);
-              }}
-            >
-              ＋
-            </button>
-          </div>
-          <div className={'documents-folder-tree' + (mobileFoldersOpen ? ' is-open' : '')}>
-            {sidebarError && (
-            <p role="alert" className="documents-sidebar-error">
-              {sidebarError}
-              <button className="quiet-button" onClick={() => setRevision((value) => value + 1)}>
-                Retry
-              </button>
-            </p>
+      <div className={'documents-layout' + (embedded && ['requests', 'reviews', 'settings'].includes(view) ? ' is-fullwidth' : '')}>
+        {(!embedded || !['requests', 'reviews', 'settings'].includes(view)) && (
+          <aside className="documents-sidebar" aria-label="Document folders and workspaces">
+            {!embedded && (
+              <>
+                <nav className="documents-sidebar-nav">
+                  {views.slice(0, 6).map(([id, label, icon], index) => (
+                    <button
+                      key={index}
+                      className={view === id && folderPath.length === 0 ? 'is-active' : ''}
+                      aria-current={view === id && folderPath.length === 0 ? 'page' : undefined}
+                      onClick={() => changeView(id)}
+                    >
+                      <span aria-hidden="true">{icon}</span>
+                      {label}
+                    </button>
+                  ))}
+                </nav>
+                <div className="documents-sidebar-divider" />
+              </>
             )}
-            {!sidebarError && sidebarFolders.map((folder) => renderFolderBranch(folder))}
-            {sidebarMore && (
+            <div className="documents-sidebar-heading">
+              <strong>Folders</strong>
               <button
-                className="quiet-button documents-sidebar-more"
-                onClick={() => setSidebarOffset((value) => value + 50)}
+                className="quiet-button documents-mobile-folder-toggle"
+                aria-expanded={mobileFoldersOpen}
+                onClick={() => setMobileFoldersOpen((open) => !open)}
               >
-                More folders
+                {mobileFoldersOpen ? 'Hide folders' : 'Browse folders'}
               </button>
+              <button
+                className="quiet-button"
+                disabled={!canCreateHere}
+                onClick={() => {
+                  setCreateKind('folder');
+                  setCreating(true);
+                }}
+              >
+                ＋
+              </button>
+            </div>
+            <div className={'documents-folder-tree' + (mobileFoldersOpen ? ' is-open' : '')}>
+              {sidebarError && (
+              <p role="alert" className="documents-sidebar-error">
+                {sidebarError}
+                <button className="quiet-button" onClick={() => setRevision((value) => value + 1)}>
+                  Retry
+                </button>
+              </p>
+              )}
+              {!sidebarError && sidebarFolders.map((folder) => renderFolderBranch(folder))}
+              {sidebarMore && (
+                <button
+                  className="quiet-button documents-sidebar-more"
+                  onClick={() => setSidebarOffset((value) => value + 50)}
+                >
+                  More folders
+                </button>
+              )}
+            </div>
+            {!embedded && (
+              <>
+                <div className="documents-sidebar-divider" />
+                <nav className="documents-sidebar-nav">
+                  {views.slice(6).map(([id, label, icon]) => (
+                    <button
+                      key={id}
+                      className={view === id ? 'is-active' : ''}
+                      aria-current={view === id ? 'page' : undefined}
+                      onClick={() => changeView(id)}
+                    >
+                      <span aria-hidden="true">{icon}</span>
+                      {label}
+                    </button>
+                  ))}
+                </nav>
+              </>
             )}
-          </div>
-          <div className="documents-sidebar-divider" />
-          <nav className="documents-sidebar-nav">
-            {views.slice(6).map(([id, label, icon]) => (
-              <button
-                key={id}
-                className={view === id ? 'is-active' : ''}
-                aria-current={view === id ? 'page' : undefined}
-                onClick={() => changeView(id)}
-              >
-                <span aria-hidden="true">{icon}</span>
-                {label}
-              </button>
-            ))}
-          </nav>
-          {memberError && (
-            <p className="documents-sidebar-error" role="status">
-              Member data unavailable{' '}
-              <button className="quiet-button" onClick={() => setMemberRetry((value) => value + 1)}>
-                Retry
-              </button>
-            </p>
-          )}
-        </aside>
+            {memberError && (
+              <p className="documents-sidebar-error" role="status">
+                Member data unavailable{' '}
+                <button className="quiet-button" onClick={() => setMemberRetry((value) => value + 1)}>
+                  Retry
+                </button>
+              </p>
+            )}
+          </aside>
+        )}
         {view === 'requests' ? (
-          <main className="documents-main documents-special-view">
+          <div className="documents-main documents-special-view">
             <DocumentRequests
               api={api}
               scope={scope}
@@ -808,18 +819,18 @@ export function DocumentsWorkspace({
                 setPreviewVersion(null);
               }}
             />
-          </main>
+          </div>
         ) : view === 'reviews' ? (
-          <main className="documents-main documents-special-view">
+          <div className="documents-main documents-special-view">
             <DocumentReviewQueue
               api={api}
               scope={scope}
               members={members}
               onOpen={openReviewVersion}
             />
-          </main>
+          </div>
         ) : view === 'settings' ? (
-          <main className="documents-main documents-settings">
+          <div className="documents-main documents-settings">
             <h2>Configuration</h2>
             <p>Private document custody, grants and current operational limits.</p>
             <div className="documents-settings-grid">
@@ -918,9 +929,9 @@ export function DocumentsWorkspace({
                 </section>
               </div>
             </div>
-          </main>
+          </div>
         ) : (
-          <main
+          <div
             className={
               'documents-main ' +
               (showDetails && detail ? 'has-details' : '') +
@@ -1052,10 +1063,10 @@ export function DocumentsWorkspace({
                 )}
               </div>
             )}
-            {layout === 'grid' && rows.length > 0 && (
+              {layout === 'grid' && rows.length > 0 && (
               <div className="documents-grid" role="list">
                 {rows.map((document: any) => (
-                  <article
+                  <div
                     key={document.id}
                     className={
                       'document-card ' + (chosen.includes(document.id) ? 'is-selected' : '')
@@ -1155,7 +1166,7 @@ export function DocumentsWorkspace({
                         </div>
                       )}
                     </div>
-                  </article>
+                  </div>
                 ))}
               </div>
             )}
@@ -1507,7 +1518,7 @@ export function DocumentsWorkspace({
                       <section className="documents-version-list">
                         <h3>Version history</h3>
                         {versions.data.map((version: any) => (
-                          <article key={version.id}>
+                          <div className="ac-record-row" key={version.id}>
                             <div>
                               <strong>{version.data.filename}</strong>
                               <p>
@@ -1529,7 +1540,7 @@ export function DocumentsWorkspace({
                             >
                               Download
                             </button>
-                          </article>
+                          </div>
                         ))}
                         <div className="form-actions">
                           <button
@@ -1567,7 +1578,7 @@ export function DocumentsWorkspace({
                 )}
               </aside>
             )}
-          </main>
+          </div>
         )}
       </div>
       {creating && (

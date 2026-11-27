@@ -6,7 +6,6 @@ import { WorkspaceSkeleton } from '../components/Skeleton';
 import { isDemo } from '../demo/transport';
 import { peekQuery } from '../lib/query-cache';
 import { Field, money, type API } from '../operations/UI';
-import { commerceMerchantSections } from './merchant-sections';
 
 const navigationEvent = 'africore:app-navigation';
 type Props = {
@@ -457,7 +456,7 @@ export function CommerceMerchantWorkspace({
     );
   if (!store)
     return (
-      <div className="commerce-merchant">
+      <div className="commerce-merchant o-app-sheet">
         <section className="panel">
           <div className="section-heading">
             <h2>Set up your first store</h2>
@@ -575,18 +574,18 @@ export function CommerceMerchantWorkspace({
   }, 0);
 
   return (
-    <div className="commerce-merchant">
-      <div className="commerce-merchant-context">
+    <div className="commerce-merchant o-app-sheet">
+      <div className="commerce-merchant-context o-flat-cp">
         <div>
-          <span className="eyebrow">Merchant app · {store.environment}</span>
-          <h2>{settings?.name}</h2>
-          <p>
+          <h2 style={{ margin: 0, fontSize: 16 }}>{settings?.name}</h2>
+          <p style={{ margin: '2px 0 0', fontSize: 12 }}>
             {published ? 'Published storefront' : 'Draft storefront'} · /{settings?.slug} ·{' '}
             {currency}
           </p>
         </div>
-        <Field label="Active store">
+        <div className="form-actions" style={{ alignItems: 'center', gap: 8 }}>
           <select
+            aria-label="Active store"
             value={store.id}
             onChange={(e) => {
               setSelected(e.target.value);
@@ -600,8 +599,6 @@ export function CommerceMerchantWorkspace({
               </option>
             ))}
           </select>
-        </Field>
-        <div className="form-actions">
           <button
             type="button"
             className="button"
@@ -662,19 +659,6 @@ export function CommerceMerchantWorkspace({
         </form>
       )}
 
-      <nav className="commerce-merchant-tabs" aria-label="Merchant sections">
-        {commerceMerchantSections.map((item) => (
-          <button
-            key={item.section}
-            type="button"
-            aria-current={view === item.section ? 'page' : undefined}
-            onClick={() => go(item.section)}
-          >
-            {item.label}
-          </button>
-        ))}
-      </nav>
-
       {error && (
         <p className="alert error" role="alert">
           {error}
@@ -688,8 +672,8 @@ export function CommerceMerchantWorkspace({
 
       {view === 'dashboard' && (
         <div className="commerce-merchant-overview">
-          <div className="app-metric-grid commerce-merchant-metrics">
-            <article className="panel">
+          <div className="o-kpi-row">
+            <div className="o-kpi-cell">
               <span>Storefront</span>
               <strong>{published ? 'Published' : 'Draft'}</strong>
               <small>
@@ -697,22 +681,22 @@ export function CommerceMerchantWorkspace({
                   ? 'Snapshot version ' + store.data.publication.version
                   : 'Previewable in Draft'}
               </small>
-            </article>
-            <article className="panel">
+            </div>
+            <div className="o-kpi-cell">
               <span>Listings</span>
               <strong>{listings?.total ?? '—'}</strong>
               <small>{draftListings} draft on this page</small>
-            </article>
-            <article className="panel">
+            </div>
+            <div className="o-kpi-cell">
               <span>Loaded orders</span>
               <strong>{orders ? orderRows.length : '—'}</strong>
               <small>{orders?.has_more ? 'More orders available' : 'Latest authorized page'}</small>
-            </article>
-            <article className="panel">
+            </div>
+            <div className="o-kpi-cell">
               <span>Outstanding</span>
               <strong>{orders ? money(outstanding, currency) : '—'}</strong>
               <small>Recorded invoices, not external settlement</small>
-            </article>
+            </div>
           </div>
           <div className="commerce-merchant-grid">
             <section className="panel">

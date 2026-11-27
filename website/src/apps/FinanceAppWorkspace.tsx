@@ -14,16 +14,6 @@ import './finance-app.css';
 
 const currencies = ['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF'];
 const pageSize = 20;
-const sections = [
-  ['dashboard', 'Dashboard'],
-  ['Invoices', 'Invoices'],
-  ['Customers', 'Customers'],
-  ['Payments', 'Payments'],
-  ['Expenses', 'Expenses'],
-  ['Reconciliation', 'Reconciliation'],
-  ['receivables', 'Receivables'],
-  ['Reports', 'Financial reports'],
-] as const;
 const todayIn = (timezone: string) =>
   new Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(new Date());
 
@@ -291,22 +281,11 @@ export function FinanceAppWorkspace({
   );
 
   return (
-    <div className="apps-workspace finance-app-workspace">
+    <div className="apps-workspace finance-app-workspace o-app-sheet">
       {section !== 'dashboard' && (
-        <nav className="finance-operation-nav" aria-label="Finance operations">
-          {sections.map(([id, label]) => (
-            <button
-              type="button"
-              key={id}
-              className={section === id ? 'active' : ''}
-              aria-current={section === id ? 'page' : undefined}
-              onClick={() => navigateSection(id)}
-            >
-              {label}
-            </button>
-          ))}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: -4 }}>
           <details className="finance-operation-menu" ref={operationsMenu}>
-            <summary>
+            <summary className="secondary-button">
               Operations <span aria-hidden="true">▾</span>
             </summary>
             <div className="finance-operation-menu-panel">
@@ -345,7 +324,7 @@ export function FinanceAppWorkspace({
               </div>
             </div>
           </details>
-        </nav>
+        </div>
       )}
       {notice && (
         <p className="alert finance-notice" role="status">

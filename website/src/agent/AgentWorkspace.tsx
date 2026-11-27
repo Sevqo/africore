@@ -325,15 +325,13 @@ export function AgentWorkspace({
   const routinePresets = ROUTINE_PRESETS[resolvedKind] || ROUTINE_PRESETS.business;
 
   return (
-    <section className="agent-studio" aria-label="AfriCore Autonomous Agent Studio">
+    <section className="agent-studio o-app-sheet" aria-label="AfriCore Autonomous Agent Studio">
       <header className="agent-studio-header">
         <div className="agent-studio-title">
-          <span className="eyebrow">PYTHON AUTONOMOUS AGENT · TOWNIE-INSPIRED</span>
           <h2>AfriCore Agent</h2>
           <p>
-            Executes real workspace operations—scheduling meetings, setting up projects, managing
-            CRM leads, preparing draft invoices, running analyses, and executing recurring routines
-            with owner guardrails and live Computer Use visibility.
+            Executes workspace operations—scheduling meetings, setting up projects, managing CRM
+            leads, preparing draft invoices, and running recurring routines with owner guardrails.
           </p>
         </div>
         <div className="agent-header-badges">

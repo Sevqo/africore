@@ -61,7 +61,7 @@ export function POSAppDashboard({
     onContinue(register, overviews[register.id], session);
   }
   return (
-    <div className="pos-app-dashboard">
+    <div className="pos-app-dashboard o-app-sheet">
       <header className="pos-app-page-head">
         <div>
           <span className="eyebrow">Point of Sale</span>

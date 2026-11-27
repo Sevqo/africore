@@ -33,28 +33,30 @@
 :is(.business-shell, .focused-account) .crm-section-nav,
 :is(.business-shell, .focused-account) .acc-module-nav {
   display: flex;
-  align-items: stretch;
-  gap: 2px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
   background: #ffffff !important;
   border-bottom: 1px solid #e5e7eb !important;
-  margin: -12px -24px 14px !important;
-  padding: 0 20px !important;
-  overflow-x: auto;
-  scrollbar-width: thin;
+  margin: -12px -18px 12px !important;
+  padding: 4px 16px !important;
+  overflow: visible !important;
+  position: relative;
+  z-index: 38;
 }
 
 :is(.business-shell, .focused-account) .app-section-tabs button,
 :is(.business-shell, .focused-account) .crm-section-nav button,
 :is(.business-shell, .focused-account) .acc-module-nav button {
   flex: 0 0 auto;
-  min-height: 42px;
-  padding: 8px 14px !important;
+  min-height: 30px;
+  padding: 5px 10px !important;
   border: 0 !important;
-  border-bottom: 2px solid transparent !important;
-  border-radius: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 6px !important;
   background: transparent !important;
-  color: #4b5563 !important;
-  font-size: 13px !important;
+  color: #374151 !important;
+  font-size: 12.5px !important;
   font-weight: 500 !important;
   box-shadow: none !important;
   cursor: pointer;
@@ -63,8 +65,8 @@
 :is(.business-shell, .focused-account) .app-section-tabs button:hover,
 :is(.business-shell, .focused-account) .crm-section-nav button:hover,
 :is(.business-shell, .focused-account) .acc-module-nav button:hover {
-  color: #111827 !important;
-  background: #f9fafb !important;
+  color: #166534 !important;
+  background: #ecfdf5 !important;
 }
 
 :is(.business-shell, .focused-account) .app-section-tabs button[aria-current='page'],
@@ -72,9 +74,11 @@
 :is(.business-shell, .focused-account) .acc-module-nav button.active,
 :is(.business-shell, .focused-account) .acc-module-nav button[aria-current='page'] {
   color: #166534 !important;
-  font-weight: 700 !important;
-  border-bottom-color: #166534 !important;
-  background: transparent !important;
+  font-weight: 600 !important;
+  border: 0 !important;
+  border-bottom: 0 !important;
+  background: #ecfdf5 !important;
+  box-shadow: none !important;
 }
 
 /* Clean More dropdown menu inside section tabs (no raw borders) */
@@ -729,24 +733,24 @@
  * Eliminates raw native browser 3D button borders across all 26 apps.
  * ========================================================================== */
 :where(.business-shell)
-  button:not(.sidebar *):not(.ac-app-menubar *):not(.sales-nav *):not(.sales-module-nav *):not(.proc-app-nav *):not(.acc-module-nav *):not(.inventory-module-nav *):not(.crm-section-nav *):not(.pos-app-module *):not(.app-section-tabs *):not(.button):not(.primary):not(.sales-primary):not(.sales-new):not(.ac-pill):not(.icon-button):not(.quiet-button):not(.text-button):not(.link-button) {
+  button:not(.sidebar *):not(.ac-app-menubar *):not(.sales-nav *):not(.sales-module-nav *):not(.proc-app-nav *):not(.acc-module-nav *):not(.inventory-module-nav *):not(.crm-section-nav *):not(.pos-app-module *):not(.app-section-tabs *):not(.finance-operation-nav *):not(.analytics-sidebar *):not(.agent-float-window *):not(.agent-studio *):not(.calendar-workspace *):not(.sales-link):not(.proc-table-link):not(.automation-table-link):not(.business-id-table-link):not(.inventory-link):not(.button):not(.primary):not(.sales-primary):not(.sales-new):not(.ac-pill):not(.ac-facet-chip):not(.icon-button):not(.quiet-button):not(.text-button):not(.link-button) {
   appearance: none;
   background: #ffffff;
   color: #111827;
   border: 1px solid #d1d5db;
-  border-radius: 7px;
-  padding: 6px 12px;
+  border-radius: 6px;
+  padding: 5px 10px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 500;
-  line-height: 1.35;
+  line-height: 1.3;
   cursor: pointer;
   box-shadow: none;
   transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
 :where(.business-shell)
-  button:not(.sidebar *):not(.ac-app-menubar *):not(.sales-nav *):not(.sales-module-nav *):not(.proc-app-nav *):not(.acc-module-nav *):not(.inventory-module-nav *):not(.crm-section-nav *):not(.pos-app-module *):not(.app-section-tabs *):not(.button):not(.primary):not(.sales-primary):not(.sales-new):not(.ac-pill):not(.icon-button):not(.quiet-button):not(.text-button):not(.link-button):hover:not(:disabled) {
+  button:not(.sidebar *):not(.ac-app-menubar *):not(.sales-nav *):not(.sales-module-nav *):not(.proc-app-nav *):not(.acc-module-nav *):not(.inventory-module-nav *):not(.crm-section-nav *):not(.pos-app-module *):not(.app-section-tabs *):not(.finance-operation-nav *):not(.analytics-sidebar *):not(.agent-float-window *):not(.agent-studio *):not(.calendar-workspace *):not(.sales-link):not(.proc-table-link):not(.automation-table-link):not(.business-id-table-link):not(.inventory-link):not(.button):not(.primary):not(.sales-primary):not(.sales-new):not(.ac-pill):not(.ac-facet-chip):not(.icon-button):not(.quiet-button):not(.text-button):not(.link-button):hover:not(:disabled) {
   background: #f9fafb;
   border-color: #9ca3af;
 }

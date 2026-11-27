@@ -213,7 +213,9 @@
 
 /* --------------------------------------------------------------------------
  * 2. Flush Edge-to-Edge White Sub-Module Bar Across ALL 26 Apps
- *    (Identical to Screenshot 1's `Calendar | My Calendar | Team Calendar...`)
+ *    (Identical to Screenshot 1's `Calendar | My Calendar | Team Calendar...`
+ *     - ZERO overflow clipping so `More ▾` and all menus open cleanly
+ *     - ZERO green underline/glow under active pills!)
  * -------------------------------------------------------------------------- */
 :is(.business-shell, .focused-account) :is(
     .ac-app-menubar,
@@ -224,7 +226,8 @@
     .acc-module-nav,
     .proc-app-nav,
     .inventory-module-nav,
-    .pos-app-module
+    .pos-app-module,
+    .finance-operation-nav
   ) {
   display: flex !important;
   align-items: center !important;
@@ -235,13 +238,171 @@
   border: 0 !important;
   border-bottom: 1px solid #e5e7eb !important;
   border-radius: 0 !important;
-  margin: -12px -22px 12px !important;
+  margin: -12px -18px 12px !important;
   padding: 4px 16px !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  position: relative !important;
+  z-index: 38 !important;
+}
+
+/* Ensure all module bar buttons use ONLY flat #ecfdf5 pill highlight (NO green underline/glow!) */
+:is(.business-shell, .focused-account) :is(
+    .ac-app-menubar,
+    .sales-nav,
+    .sales-module-nav,
+    .app-section-tabs,
+    .crm-section-nav,
+    .acc-module-nav,
+    .proc-app-nav,
+    .inventory-module-nav,
+    .pos-app-module,
+    .finance-operation-nav
+  ) :is(button:not(.sales-new):not(.button), .ac-menubar-pill, .ac-menubar-trigger) {
+  border: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  outline: none !important;
+  padding: 5px 10px !important;
+  min-height: 28px !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  color: #374151 !important;
+  background: transparent !important;
+  line-height: 1.3 !important;
+}
+
+:is(.business-shell, .focused-account) :is(
+    .ac-app-menubar,
+    .sales-nav,
+    .sales-module-nav,
+    .app-section-tabs,
+    .crm-section-nav,
+    .acc-module-nav,
+    .proc-app-nav,
+    .inventory-module-nav,
+    .pos-app-module,
+    .finance-operation-nav
+  ) :is(
+    button:not(.sales-new):not(.button):hover,
+    button.active:not(.sales-new):not(.button),
+    button.is-active:not(.sales-new):not(.button),
+    button[aria-current='page']:not(.sales-new):not(.button),
+    .ac-menubar-pill:hover,
+    .ac-menubar-pill.active,
+    .ac-menubar-trigger:hover,
+    .ac-menubar-trigger.active
+  ) {
+  background: #ecfdf5 !important;
+  color: #166534 !important;
+  font-weight: 600 !important;
+  border: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 6px !important;
   box-shadow: none !important;
 }
 
-/* Hide redundant Accounting / App inner title blocks above module bar */
-.business-shell .acc-context {
+/* Unblock & elevate ALL dropdown popovers across Business, Personal & Developer */
+:is(.business-shell, .focused-account) .ac-menubar-dropdown {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+:is(.business-shell, .focused-account) .ac-menubar-popover {
+  position: absolute !important;
+  top: calc(100% + 4px) !important;
+  left: 0 !important;
+  min-width: 210px !important;
+  max-height: 70vh !important;
+  overflow-y: auto !important;
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 28px rgba(17, 24, 39, 0.12) !important;
+  padding: 5px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  z-index: 350 !important;
+}
+
+:is(.business-shell, .focused-account) .ac-menubar-popover.align-right {
+  left: auto !important;
+  right: 0 !important;
+}
+
+:is(.business-shell, .focused-account) .ac-menubar-popover > button {
+  width: 100% !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+  padding: 6px 10px !important;
+  min-height: 30px !important;
+  font-size: 12.5px !important;
+  border: 0 !important;
+  border-radius: 5px !important;
+  background: transparent !important;
+  color: #1f2937 !important;
+  box-shadow: none !important;
+}
+
+:is(.business-shell, .focused-account) .ac-menubar-popover > button:hover,
+:is(.business-shell, .focused-account) .ac-menubar-popover > button.active {
+  background: #ecfdf5 !important;
+  color: #166534 !important;
+  font-weight: 600 !important;
+}
+
+:is(.business-shell, .focused-account) .ac-filter-popover {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+:is(.business-shell, .focused-account) .ac-filter-popover-panel {
+  z-index: 320 !important;
+}
+
+/* Fix `.ac-faceted-search` & `.ac-facet-chip` so chips stay single-line horizontal pills */
+:is(.business-shell, .focused-account) .ac-faceted-search {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 6px !important;
+  min-height: 32px !important;
+  height: 32px !important;
+  padding: 2px 8px !important;
+  border-radius: 6px !important;
+  border: 1px solid #d1d5db !important;
+  background: #ffffff !important;
+}
+
+:is(.business-shell, .focused-account) .ac-facet-chip {
+  flex: 0 0 auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  height: 22px !important;
+  min-height: 22px !important;
+  padding: 0 7px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  border-radius: 4px !important;
+  white-space: nowrap !important;
+  background: #ecfdf5 !important;
+  color: #166534 !important;
+  border: 1px solid #bbf7d0 !important;
+}
+
+:is(.business-shell, .focused-account) .ac-facet-chip.is-neutral {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+/* Hide redundant Accounting / Inventory inner title blocks above module bar */
+.business-shell .acc-context,
+.business-shell .inventory-app-head {
   display: none !important;
 }
 
@@ -481,15 +642,42 @@
 }
 
 .o-cp-inline-select {
-  min-height: 30px !important;
-  height: 30px !important;
-  padding: 3px 24px 3px 9px !important;
+  min-height: 31px !important;
+  height: 31px !important;
+  padding: 0 28px 0 10px !important;
   font-size: 12px !important;
   border-radius: 6px !important;
   border: 1px solid #d1d5db !important;
   background-color: #f9fafb !important;
   color: #374151 !important;
   width: auto !important;
+  min-width: max-content !important;
+  white-space: nowrap !important;
+  line-height: 29px !important;
+}
+
+/* Global Search Input Inner Reset — Prevents Double Borders Inside Search Wrappers! */
+:is(.business-shell, .focused-account)
+  :is(
+    .pos-app-search,
+    .proc-search,
+    .analytics-search,
+    .documents-toolbar-search label,
+    .ac-faceted-search,
+    .notification-search
+  )
+  input {
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  padding: 0 4px !important;
+  border-radius: 0 !important;
+  flex: 1 1 auto !important;
+  width: auto !important;
+  min-width: 60px !important;
 }
 
 :is(.business-shell, .focused-account, .account-entry) .field input,
@@ -592,6 +780,553 @@
   padding: 7px 10px !important;
   font-size: 12.5px !important;
   border-bottom: 1px solid #f1f5f9 !important;
+}
+
+/* --------------------------------------------------------------------------
+ * 5. Unified `.o-app-sheet` Continuous Flat Operational Sheet (Like Calendar!)
+ *    Eliminates multi-card clutter across POS, Procurement, People, Business ID,
+ *    CRM, Accounting, Finance, Inventory, Sales, Analytics, Automations,
+ *    all 10 Extended Apps, Intelligence, and Agent Studio!
+ * -------------------------------------------------------------------------- */
+:is(.business-shell, .focused-account) .o-app-sheet {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  padding: 12px 16px 18px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+/* Inside `.o-app-sheet`, control panels, KPI strips, charts, and sub-panels
+   render as crisp flat hairline sections with ZERO boxed borders! */
+:is(.business-shell, .focused-account) .o-app-sheet :is(
+    .ac-odoo-cp,
+    .ac-control-panel,
+    .sales-title-row,
+    .pos-app-toolbar,
+    .automation-app-toolbar,
+    .analytics-toolbar
+  ) {
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  border-radius: 0 !important;
+  padding: 2px 0 10px !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+:is(.business-shell, .focused-account) .o-app-sheet :is(
+    .ac-kpi-strip,
+    .sales-pulse,
+    .business-metric-strip,
+    .app-metric-grid,
+    .finance-app-metrics
+  ) {
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  border-radius: 0 !important;
+  padding: 4px 0 12px !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+:is(.business-shell, .focused-account) .o-app-sheet :is(
+    .panel:not([role='dialog']),
+    .acc-panel,
+    .proc-list-panel,
+    .proc-empty,
+    .automation-panel,
+    .inventory-panel,
+    .interactive-chart,
+    .shopify-bar-chart
+  ) {
+  background: transparent !important;
+  border: 0 !important;
+  border-top: 1px solid #eef2f7 !important;
+  border-radius: 0 !important;
+  padding: 12px 0 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+}
+
+/* First panel directly after header/KPI doesn't double-stack top border */
+:is(.business-shell, .focused-account) .o-app-sheet > :is(
+    .panel:not([role='dialog']),
+    .acc-panel,
+    .proc-list-panel,
+    .automation-panel,
+    .inventory-panel,
+    .shopify-bar-chart
+  ) {
+  border-top: 0 !important;
+  padding-top: 2px !important;
+}
+
+/* Split layout inside `.o-app-sheet`: clean vertical hairline instead of two boxed cards */
+:is(.business-shell, .focused-account) .o-app-sheet .ac-split-grid {
+  gap: 20px !important;
+  padding-top: 8px !important;
+  border-top: 1px solid #e5e7eb !important;
+}
+
+:is(.business-shell, .focused-account) .o-app-sheet .ac-split-grid > :last-child {
+  border-top: 0 !important;
+  border-left: 1px solid #e5e7eb !important;
+  padding: 0 0 0 20px !important;
+}
+
+@media (max-width: 900px) {
+  :is(.business-shell, .focused-account) .o-app-sheet .ac-split-grid > :last-child {
+    border-left: 0 !important;
+    border-top: 1px solid #e5e7eb !important;
+    padding: 14px 0 0 !important;
+  }
+}
+
+/* Clean Table Record Links (QUO-..., PO-..., etc.) — never white bordered card buttons! */
+:is(.business-shell, .focused-account) :is(
+    .sales-link,
+    .proc-table-link,
+    .automation-table-link,
+    .business-id-table-link,
+    .inventory-link
+  ) {
+  appearance: none !important;
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  color: #166534 !important;
+  font-weight: 600 !important;
+  font-size: 12.5px !important;
+  text-align: left !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+}
+
+:is(.business-shell, .focused-account) :is(
+    .sales-link,
+    .proc-table-link,
+    .automation-table-link,
+    .business-id-table-link,
+    .inventory-link
+  ):hover {
+  text-decoration: underline !important;
+  color: #14532d !important;
+}
+
+/* Flat Inline Metric Strip Helper (`.o-kpi-row`) + Procurement & People Flat Strips */
+.business-shell .proc-page-heading {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 8px 14px !important;
+  padding: 0 0 10px !important;
+  margin: 0 !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+.business-shell .proc-page-heading .proc-eyebrow {
+  display: none !important;
+}
+
+.business-shell .proc-page-heading h1 {
+  font-size: 16px !important;
+  font-weight: 650 !important;
+  margin: 0 !important;
+}
+
+.business-shell .proc-page-heading p {
+  font-size: 12px !important;
+  color: #6b7280 !important;
+  margin: 2px 0 0 !important;
+}
+
+.business-shell .proc-activity-strip {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)) !important;
+  gap: 0 !important;
+  padding: 2px 0 10px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.business-shell .proc-activity-strip > .proc-activity,
+.business-shell .proc-activity-strip > .proc-performance {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 2px !important;
+  min-height: 0 !important;
+  padding: 4px 12px 4px 4px !important;
+  margin-right: 12px !important;
+  border: 0 !important;
+  border-right: 1px solid #eef2f7 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  text-align: left !important;
+}
+
+.business-shell .proc-activity-strip > :last-child {
+  border-right: 0 !important;
+  margin-right: 0 !important;
+}
+
+.business-shell .proc-activity-strip > .proc-activity:hover {
+  background: #f9fafb !important;
+}
+
+.business-shell .proc-activity > span {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  color: #111827 !important;
+}
+
+.business-shell .proc-activity > strong {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+}
+
+.business-shell .proc-activity > small,
+.business-shell .proc-performance > small {
+  font-size: 11px !important;
+  color: #6b7280 !important;
+  line-height: 1.3 !important;
+}
+
+.business-shell .proc-toolbar {
+  padding: 4px 0 10px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid #eef2f7 !important;
+  background: transparent !important;
+}
+
+/* People App Flat Overrides (ZERO boxed cards inside `.people-workspace`) */
+.business-shell .people-workspace .people-metric-row {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)) !important;
+  gap: 8px 0 !important;
+  padding: 6px 0 12px !important;
+  margin: 0 0 10px !important;
+  border: 0 !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  background: transparent !important;
+}
+
+.business-shell .people-workspace .people-metric-row > article,
+.business-shell .people-workspace .people-metric-row > div {
+  border: 0 !important;
+  border-right: 1px solid #eef2f7 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 2px 12px 2px 0 !important;
+  margin-right: 12px !important;
+  box-shadow: none !important;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.business-shell .people-workspace .people-metric-row > div > strong {
+  font-size: 17px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.2;
+}
+
+.business-shell .people-workspace .people-metric-row > div > span {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.business-shell .people-workspace .people-employee-card,
+.business-shell .people-workspace .people-expansion-card,
+.business-shell .people-workspace .people-calendar-row,
+.business-shell .people-workspace .people-lifecycle-case,
+.business-shell .people-workspace .app-price-review {
+  border: 0 !important;
+  border-bottom: 1px solid #eef2f7 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 8px 4px !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+}
+
+.business-shell .people-workspace .section-heading > form {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: flex-end !important;
+  gap: 8px !important;
+  border: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+.business-shell .people-workspace .people-expansion-grid {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+.o-flat-cp {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  padding: 2px 0 10px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.o-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 0;
+  padding: 2px 0 10px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.o-kpi-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 14px 2px 0;
+  margin-right: 14px;
+  border-right: 1px solid #f1f5f9;
+}
+
+.o-kpi-cell:last-child {
+  border-right: 0;
+  margin-right: 0;
+  padding-right: 0;
+}
+
+.o-kpi-cell > span {
+  font-size: 11px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.o-kpi-cell > strong {
+  font-size: 17px;
+  font-weight: 700;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+}
+
+.o-kpi-cell > small {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* Frameless Support / Generic Kanban Columns inside `.o-app-sheet` */
+.o-kanban-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0;
+  border-top: 1px solid #e5e7eb;
+}
+
+.o-kanban-col {
+  padding: 10px 12px 14px;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.o-kanban-col:last-child {
+  border-right: 0;
+}
+
+.o-kanban-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #111827;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.o-kanban-item {
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-left: 3px solid #166534;
+  border-radius: 6px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+}
+
+/* Flatten Analytics MetricStrip & MetricTiles + Bento Grids Inside Sheets */
+:is(.business-shell, .focused-account) .sv-metric-strip {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important;
+  gap: 0 !important;
+  padding: 4px 0 12px !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+:is(.business-shell, .focused-account) .sv-metric {
+  background: transparent !important;
+  border: 0 !important;
+  border-right: 1px solid #eef2f7 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 4px 14px 4px 0 !important;
+  margin-right: 14px !important;
+}
+
+:is(.business-shell, .focused-account) .sv-metric:last-child {
+  border-right: 0 !important;
+  margin-right: 0 !important;
+}
+
+:is(.business-shell, .focused-account) .analytics-workspace.o-app-sheet .analytics-layout {
+  display: block !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+:is(.business-shell, .focused-account) .analytics-workspace.o-app-sheet .sh-bento-grid {
+  gap: 16px !important;
+}
+
+:is(.business-shell, .focused-account) .analytics-workspace.o-app-sheet .analytics-source-grid,
+:is(.business-shell, .focused-account) .analytics-workspace.o-app-sheet .analytics-saved-grid {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+}
+
+/* Flatten Documents Workspace Inside `.o-app-sheet` */
+:is(.business-shell, .focused-account) .documents-workspace.o-app-sheet .documents-toolbar {
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  border-radius: 0 !important;
+  padding: 0 0 10px !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+}
+
+:is(.business-shell, .focused-account) .documents-workspace.o-app-sheet .documents-layout {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:is(.business-shell, .focused-account) .documents-workspace.o-app-sheet .documents-layout.is-fullwidth {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+:is(.business-shell, .focused-account) .documents-workspace.o-app-sheet .documents-sidebar {
+  background: transparent !important;
+  border: 0 !important;
+  border-right: 1px solid #e5e7eb !important;
+  border-radius: 0 !important;
+  padding: 4px 12px 4px 0 !important;
+}
+
+:is(.business-shell, .focused-account) .documents-workspace.o-app-sheet .documents-main {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Flatten Forms & Pagination Spacing Inside `.o-app-sheet` */
+:is(.business-shell, .focused-account) .o-app-sheet form.panel {
+  border: 0 !important;
+  border-top: 1px solid #eef2f7 !important;
+  border-radius: 0 !important;
+  padding: 12px 0 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:is(.business-shell, .focused-account) .pagination {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+  margin-top: 10px !important;
+}
+
+/* Flat Hairline Section & Inline Filter Form Helpers Inside `.o-app-sheet` */
+:is(.business-shell, .focused-account) .o-flat-section {
+  border: 0 !important;
+  border-top: 1px solid #eef2f7 !important;
+  border-radius: 0 !important;
+  padding: 12px 0 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:is(.business-shell, .focused-account) form.o-flat-section > :is(h2, h3, p, button.button) {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+:is(.business-shell, .focused-account) .o-app-sheet > .o-flat-section:first-child {
+  border-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+:is(.business-shell, .focused-account) .o-inline-filter-form {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: flex-end !important;
+  gap: 8px !important;
+  border: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:is(.business-shell, .focused-account) .o-app-sheet .dashboard-columns > .o-flat-section + .o-flat-section {
+  border-top: 0 !important;
+  border-left: 1px solid #eef2f7 !important;
+  padding: 0 0 0 18px !important;
+}
+
+@media (max-width: 900px) {
+  :is(.business-shell, .focused-account) .o-app-sheet .dashboard-columns > .o-flat-section + .o-flat-section {
+    border-left: 0 !important;
+    border-top: 1px solid #eef2f7 !important;
+    padding: 12px 0 0 !important;
+  }
 }
 
 /* Mobile Safeguards */

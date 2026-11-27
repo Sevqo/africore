@@ -296,7 +296,7 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
     : undefined;
 
   return (
-    <div className="stack">
+    <div className="o-app-sheet">
       {error && (
         <p className="alert error" role="alert">
           {error}
@@ -314,21 +314,8 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
           <AppControlPanel
             parent="AfriCore Marketing"
             title={section === 'leads' ? 'Campaign Lead Capture & CRM Attribution' : 'Omnichannel Campaign Studio'}
-            facet={section === 'leads' ? 'CRM Sync' : 'Channels: Email · SMS · Social · Event'}
             search={query}
             onSearch={setQuery}
-            views={[
-              { id: 'campaigns', label: 'Campaigns' },
-              { id: 'leads', label: 'Lead Capture' },
-            ]}
-            activeView={section === 'leads' ? 'leads' : 'campaigns'}
-            onViewChange={(v) => goSection('marketing', v)}
-            pipeline={[
-              { label: 'Draft', state: 'done' },
-              { label: 'Scheduled', state: section !== 'leads' ? 'active' : 'done' },
-              { label: 'Delivered', state: 'pending' },
-              { label: 'CRM Attributed', state: section === 'leads' ? 'active' : 'pending' },
-            ]}
           />
           <KpiStrip
             items={[
@@ -427,78 +414,64 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
               )}
               <div className="ac-split-grid">
                 <section className="panel">
-                  <h3>Campaign Cards &amp; Audience Segments</h3>
-                  <div style={{ display: 'grid', gap: '12px' }}>
+                  <h3>Campaigns &amp; Audience Segments</h3>
+                  <div className="ac-record-list">
                     {(campaigns.data?.data || [])
                       .filter((c: any) => matches(`${c.name} ${c.channel} ${c.audience_segment}`))
                       .map((c: any) => (
-                        <article
-                          key={c.id}
-                          style={{
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '12px',
-                            padding: '14px 16px',
-                            background: '#fff',
-                            display: 'grid',
-                            gap: '10px',
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-                            <div>
+                        <div className="ac-record-row" key={c.id}>
+                          <div className="ac-record-main">
+                            <span className="ac-record-title">
                               <span
                                 className="badge"
                                 style={{ marginInlineEnd: '8px', textTransform: 'uppercase' }}
                               >
                                 {c.channel}
                               </span>
-                              <strong>{c.name}</strong>
-                            </div>
+                              {c.name}
+                            </span>
+                            <span className="ac-record-meta">
+                              Segment: {c.audience_segment} · Scheduled: {c.scheduled_on} · Headline:{' '}
+                              <em>{c.subject_line}</em> · Delivered: {c.observed_delivered ?? 0} · Clicks:{' '}
+                              {c.observed_clicks ?? 0}
+                            </span>
+                          </div>
+                          <div className="ac-record-actions">
                             <span className="badge">{c.status}</span>
-                          </div>
-                          <div style={{ fontSize: '13px', color: '#475569' }}>
-                            Segment: <strong>{c.audience_segment}</strong> · Scheduled: {c.scheduled_on} · Headline:{' '}
-                            <em>{c.subject_line}</em>
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                            <small style={{ color: '#64748b' }}>
-                              Delivered: {c.observed_delivered ?? 0} · Clicks: {c.observed_clicks ?? 0}
-                            </small>
+                            {writable && c.status === 'draft' && (
+                              <button
+                                type="button"
+                                className="secondary-button"
+                                onClick={async () => {
+                                  await api(`/marketing/campaigns/${c.id}`, 'PATCH', {
+                                    expected_version: c.version,
+                                    status: 'sent',
+                                    observed_delivered: 250,
+                                    observed_clicks: 42,
+                                  });
+                                  refresh(`Marked "${c.name}" as sent with delivery telemetry.`);
+                                }}
+                              >
+                                Mark Sent
+                              </button>
+                            )}
                             {writable && (
-                              <div className="form-actions" style={{ margin: 0 }}>
-                                {c.status === 'draft' && (
-                                  <button
-                                    type="button"
-                                    className="secondary-button"
-                                    onClick={async () => {
-                                      await api(`/marketing/campaigns/${c.id}`, 'PATCH', {
-                                        expected_version: c.version,
-                                        status: 'sent',
-                                        observed_delivered: 250,
-                                        observed_clicks: 42,
-                                      });
-                                      refresh(`Marked "${c.name}" as sent with delivery telemetry.`);
-                                    }}
-                                  >
-                                    Mark Sent
-                                  </button>
-                                )}
-                                <button
-                                  type="button"
-                                  className="secondary-button"
-                                  onClick={async () => {
-                                    await api(`/marketing/campaigns/${c.id}/capture-lead`, 'POST', {
-                                      lead_name: `Prospect from ${c.name}`,
-                                      due_on: today(),
-                                    });
-                                    refresh('Lead captured directly into CRM scheduled activities.');
-                                  }}
-                                >
-                                  Capture Lead → CRM
-                                </button>
-                              </div>
+                              <button
+                                type="button"
+                                className="secondary-button"
+                                onClick={async () => {
+                                  await api(`/marketing/campaigns/${c.id}/capture-lead`, 'POST', {
+                                    lead_name: `Prospect from ${c.name}`,
+                                    due_on: today(),
+                                  });
+                                  refresh('Lead captured directly into CRM scheduled activities.');
+                                }}
+                              >
+                                Capture Lead → CRM
+                              </button>
                             )}
                           </div>
-                        </article>
+                        </div>
                       ))}
                     {!(campaigns.data?.data || []).length && (
                       <p className="muted">No campaigns launched yet. Create your first campaign on the right.</p>
@@ -550,15 +523,8 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
           <AppControlPanel
             parent="AfriCore Support"
             title={section === 'kb' ? 'Help Center & Knowledge Base' : 'SLA Triage Board & Helpdesk'}
-            facet="SLA Monitored"
             search={query}
             onSearch={setQuery}
-            views={[
-              { id: 'tickets', label: 'Tickets & SLA' },
-              { id: 'kb', label: 'Knowledge Base' },
-            ]}
-            activeView={section === 'kb' ? 'kb' : 'tickets'}
-            onViewChange={(v) => goSection('support', v)}
           />
           <KpiStrip
             items={[
@@ -576,100 +542,74 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
 
           {section !== 'kb' ? (
             <>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                  gap: '14px',
-                }}
-                aria-label="Support Kanban lanes"
-              >
+              <div className="o-kanban-grid" aria-label="Support Kanban lanes">
                 {[
                   {
                     lane: 'New & Open',
                     filter: (t: any) => ['new', 'open'].includes(t.status),
-                    accent: '#f59e0b',
                   },
                   {
                     lane: 'In Progress / Escalated',
                     filter: (t: any) => ['in_progress', 'pending', 'escalated'].includes(t.status),
-                    accent: '#0284c7',
                   },
                   {
                     lane: 'Solved & Closed',
                     filter: (t: any) => ['solved', 'closed'].includes(t.status),
-                    accent: '#10b981',
                   },
                 ].map((col) => {
                   const laneTickets = (tickets.data?.data || [])
                     .filter(col.filter)
                     .filter((t: any) => matches(`${t.subject} ${t.customer_name} ${t.priority}`));
                   return (
-                    <section
-                      key={col.lane}
-                      className="panel"
-                      style={{ borderTop: `3px solid ${col.accent}`, alignContent: 'start' }}
-                    >
-                      <div className="section-heading" style={{ marginBottom: '10px' }}>
-                        <h3 style={{ margin: 0, fontSize: '14px' }}>{col.lane}</h3>
+                    <section key={col.lane} className="o-kanban-col">
+                      <div className="o-kanban-col-head">
+                        <span>{col.lane}</span>
                         <span className="badge">{laneTickets.length}</span>
                       </div>
-                      <div style={{ display: 'grid', gap: '10px' }}>
-                        {laneTickets.map((t: any) => (
-                          <article
-                            key={t.id}
-                            style={{
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '10px',
-                              padding: '12px',
-                              background: '#f8fafc',
-                              display: 'grid',
-                              gap: '6px',
-                            }}
-                          >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px' }}>
-                              <strong style={{ fontSize: '13.5px' }}>{t.subject}</strong>
-                              <span className="badge">{t.priority}</span>
+                      {laneTickets.map((t: any) => (
+                        <article key={t.id} className="o-kanban-item">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px' }}>
+                            <strong>{t.subject}</strong>
+                            <span className="badge">{t.priority}</span>
+                          </div>
+                          <small style={{ color: '#6b7280' }}>
+                            {t.customer_name} · SLA due {t.sla_due_on}
+                          </small>
+                          {writable && !['solved', 'closed'].includes(t.status) && (
+                            <div className="form-actions" style={{ marginTop: '4px' }}>
+                              <button
+                                type="button"
+                                className="quiet-button"
+                                onClick={async () => {
+                                  await api(`/support/tickets/${t.id}`, 'PATCH', {
+                                    expected_version: t.version,
+                                    status: 'solved',
+                                    resolution_note: 'Resolved by support desk',
+                                  });
+                                  refresh(`Marked "${t.subject}" solved.`);
+                                }}
+                              >
+                                Mark Solved
+                              </button>
+                              <button
+                                type="button"
+                                className="quiet-button"
+                                onClick={async () => {
+                                  await api(`/support/tickets/${t.id}/escalate`, 'POST', {
+                                    target: 'field_operations',
+                                    scheduled_on: today(),
+                                    assignee: 'Field Technician',
+                                  });
+                                  refresh('Escalated ticket to Field Operations dispatch.');
+                                }}
+                              >
+                                → Field Ops
+                              </button>
                             </div>
-                            <small style={{ color: '#475569' }}>
-                              {t.customer_name} · SLA due {t.sla_due_on}
-                            </small>
-                            {writable && !['solved', 'closed'].includes(t.status) && (
-                              <div className="form-actions" style={{ marginTop: '4px' }}>
-                                <button
-                                  type="button"
-                                  className="quiet-button"
-                                  onClick={async () => {
-                                    await api(`/support/tickets/${t.id}`, 'PATCH', {
-                                      expected_version: t.version,
-                                      status: 'solved',
-                                      resolution_note: 'Resolved by support desk',
-                                    });
-                                    refresh(`Marked "${t.subject}" solved.`);
-                                  }}
-                                >
-                                  Mark Solved
-                                </button>
-                                <button
-                                  type="button"
-                                  className="quiet-button"
-                                  onClick={async () => {
-                                    await api(`/support/tickets/${t.id}/escalate`, 'POST', {
-                                      target: 'field_operations',
-                                      scheduled_on: today(),
-                                      assignee: 'Field Technician',
-                                    });
-                                    refresh('Escalated ticket to Field Operations dispatch.');
-                                  }}
-                                >
-                                  → Field Ops
-                                </button>
-                              </div>
-                            )}
-                          </article>
-                        ))}
-                        {!laneTickets.length && <p className="muted">No tickets in this lane.</p>}
-                      </div>
+                          )}
+                        </article>
+                      ))}
+                      {!laneTickets.length && <p className="o-flat-note">No tickets in this lane.</p>}
                     </section>
                   );
                 })}
@@ -715,21 +655,13 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
             <div className="ac-split-grid">
               <section className="panel">
                 <h3>Knowledge Base Reader</h3>
-                <div style={{ display: 'grid', gap: '10px' }}>
+                <div className="ac-record-list">
                   {(kb.data?.data || [])
                     .filter((a: any) => matches(`${a.title} ${a.category} ${a.body || ''}`))
                     .map((a: any) => {
                       const open = selectedKbId === a.id;
                       return (
-                        <article
-                          key={a.id}
-                          style={{
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '10px',
-                            padding: '12px 14px',
-                            background: open ? '#f8fafc' : '#fff',
-                          }}
-                        >
+                        <div key={a.id} className="ac-record-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <button
                               type="button"
@@ -741,11 +673,11 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                             <span className="badge">{a.category}</span>
                           </div>
                           {open && (
-                            <p style={{ marginTop: '8px', whiteSpace: 'pre-wrap', color: '#334155' }}>
+                            <p style={{ marginTop: '6px', whiteSpace: 'pre-wrap', color: '#334155', fontSize: 12.5 }}>
                               {a.body}
                             </p>
                           )}
-                        </article>
+                        </div>
                       );
                     })}
                   {!(kb.data?.data || []).length && <p className="muted">No KB articles published yet.</p>}
@@ -790,15 +722,8 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
           <AppControlPanel
             parent="AfriCore Subscriptions"
             title={section === 'mrr' ? 'MRR / ARR Revenue Intelligence & Renewals' : 'Recurring Plans & Subscriber Contracts'}
-            facet="Auto-Invoicing"
             search={query}
             onSearch={setQuery}
-            views={[
-              { id: 'contracts', label: 'Plans & Contracts' },
-              { id: 'mrr', label: 'MRR & Proration' },
-            ]}
-            activeView={section === 'mrr' ? 'mrr' : 'contracts'}
-            onViewChange={(v) => goSection('subscriptions', v)}
           />
           <KpiStrip
             items={[
@@ -848,32 +773,22 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
               {(plans.data?.data || []).length > 0 && (
                 <section className="panel">
                   <h3>Recurring Plan Catalog</h3>
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
-                      gap: '12px',
-                    }}
-                  >
+                  <div className="ac-record-list">
                     {(plans.data?.data || []).map((p: any) => (
-                      <article
-                        key={p.id}
-                        style={{
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '12px',
-                          padding: '14px',
-                          background: '#f8fafc',
-                        }}
-                      >
-                        <span className="badge">{p.code}</span>
-                        <h4 style={{ margin: '8px 0 4px' }}>{p.name}</h4>
-                        <strong style={{ fontSize: '18px', color: '#0b6e4f' }}>
+                      <div key={p.id} className="ac-record-row">
+                        <div className="ac-record-main">
+                          <span className="ac-record-title">
+                            <span className="badge" style={{ marginInlineEnd: 8 }}>{p.code}</span>
+                            {p.name}
+                          </span>
+                          <span className="ac-record-meta">
+                            Billing: per {p.interval} · {p.trial_days || 0}d trial
+                          </span>
+                        </div>
+                        <strong style={{ fontSize: '14px', color: '#166534' }}>
                           {money(p.price_minor, p.currency)}
                         </strong>
-                        <small style={{ display: 'block', color: '#64748b' }}>
-                          per {p.interval} · {p.trial_days || 0}d trial
-                        </small>
-                      </article>
+                      </div>
                     ))}
                   </div>
                 </section>
@@ -997,21 +912,8 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
           <AppControlPanel
             parent="AfriCore Manufacturing"
             title={section === 'boms' ? 'Bills of Materials & Scrap/Labor Cost Rollup' : 'Shop-Floor Production & Quality Inspection'}
-            facet="Inventory Lot Sync"
             search={query}
             onSearch={setQuery}
-            views={[
-              { id: 'boms', label: 'Bills of Materials' },
-              { id: 'production', label: 'Production & Quality' },
-            ]}
-            activeView={section === 'boms' ? 'boms' : 'production'}
-            onViewChange={(v) => goSection('manufacturing', v)}
-            pipeline={[
-              { label: 'BOM Costing', state: section === 'boms' ? 'active' : 'done' },
-              { label: 'Manufacturing Order', state: section !== 'boms' ? 'active' : 'pending' },
-              { label: 'Quality Check', state: 'pending' },
-              { label: 'Finished Lot Receipt', state: 'pending' },
-            ]}
           />
           <KpiStrip
             items={[
@@ -1030,60 +932,52 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
             <div className="ac-split-grid">
               <section className="panel">
                 <h3>Bills of Materials (Component &amp; Workcenter Tree)</h3>
-                <div style={{ display: 'grid', gap: '10px' }}>
+                <div className="ac-record-list">
                   {(boms.data?.data || [])
                     .filter((b: any) => matches(`${b.code} ${b.finished_product_name}`))
                     .map((b: any) => {
                       const expanded = expandedBomId === b.id;
                       return (
-                        <article
-                          key={b.id}
-                          style={{
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '10px',
-                            padding: '12px 14px',
-                            background: '#fff',
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div className="ac-record-row" key={b.id}>
+                          <div className="ac-record-main">
                             <button
                               type="button"
                               className="link-button"
                               onClick={() => setExpandedBomId(expanded ? '' : b.id)}
                             >
-                              <strong>
+                              <strong className="ac-record-title">
                                 {b.code} · {b.finished_product_name}
                               </strong>
                             </button>
-                            <span className="badge">{(b.components || []).length} components</span>
+                            {expanded && (
+                              <div className="ac-record-sub" style={{ marginTop: '6px', display: 'grid', gap: '4px' }}>
+                                <strong>Components:</strong>
+                                <ul style={{ margin: 0, paddingInlineStart: '18px' }}>
+                                  {(b.components || []).map((comp: any, idx: number) => (
+                                    <li key={idx}>
+                                      <code>{comp.sku}</code> — Qty {(comp.quantity_milli || 0) / 1000} @{' '}
+                                      {money(comp.unit_cost_minor || 0, b.currency || 'KES')} (scrap{' '}
+                                      {(comp.scrap_bps || 0) / 100}%)
+                                    </li>
+                                  ))}
+                                </ul>
+                                {(b.operations || []).length > 0 && (
+                                  <>
+                                    <strong>Operations:</strong>
+                                    <ul style={{ margin: 0, paddingInlineStart: '18px' }}>
+                                      {(b.operations || []).map((op: any, idx: number) => (
+                                        <li key={idx}>
+                                          {op.name} — {op.duration_minutes} mins
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </>
+                                )}
+                              </div>
+                            )}
                           </div>
-                          {expanded && (
-                            <div style={{ marginTop: '10px', fontSize: '13px', display: 'grid', gap: '6px' }}>
-                              <strong>Components:</strong>
-                              <ul style={{ margin: 0, paddingInlineStart: '18px' }}>
-                                {(b.components || []).map((comp: any, idx: number) => (
-                                  <li key={idx}>
-                                    <code>{comp.sku}</code> — Qty {(comp.quantity_milli || 0) / 1000} @{' '}
-                                    {money(comp.unit_cost_minor || 0, b.currency || 'KES')} (scrap{' '}
-                                    {(comp.scrap_bps || 0) / 100}%)
-                                  </li>
-                                ))}
-                              </ul>
-                              {(b.operations || []).length > 0 && (
-                                <>
-                                  <strong>Operations:</strong>
-                                  <ul style={{ margin: 0, paddingInlineStart: '18px' }}>
-                                    {(b.operations || []).map((op: any, idx: number) => (
-                                      <li key={idx}>
-                                        {op.name} — {op.duration_minutes} mins
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </>
-                              )}
-                            </div>
-                          )}
-                        </article>
+                          <span className="badge">{(b.components || []).length} components</span>
+                        </div>
                       );
                     })}
                   {!(boms.data?.data || []).length && <p className="muted">No Bills of Materials defined yet.</p>}
@@ -1216,15 +1110,8 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
           <AppControlPanel
             parent="AfriCore Field Operations"
             title={section === 'fleet' ? 'Preventive Maintenance & Fleet Odometer Board' : 'Technician Dispatch & Rental Schedule'}
-            facet="Crew & Fleet"
             search={query}
             onSearch={setQuery}
-            views={[
-              { id: 'dispatches', label: 'Dispatches & Rentals' },
-              { id: 'fleet', label: 'Maintenance & Fleet' },
-            ]}
-            activeView={section === 'fleet' ? 'fleet' : 'dispatches'}
-            onViewChange={(v) => goSection('field_operations', v)}
           />
           <KpiStrip
             items={[
@@ -1381,20 +1268,8 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
           <AppControlPanel
             parent="AfriCore Logistics"
             title={section === 'pod' ? 'Proof of Delivery (POD) Verification Desk' : 'Freight Dispatch & Carrier Route Board'}
-            facet="Sales Fulfillment Sync"
             search={query}
             onSearch={setQuery}
-            views={[
-              { id: 'shipments', label: 'Shipments & Dispatch' },
-              { id: 'pod', label: 'Proof of Delivery' },
-            ]}
-            activeView={section === 'pod' ? 'pod' : 'shipments'}
-            onViewChange={(v) => goSection('logistics', v)}
-            pipeline={[
-              { label: 'Booked', state: 'done' },
-              { label: 'In Transit', state: section !== 'pod' ? 'active' : 'done' },
-              { label: 'Delivered (Signed POD)', state: section === 'pod' ? 'active' : 'pending' },
-            ]}
           />
           <KpiStrip
             items={[
@@ -1530,15 +1405,8 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
           <AppControlPanel
             parent="AfriCore Property & Hospitality"
             title={section === 'reservations' ? 'Guest Check-In & Folio Checkout Desk' : 'Unit Occupancy Grid & Tenant Leases'}
-            facet="Auto-Invoice"
             search={query}
             onSearch={setQuery}
-            views={[
-              { id: 'leases', label: 'Units & Leases' },
-              { id: 'reservations', label: 'Reservations & Folios' },
-            ]}
-            activeView={section === 'reservations' ? 'reservations' : 'leases'}
-            onViewChange={(v) => goSection('property_hospitality', v)}
           />
           <KpiStrip
             items={[
@@ -1636,32 +1504,19 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
             <>
               {(units.data?.data || []).length > 0 && (
                 <section className="panel">
-                  <h3>Visual Unit / Room Occupancy Grid</h3>
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(175px, 1fr))',
-                      gap: '10px',
-                    }}
-                  >
+                  <h3>Unit / Room Occupancy Register</h3>
+                  <div className="ac-record-list">
                     {(units.data?.data || []).map((u: any) => (
-                      <div
-                        key={u.id}
-                        style={{
-                          padding: '12px',
-                          borderRadius: '10px',
-                          border: u.status === 'occupied' ? '1px solid #0b6e4f' : '1px solid #cbd5e1',
-                          background: u.status === 'occupied' ? '#ecfdf5' : '#ffffff',
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <strong>{u.code}</strong>
-                          <span className="badge">{u.status}</span>
+                      <div key={u.id} className="ac-record-row">
+                        <div className="ac-record-main">
+                          <span className="ac-record-title">
+                            <strong>{u.code}</strong> · {u.name}
+                          </span>
+                          <span className="ac-record-meta">
+                            {money(u.rate_minor, u.currency)} / {u.rate_period}
+                          </span>
                         </div>
-                        <div style={{ fontSize: '13px', margin: '4px 0' }}>{u.name}</div>
-                        <small style={{ color: '#475569' }}>
-                          {money(u.rate_minor, u.currency)} / {u.rate_period}
-                        </small>
+                        <span className="badge">{u.status}</span>
                       </div>
                     ))}
                   </div>
@@ -1758,15 +1613,8 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
           <AppControlPanel
             parent="AfriCore Knowledge & Learning"
             title={section === 'articles' ? 'Company Knowledge Wiki & SOP Handbook' : 'Employee Academy, Courses & Auto-Graded Assessments'}
-            facet="HR & Compliance"
             search={query}
             onSearch={setQuery}
-            views={[
-              { id: 'articles', label: 'Knowledge Wiki' },
-              { id: 'courses', label: 'Courses & Assessments' },
-            ]}
-            activeView={section === 'articles' ? 'articles' : 'courses'}
-            onViewChange={(v) => goSection('knowledge_learning', v)}
           />
           <KpiStrip
             items={[
@@ -1785,21 +1633,13 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
             <div className="ac-split-grid">
               <section className="panel">
                 <h3>Company Handbook &amp; Wiki Spaces</h3>
-                <div style={{ display: 'grid', gap: '10px' }}>
+                <div className="ac-record-list">
                   {(articles.data?.data || [])
                     .filter((a: any) => matches(`${a.title} ${a.space} ${a.content || ''}`))
                     .map((a: any) => {
                       const open = selectedWikiId === a.id || (!selectedWikiId && articles.data?.data?.[0]?.id === a.id);
                       return (
-                        <article
-                          key={a.id}
-                          style={{
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '10px',
-                            padding: '14px',
-                            background: open ? '#f8fafc' : '#fff',
-                          }}
-                        >
+                        <div key={a.id} className="ac-record-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <button
                               type="button"
@@ -1811,11 +1651,11 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                             <span className="badge">{a.space}</span>
                           </div>
                           {open && (
-                            <p style={{ marginTop: '10px', whiteSpace: 'pre-wrap', lineHeight: 1.55 }}>
+                            <p style={{ marginTop: '8px', whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: 12.5 }}>
                               {a.content}
                             </p>
                           )}
-                        </article>
+                        </div>
                       );
                     })}
                   {!(articles.data?.data || []).length && (
@@ -1978,15 +1818,8 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
           <AppControlPanel
             parent="AfriCore Studio"
             title={section === 'records' ? 'Custom App Live Database & Form Runner' : 'Visual Schema & No-Code App Builder'}
-            facet="Typed Schema"
             search={query}
             onSearch={setQuery}
-            views={[
-              { id: 'apps', label: 'Custom Apps' },
-              { id: 'records', label: 'Live Records' },
-            ]}
-            activeView={section === 'records' ? 'records' : 'apps'}
-            onViewChange={(v) => goSection('studio', v)}
           />
           <KpiStrip
             items={[
@@ -2229,18 +2062,8 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                   ? 'Immutable Cross-App Event Bus Stream'
                   : '26-App Connected Architecture & Zero-Double-Entry Flows'
             }
-            facet="Live Event Bus"
             search={query}
             onSearch={setQuery}
-            views={[
-              { id: 'topology', label: 'Connected Flows' },
-              { id: 'pipelines', label: 'Connectors & Pipelines' },
-              { id: 'events', label: 'Live Event Bus' },
-            ]}
-            activeView={
-              section === 'pipelines' ? 'pipelines' : section === 'events' ? 'events' : 'topology'
-            }
-            onViewChange={(v) => goSection('integrations_hub', v)}
           />
           <KpiStrip
             items={[
@@ -2347,22 +2170,15 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
             <div className="ac-split-grid">
               <section className="panel">
                 <h3>Built-In Suite Topology</h3>
-                <div style={{ display: 'grid', gap: '8px' }}>
+                <div className="ac-record-list">
                   {(topology.data?.built_in_connections || []).map((flow: any, idx: number) => (
-                    <div
-                      key={idx}
-                      style={{
-                        padding: '10px 12px',
-                        borderRadius: '10px',
-                        border: '1px solid #e2e8f0',
-                        background: '#f8fafc',
-                        fontSize: '13px',
-                      }}
-                    >
-                      <strong style={{ color: '#0b6e4f' }}>
-                        {flow.from} → {flow.to}
-                      </strong>
-                      <div style={{ color: '#334155', marginTop: '2px' }}>{flow.flow}</div>
+                    <div key={idx} className="ac-record-row">
+                      <div className="ac-record-main">
+                        <span className="ac-record-title" style={{ color: '#166534' }}>
+                          {flow.from} → {flow.to}
+                        </span>
+                        <span className="ac-record-meta">{flow.flow}</span>
+                      </div>
                     </div>
                   ))}
                 </div>

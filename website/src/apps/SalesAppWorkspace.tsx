@@ -595,9 +595,9 @@ function SalesModuleNav({
 
 function SalesList({
   title,
-  eyebrow,
-  newLabel,
-  onNew,
+  eyebrow: _eyebrow,
+  newLabel: _newLabel,
+  onNew: _onNew,
   query,
   setQuery,
   mode,
@@ -653,47 +653,48 @@ function SalesList({
       ? Math.round(((currentAmount - previousAmount) / previousAmount) * 100)
       : null;
   return (
-    <section className="sales-list">
+    <section className="sales-list o-app-sheet">
       <div className="sales-title-row">
-        <div className="sales-title">
-          {newLabel && onNew && (
-            <button className="sales-primary" onClick={onNew}>
-              {newLabel}
-            </button>
-          )}
-          <div>
-            <span className="sales-eyebrow">{eyebrow}</span>
-            <h2>{title}</h2>
-          </div>
+        <div className="sales-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 650 }}>{title}</h2>
         </div>
-        <div className="sales-toolbar">
-          <div className="sales-search">
-            <Icon name="search" />
-            <input
-              value={query}
-              onChange={(event) => {
-                setQuery(event.target.value);
-                setPage(1);
-              }}
-              placeholder="Search records…"
-              aria-label={`Search ${title.toLowerCase()}`}
-            />
-            <select
-              value={filter}
-              onChange={(event) => {
-                setFilter(event.target.value);
-                setPage(1);
-              }}
-              aria-label="Filter records"
-            >
-              {filters.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <span className="sales-count">
+        <div className="sales-toolbar" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, border: 0, padding: 0 }}>
+          <input
+            value={query}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setPage(1);
+            }}
+            placeholder="Search records…"
+            aria-label={`Search ${title.toLowerCase()}`}
+            style={{ width: 200, minWidth: 160, minHeight: 31, height: 31, padding: '4px 9px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 12.5 }}
+          />
+          <select
+            value={filter}
+            onChange={(event) => {
+              setFilter(event.target.value);
+              setPage(1);
+            }}
+            aria-label="Filter records"
+            className="o-cp-inline-select"
+          >
+            {filters.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={days}
+            onChange={(event) => setDays(Number(event.target.value))}
+            aria-label="Reporting period"
+            className="o-cp-inline-select"
+          >
+            <option value={7}>Last 7 days</option>
+            <option value={30}>Last 30 days</option>
+            <option value={90}>Last 90 days</option>
+          </select>
+          <span className="sales-count" style={{ fontSize: 12, color: '#6b7280', whiteSpace: 'nowrap' }}>
             {total
               ? `${(page - 1) * 15 + 1}–${Math.min(page * 15, total)} / ${total}`
               : '0 records'}
@@ -720,76 +721,81 @@ function SalesList({
           </div>
         </div>
       </div>
-      <div className="sales-pulse" aria-label="Sales performance">
-        <button onClick={() => dashboardHandler('to_confirm')} className="pulse-cell confirm">
-          <strong>{dashboard.toConfirm}</strong>
+      <div className="o-kpi-row" aria-label="Sales performance">
+        <button
+          type="button"
+          className="o-kpi-cell quiet-button"
+          style={{ alignItems: 'flex-start', textAlign: 'left', borderRadius: 0 }}
+          onClick={() => dashboardHandler('to_confirm')}
+        >
           <span>To Confirm</span>
+          <strong>{dashboard.toConfirm}</strong>
+          <small>Draft quotations</small>
         </button>
-        <button onClick={() => dashboardHandler('to_deliver')} className="pulse-cell deliver">
-          <strong>{dashboard.toDeliver}</strong>
+        <button
+          type="button"
+          className="o-kpi-cell quiet-button"
+          style={{ alignItems: 'flex-start', textAlign: 'left', borderRadius: 0 }}
+          onClick={() => dashboardHandler('to_deliver')}
+        >
           <span>To Deliver</span>
+          <strong>{dashboard.toDeliver}</strong>
+          <small>Open shipments</small>
         </button>
-        <button onClick={() => dashboardHandler('to_invoice')} className="pulse-cell invoice">
-          <strong>{dashboard.toInvoice}</strong>
+        <button
+          type="button"
+          className="o-kpi-cell quiet-button"
+          style={{ alignItems: 'flex-start', textAlign: 'left', borderRadius: 0 }}
+          onClick={() => dashboardHandler('to_invoice')}
+        >
           <span>To Invoice</span>
+          <strong>{dashboard.toInvoice}</strong>
+          <small>Unbilled orders</small>
         </button>
-        <div className="pulse-spacer" />
-        <label className="sales-range">
-          <span>Period</span>
-          <select value={days} onChange={(event) => setDays(Number(event.target.value))}>
-            <option value={7}>Last 7 days</option>
-            <option value={30}>Last 30 days</option>
-            <option value={90}>Last 90 days</option>
-          </select>
-        </label>
-        <div className="pulse-metric">
-          <span>Sales Orders</span>
+        <div className="o-kpi-cell">
+          <span>Sales Orders ({days}d)</span>
           <strong>{current.orders}</strong>
-          {delta !== null && (
-            <small>
-              {delta > 0 ? '+' : ''}
-              {delta}% vs previous
-            </small>
-          )}
-          {delta === null && <small>No previous-period orders</small>}
+          <small>
+            {delta !== null ? `${delta > 0 ? '+' : ''}${delta}% vs previous` : 'No previous-period orders'}
+          </small>
         </div>
-        <div className="pulse-metric">
-          <span>Sales Revenue</span>
+        <div className="o-kpi-cell">
+          <span>Confirmed Order Value</span>
           <strong>{formatTotals(current.totals, money)}</strong>
-          <small>Confirmed order value in period</small>
+          <small>Order document value in period</small>
         </div>
       </div>
-      <div className="sales-active-filter">
-        <span className="badge">
-          {filters.find((item) => item.id === filter)?.label || 'All records'}
-        </span>
-        {query && <span className="badge">Search: {query}</span>}
-        {selection.length > 0 && (
-          <span className="sales-selection">
-            {selection.length} selected
-            <button onClick={() => setSelection([])}>Clear</button>
-          </span>
-        )}
-        <span className="sales-coverage">
-          {countLabel}. Records are limited to the latest 100 per API page; totals describe loaded
-          records only.
-        </span>
-      </div>
+      {(selection.length > 0 || query) && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#6b7280' }}>
+          {query && <span className="badge">Search: {query}</span>}
+          {selection.length > 0 && (
+            <span className="sales-selection">
+              {selection.length} selected{' '}
+              <button className="quiet-button" onClick={() => setSelection([])}>
+                Clear
+              </button>
+            </span>
+          )}
+        </div>
+      )}
       {loading ? (
         <p className="sales-empty" role="status">
           Loading sales records…
         </p>
       ) : total === 0 ? (
-        <div className="sales-empty">
-          <Icon name="document" />
+        <div className="sales-empty" style={{ border: 0, background: 'transparent', padding: '24px 0' }}>
           <h3>No records match this view</h3>
-          <p>
+          <p className="o-flat-note">
             Change the search, filter or period. No placeholder opportunities or amounts are shown.
           </p>
         </div>
       ) : (
-        <div className="sales-table-wrap">{children}</div>
+        <div className="sales-table-wrap" style={{ border: 0, borderRadius: 0, boxShadow: 'none' }}>{children}</div>
       )}
+      <p className="o-flat-note" style={{ margin: 0 }}>
+        {countLabel}. Records are limited to the latest 100 per API page; totals describe loaded
+        records only.
+      </p>
     </section>
   );
 }

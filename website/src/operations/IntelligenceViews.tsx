@@ -1,5 +1,5 @@
 import { DateRange } from '../components/DateRange';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { DataTable } from '../components/DataTable';
 import { Icon } from '../components/Icon';
 import {
@@ -16,6 +16,7 @@ import {
   type Action,
 } from './UI';
 export function IntelligenceView({
+  alerts,
   data,
   secondary,
   api,
@@ -28,6 +29,7 @@ export function IntelligenceView({
   expenseAccess = true,
   obligationAccess = true,
 }: {
+  alerts?: ReactNode;
   data: any;
   secondary: any;
   api: API;
@@ -42,34 +44,25 @@ export function IntelligenceView({
 }) {
   if (!data) return null;
   return (
-    <>
+    <div className="o-app-sheet">
+      {alerts}
       <DateRange from={dates.from} to={dates.to} onApply={onDates} />
 
-      <div className="metric-grid">
+      <div className="o-kpi-row" aria-label="Financial intelligence summary">
         {[
-          [
-            'Confirmed collections',
-            data.totals.confirmed_inflows_minor,
-            data.definitions.confirmed_inflows,
-          ],
-          [
-            'Recorded outflows',
-            data.totals.recorded_outflows_minor,
-            data.definitions.recorded_outflows,
-          ],
+          ['Confirmed collections', data.totals.confirmed_inflows_minor, data.definitions.confirmed_inflows],
+          ['Recorded outflows', data.totals.recorded_outflows_minor, data.definitions.recorded_outflows],
           ['Outstanding receivables', data.totals.outstanding_minor, data.definitions.receivables],
           ['Recorded net movement', data.totals.net_movement_minor, data.definitions.net_movement],
         ].map(([label, value, definition]) => (
-          <MetricDefinition
-            key={label}
-            label={label}
-            value={money(value, currency)}
-            definition={definition}
-          />
+          <div className="o-kpi-cell" key={String(label)} title={String(definition || '')}>
+            <span>{String(label)}</span>
+            <strong>{money(Number(value), currency)}</strong>
+          </div>
         ))}
       </div>
       <div className="dashboard-columns">
-        <section className="panel">
+        <section className="o-flat-section">
           <h2>Financial activity</h2>
           <Trend
             points={data.series.filter(
@@ -78,7 +71,7 @@ export function IntelligenceView({
             currency={currency}
           />
         </section>
-        <section className="panel data-quality">
+        <section className="o-flat-section data-quality">
           <h2>Data quality & coverage</h2>
           <ul>
             <li>{data.quality.history_days} days of observed history</li>
@@ -92,10 +85,10 @@ export function IntelligenceView({
           <p>Bank balance and complete profit are unavailable.</p>
         </section>
       </div>
-      <section className="panel">
+      <section className="o-flat-section">
         <h2>Explainable insights</h2>
         {data.insights.map((i: any) => (
-          <article className="insight-row" key={i.id}>
+          <div className="insight-row" key={i.id}>
             <Provenance label={i.classification} />
             <h3>{i.title}</h3>
             <p>{i.limitation}</p>
@@ -105,10 +98,10 @@ export function IntelligenceView({
             <button className="text-button" onClick={() => onNavigate(i.action)}>
               Review {i.action.toLowerCase()} <Icon name="right" />
             </button>
-          </article>
+          </div>
         ))}
       </section>
-      <section className="panel customer-payment-behavior">
+      <section className="o-flat-section customer-payment-behavior">
         <h2>Customer payment behavior</h2>
         <p className="muted">
           Delay and on-time rates require three fully settled invoices. Late payments are not proof
@@ -144,7 +137,7 @@ export function IntelligenceView({
         </div>
         <div className="customer-payment-behavior-mobile" aria-label="Customer payment summaries">
           {data.customers.map((c: any) => (
-            <article className="customer-payment-record" key={c.customer_id}>
+            <div className="customer-payment-record" key={c.customer_id}>
               <h3>{c.name}</h3>
               <dl>
                 <div>
@@ -168,13 +161,14 @@ export function IntelligenceView({
                   <dd>{c.on_time_percent === null ? 'Limited data' : c.on_time_percent + '%'}</dd>
                 </div>
               </dl>
-            </article>
+            </div>
           ))}
         </div>
       </section>
       <div className="dashboard-columns">
         {writable && expenseAccess && (
           <Form
+            className="o-flat-section"
             submit={(d) =>
               action(
                 () =>
@@ -231,6 +225,7 @@ export function IntelligenceView({
         )}
         {writable && obligationAccess && (
           <Form
+            className="o-flat-section"
             submit={(d) =>
               action(() =>
                 api('/obligations', 'POST', {
@@ -270,7 +265,7 @@ export function IntelligenceView({
           </Form>
         )}
       </div>
-      <section className="panel">
+      <section className="o-flat-section">
         <h2>Obligations</h2>
         <p className="muted">
           Active items inform forecasts. Paused, completed and cancelled items remain in the
@@ -370,7 +365,7 @@ export function IntelligenceView({
           <Empty text="Record obligations to improve forecast coverage." />
         )}
       </section>
-    </>
+    </div>
   );
 }
 export function ForecastView({

@@ -84,7 +84,7 @@ export function PeopleRecruitment({
           </div>
         </header>
         {positions.map((position) => (
-          <article className="people-expansion-card" key={position.id}>
+          <div className="people-expansion-card" key={position.id}>
             <div>
               <h3>{position.data.title}</h3>
               <p>
@@ -136,7 +136,7 @@ export function PeopleRecruitment({
               )}
             </div>
             <span className={'status-badge ' + position.status}>{position.status}</span>
-          </article>
+          </div>
         ))}
         {canHR && (
           <details className="people-expansion-form">
@@ -238,7 +238,7 @@ export function PeopleRecruitment({
           </p>
         </header>
         {openings.map((opening) => (
-          <article className="people-expansion-card" key={opening.id}>
+          <div className="people-expansion-card" key={opening.id}>
             <div>
               <h3>{opening.position_title}</h3>
               <p>
@@ -267,7 +267,7 @@ export function PeopleRecruitment({
                 Close opening
               </button>
             )}
-          </article>
+          </div>
         ))}
         {canRecruit && (ownRecruiter || canHR) && positions.some((p) => p.status === 'active') && (
           <details className="people-expansion-form">
@@ -342,7 +342,7 @@ export function PeopleRecruitment({
           </p>
         </header>
         {candidates.map((candidate) => (
-          <article className="people-expansion-card" key={candidate.id}>
+          <div className="people-expansion-card" key={candidate.id}>
             <div>
               <h3>{candidate.data.name}</h3>
               <p>
@@ -353,7 +353,7 @@ export function PeopleRecruitment({
             <span className={'status-badge ' + candidate.status}>
               {candidate.data.employee_id ? 'Hired' : 'Candidate'}
             </span>
-          </article>
+          </div>
         ))}
         {canRecruit && (
           <details className="people-expansion-form">
@@ -397,7 +397,7 @@ export function PeopleRecruitment({
           <p>Move applications forward through screening, interview, assessment and offer.</p>
         </header>
         {applications.map((application) => (
-          <article className="people-expansion-card people-application-card" key={application.id}>
+          <div className="people-expansion-card people-application-card" key={application.id}>
             <div>
               <h3>{application.candidate.name}</h3>
               <p>
@@ -487,7 +487,7 @@ export function PeopleRecruitment({
                 <button className="button">Create employee and hire</button>
               </Form>
             )}
-          </article>
+          </div>
         ))}
         {!applications.length && (
           <p>
@@ -580,13 +580,13 @@ export function PeopleTimeOffCalendar({ api, scope }: { api: API; scope: string 
     };
   }, [scope, period, api]);
   return (
-    <section className="panel">
+    <section className="o-flat-section">
       <header className="section-heading">
         <div>
           <h2>Time Off calendar</h2>
           <p>Calendar rows show private leave reasons only to the employee and authorized HR.</p>
         </div>
-        <Form submit={async (d) => setPeriod({ from: d.from, to: d.to })}>
+        <Form className="o-inline-filter-form" submit={async (d) => setPeriod({ from: d.from, to: d.to })}>
           <Field label="From">
             <input name="from" type="date" defaultValue={period.from} required />
           </Field>
@@ -608,14 +608,14 @@ export function PeopleTimeOffCalendar({ api, scope }: { api: API; scope: string 
           </p>
           <div className="people-calendar-list">
             {calendar.holidays.map((holiday: any) => (
-              <article className="people-calendar-row holiday" key={'holiday-' + holiday.date}>
+              <div className="people-calendar-row holiday" key={'holiday-' + holiday.date}>
                 <strong>{holiday.date}</strong>
                 <span>{holiday.name}</span>
                 <span>Public holiday</span>
-              </article>
+              </div>
             ))}
             {calendar.data.map((entry: any) => (
-              <article className={'people-calendar-row ' + entry.status} key={entry.id}>
+              <div className={'people-calendar-row ' + entry.status} key={entry.id}>
                 <strong>
                   {entry.from}
                   {entry.to !== entry.from ? ' – ' + entry.to : ''}
@@ -627,7 +627,7 @@ export function PeopleTimeOffCalendar({ api, scope }: { api: API; scope: string 
                   {entry.status}
                   {entry.units_milli ? ' · ' + entry.units_milli / 1000 + ' configured days' : ''}
                 </span>
-              </article>
+              </div>
             ))}
           </div>
           {!calendar.data.length && !calendar.holidays.length && (
@@ -679,7 +679,7 @@ export function PeopleOverview({
       </section>
     );
   return (
-    <section className="panel">
+    <section className="o-flat-section">
       <header>
         <h2>People overview</h2>
         <p>
@@ -694,62 +694,62 @@ export function PeopleOverview({
       {data ? (
         <>
           <div className="people-metric-row">
-            <article>
+            <div>
               <strong>{data.expansion.workforce.total_employees}</strong>
               <span>Total employees</span>
-            </article>
-            <article>
+            </div>
+            <div>
               <strong>{data.expansion.workforce.active_employees}</strong>
               <span>Active employees</span>
-            </article>
-            <article>
+            </div>
+            <div>
               <strong>{data.expansion.workforce.onboarding_employees}</strong>
               <span>Onboarding</span>
-            </article>
-            <article>
+            </div>
+            <div>
               <strong>{data.expansion.positions.active}</strong>
               <span>Active positions</span>
-            </article>
-            <article>
+            </div>
+            <div>
               <strong>{data.expansion.recruitment.openings}</strong>
               <span>Openings</span>
-            </article>
-            <article>
+            </div>
+            <div>
               <strong>{data.expansion.recruitment.applicants}</strong>
               <span>Active applicants</span>
-            </article>
-            <article>
+            </div>
+            <div>
               <strong>{data.expansion.recruitment.hired_in_period}</strong>
               <span>Hires in period</span>
-            </article>
-            <article>
+            </div>
+            <div>
               <strong>{data.expansion.workforce.pending_leave_requests}</strong>
               <span>Pending leave requests</span>
-            </article>
-            <article>
+            </div>
+            <div>
               <strong>{data.expansion.workforce.employees_on_approved_leave_today}</strong>
               <span>On approved leave today</span>
-            </article>
-            <article>
+            </div>
+            <div>
               <strong>{data.expansion.workforce.open_attendance_sessions}</strong>
               <span>Open attendance sessions</span>
-            </article>
-            <article>
+            </div>
+            <div>
               <strong>{data.expansion.workforce.attendance_missing_checkout_reviews}</strong>
               <span>Missing-checkout reviews</span>
-            </article>
-            <article>
+            </div>
+            <div>
               <strong>{data.expansion.performance.pending_reviews}</strong>
               <span>Reviews to complete</span>
-            </article>
-            <article>
+            </div>
+            <div>
               <strong>{data.expansion.lifecycle.open_cases}</strong>
               <span>Open lifecycle cases</span>
-            </article>
-            <article>
+            </div>
+            <div>
               <strong>{data.expansion.certifications.expiring_next_90_days}</strong>
               <span>Certificates expiring next 90 days</span>
-            </article>
+            </div>
           </div>
           <h3>Active employees by department</h3>
           {data.expansion.workforce.active_by_department.map((department: any) => (
@@ -791,13 +791,13 @@ export function PeopleAttendanceAnalysis({ api, scope }: { api: API; scope: stri
     };
   }, [scope, period, api]);
   return (
-    <section className="panel">
+    <section className="o-flat-section">
       <header className="section-heading">
         <div>
           <h2>Attendance analysis</h2>
           <p>Recorded attendance is not payroll or proof of location.</p>
         </div>
-        <Form submit={async (d) => setPeriod({ from: d.from, to: d.to })}>
+        <Form className="o-inline-filter-form" submit={async (d) => setPeriod({ from: d.from, to: d.to })}>
           <Field label="From">
             <input name="from" type="date" defaultValue={period.from} required />
           </Field>
@@ -927,7 +927,7 @@ export function PeoplePerformance({ api, scope, configuration, employees, onSave
           Work access.
         </p>
         {goals.map((goal) => (
-          <article className="people-expansion-card" key={goal.id}>
+          <div className="people-expansion-card" key={goal.id}>
             <div>
               <h3>{goal.data.title}</h3>
               <p>
@@ -960,7 +960,7 @@ export function PeoplePerformance({ api, scope, configuration, employees, onSave
               )}
             </div>
             <strong>{goal.data.progress}%</strong>
-          </article>
+          </div>
         ))}
         {!goals.length && <p>No authorized goals.</p>}
         {canWrite && (
@@ -1025,7 +1025,7 @@ export function PeoplePerformance({ api, scope, configuration, employees, onSave
           </p>
         )}
         {appraisals.map((review) => (
-          <article className="people-expansion-card" key={review.id}>
+          <div className="people-expansion-card" key={review.id}>
             <div>
               <h3>
                 {employees.find((e) => e.id === review.data.employee_id)?.data.name || 'Employee'} ·{' '}
@@ -1099,7 +1099,7 @@ export function PeoplePerformance({ api, scope, configuration, employees, onSave
                 <button className="button">Complete appraisal</button>
               </Form>
             )}
-          </article>
+          </div>
         ))}
         {!appraisals.length && <p>No authorized appraisal records.</p>}
         {canWrite && (
@@ -1208,14 +1208,14 @@ export function PeopleLifecycle({ api, scope, configuration, employees, onSaved 
       <details>
         <summary>Lifecycle plans</summary>
         {plans.map((p) => (
-          <article className="people-expansion-card" key={p.id}>
+          <div className="people-expansion-card" key={p.id}>
             <div>
               <h3>{p.data.name}</h3>
               <p>
                 {p.data.direction} · {p.data.tasks.length} tasks · {p.status}
               </p>
             </div>
-          </article>
+          </div>
         ))}
       </details>
       {configuration.access.hr_write && configuration.service_active && (
@@ -1309,7 +1309,7 @@ export function PeopleLifecycle({ api, scope, configuration, employees, onSaved 
       {cases
         .filter((c) => c.status === 'open')
         .map((record) => (
-          <article className="people-lifecycle-case" key={record.id}>
+          <div className="people-lifecycle-case" key={record.id}>
             <h4>
               {employees.find((e) => e.id === record.root_id)?.data.name || 'Employee'} ·{' '}
               {record.data.direction}
@@ -1359,7 +1359,7 @@ export function PeopleLifecycle({ api, scope, configuration, employees, onSaved 
                 <button className="button">Complete lifecycle</button>
               </Form>
             )}
-          </article>
+          </div>
         ))}
     </section>
   );
@@ -1421,7 +1421,7 @@ export function PeopleProfileExpansion({
         <div>
           <h4>Resume</h4>
           {resume.map((r: any) => (
-            <article className="people-expansion-card" key={r.id}>
+            <div className="people-expansion-card" key={r.id}>
               <div>
                 <strong>{r.data.title}</strong>
                 <p>
@@ -1430,7 +1430,7 @@ export function PeopleProfileExpansion({
                 </p>
                 {r.data.description && <p>{r.data.description}</p>}
               </div>
-            </article>
+            </div>
           ))}
           {access.hr_write || (employee.access.self_service && employee.data.self_service) ? (
             <details>
@@ -1473,7 +1473,7 @@ export function PeopleProfileExpansion({
         <div>
           <h4>Skills</h4>
           {skills.map((s: any) => (
-            <article className="people-expansion-card" key={s.id}>
+            <div className="people-expansion-card" key={s.id}>
               <div>
                 <strong>{s.data.skill_name}</strong>
                 <p>
@@ -1481,7 +1481,7 @@ export function PeopleProfileExpansion({
                   {s.data.verified ? '· HR verified' : ''}
                 </p>
               </div>
-            </article>
+            </div>
           ))}
           {access.hr_write && catalogue.length > 0 && (
             <details>
@@ -1531,7 +1531,7 @@ export function PeopleProfileExpansion({
         <div>
           <h4>Certifications</h4>
           {certifications.map((c: any) => (
-            <article className="people-expansion-card" key={c.id}>
+            <div className="people-expansion-card" key={c.id}>
               <div>
                 <strong>{c.data.name}</strong>
                 <p>
@@ -1539,7 +1539,7 @@ export function PeopleProfileExpansion({
                   {c.data.expires_on ? 'Expires ' + c.data.expires_on : 'No expiry recorded'}
                 </p>
               </div>
-            </article>
+            </div>
           ))}
           {access.hr_write && (
             <details>

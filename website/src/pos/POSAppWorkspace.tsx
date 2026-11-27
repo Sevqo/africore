@@ -381,45 +381,93 @@ export function POSAppWorkspace({
           go('dashboard');
         }}
         menus={[
-          ...(registers.length > 0
-            ? [
-                {
-                  id: 'orders',
-                  label: 'Orders',
-                  active: view === 'orders',
-                  onSelect: () => {
-                    setReceipt(null);
-                    go('orders');
-                  },
+          {
+            id: 'orders',
+            label: 'Orders',
+            active: view === 'orders',
+            children: [
+              {
+                id: 'orders-list',
+                label: 'Orders',
+                active: view === 'orders',
+                onSelect: () => {
+                  setReceipt(null);
+                  go('orders');
                 },
-                {
-                  id: 'products',
-                  label: 'Products',
-                  active: view === 'products',
-                  onSelect: () => {
-                    setReceipt(null);
-                    go('products');
-                  },
+              },
+              {
+                id: 'orders-sessions',
+                label: 'Register Shifts',
+                active: view === 'dashboard',
+                onSelect: () => {
+                  setReceipt(null);
+                  go('dashboard');
                 },
-                {
-                  id: 'reporting',
-                  label: 'Reporting',
-                  active: view === 'reporting',
-                  onSelect: () => {
-                    setReceipt(null);
-                    go('reporting');
-                  },
+              },
+            ],
+          },
+          {
+            id: 'products',
+            label: 'Products',
+            active: view === 'products',
+            children: [
+              {
+                id: 'products-counter',
+                label: 'Counter Catalog',
+                active: view === 'products',
+                onSelect: () => {
+                  setReceipt(null);
+                  go('products');
                 },
-              ]
-            : []),
+              },
+              {
+                id: 'products-canonical',
+                label: 'Canonical Products',
+                onSelect: () => navigate('Products'),
+              },
+            ],
+          },
+          {
+            id: 'reporting',
+            label: 'Reporting',
+            active: view === 'reporting',
+            children: [
+              {
+                id: 'reporting-sales',
+                label: 'POS Sales Analysis',
+                active: view === 'reporting',
+                onSelect: () => {
+                  setReceipt(null);
+                  go('reporting');
+                },
+              },
+            ],
+          },
           {
             id: 'configuration',
             label: 'Configuration',
             active: view === 'configuration',
-            onSelect: () => {
-              setReceipt(null);
-              go('configuration');
-            },
+            children: [
+              {
+                id: 'config-settings',
+                label: 'Point of Sale Settings',
+                active: view === 'configuration',
+                onSelect: () => {
+                  setReceipt(null);
+                  go('configuration');
+                },
+              },
+              {
+                id: 'config-customers',
+                label: 'Walk-in Customers',
+                onSelect: () => navigate('Customers'),
+              },
+              {
+                id: 'config-inventory',
+                label: 'Warehouses & Stock',
+                onSelect: () => navigate('Inventory'),
+              },
+            ],
           },
         ]}
         rightContent={

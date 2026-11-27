@@ -195,7 +195,7 @@ export function POSAppReporting({
   }
 
   return (
-    <div className="pos-app-reporting">
+    <div className="pos-app-reporting o-app-sheet">
       <header className="pos-app-page-head pos-report-heading">
         <div>
           <span className="eyebrow">Reporting</span>
@@ -215,7 +215,7 @@ export function POSAppReporting({
           </button>
           <button
             type="button"
-            className="primary-button"
+            className="button"
             onClick={downloadCsv}
             disabled={!report || exporting || !online}
           >
@@ -225,27 +225,25 @@ export function POSAppReporting({
       </header>
 
       <section className="pos-report-filters panel" aria-label="Report filters">
-        <label className="pos-report-registers">
-          <span>Registers</span>
-          <select
-            multiple
-            size={Math.min(4, Math.max(2, registers.length))}
-            value={registerIds}
-            onChange={(event) => {
-              setRegisterIds(
-                Array.from(event.currentTarget.selectedOptions, (option) => option.value),
-              );
-              setOffset(0);
-            }}
-          >
-            {registers.map((row: any) => (
-              <option key={row.id} value={row.id}>
-                {row.data.name}
-              </option>
-            ))}
-          </select>
-          <small>Select one or more registers assigned to your account.</small>
-        </label>
+        {registers.length > 0 && (
+          <label className="pos-report-registers">
+            <span>Register</span>
+            <select
+              value={registerIds.length === 1 ? registerIds[0] : ''}
+              onChange={(event) => {
+                setRegisterIds(event.currentTarget.value ? [event.currentTarget.value] : []);
+                setOffset(0);
+              }}
+            >
+              <option value="">All assigned registers ({registers.length})</option>
+              {registers.map((row: any) => (
+                <option key={row.id} value={row.id}>
+                  {row.data.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label>
           <span>From</span>
           <input

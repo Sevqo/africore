@@ -211,10 +211,10 @@ export function OperationsWorkspace({
           Loading authorized records…
         </div>
       )}
-      {section === 'Intelligence' && <IntelligenceAlerts api={api} writable={finance} />}
       {section === 'Data' && <DataPlatformView api={api} writable={finance} />}
       {section === 'Intelligence' && (
         <IntelligenceView
+          alerts={<IntelligenceAlerts api={api} writable={finance} />}
           data={data}
           secondary={secondary}
           api={api}

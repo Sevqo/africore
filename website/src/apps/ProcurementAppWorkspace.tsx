@@ -418,26 +418,28 @@ export function ProcurementAppWorkspace({
         </p>
       )}
       {doc ? (
-        <DocumentPage
-          type={openType}
-          api={api}
-          detail={documents}
-          balance={balance}
-          writable={writable}
-          finance={finance}
-          docTab={docTab}
-          setDocTab={setDocTab}
-          onBack={closeDoc}
-          onOpen={openDoc}
-          onAction={recordAction}
-          onReceive={receiveOrder}
-          onPayment={recordPayment}
-          onCreate={(type, source) => setEditor({ type, source })}
-          onRevise={(record) => setEditor({ type: openType, record })}
-          bills={lists.bill}
-        />
+        <div className="o-app-sheet">
+          <DocumentPage
+            type={openType}
+            api={api}
+            detail={documents}
+            balance={balance}
+            writable={writable}
+            finance={finance}
+            docTab={docTab}
+            setDocTab={setDocTab}
+            onBack={closeDoc}
+            onOpen={openDoc}
+            onAction={recordAction}
+            onReceive={receiveOrder}
+            onPayment={recordPayment}
+            onCreate={(type, source) => setEditor({ type, source })}
+            onRevise={(record) => setEditor({ type: openType, record })}
+            bills={lists.bill}
+          />
+        </div>
       ) : (
-        <>{renderView()}</>
+        <div className="o-app-sheet">{renderView()}</div>
       )}
       {editor && (
         <ProcurementEditor
@@ -630,7 +632,6 @@ function DashboardView({
           </p>
         </div>
         <div className="proc-page-actions">
-          {writable && <NewMenu onCreate={onCreate} />}
           <button className="secondary-button" onClick={() => go('orders')}>
             Purchase Orders
           </button>
@@ -2896,53 +2897,6 @@ function ReceiptReport({
         courier proof or supplier scorecard.
       </p>
     </>
-  );
-}
-
-function NewMenu({ onCreate }: { onCreate: (type: string) => void }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className={`ac-menubar-dropdown${open ? ' is-open' : ''}`}>
-      <button
-        type="button"
-        className="sales-new"
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-      >
-        New ▾
-      </button>
-      {open && (
-        <div className="ac-menubar-popover align-right" role="menu">
-          <button
-            type="button"
-            onClick={() => {
-              setOpen(false);
-              onCreate('request');
-            }}
-          >
-            Purchase request
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setOpen(false);
-              onCreate('rfq');
-            }}
-          >
-            Supplier offer
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setOpen(false);
-              onCreate('supplier');
-            }}
-          >
-            Vendor profile
-          </button>
-        </div>
-      )}
-    </div>
   );
 }
 

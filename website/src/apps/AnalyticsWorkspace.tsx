@@ -1070,7 +1070,7 @@ export function AnalyticsWorkspace({
       color = widget.color || vizPalette[0];
 
     return (
-      <article
+      <div
         className={`analytics-widget panel ${widget.span === 'wide' || widget.chart === 'line' ? 'analytics-widget-wide' : ''}`}
         key={widget.id}
       >
@@ -1237,12 +1237,12 @@ export function AnalyticsWorkspace({
             </button>
           </footer>
         )}
-      </article>
+      </div>
     );
   }
 
   return (
-    <div className="apps-workspace analytics-workspace sh-analytics">
+    <div className="apps-workspace analytics-workspace sh-analytics o-app-sheet">
       <div className="analytics-toolbar">
         <div className="sh-pill-group">
           <select
@@ -1573,67 +1573,6 @@ export function AnalyticsWorkspace({
       </div>
 
       <div className="analytics-layout">
-        <aside className="analytics-sidebar" aria-label="Analytics navigation">
-          <button
-            className={section === 'dashboard' ? 'selected' : ''}
-            onClick={() => navigate?.('dashboard')}
-          >
-            Overview
-          </button>
-          {activeDashboard && (
-            <button className="analytics-subnav" onClick={() => navigate?.('dashboard')}>
-              {activeDashboard.name}
-            </button>
-          )}
-          <h3>FAVORITES</h3>
-          {favorite && (
-            <button className="selected" onClick={() => navigate?.('dashboard')}>
-              {activeDashboard?.name || 'Overview'}
-            </button>
-          )}
-          <h3>REPORTS</h3>
-          <button
-            className={section === 'reporting' ? 'selected' : ''}
-            onClick={() => {
-              setReportView('graph');
-              navigate?.('reporting');
-            }}
-          >
-            Graph Analysis
-          </button>
-          <button
-            className={section === 'explore' ? 'selected' : ''}
-            onClick={() => navigate?.('explore')}
-          >
-            Pivot &amp; Explore
-          </button>
-          <button
-            className={section === 'Intelligence' ? 'selected' : ''}
-            onClick={() => navigate?.('Intelligence')}
-          >
-            Financial Patterns
-          </button>
-          <h3>LIBRARY</h3>
-          <button
-            className={section === 'saved-dashboards' ? 'selected' : ''}
-            onClick={() => navigate?.('saved-dashboards')}
-          >
-            Saved Dashboards
-          </button>
-          <button
-            className={section === 'coverage' ? 'selected' : ''}
-            onClick={() => navigate?.('coverage')}
-          >
-            Data Quality
-          </button>
-          <button
-            className={section === 'configuration' ? 'selected' : ''}
-            onClick={() => navigate?.('configuration')}
-          >
-            Configuration
-          </button>
-        </aside>
-
         <main className="analytics-main">
           {(loading || Object.keys(loadErrors).length > 0) && (
             <div className="analytics-load-status">
@@ -2600,7 +2539,7 @@ export function AnalyticsWorkspace({
               </p>
               <div className="analytics-source-grid">
                 {Object.entries(registry?.sources || {}).map(([key, value]: [string, any]) => (
-                  <article className="panel" key={key}>
+                  <div className="ac-record-row analytics-source-row" key={key}>
                     <div>
                       <h2>{value.label}</h2>
                       <span className={`analytics-source-status status-${value.status}`}>
@@ -2619,7 +2558,7 @@ export function AnalyticsWorkspace({
                       </small>
                     )}
                     {value.refreshed_at && <small>Checked: {value.refreshed_at}</small>}
-                  </article>
+                  </div>
                 ))}
               </div>
               {data?.inventory && (
@@ -2786,7 +2725,7 @@ export function AnalyticsWorkspace({
               </header>
               <div className="analytics-saved-grid">
                 {dashboards.map((dashboard) => (
-                  <article className="panel" key={dashboard.id}>
+                  <div className="ac-record-row analytics-saved-row" key={dashboard.id}>
                     <h2>{dashboard.name}</h2>
                     <p>
                       {dashboard.configuration.widgets.length} widgets · Updated{' '}
@@ -2811,10 +2750,10 @@ export function AnalyticsWorkspace({
                         </button>
                       )}
                     </div>
-                  </article>
+                  </div>
                 ))}
                 {!dashboards.length && (
-                  <p className="panel" style={{ padding: 16 }}>
+                  <p className="o-flat-note" style={{ padding: '12px 0' }}>
                     No saved dashboards yet.
                   </p>
                 )}
@@ -3682,7 +3621,7 @@ function SavedViews({
         {error && <p className="alert error">{error}</p>}
         <div className="analytics-saved-list">
           {saved.map((entry) => (
-            <article key={entry.id}>
+            <div className="ac-record-row" key={entry.id}>
               <strong>{entry.name}</strong>
               <button className="quiet-button" onClick={() => onLoad(entry.configuration)}>
                 Load view
@@ -3697,7 +3636,7 @@ function SavedViews({
               >
                 Remove
               </button>
-            </article>
+            </div>
           ))}
           {!saved.length && <p>No saved report views yet.</p>}
         </div>

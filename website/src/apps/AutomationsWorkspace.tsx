@@ -1,5 +1,4 @@
 import { BarChart } from '../charts/BarChart';
-import { MetricStrip, MetricTile } from '../charts/MetricTile';
 import { Overlay } from '../components/Overlay';
 import { DataTable } from '../components/DataTable';
 import { WorkAutomationDirectory } from './WorkAutomation';
@@ -686,34 +685,201 @@ export function AutomationsWorkspace({
     return <div className="apps-workspace automations-workspace"><p role="status">Loading automation rule…</p>{error && <p className="alert error" role="alert">{error}</p>}</div>;
 
   return (
-    <div className="apps-workspace automations-workspace" data-automation-section={section}>
-      <header className="automation-app-toolbar">
-        <div className="automation-heading"><span className="automation-breadcrumb">AfriCore Automations</span><h1>{pageTitle}</h1></div>
-        <div className="automation-global-search"><span aria-hidden="true">⌕</span><input type="search" value={search} onChange={(event) => { setOffset(0); setSearch(event.target.value); }} placeholder="Search…" aria-label="Search automation rules" /><select value={stateFilter} onChange={(event) => { setOffset(0); setStateFilter(event.target.value); }} aria-label="Filter rule status"><option value="">All statuses</option><option value="enabled">Enabled</option><option value="paused">Paused</option></select></div>
-        {['dashboard', 'rules', 'Automations', 'scheduled'].includes(section) && <div className="automation-filter-row" aria-label="Automation filters">
-          <label><span>Source</span><select value={sourceFilter} onChange={(event) => { setOffset(0); setSourceFilter(event.target.value); }}><option value="">All sources</option>{[...new Set(templates.map((item) => item.category))].map((source) => <option key={source} value={source}>{sourceLabel(templates.find((item) => item.category === source))}</option>)}</select></label>
-          <label><span>Template</span><select value={templateFilter} onChange={(event) => { setOffset(0); setTemplateFilter(event.target.value); }}><option value="">All templates</option>{templates.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-          <label><span>Owner</span><select value={ownerFilter} onChange={(event) => { setOffset(0); setOwnerFilter(event.target.value); }}><option value="">All owners</option>{team.map((member: any) => <option key={member.id} value={member.id}>{member.display_name || member.email}</option>)}</select></label>
-          {section === 'scheduled' && <label><span>Frequency</span><select value={frequencyFilter} onChange={(event) => { setOffset(0); setFrequencyFilter(event.target.value); }}><option value="">All frequencies</option><option value="daily">Daily</option><option value="weekly">Weekly</option></select></label>}
-          <label><span>Sort</span><select value={sort} onChange={(event) => { setOffset(0); setSort(event.target.value); }}><option value="updated">Recently updated</option><option value="name">Name</option><option value="runs">Most runs</option></select></label>
-        </div>}
-        <div className="automation-toolbar-actions"><button className="button" onClick={() => openRule('new')}>New Rule</button>{section === 'scheduled' && <button className="secondary-button" onClick={async () => { try { const result = await action(() => api('/automations/process', 'POST', {}), 'Due rules processed by the existing worker.'); setNotice('Due rules checked: ' + (result.queued ?? 0) + ' new run(s) queued or processed.'); } catch (caught) { setError((caught as Error).message); } }}>Process Due Runs</button>}</div>
+    <div className="apps-workspace automations-workspace o-app-sheet" data-automation-section={section}>
+      <header className="o-flat-cp" aria-label="Automations control bar">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button className="button" onClick={() => openRule('new')}>
+            + New Rule
+          </button>
+          {section === 'scheduled' && (
+            <button
+              className="secondary-button"
+              onClick={async () => {
+                try {
+                  const result = await action(
+                    () => api('/automations/process', 'POST', {}),
+                    'Due rules processed by the existing worker.',
+                  );
+                  setNotice('Due rules checked: ' + (result.queued ?? 0) + ' new run(s) queued or processed.');
+                } catch (caught) {
+                  setError((caught as Error).message);
+                }
+              }}
+            >
+              Process Due Runs
+            </button>
+          )}
+          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 650 }}>{pageTitle}</h2>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+          <label className="ac-faceted-search" style={{ width: 170, flex: '0 1 170px' }} aria-label="Search automation rules">
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => {
+                setOffset(0);
+                setSearch(event.target.value);
+              }}
+              placeholder="Search rules…"
+            />
+          </label>
+          <select
+            className="o-cp-inline-select"
+            value={stateFilter}
+            onChange={(event) => {
+              setOffset(0);
+              setStateFilter(event.target.value);
+            }}
+            aria-label="Filter rule status"
+          >
+            <option value="">All statuses</option>
+            <option value="enabled">Enabled</option>
+            <option value="paused">Paused</option>
+          </select>
+          {['dashboard', 'rules', 'Automations', 'scheduled'].includes(section) && (
+            <details className="ac-filter-popover">
+              <summary className="secondary-button">Filters ▾</summary>
+              <div className="ac-filter-popover-panel">
+                <Field label="Source">
+                  <select
+                    value={sourceFilter}
+                    onChange={(event) => {
+                      setOffset(0);
+                      setSourceFilter(event.target.value);
+                    }}
+                  >
+                    <option value="">All sources</option>
+                    {[...new Set(templates.map((item) => item.category))].map((source) => (
+                      <option key={source} value={source}>
+                        {sourceLabel(templates.find((item) => item.category === source))}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Template">
+                  <select
+                    value={templateFilter}
+                    onChange={(event) => {
+                      setOffset(0);
+                      setTemplateFilter(event.target.value);
+                    }}
+                  >
+                    <option value="">All templates</option>
+                    {templates.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Owner">
+                  <select
+                    value={ownerFilter}
+                    onChange={(event) => {
+                      setOffset(0);
+                      setOwnerFilter(event.target.value);
+                    }}
+                  >
+                    <option value="">All owners</option>
+                    {team.map((member: any) => (
+                      <option key={member.id} value={member.id}>
+                        {member.display_name || member.email}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                {section === 'scheduled' && (
+                  <Field label="Frequency">
+                    <select
+                      value={frequencyFilter}
+                      onChange={(event) => {
+                        setOffset(0);
+                        setFrequencyFilter(event.target.value);
+                      }}
+                    >
+                      <option value="">All frequencies</option>
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                    </select>
+                  </Field>
+                )}
+                <Field label="Sort">
+                  <select
+                    value={sort}
+                    onChange={(event) => {
+                      setOffset(0);
+                      setSort(event.target.value);
+                    }}
+                  >
+                    <option value="updated">Recently updated</option>
+                    <option value="name">Name</option>
+                    <option value="runs">Most runs</option>
+                  </select>
+                </Field>
+              </div>
+            </details>
+          )}
+        </div>
       </header>
       {notice && <p className="automation-notice" role="status">{notice}</p>}
       {error && <p className="alert error" role="alert">{error}</p>}
 
       {section === 'dashboard' && rules && <>
-        <MetricStrip label="Automation metrics">
+        <div className="o-kpi-row" aria-label="Automation metrics">
           {[
             ['Automation Rules', rules.summary?.total ?? rules.total ?? 0, 'Configured in this workspace'],
             ['Active', rules.summary?.enabled ?? 0, 'Rules currently enabled'],
-            ['Pending Runs', runs?.summary?.pending ?? '—', runSummaryError ? 'Execution summary unavailable' : 'Waiting for the existing worker'],
+            ['Pending Runs', runs?.summary?.pending ?? '—', runSummaryError ? 'Execution summary unavailable' : 'Waiting for existing worker'],
             ['Needs Review', runs?.summary?.dead_letter ?? '—', runSummaryError ? 'Execution summary unavailable' : 'Dead-letter runs'],
-          ].map(([label, value, hint]) => <MetricTile key={String(label)} label={String(label)} value={String(value)} caption={String(hint)} />)}
-        </MetricStrip>
-        <section className="automation-dashboard-grid"><article className="automation-panel"><h2>Execution overview</h2>{runSummaryError ? <p className="alert error" role="alert">{runSummaryError} <button className="quiet-button" onClick={() => setRevision((value) => value + 1)}>Retry</button></p> : runs ? <BarChart title="Automation runs by state" multiColor rows={Object.entries(runs.summary || {}).map(([status, value]) => ({ key: status, label: titleCase(status), value: Number(value) }))} /> : <p role="status">{loadingRunSummary ? 'Loading execution summary…' : 'Execution summary unavailable.'}</p>}</article><article className="automation-panel"><h2>Runtime &amp; safeguards</h2><dl className="automation-facts"><div><dt>Worker</dt><dd>Existing application worker</dd></div><div><dt>Poll interval</dt><dd>{runtime.worker_poll_seconds || 15} seconds while awake</dd></div><div><dt>Per-pass limit</dt><dd>{runtime.maximum_candidates_per_pass || 50} candidates</dd></div><div><dt>Delivery</dt><dd>Internal actions only</dd></div></dl><p>{runtime.timing_notice}</p><button className="secondary-button" onClick={() => openSection('rules')}>View Rules</button></article></section>
-        <section className="automation-panel"><div className="automation-section-heading"><h2>Recent Execution History</h2><button className="quiet-button" onClick={() => openRuns()}>Open All Runs</button></div>{runs ? <RunTable runs={runs} openRun={openRun} /> : runSummaryError ? <Empty text="Execution history is unavailable; retry the summary above." /> : <p role="status">Loading recent executions…</p>}</section>
-        <section className="automation-panel"><div className="automation-section-heading"><h2>Attention in This Result</h2><button className="quiet-button" onClick={() => openSection('rules')}>Open Rules</button></div>{rules.data?.filter((rule: any) => rule.owner_permission_revoked || rule.last_run_status === 'dead_letter' || !rule.enabled).length ? <ul className="automation-attention-list">{rules.data.filter((rule: any) => rule.owner_permission_revoked || rule.last_run_status === 'dead_letter' || !rule.enabled).slice(0, 8).map((rule: any) => <li key={rule.id}><button className="automation-table-link" onClick={() => openRule(rule.id)}>{rule.name}</button><span>{rule.owner_permission_revoked ? 'Owner permission revoked' : rule.last_run_status === 'dead_letter' ? 'Latest run needs review' : 'Paused'}</span></li>)}</ul> : <Empty text="No rules in this filtered result require attention." />}</section>
+          ].map(([label, value, hint]) => (
+            <div className="o-kpi-cell" key={String(label)}>
+              <span>{String(label)}</span>
+              <strong>{String(value)}</strong>
+              <small>{String(hint)}</small>
+            </div>
+          ))}
+        </div>
+        <section className="ac-split-grid">
+          <article className="automation-panel">
+            <h3 style={{ margin: '0 0 8px', fontSize: 14.5 }}>Execution overview</h3>
+            {runSummaryError ? (
+              <p className="alert error" role="alert">
+                {runSummaryError}{' '}
+                <button className="quiet-button" onClick={() => setRevision((value) => value + 1)}>
+                  Retry
+                </button>
+              </p>
+            ) : runs ? (
+              <BarChart
+                title="Automation runs by state"
+                multiColor
+                rows={Object.entries(runs.summary || {}).map(([status, value]) => ({
+                  key: status,
+                  label: titleCase(status),
+                  value: Number(value),
+                }))}
+              />
+            ) : (
+              <p role="status">
+                {loadingRunSummary ? 'Loading execution summary…' : 'Execution summary unavailable.'}
+              </p>
+            )}
+          </article>
+          <article className="automation-panel">
+            <h3 style={{ margin: '0 0 8px', fontSize: 14.5 }}>Runtime &amp; safeguards</h3>
+            <dl className="automation-facts">
+              <div><dt>Worker</dt><dd>Existing application worker</dd></div>
+              <div><dt>Poll interval</dt><dd>{runtime.worker_poll_seconds || 15} seconds while awake</dd></div>
+              <div><dt>Per-pass limit</dt><dd>{runtime.maximum_candidates_per_pass || 50} candidates</dd></div>
+              <div><dt>Delivery</dt><dd>Internal actions only</dd></div>
+            </dl>
+            <p className="o-flat-note">{runtime.timing_notice}</p>
+            <button className="secondary-button" onClick={() => openSection('rules')}>View Rules</button>
+          </article>
+        </section>
+        <section className="automation-panel"><div className="automation-section-heading"><h3 style={{ margin: 0, fontSize: 14.5 }}>Recent Execution History</h3><button className="quiet-button" onClick={() => openRuns()}>Open All Runs</button></div>{runs ? <RunTable runs={runs} openRun={openRun} /> : runSummaryError ? <Empty text="Execution history is unavailable; retry the summary above." /> : <p role="status">Loading recent executions…</p>}</section>
+        <section className="automation-panel"><div className="automation-section-heading"><h3 style={{ margin: 0, fontSize: 14.5 }}>Attention in This Result</h3><button className="quiet-button" onClick={() => openSection('rules')}>Open Rules</button></div>{rules.data?.filter((rule: any) => rule.owner_permission_revoked || rule.last_run_status === 'dead_letter' || !rule.enabled).length ? <ul className="automation-attention-list">{rules.data.filter((rule: any) => rule.owner_permission_revoked || rule.last_run_status === 'dead_letter' || !rule.enabled).slice(0, 8).map((rule: any) => <li key={rule.id}><button className="automation-table-link" onClick={() => openRule(rule.id)}>{rule.name}</button><span>{rule.owner_permission_revoked ? 'Owner permission revoked' : rule.last_run_status === 'dead_letter' ? 'Latest run needs review' : 'Paused'}</span></li>)}</ul> : <Empty text="No rules in this filtered result require attention." />}</section>
       </>}
 
       {(section === 'rules' || section === 'Automations') && rules && <>
@@ -727,7 +893,36 @@ export function AutomationsWorkspace({
         <RuleTable rows={rulesForSection} templates={templates} openRule={(id: string) => openRule(id)} toggleRule={toggleRule} openRuns={openRuns} services={services} schedule />
       </>}
 
-      {section === 'templates' && <section className="automation-template-grid">{templates.map((template) => <article className="automation-template-card" key={template.id}><div className="automation-template-heading"><span>{template.group === 'Scheduled Conditions' ? 'Scheduled Checks' : template.group}</span><span className="automation-trigger-chip">{template.trigger === 'schedule' ? 'Scheduled check' : titleCase(template.trigger)}</span></div><h2>{template.name}</h2><p>Business source: {sourceLabel(template)} · Default action: {titleCase(workflowAction(template.id))}</p><p>Source services: {template.source_services.map(titleCase).join(', ')}</p>{template.unavailable_services.length > 0 && <p className="alert warning">Unavailable: {template.unavailable_services.map(titleCase).join(', ')}</p>}{template.default_action_unavailable_services.length > 0 && <p className="alert warning">The default action also needs: {template.default_action_unavailable_services.map(titleCase).join(', ')}</p>}<button className="secondary-button" disabled={!template.available} onClick={() => openRule('new', template.id)}>Use This Template</button></article>)}</section>}
+      {section === 'templates' && (
+        <div className="ac-record-list">
+          {templates.map((template) => (
+            <div className="ac-record-row" key={template.id}>
+              <div className="ac-record-main">
+                <span className="ac-record-title">
+                  {template.name}{' '}
+                  <span className="badge" style={{ marginInlineStart: 6 }}>
+                    {template.trigger === 'schedule' ? 'Scheduled check' : titleCase(template.trigger)}
+                  </span>
+                </span>
+                <span className="ac-record-meta">
+                  Source: {sourceLabel(template)} · Action: {titleCase(workflowAction(template.id))} · Services:{' '}
+                  {template.source_services.map(titleCase).join(', ')}
+                  {template.unavailable_services.length > 0
+                    ? ` · Unavailable: ${template.unavailable_services.map(titleCase).join(', ')}`
+                    : ''}
+                </span>
+              </div>
+              <button
+                className="secondary-button"
+                disabled={!template.available}
+                onClick={() => openRule('new', template.id)}
+              >
+                Use Template
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {section === 'runs' && <ExecutionHistory api={api} filter={runFilter} setFilter={setRunFilter} runs={runs} openRun={openRun} search={runSearch} setSearch={setRunSearch} from={runFrom} setFrom={setRunFrom} to={runTo} setTo={setRunTo} workflowId={runWorkflowId} setWorkflowId={setRunWorkflowId} offset={runOffset} setOffset={setRunOffset} workflows={rules?.data || []} />}
 

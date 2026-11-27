@@ -51,7 +51,7 @@ export function POSAppProducts({
   const register = registers.find((row: any) => row.id === registerId),
     currency = register?.data?.currency || 'KES';
   return (
-    <div className="pos-app-products">
+    <div className="pos-app-products o-app-sheet">
       <header className="pos-app-page-head">
         <div>
           <span className="eyebrow">Products</span>
@@ -66,22 +66,24 @@ export function POSAppProducts({
         </button>
       </header>
       <div className="pos-app-toolbar">
-        <label className="pos-app-filter-search">
-          <span>Register</span>
-          <select
-            value={registerId}
-            onChange={(e) => {
-              setRegisterId(e.target.value);
-              setOffset(0);
-            }}
-          >
-            {registers.map((row: any) => (
-              <option key={row.id} value={row.id}>
-                {row.data.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        {registers.length > 0 && (
+          <label className="pos-app-inline-field">
+            <span>Register</span>
+            <select
+              value={registerId}
+              onChange={(e) => {
+                setRegisterId(e.target.value);
+                setOffset(0);
+              }}
+            >
+              {registers.map((row: any) => (
+                <option key={row.id} value={row.id}>
+                  {row.data.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <div className="pos-app-search">
           <span aria-hidden="true">⌕</span>
           <input

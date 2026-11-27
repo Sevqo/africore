@@ -53,7 +53,7 @@ export function PeopleWorkspace({
     [revision, setRevision] = useState(0),
     [query, setQuery] = useState(''),
     [offset, setOffset] = useState(0),
-    [directoryView, setDirectoryView] = useState<'cards' | 'list'>('cards'),
+    [directoryView, setDirectoryView] = useState<'cards' | 'list'>('list'),
     [directoryFilters, setDirectoryFilters] = useState({ status: '', department_id: '' }),
     [syncingTeam, setSyncingTeam] = useState(false),
     [autoSyncedScope, setAutoSyncedScope] = useState(''),
@@ -255,7 +255,7 @@ export function PeopleWorkspace({
   const access = config.access,
     show = (name: string) => (section === 'dashboard' && name === 'employees') || section === name;
   return (
-    <div className="apps-workspace people-workspace">
+    <div className="apps-workspace people-workspace o-app-sheet">
       {error && (
         <p role="alert" className="alert error">
           {error}
@@ -270,28 +270,17 @@ export function PeopleWorkspace({
           </button>
         </p>
       ))}
-      <section className="panel">
-        <h2>People operations</h2>
-        <p>
-          Private employment records, configured leave and recorded attendance. Payroll and
-          statutory deductions are not calculated. Attendance does not establish location or
-          biometric proof.
-        </p>
-        {!config.service_active && (
-          <p role="status">
-            People is inactive. Authorized history remains readable; new operations require
-            activation.
-          </p>
-        )}
-        {!config.configured && access.hr_write && (
-          <p role="status">
-            Default employer policy will be initialized automatically when you sync workspace
-            members or add an employee. You can customize working days and schedules anytime in
-            Settings.
-          </p>
-        )}
-        {access.hr_write && config.service_active && unlinkedMembersCount > 0 && (
-          <div className="form-actions" style={{ marginTop: 10 }}>
+      <header className="o-flat-cp">
+        <div>
+          <h2>People</h2>
+          <span className="o-flat-note">
+            Private employment records, configured leave and recorded attendance. Payroll and
+            statutory deductions are not calculated. Attendance does not establish location or
+            biometric proof.
+          </span>
+        </div>
+        <div className="form-actions">
+          {access.hr_write && config.service_active && unlinkedMembersCount > 0 && (
             <button
               type="button"
               className="button"
@@ -302,14 +291,27 @@ export function PeopleWorkspace({
                 ? 'Syncing workspace members…'
                 : `Sync ${unlinkedMembersCount} workspace member${unlinkedMembersCount === 1 ? '' : 's'} into People`}
             </button>
-          </div>
-        )}
-        {config.employee_id && (
-          <button className="secondary-button" onClick={() => setSelected(config.employee_id)}>
-            Open my employee record
-          </button>
-        )}
-      </section>
+          )}
+          {config.employee_id && (
+            <button className="secondary-button" onClick={() => setSelected(config.employee_id)}>
+              Open my employee record
+            </button>
+          )}
+        </div>
+      </header>
+      {!config.service_active && (
+        <p role="status" className="o-flat-note">
+          People is inactive. Authorized history remains readable; new operations require
+          activation.
+        </p>
+      )}
+      {!config.configured && access.hr_write && (
+        <p role="status" className="o-flat-note">
+          Default employer policy will be initialized automatically when you sync workspace
+          members or add an employee. You can customize working days and schedules anytime in
+          Settings.
+        </p>
+      )}
       {section === 'dashboard' && (
         <PeopleOverview api={api} scope={scope + ':' + revision} configuration={config} />
       )}
@@ -343,7 +345,7 @@ export function PeopleWorkspace({
         />
       )}
       {(show('employees') || show('departments')) && (
-        <section className="panel">
+        <section className="o-flat-section">
           <div className="section-heading">
             <h2>Authorized employee directory</h2>
             {access.hr_write && (
@@ -437,7 +439,7 @@ export function PeopleWorkspace({
           </div>
           <div className={'people-employee-directory people-employee-directory-' + directoryView}>
             {directory?.data.map((e: any) => (
-              <article className="people-employee-card" key={e.id}>
+              <div className="people-employee-card" key={e.id}>
                 <span className="people-employee-avatar" aria-hidden="true">
                   {String(e.data.name || '?')
                     .trim()
@@ -456,7 +458,7 @@ export function PeopleWorkspace({
                 <button className="secondary-button" onClick={() => setSelected(e.id)}>
                   Open employee
                 </button>
-              </article>
+              </div>
             ))}
           </div>
           {directory?.data.length === 0 && <p>No authorized employee profiles match.</p>}
@@ -497,10 +499,10 @@ export function PeopleWorkspace({
       )}
       {section === 'reports' && <PeopleReports api={api} scope={scope} />}
       {show('departments') && (
-        <section className="panel">
+        <section className="o-flat-section">
           <h2>Departments</h2>
           {departments.map((d) => (
-            <article key={d.id}>
+            <div className="ac-record-row" key={d.id}>
               <p>
                 {d.data.name} · {d.status}
               </p>
@@ -513,7 +515,7 @@ export function PeopleWorkspace({
                   onSaved={() => saved('Department revision saved.')}
                 />
               )}
-            </article>
+            </div>
           ))}
           {access.hr_write && (
             <Form
@@ -548,7 +550,7 @@ export function PeopleWorkspace({
       )}
       {detail &&
         (show('employees') || show('leave') || show('attendance') || show('org-chart')) && (
-          <section className="panel">
+          <section className="o-flat-section">
             <div className="section-heading">
               <h2>{detail.data.name}</h2>
               {access.hr_write && (
@@ -810,13 +812,13 @@ export function PeopleWorkspace({
               <>
                 <h3>Restricted compensation terms</h3>
                 {compensation.data.map((c: any) => (
-                  <article key={c.id}>
+                  <div className="ac-record-row" key={c.id}>
                     <p>
                       {money(c.data.amount_minor, c.data.currency)} per {c.data.period} ·{' '}
                       {c.data.effective_from} to {c.data.effective_to || 'open-ended'}
                     </p>
                     <p>{c.data.notes}</p>
-                  </article>
+                  </div>
                 ))}
                 <p>{compensation.notice}</p>
               </>
@@ -824,75 +826,77 @@ export function PeopleWorkspace({
           </section>
         )}
       {show('leave') && (
-        <section className="panel">
+        <>
           <PeopleTimeOffCalendar api={api} scope={scope + ':' + revision} />
-          <h2>Leave requests</h2>
-          {requests?.data.map((r: any) => (
-            <article key={r.id} className="app-price-review">
-              <h3>{r.data.employee_name}</h3>
-              <p>
-                {r.data.leave_type_name} · {r.data.from} to {r.data.to} · {r.status}
-              </p>
-              {r.data.reason && <p>{r.data.reason}</p>}
-              {['pending', 'approved'].includes(r.status) &&
-                (access.hr_manage || r.data.employee_id === config.employee_id) && (
+          <section className="o-flat-section">
+            <h2>Leave requests</h2>
+            {requests?.data.map((r: any) => (
+              <div key={r.id} className="app-price-review">
+                <h3>{r.data.employee_name}</h3>
+                <p>
+                  {r.data.leave_type_name} · {r.data.from} to {r.data.to} · {r.status}
+                </p>
+                {r.data.reason && <p>{r.data.reason}</p>}
+                {['pending', 'approved'].includes(r.status) &&
+                  (access.hr_manage || r.data.employee_id === config.employee_id) && (
+                    <Form
+                      submit={async (d) => {
+                        await api('/people/leave/' + r.id + '/cancel', 'POST', {
+                          expected_version: r.version,
+                          reason: d.reason,
+                        });
+                        saved('Leave cancellation recorded.');
+                      }}
+                    >
+                      <Field label="Cancellation reason">
+                        <input name="reason" required minLength={8} maxLength={2000} />
+                      </Field>
+                      <button className="secondary-button">Cancel leave with reason</button>
+                    </Form>
+                  )}
+              </div>
+            ))}
+            {!requests?.data.length && <p>No visible leave requests.</p>}
+            {requests?.has_more && (
+              <p>Showing the latest 50 requests. Additional history remains retained.</p>
+            )}
+            <h3>Assigned leave reviews</h3>
+            {reviews.map((r) => (
+              <div className="app-price-review" key={r.id}>
+                <h4>{r.status}</h4>
+                <ApprovalDetails approval={r} />
+                {r.can_decide && (
                   <Form
                     submit={async (d) => {
-                      await api('/people/leave/' + r.id + '/cancel', 'POST', {
-                        expected_version: r.version,
-                        reason: d.reason,
-                      });
-                      saved('Leave cancellation recorded.');
+                      await api('/approvals/' + r.id + '/decide', 'POST', d);
+                      saved('Leave review recorded.');
                     }}
                   >
-                    <Field label="Cancellation reason">
-                      <input name="reason" required minLength={8} maxLength={2000} />
+                    <Field label="Decision">
+                      <select name="decision">
+                        <option value="approved">Approve configured leave</option>
+                        <option value="rejected">Reject leave</option>
+                      </select>
                     </Field>
-                    <button className="secondary-button">Cancel leave with reason</button>
+                    <Field label="Private review reason">
+                      <textarea name="reason" required minLength={5} maxLength={1000} />
+                    </Field>
+                    <button className="button">Record separate leave decision</button>
                   </Form>
                 )}
-            </article>
-          ))}
-          {!requests?.data.length && <p>No visible leave requests.</p>}
-          {requests?.has_more && (
-            <p>Showing the latest 50 requests. Additional history remains retained.</p>
-          )}
-          <h3>Assigned leave reviews</h3>
-          {reviews.map((r) => (
-            <article className="app-price-review" key={r.id}>
-              <h4>{r.status}</h4>
-              <ApprovalDetails approval={r} />
-              {r.can_decide && (
-                <Form
-                  submit={async (d) => {
-                    await api('/approvals/' + r.id + '/decide', 'POST', d);
-                    saved('Leave review recorded.');
-                  }}
-                >
-                  <Field label="Decision">
-                    <select name="decision">
-                      <option value="approved">Approve configured leave</option>
-                      <option value="rejected">Reject leave</option>
-                    </select>
-                  </Field>
-                  <Field label="Private review reason">
-                    <textarea name="reason" required minLength={5} maxLength={1000} />
-                  </Field>
-                  <button className="button">Record separate leave decision</button>
-                </Form>
-              )}
-            </article>
-          ))}
-        </section>
+              </div>
+            ))}
+          </section>
+        </>
       )}
       {show('attendance') && access.hr_view && (
         <PeopleAttendanceAnalysis api={api} scope={scope + ':' + revision} />
       )}
       {show('attendance') && (
-        <section className="panel">
+        <section className="o-flat-section">
           <h2>Recorded attendance</h2>
           {attendance?.data.map((r: any) => (
-            <article key={r.id}>
+            <div className="ac-record-row" key={r.id}>
               <p>
                 {directory?.data.find((e: any) => e.id === r.data.employee_id)?.data.name ||
                   'Authorized employee'}{' '}
@@ -909,17 +913,17 @@ export function PeopleWorkspace({
                   }
                 />
               )}
-            </article>
+            </div>
           ))}
           <p>{attendance?.notice}</p>
           {attendance?.has_more && <p>Showing the latest 50 visible records.</p>}
         </section>
       )}
       {(show('leave-types') || section === 'leave') && access.hr_manage && (
-        <section className="panel">
+        <section className="o-flat-section">
           <h2>Employer leave types</h2>
           {types.map((t) => (
-            <article key={t.id}>
+            <div className="ac-record-row" key={t.id}>
               <p>
                 {t.data.name} · {t.data.annual_allowance_milli / 1000} days · {t.data.accrual} ·{' '}
                 {t.status}
@@ -929,9 +933,10 @@ export function PeopleWorkspace({
                 api={api}
                 onSaved={() => saved('Leave policy revision saved.')}
               />
-            </article>
+            </div>
           ))}
           <Form
+            className="o-flat-section"
             submit={async (d) => {
               await api('/people/leave-types', 'POST', {
                 expected_version: 0,

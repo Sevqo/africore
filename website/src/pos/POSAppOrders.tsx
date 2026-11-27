@@ -63,7 +63,7 @@ export function POSAppOrders({
       ]),
     );
   return (
-    <div className="pos-app-orders">
+    <div className="pos-app-orders o-app-sheet">
       <header className="pos-app-page-head">
         <div>
           <span className="eyebrow">Orders</span>

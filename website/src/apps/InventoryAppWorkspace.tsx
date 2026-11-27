@@ -846,180 +846,148 @@ export function InventoryAppWorkspace({
   }
 
   function Overview() {
+    const ops: {
+      title: string;
+      icon: any;
+      context: string;
+      action: string;
+      onAction: () => void;
+      metrics: [string, number, () => void][];
+    }[] = [
+      {
+        title: 'Receipts',
+        icon: 'box',
+        context: 'Incoming plans',
+        action: `${pendingIncoming.length} To Process`,
+        onAction: () => {
+          go('receipts');
+          setFilter('planned');
+        },
+        metrics: [
+          [
+            'Overdue',
+            pendingIncoming.filter((row) => incomingIsOverdue(row, today())).length,
+            () => {
+              go('receipts');
+              setFilter('overdue');
+            },
+          ],
+          [
+            'Received',
+            receipts.length,
+            () => {
+              go('receipts');
+              setFilter('closed');
+            },
+          ],
+        ],
+      },
+      {
+        title: 'Delivery Orders',
+        icon: 'bag',
+        context: services.includes('fulfillment')
+          ? 'Seller-reported fulfillment'
+          : 'Fulfillment service required',
+        action: services.includes('fulfillment')
+          ? `${openShipments.length} To Process`
+          : 'Unavailable',
+        onAction: () => go('deliveries'),
+        metrics: services.includes('fulfillment')
+          ? [
+              [
+                'Late',
+                lateShipments.length,
+                () => {
+                  go('deliveries');
+                  setFilter('late');
+                },
+              ],
+              [
+                'Delivered',
+                shipments.filter((row) => row.status === 'delivered').length,
+                () => {
+                  go('deliveries');
+                  setFilter('delivered');
+                },
+              ],
+            ]
+          : [],
+      },
+      {
+        title: 'Internal Transfers',
+        icon: 'network',
+        context: 'Posted paired movements',
+        action: `${transfers.length} Posted`,
+        onAction: () => go('transfers'),
+        metrics: [
+          [
+            'Last 30 days',
+            transfers.filter(
+              (row) => row.created_at >= new Date(Date.now() - 30 * 86400000).toISOString(),
+            ).length,
+            () => go('transfers'),
+          ],
+        ],
+      },
+      {
+        title: 'Physical Inventory',
+        icon: 'calculator',
+        context: 'Authoritative counts',
+        action: `${overview?.low_stock || 0} Low Stock`,
+        onAction: () => go('counts'),
+        metrics: [
+          [
+            'Out of stock',
+            overview?.out_of_stock || 0,
+            () => {
+              go('stock');
+              setFilter('out');
+            },
+          ],
+          [
+            'Tracked products',
+            products.filter((p) => p.track_inventory).length,
+            () => {
+              go('stock');
+              setFilter('tracked');
+            },
+          ],
+        ],
+      },
+      {
+        title: 'Replenishment',
+        icon: 'tag',
+        context: 'Workflow suggestions',
+        action: `${openSuggestionCount} Open`,
+        onAction: () => go('replenishment'),
+        metrics: [['Planned incoming', pendingIncoming.length, () => go('incoming')]],
+      },
+      {
+        title: 'Returns',
+        icon: 'left',
+        context: 'Returned dispatch stock',
+        action: `${movements.filter((row) => row.kind === 'return').length} Recorded`,
+        onAction: () => {
+          go('movements');
+          setFilter('return');
+        },
+        metrics: [['Transfers in', transfers.length, () => go('transfers')]],
+      },
+    ];
     return (
       <>
-        <div className="inventory-overview-head">
+        <header className="o-flat-cp">
           <div>
             <h2>Inventory Overview</h2>
-            <p>
+            <span className="o-flat-note">
               Warehouse operations backed by shared stock movements. Counts cover loaded authorized
               records.
-            </p>
+            </span>
           </div>
-          <button className="secondary-button" onClick={refresh}>
-            Refresh
-          </button>
-        </div>
-        <div className="inventory-op-grid">
-          <OperationCard
-            title="Receipts"
-            icon="box"
-            context="Incoming plans"
-            action={`${pendingIncoming.length} To Process`}
-            onAction={() => {
-              go('receipts');
-              setFilter('planned');
-            }}
-            metrics={[
-              [
-                'Overdue',
-                pendingIncoming.filter((row) => incomingIsOverdue(row, today())).length,
-                () => {
-                  go('receipts');
-                  setFilter('overdue');
-                },
-              ],
-              [
-                'Received',
-                receipts.length,
-                () => {
-                  go('receipts');
-                  setFilter('closed');
-                },
-              ],
-            ]}
-          />
-          <OperationCard
-            title="Delivery Orders"
-            icon="bag"
-            context={
-              services.includes('fulfillment')
-                ? 'Seller-reported fulfillment'
-                : 'Fulfillment service required'
-            }
-            action={
-              services.includes('fulfillment')
-                ? `${openShipments.length} To Process`
-                : 'Unavailable'
-            }
-            onAction={() => go('deliveries')}
-            metrics={
-              services.includes('fulfillment')
-                ? [
-                    [
-                      'Late',
-                      lateShipments.length,
-                      () => {
-                        go('deliveries');
-                        setFilter('late');
-                      },
-                    ],
-                    [
-                      'Delivered',
-                      shipments.filter((row) => row.status === 'delivered').length,
-                      () => {
-                        go('deliveries');
-                        setFilter('delivered');
-                      },
-                    ],
-                  ]
-                : []
-            }
-          />
-          <OperationCard
-            title="Internal Transfers"
-            icon="network"
-            context="Posted paired movements"
-            action={`${transfers.length} Posted`}
-            onAction={() => go('transfers')}
-            metrics={[
-              [
-                'Last 30 days',
-                transfers.filter(
-                  (row) => row.created_at >= new Date(Date.now() - 30 * 86400000).toISOString(),
-                ).length,
-                () => go('transfers'),
-              ],
-            ]}
-          />
-          <OperationCard
-            title="Physical Inventory"
-            icon="calculator"
-            context="Authoritative counts"
-            action={`${overview?.low_stock || 0} Low Stock`}
-            onAction={() => go('counts')}
-            metrics={[
-              [
-                'Out of stock',
-                overview?.out_of_stock || 0,
-                () => {
-                  go('stock');
-                  setFilter('out');
-                },
-              ],
-              [
-                'Tracked products',
-                products.filter((p) => p.track_inventory).length,
-                () => {
-                  go('stock');
-                  setFilter('tracked');
-                },
-              ],
-            ]}
-          />
-          <OperationCard
-            title="Replenishment"
-            icon="tag"
-            context="Workflow suggestions"
-            action={`${openSuggestionCount} Open`}
-            onAction={() => go('replenishment')}
-            metrics={[['Planned incoming', pendingIncoming.length, () => go('incoming')]]}
-          />
-          <OperationCard
-            title="Returns"
-            icon="left"
-            context="Returned dispatch stock"
-            action={`${movements.filter((row) => row.kind === 'return').length} Recorded`}
-            onAction={() => {
-              go('movements');
-              setFilter('return');
-            }}
-            metrics={[['Transfers in', transfers.length, () => go('transfers')]]}
-          />
-        </div>
-        <div className="inventory-overview-grid">
-          <section className="panel">
-            <h3>Warehouse context</h3>
-            {activeWarehouses.length ? (
-              activeWarehouses.map((warehouse: any) => (
-                <p key={warehouse.id}>
-                  <strong>{warehouse.name}</strong> · {warehouse.code} ·{' '}
-                  {
-                    locations.filter((location: any) => location.warehouse_id === warehouse.id)
-                      .length
-                  }{' '}
-                  locations
-                </p>
-              ))
-            ) : (
-              <p className="inventory-empty">
-                No active warehouse is configured. Add one in Configuration before posting stock.
-              </p>
-            )}
+          <div className="form-actions">
             <button className="secondary-button" onClick={() => go('warehouses')}>
-              Manage warehouses
+              Warehouses ({activeWarehouses.length})
             </button>
-          </section>
-          <section className="panel">
-            <h3>Stock attention</h3>
-            <p>
-              {overview?.low_stock || 0} low-stock products · {overview?.out_of_stock || 0} out of
-              stock · {overview?.truncated ? 'first 1,000 products shown' : 'all products shown'}.
-            </p>
-            <p className="inventory-note">
-              {overview?.valuation_note ||
-                'No aggregate valuation is inferred from reference cost.'}
-            </p>
             <button
               className="secondary-button"
               onClick={() => {
@@ -1027,53 +995,101 @@ export function InventoryAppWorkspace({
                 setFilter('low');
               }}
             >
-              Review low stock
+              Low stock ({overview?.low_stock || 0})
             </button>
-          </section>
-        </div>
-        <p className="inventory-note">
-          Sandbox-safe: no external provider, courier or payment is activated by these operations.
-          Stock quantities are shared with Sales, Commerce, POS and Procurement.
-        </p>
-      </>
-    );
-  }
-
-  function OperationCard({
-    title: heading,
-    icon,
-    context,
-    action,
-    onAction,
-    metrics,
-  }: {
-    title: string;
-    icon: any;
-    context: string;
-    action: string;
-    onAction: () => void;
-    metrics: [string, number, () => void][];
-  }) {
-    return (
-      <article className="inventory-op-card">
-        <header>
-          <h3>
-            <Icon name={icon} /> {heading}
-          </h3>
-          <span>{context}</span>
+            <button className="secondary-button" onClick={refresh}>
+              Refresh
+            </button>
+          </div>
         </header>
-        <button className="inventory-op-primary" onClick={onAction}>
-          {action}
-        </button>
-        <div className="inventory-op-metrics">
-          {metrics.map(([label, amount, handler]) => (
-            <button key={label} onClick={handler}>
-              <strong>{amount}</strong>
-              <span>{label}</span>
-            </button>
-          ))}
+        <div className="o-kpi-row" aria-label="Stock summary">
+          <div className="o-kpi-cell">
+            <span>Receipts to process</span>
+            <strong>{pendingIncoming.length}</strong>
+            <small>{receipts.length} received</small>
+          </div>
+          <div className="o-kpi-cell">
+            <span>Open deliveries</span>
+            <strong>{services.includes('fulfillment') ? openShipments.length : '—'}</strong>
+            <small>
+              {services.includes('fulfillment')
+                ? `${lateShipments.length} late`
+                : 'Fulfillment service required'}
+            </small>
+          </div>
+          <div className="o-kpi-cell">
+            <span>Tracked products</span>
+            <strong>{products.filter((p) => p.track_inventory).length}</strong>
+            <small>{overview?.low_stock || 0} low · {overview?.out_of_stock || 0} out</small>
+          </div>
+          <div className="o-kpi-cell">
+            <span>Replenishment</span>
+            <strong>{openSuggestionCount}</strong>
+            <small>Open suggestions</small>
+          </div>
+          <div className="o-kpi-cell">
+            <span>Active warehouses</span>
+            <strong>{activeWarehouses.length}</strong>
+            <small>{locations.length} storage locations</small>
+          </div>
         </div>
-      </article>
+        <div className="inventory-table-scroll">
+          <table className="inventory-table">
+            <thead>
+              <tr>
+                <th>Operation</th>
+                <th>Authority / Context</th>
+                <th>Secondary counts</th>
+                <th style={{ textAlign: 'right' }}>Queue</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ops.map((op) => (
+                <tr key={op.title}>
+                  <td>
+                    <strong style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <Icon name={op.icon} /> {op.title}
+                    </strong>
+                  </td>
+                  <td>{op.context}</td>
+                  <td>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                      {op.metrics.map(([label, amount, handler]) => (
+                        <button
+                          key={label}
+                          type="button"
+                          className="quiet-button"
+                          style={{ padding: '2px 6px', fontSize: 12 }}
+                          onClick={handler}
+                        >
+                          <strong>{amount}</strong> {label}
+                        </button>
+                      ))}
+                      {!op.metrics.length && <span className="o-flat-note">—</span>}
+                    </div>
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <button className="button" onClick={op.onAction}>
+                      {op.action}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12, paddingTop: 8, borderTop: '1px solid #eef2f7', fontSize: 12, color: '#6b7280' }}>
+          <span>
+            <strong>Warehouses:</strong>{' '}
+            {activeWarehouses.length
+              ? activeWarehouses.map((w: any) => `${w.name} (${w.code})`).join(', ')
+              : 'No active warehouse configured — add one in Configuration before posting stock.'}
+          </span>
+          <span>
+            {overview?.valuation_note || 'No aggregate valuation is inferred from reference cost.'}
+          </span>
+        </div>
+      </>
     );
   }
 
@@ -2395,62 +2411,64 @@ export function InventoryAppWorkspace({
         </p>
       )}
       {loading && !overview && <p role="status">Loading authorized inventory records…</p>}
-      {view === 'overview' && <Overview />}
-      {view === 'receipts' && <ReceiptsView />}
-      {view === 'deliveries' && <DeliveriesView />}
-      {view === 'transfers' && <TransfersView />}
-      {(view === 'packages' || view === 'barcode') && (
-        <div className="panel">
-          <InventoryParityPanel api={api} writable={writable} activeSection={view} />
-        </div>
-      )}
-      {view === 'counts' && <CountsView />}
-      {view === 'replenishment' && (
-        <>
-          <div className="inventory-list-head">
-            <div>
-              <h2>Replenishment</h2>
-              <p>
-                Automated Min/Max reordering rules, quality workflow suggestions, and low-stock products.
-              </p>
+      <div className="o-app-sheet">
+        {view === 'overview' && <Overview />}
+        {view === 'receipts' && <ReceiptsView />}
+        {view === 'deliveries' && <DeliveriesView />}
+        {view === 'transfers' && <TransfersView />}
+        {(view === 'packages' || view === 'barcode') && (
+          <div className="panel">
+            <InventoryParityPanel api={api} writable={writable} activeSection={view} />
+          </div>
+        )}
+        {view === 'counts' && <CountsView />}
+        {view === 'replenishment' && (
+          <>
+            <div className="inventory-list-head">
+              <div>
+                <h2>Replenishment</h2>
+                <p>
+                  Automated Min/Max reordering rules, quality workflow suggestions, and low-stock products.
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="panel" style={{ marginBottom: 16 }}>
-            <InventoryParityPanel api={api} writable={writable} activeSection="reorder" />
-          </div>
-          <ReplenishmentReview
+            <div className="panel" style={{ marginBottom: 16 }}>
+              <InventoryParityPanel api={api} writable={writable} activeSection="reorder" />
+            </div>
+            <ReplenishmentReview
+              api={api}
+              scope={scope}
+              warehouses={warehouses}
+              writable={writable}
+            />
+            <StockTable rows={products.filter((product) => product.low_stock)} showLow={false} />
+          </>
+        )}
+        {view === 'stock' &&
+          (productId ? <ProductDocument id={productId} /> : <StockTable rows={products} />)}
+        {['lots', 'scrap', 'valuation', 'landed-costs'].includes(view) && (
+          <InventoryPhase1Workspace
             api={api}
-            scope={scope}
-            warehouses={warehouses}
+            view={view}
+            products={products}
+            warehouses={warehouses.data || []}
+            movements={movements}
             writable={writable}
+            revision={revision}
+            refresh={(msg) => {
+              setRevision((n) => n + 1);
+              setNotice(msg);
+            }}
           />
-          <StockTable rows={products.filter((product) => product.low_stock)} showLow={false} />
-        </>
-      )}
-      {view === 'stock' &&
-        (productId ? <ProductDocument id={productId} /> : <StockTable rows={products} />)}
-      {['lots', 'scrap', 'valuation', 'landed-costs'].includes(view) && (
-        <InventoryPhase1Workspace
-          api={api}
-          view={view}
-          products={products}
-          warehouses={warehouses.data || []}
-          movements={movements}
-          writable={writable}
-          revision={revision}
-          refresh={(msg) => {
-            setRevision((n) => n + 1);
-            setNotice(msg);
-          }}
-        />
-      )}
-      {['movements', 'reservations', 'incoming', 'detailed'].includes(view) && <InventoryReports />}
-      {view === 'putaway-rules' && (
-        <div className="panel">
-          <InventoryParityPanel api={api} writable={writable} activeSection="putaway" />
-        </div>
-      )}
-      {['warehouses', 'locations', 'settings'].includes(view) && <ConfigurationView />}
+        )}
+        {['movements', 'reservations', 'incoming', 'detailed'].includes(view) && <InventoryReports />}
+        {view === 'putaway-rules' && (
+          <div className="panel">
+            <InventoryParityPanel api={api} writable={writable} activeSection="putaway" />
+          </div>
+        )}
+        {['warehouses', 'locations', 'settings'].includes(view) && <ConfigurationView />}
+      </div>
     </div>
   );
 }

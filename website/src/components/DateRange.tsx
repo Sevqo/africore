@@ -22,7 +22,7 @@ export function DateRange({
   }, [from, to]);
   return (
     <form
-      className="panel date-range"
+      className="date-range"
       onSubmit={(e) => {
         e.preventDefault();
         const values = new FormData(e.currentTarget),

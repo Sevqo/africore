@@ -97,14 +97,20 @@
   padding: 8px 8px 6px;
   border-bottom: 1px solid var(--line, #e5e7eb);
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 2px;
+  min-width: 0;
 }
 
 .dc-meta-row {
-  display: flex;
-  align-items: center;
+  display: flex !important;
+  align-items: center !important;
   gap: 8px;
-  width: 100%;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden;
   min-height: 32px !important;
   padding: 5px 8px !important;
   border: 0 !important;
@@ -141,8 +147,14 @@
   text-overflow: ellipsis;
 }
 
+.dc-meta-row .dc-truncate {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .dc-mini-badge {
   margin-left: auto;
+  flex-shrink: 0;
   font-size: 9.5px;
   font-weight: 700;
   padding: 1px 6px;
