@@ -2,14 +2,11 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { dbAll, dbGet } from '../db/adapter';
 import { audit, fail, type Access } from '../platform/auth';
-import {
-  deriveUsername,
-  getUserAvatarProfiles,
-} from '../platform/profile-avatar';
+import { deriveUsername, getUserAvatarProfiles } from '../platform/profile-avatar';
 import { all, create } from '../operations/store';
 import { financialSnapshot } from '../operations/intelligence';
 import { notify } from '../operations/automation';
-import { authorize } from './store';
+import { authorize, insert, read, visible } from './store';
 import { calendarEvents } from '../apps/phase3';
 import { workProjects } from './work';
 import { getAgentPolicy, runAgent } from '../agent/engine';
@@ -18,7 +15,7 @@ import { runPythonAgent } from '../agent/python-bridge';
 export const workChannelCreateInput = z
   .object({
     name: z.string().trim().min(2).max(50),
-    category: z.string().trim().min(2).max(32).default('WORKSPACE'),
+    category: z.string().trim().min(2).max(32).default('DISCUSSIONS'),
     topic: z.string().trim().max(300).default(''),
     icon: z
       .enum(['hash', 'megaphone', 'book', 'lifebuoy', 'bolt', 'grid', 'layers', 'users'])
@@ -150,6 +147,38 @@ async function loadWorkspaceMembersWithAvatars(orgId: string) {
   });
 }
 
+async function buildProjectChannels(a: Access, countsByChannel: Map<string, number>) {
+  const projects = await visible(a, 'work_project');
+  const projectIds = projects.slice(0, 100).map((p) => p.id);
+  const erpMsgCounts = projectIds.length
+    ? await dbAll(
+        "SELECT root_id, COUNT(*) AS total FROM ac_erp_objects WHERE org_id=? AND environment=? AND kind='work_message' AND root_id IN (" +
+          projectIds.map(() => '?').join(',') +
+          ') GROUP BY root_id',
+        [a.org, a.environment, ...projectIds],
+      )
+    : [];
+  const erpCountMap = new Map(erpMsgCounts.map((r: any) => [String(r.root_id), Number(r.total || 0)]));
+
+  return projects.slice(0, 100).map((p, idx) => {
+    const cid = 'project:' + p.id;
+    const slug = slugifyChannel(p.data?.name || 'project');
+    const totalCount = (erpCountMap.get(p.id) || 0) + (countsByChannel.get(cid) || 0);
+    return {
+      id: cid,
+      project_id: p.id,
+      slug,
+      name: slug,
+      category: 'PROJECTS',
+      topic: p.data?.description || `Project channel for ${p.data?.name || 'Work project'}.`,
+      icon: 'grid',
+      message_count: totalCount,
+      position: 100 + idx,
+      created_at: p.created_at,
+    };
+  });
+}
+
 export async function listWorkChannels(a: Access) {
   await authorize(a, 'work');
   const [channels, allMessages, orgRow, policy, members, eventsRes] = await Promise.all([
@@ -167,8 +196,14 @@ export async function listWorkChannels(a: Access) {
     countsByChannel.set(cid, (countsByChannel.get(cid) || 0) + 1);
   }
 
+  const projectChannels = await buildProjectChannels(a, countsByChannel);
+
   const sortedChannels = [...channels]
-    .sort((x, y) => Number(x.position || 99) - Number(y.position || 99) || String(x.created_at).localeCompare(String(y.created_at)))
+    .sort(
+      (x, y) =>
+        Number(x.position || 99) - Number(y.position || 99) ||
+        String(x.created_at).localeCompare(String(y.created_at)),
+    )
     .map((c) => ({
       id: c.id,
       slug: c.slug,
@@ -178,7 +213,8 @@ export async function listWorkChannels(a: Access) {
       icon: c.icon || 'hash',
       message_count: countsByChannel.get(c.id) || 0,
       created_at: c.created_at,
-    }));
+    }))
+    .concat(projectChannels);
 
   const currentMember = members.find((m) => m.id === a.actor) || null;
 
@@ -207,7 +243,7 @@ export async function createWorkChannel(a: Access, input: unknown) {
   const existing = await ensureDefaultChannels(a);
   const slug = slugifyChannel(d.name);
   if (existing.some((c) => c.slug === slug)) {
-    fail(409, `Channel #${slug} already exists in this workspace`);
+    return fail(409, `Channel #${slug} already exists in this workspace`);
   }
   const row = await create(a, 'work_channel', {
     slug,
@@ -231,26 +267,81 @@ export async function createWorkChannel(a: Access, input: unknown) {
   };
 }
 
+async function resolveChannelOrProject(a: Access, channelId: string) {
+  if (channelId.startsWith('project:')) {
+    const projectId = channelId.slice('project:'.length);
+    const p = await read(a, projectId, 'work_project');
+    await authorize(a, 'work', p.id);
+    const slug = slugifyChannel(p.data?.name || 'project');
+    return {
+      id: 'project:' + p.id,
+      project_id: p.id,
+      project_obj: p,
+      slug,
+      name: slug,
+      category: 'PROJECTS',
+      topic: p.data?.description || `Project discussion channel for ${p.data?.name || 'project'}.`,
+      icon: 'grid',
+    };
+  }
+  const channels = await ensureDefaultChannels(a);
+  const found = channels.find((c) => c.id === channelId || c.slug === channelId);
+  if (!found) return null;
+  return {
+    id: found.id,
+    project_id: null as string | null,
+    project_obj: null as any,
+    slug: found.slug,
+    name: found.name,
+    category: found.category,
+    topic: found.topic,
+    icon: found.icon,
+  };
+}
+
+async function loadCombinedChannelHistory(a: Access, resolved: NonNullable<Awaited<ReturnType<typeof resolveChannelOrProject>>>) {
+  const allChannelMsgs = (await all(a, 'work_channel_message')).filter(
+    (m) => m.channel_id === resolved.id,
+  );
+  if (!resolved.project_id) {
+    return allChannelMsgs.sort((x, y) => String(x.created_at).localeCompare(String(y.created_at)));
+  }
+
+  // Merge legacy/canonical project `work_message` records seamlessly into the Discord stream!
+  const erpMsgs = await visible(a, 'work_message', resolved.project_id, 0);
+  const converted = erpMsgs.map((em) => ({
+    id: em.id,
+    channel_id: resolved.id,
+    body: String(em.data?.body || ''),
+    is_agent: false,
+    author_id: String(em.data?.author_id || em.owner_id || ''),
+    author_name: '',
+    author_username: '',
+    reply_to: em.data?.reply_to || null,
+    mentions: Array.isArray(em.data?.mentions) ? em.data.mentions : [],
+    agent_run: null,
+    created_at: em.created_at,
+  }));
+
+  return [...converted, ...allChannelMsgs].sort((x, y) =>
+    String(x.created_at).localeCompare(String(y.created_at)),
+  );
+}
+
 export async function listWorkChannelMessages(a: Access, channelId: string) {
   await authorize(a, 'work');
-  const channels = await ensureDefaultChannels(a);
-  const channel = channels.find((c) => c.id === channelId || c.slug === channelId);
+  const channel = await resolveChannelOrProject(a, channelId);
   if (!channel) return fail(404, 'Discussion channel not found');
 
-  const [allMessages, members, policy] = await Promise.all([
-    all(a, 'work_channel_message'),
+  const [channelMsgsRaw, members, policy] = await Promise.all([
+    loadCombinedChannelHistory(a, channel),
     loadWorkspaceMembersWithAvatars(a.org),
     getAgentPolicy(a),
   ]);
 
   const memberById = new Map(members.map((m) => [m.id, m]));
-  const channelMsgs = allMessages
-    .filter((m) => m.channel_id === channel.id)
-    .sort((x, y) => String(x.created_at).localeCompare(String(y.created_at)))
-    .slice(-150);
-
+  const channelMsgs = channelMsgsRaw.slice(-150);
   const byId = new Map(channelMsgs.map((m) => [m.id, m]));
-
   const formatted = channelMsgs.map((m) => formatChannelMessage(m, memberById, byId, policy));
 
   return {
@@ -326,29 +417,27 @@ function messageMentionsAgent(body: string, agentHandle: string): boolean {
 
 export async function postWorkChannelMessage(a: Access, channelId: string, input: unknown) {
   await authorize(a, 'work', undefined, true);
-  if (a.api) fail(403, 'Human workspace session required for channel discussions');
+  if (a.api) return fail(403, 'Human workspace session required for channel discussions');
   const d = workChannelMessageInput.parse(input);
-  const channels = await ensureDefaultChannels(a);
-  const channel = channels.find((c) => c.id === channelId || c.slug === channelId);
+  const channel = await resolveChannelOrProject(a, channelId);
   if (!channel) return fail(404, 'Discussion channel not found');
 
-  const [members, policy, existingMsgs] = await Promise.all([
+  if (channel.project_id) {
+    await authorize(a, 'work', channel.project_id, true);
+  }
+
+  const [members, policy, channelHistory] = await Promise.all([
     loadWorkspaceMembersWithAvatars(a.org),
     getAgentPolicy(a),
-    all(a, 'work_channel_message'),
+    loadCombinedChannelHistory(a, channel),
   ]);
   const memberById = new Map(members.map((m) => [m.id, m]));
   const author = memberById.get(a.actor);
 
-  const channelHistory = existingMsgs
-    .filter((m) => m.channel_id === channel.id)
-    .sort((x, y) => String(x.created_at).localeCompare(String(y.created_at)));
-
   if (d.reply_to && !channelHistory.some((m) => m.id === d.reply_to)) {
-    fail(400, 'Reply target message not found in this channel');
+    return fail(400, 'Reply target message not found in this channel');
   }
 
-  // Detect @username mentions of workspace members in the body automatically
   const mentionedMemberIds = new Set<string>(d.mentions);
   for (const m of members) {
     const escapedUser = m.username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -357,19 +446,52 @@ export async function postWorkChannelMessage(a: Access, channelId: string, input
     }
   }
 
-  const savedUserMsg = await create(a, 'work_channel_message', {
-    channel_id: channel.id,
-    body: d.body,
-    is_agent: false,
-    author_id: a.actor,
-    author_name: author?.display_name || 'Team member',
-    author_username: author?.username || 'member',
-    reply_to: d.reply_to,
-    mentions: [...mentionedMemberIds],
-    agent_run: null,
-  });
+  // If inside a project channel and NOT replying to an agent-only message, also persist as canonical work_message!
+  let savedUserMsg: any;
+  const replyTarget = d.reply_to ? channelHistory.find((m) => m.id === d.reply_to) : null;
+  if (channel.project_id && (!replyTarget || !replyTarget.is_agent)) {
+    const validProjMentions = [...mentionedMemberIds].filter((uid) =>
+      (channel.project_obj?.data?.members || []).some((pm: any) => pm.user_id === uid),
+    );
+    const erpMsg = await insert(
+      a,
+      'work_message',
+      {
+        body: d.body,
+        task_id: null,
+        reply_to: d.reply_to,
+        mentions: validProjMentions,
+        author_id: a.actor,
+      },
+      { root: channel.project_id, parent: d.reply_to },
+    );
+    savedUserMsg = {
+      id: erpMsg.id,
+      channel_id: channel.id,
+      body: d.body,
+      is_agent: false,
+      author_id: a.actor,
+      author_name: author?.display_name || 'Team member',
+      author_username: author?.username || 'member',
+      reply_to: d.reply_to,
+      mentions: [...mentionedMemberIds],
+      agent_run: null,
+      created_at: erpMsg.created_at,
+    };
+  } else {
+    savedUserMsg = await create(a, 'work_channel_message', {
+      channel_id: channel.id,
+      body: d.body,
+      is_agent: false,
+      author_id: a.actor,
+      author_name: author?.display_name || 'Team member',
+      author_username: author?.username || 'member',
+      reply_to: d.reply_to,
+      mentions: [...mentionedMemberIds],
+      agent_run: null,
+    });
+  }
 
-  // Notify mentioned teammates in-app
   for (const uid of mentionedMemberIds) {
     if (uid === a.actor) continue;
     await notify(a, {
@@ -377,9 +499,9 @@ export async function postWorkChannelMessage(a: Access, channelId: string, input
       title: `Mentioned in #${channel.name}`,
       body: `${author?.display_name || 'A teammate'} mentioned you in #${channel.name}: "${d.body.slice(0, 120)}"`,
       user_id: uid,
-      resource_id: channel.id,
+      resource_id: channel.project_id || channel.id,
       key: `work-channel-mention:${savedUserMsg.id}:${uid}`,
-      action_data: { app_id: 'work', section: 'discussions', record_id: channel.id },
+      action_data: { app_id: 'work', section: 'discussions', record_id: channel.project_id || channel.id },
     }).catch(() => {});
   }
 
@@ -390,15 +512,14 @@ export async function postWorkChannelMessage(a: Access, channelId: string, input
 
   let agentReplyRow: any = null;
 
-  // If the employee mentioned @<agent_handle> (e.g. @continua-agent), invoke Python Autonomous Agent!
   if (messageMentionsAgent(d.body, policy.agent_handle)) {
     try {
-      const [snapshot, workList, calList, crmRows, customerRows] = await Promise.all([
+      const [snapshot, workList, calList, rawCrmRows, customerRows] = await Promise.all([
         financialSnapshot(a, { currency: d.currency }).catch(() => null),
         workProjects(a).catch(() => ({ data: [] })),
         calendarEvents(a).catch(() => ({ data: [] })),
         dbAll(
-          "SELECT id, kind, title, stage, status, amount_minor, currency FROM ac_crm_entries WHERE org_id=? AND environment=? AND status<>'archived'",
+          "SELECT id, kind, status, data FROM ac_crm_entries WHERE org_id=? AND environment=? AND status<>'archived'",
           [a.org, a.environment],
         ).catch(() => []),
         dbAll(
@@ -406,6 +527,24 @@ export async function postWorkChannelMessage(a: Access, channelId: string, input
           [a.org, a.environment],
         ).catch(() => []),
       ]);
+
+      const crmRows = rawCrmRows.map((r: any) => {
+        let parsed: any = {};
+        try {
+          parsed = JSON.parse(r.data || '{}');
+        } catch {
+          /* ignore */
+        }
+        return {
+          id: r.id,
+          kind: r.kind,
+          status: r.status,
+          title: parsed.title || 'Lead',
+          stage: parsed.stage || 'new',
+          amount_minor: Number(parsed.amount_minor || 0),
+          currency: parsed.currency || d.currency,
+        };
+      });
 
       const projects = (workList.data || []).map((p: any) => ({
         id: p.id,

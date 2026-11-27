@@ -241,6 +241,18 @@ export async function createProject(a: Access, input: unknown, key: string) {
           action_data: { app_id: 'work', section: 'work_project', record_id: p.id },
         });
       }
+      const { create: createOpObj } = await import('../operations/store');
+      await createOpObj(a, 'work_channel_message', {
+        channel_id: 'project:' + p.id,
+        body: `Project channel created for "${d.name}". Team members can coordinate deliverables here or mention the workspace agent.`,
+        is_agent: true,
+        author_id: 'agent',
+        author_name: 'AfriCore Agent',
+        author_username: 'agent',
+        reply_to: null,
+        mentions: [],
+        agent_run: null,
+      }).catch(() => {});
       return p;
     },
     { authorizeReplay: (p) => authorize(a, 'work', p.id) },

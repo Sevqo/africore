@@ -1,39 +1,42 @@
-/* Discord Server-Style Work Discussions
- * Harmonized with AfriCore charcoal sidebar (#1c2225) & forest green (#166534) accent. */
+/* Discord Server-Style Work Discussions — AfriCore Light Operational Theme
+ * Uses canonical tokens (--white, --surface, --surface-alt, --line, --ink, --muted, --accent: #166534)
+ * with message composer pinned strictly at the bottom of the discussion panel. */
 
 .dc-loading {
   padding: 24px;
-  color: var(--muted);
+  color: var(--muted, #6b7280);
   font-size: 14px;
 }
 
 .dc-shell {
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
-  height: clamp(560px, calc(100dvh - 180px), 860px);
-  min-height: 540px;
+  grid-template-columns: 252px minmax(0, 1fr);
+  height: clamp(580px, calc(100dvh - 185px), 860px);
+  min-height: 560px;
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid #2b2d31;
-  background: #1e2124;
-  color: #e5e7eb;
+  border: 1px solid var(--line, #e5e7eb);
+  background: #ffffff;
+  color: var(--ink, #111827);
+  box-shadow: 0 1px 3px rgba(17, 24, 39, 0.04);
   position: relative;
 }
 
-/* Left Server & Channels Rail */
+/* Left Server & Channels Rail (Crisp Light Surface) */
 .dc-rail {
-  background: #17191d;
-  border-right: 1px solid #2b2e34;
-  display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  background: #f8f9fa;
+  border-right: 1px solid var(--line, #e5e7eb);
+  display: flex;
+  flex-direction: column;
   min-height: 0;
   overflow: hidden;
 }
 
 .dc-server-banner {
+  flex: 0 0 auto;
   padding: 14px 14px 12px;
-  background: linear-gradient(135deg, #14532d 0%, #166534 55%, #1e3a2f 100%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 65%, #ffffff 100%);
+  border-bottom: 1px solid #d1fae5;
 }
 
 .dc-server-banner-top {
@@ -46,24 +49,25 @@
 .dc-server-name {
   font-size: 15px;
   font-weight: 700;
-  color: #ffffff;
+  color: #111827;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .dc-server-tagline {
-  margin: 6px 0 0;
+  margin: 5px 0 0;
   font-size: 11.5px;
-  color: #dcfce7;
+  color: #374151;
   line-height: 1.35;
 }
 
 .dc-server-tagline code {
-  background: rgba(0, 0, 0, 0.25);
+  background: #dcfce7;
   padding: 1px 5px;
   border-radius: 4px;
-  color: #ffffff;
+  color: #166534;
+  font-weight: 600;
   font-size: 11px;
 }
 
@@ -73,9 +77,9 @@
   min-height: 28px !important;
   padding: 0 !important;
   border-radius: 6px !important;
-  border: 1px solid rgba(255, 255, 255, 0.28) !important;
-  background: rgba(0, 0, 0, 0.2) !important;
-  color: #ffffff !important;
+  border: 1px solid #bbf7d0 !important;
+  background: #ffffff !important;
+  color: #166534 !important;
   font-size: 16px !important;
   font-weight: 700;
   display: inline-flex;
@@ -85,12 +89,13 @@
 }
 
 .dc-rail-icon-btn:hover {
-  background: rgba(255, 255, 255, 0.18) !important;
+  background: #dcfce7 !important;
 }
 
 .dc-server-meta {
+  flex: 0 0 auto;
   padding: 8px 8px 6px;
-  border-bottom: 1px solid #26292e;
+  border-bottom: 1px solid var(--line, #e5e7eb);
   display: grid;
   gap: 2px;
 }
@@ -105,7 +110,7 @@
   border: 0 !important;
   border-radius: 6px !important;
   background: transparent !important;
-  color: #b5bac1 !important;
+  color: #4b5563 !important;
   font-size: 12.5px !important;
   font-weight: 500;
   text-align: left;
@@ -118,15 +123,15 @@
 
 .dc-meta-row:not(.dc-meta-static):hover,
 .dc-meta-row.is-active {
-  background: #2b2d31 !important;
-  color: #ffffff !important;
+  background: #eef2f0 !important;
+  color: #111827 !important;
 }
 
 .dc-online-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #22c55e;
+  background: #16a34a;
   flex-shrink: 0;
 }
 
@@ -140,20 +145,23 @@
   margin-left: auto;
   font-size: 9.5px;
   font-weight: 700;
-  padding: 1px 5px;
+  padding: 1px 6px;
   border-radius: 4px;
-  background: #166534;
-  color: #dcfce7;
+  background: #ecfdf5;
+  color: #166534;
+  border: 1px solid #bbf7d0;
 }
 
 .dc-inline-card {
+  flex: 0 0 auto;
   margin: 8px;
   padding: 10px;
-  background: #23262b;
-  border: 1px solid #35383f;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
   display: grid;
   gap: 7px;
+  box-shadow: 0 2px 6px rgba(17, 24, 39, 0.05);
 }
 
 .dc-inline-card-head {
@@ -161,18 +169,18 @@
   justify-content: space-between;
   align-items: center;
   font-size: 12px;
-  color: #ffffff;
+  color: #111827;
 }
 
 .dc-inline-card input,
 .dc-inline-card select {
   width: 100%;
-  min-height: 32px !important;
+  min-height: 34px !important;
   padding: 5px 8px !important;
   border-radius: 6px !important;
-  border: 1px solid #3f434c !important;
-  background: #17191d !important;
-  color: #f3f4f6 !important;
+  border: 1px solid #d1d5db !important;
+  background: #ffffff !important;
+  color: #111827 !important;
   font-size: 12.5px !important;
 }
 
@@ -180,13 +188,13 @@
   display: grid;
   gap: 3px;
   font-size: 11px;
-  color: #b5bac1;
+  color: #4b5563;
 }
 
 .dc-close-xs {
   border: 0 !important;
   background: transparent !important;
-  color: #9ca3af !important;
+  color: #6b7280 !important;
   font-size: 16px !important;
   min-height: 24px !important;
   padding: 0 4px !important;
@@ -194,16 +202,18 @@
 }
 
 .dc-close-xs:hover {
-  color: #ffffff !important;
+  color: #111827 !important;
 }
 
 .dc-channels-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 8px 6px;
-  display: grid;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
-  align-content: start;
 }
 
 .dc-category-group {
@@ -216,11 +226,11 @@
   align-items: center;
   gap: 5px;
   width: 100%;
-  min-height: 26px !important;
-  padding: 3px 6px !important;
+  min-height: 24px !important;
+  padding: 2px 6px !important;
   border: 0 !important;
   background: transparent !important;
-  color: #949ba4 !important;
+  color: #6b7280 !important;
   font-size: 11px !important;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -229,7 +239,7 @@
 }
 
 .dc-category-header:hover {
-  color: #dbdee1 !important;
+  color: #111827 !important;
 }
 
 .dc-chevron {
@@ -252,9 +262,9 @@
   min-height: 34px !important;
   padding: 5px 8px !important;
   border: 0 !important;
-  border-radius: 6px !important;
+  border-radius: 7px !important;
   background: transparent !important;
-  color: #949ba4 !important;
+  color: #4b5563 !important;
   font-size: 13.5px !important;
   font-weight: 500;
   text-align: left;
@@ -262,18 +272,18 @@
 }
 
 .dc-channel-btn:hover {
-  background: #2b2d31 !important;
-  color: #dbdee1 !important;
+  background: #eef2f0 !important;
+  color: #111827 !important;
 }
 
 .dc-channel-btn.is-active {
-  background: #35373c !important;
-  color: #ffffff !important;
-  font-weight: 600;
+  background: #ecfdf5 !important;
+  color: #166534 !important;
+  font-weight: 650;
 }
 
 .dc-channel-hash {
-  color: #80848e;
+  color: #9ca3af;
   font-weight: 700;
   font-size: 15px;
   display: inline-flex;
@@ -284,7 +294,7 @@
 }
 
 .dc-channel-btn.is-active .dc-channel-hash {
-  color: #4ade80;
+  color: #166534;
 }
 
 .dc-channel-name {
@@ -299,19 +309,26 @@
   font-family: var(--font-code);
   padding: 1px 6px;
   border-radius: 999px;
-  background: #23262b;
-  color: #b5bac1;
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.dc-channel-btn.is-active .dc-channel-count {
+  background: #bbf7d0;
+  color: #14532d;
 }
 
 /* Bottom-left User Profile Dock */
 .dc-user-dock {
+  flex: 0 0 auto;
+  margin-top: auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px 10px;
-  background: #121417;
-  border-top: 1px solid #26292e;
+  padding: 9px 10px;
+  background: #f1f5f3;
+  border-top: 1px solid var(--line, #e5e7eb);
 }
 
 .dc-user-dock-identity {
@@ -324,12 +341,12 @@
 .dc-user-dock-text {
   display: grid;
   min-width: 0;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .dc-user-dock-text strong {
   font-size: 13px;
-  color: #ffffff;
+  color: #111827;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -337,7 +354,7 @@
 
 .dc-user-dock-text small {
   font-size: 11px;
-  color: #949ba4;
+  color: #6b7280;
   text-transform: capitalize;
 }
 
@@ -348,24 +365,24 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #b5bac1;
+  color: #4b5563;
   text-decoration: none;
   flex-shrink: 0;
 }
 
 .dc-dock-gear:hover {
-  background: #2b2d31;
-  color: #ffffff;
+  background: #e5e7eb;
+  color: #111827;
 }
 
 /* Avatars */
 .dc-avatar-wrap {
   position: relative;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  background: #2b2f36;
-  color: #f3f4f6;
+  background: #e2e8f0;
+  color: #1e293b;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -417,27 +434,29 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #22c55e;
-  border: 2px solid #121417;
+  background: #16a34a;
+  border: 2px solid #ffffff;
 }
 
-/* Main Stream Area */
+/* Main Stream Area — Flex Column so Composer ALWAYS Stays Pinned at Bottom */
 .dc-main {
-  display: grid;
-  grid-template-rows: auto auto 1fr;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   min-height: 0;
-  background: #1f2226;
+  height: 100%;
+  background: #ffffff;
 }
 
 .dc-topbar {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 10px 16px;
-  background: #1f2226;
-  border-bottom: 1px solid #2b2e34;
+  background: #ffffff;
+  border-bottom: 1px solid var(--line, #e5e7eb);
   min-height: 52px;
 }
 
@@ -452,7 +471,7 @@
   display: none;
   border: 0 !important;
   background: transparent !important;
-  color: #dbdee1 !important;
+  color: #374151 !important;
   padding: 4px !important;
   min-height: 32px !important;
 }
@@ -460,26 +479,26 @@
 .dc-topbar-hash {
   font-size: 19px;
   font-weight: 700;
-  color: #80848e;
+  color: #6b7280;
 }
 
 .dc-topbar-title {
   font-size: 15px;
   font-weight: 700;
-  color: #ffffff;
+  color: #111827;
   white-space: nowrap;
 }
 
 .dc-topbar-divider {
   width: 1px;
   height: 18px;
-  background: #3b3f47;
+  background: #e5e7eb;
   flex-shrink: 0;
 }
 
 .dc-topbar-topic {
   font-size: 12.5px;
-  color: #949ba4;
+  color: #6b7280;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -496,19 +515,19 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  min-height: 30px !important;
+  min-height: 32px !important;
   padding: 4px 10px !important;
-  border-radius: 6px !important;
-  border: 1px solid #22c55e55 !important;
-  background: #166534 !important;
-  color: #ffffff !important;
+  border-radius: 7px !important;
+  border: 1px solid #bbf7d0 !important;
+  background: #ecfdf5 !important;
+  color: #166534 !important;
   font-size: 12px !important;
-  font-weight: 600;
+  font-weight: 650;
   cursor: pointer;
 }
 
 .dc-agent-ping-btn:hover {
-  background: #14532d !important;
+  background: #dcfce7 !important;
 }
 
 .dc-top-icon-btn {
@@ -516,10 +535,10 @@
   height: 32px !important;
   min-height: 32px !important;
   padding: 0 !important;
-  border: 0 !important;
+  border: 1px solid transparent !important;
   border-radius: 6px !important;
   background: transparent !important;
-  color: #b5bac1 !important;
+  color: #4b5563 !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -528,62 +547,66 @@
 
 .dc-top-icon-btn:hover,
 .dc-top-icon-btn.is-active {
-  background: #2b2d31 !important;
-  color: #ffffff !important;
+  background: #f3f4f6 !important;
+  border-color: #e5e7eb !important;
+  color: #111827 !important;
 }
 
 .dc-search-box {
   position: relative;
   display: flex;
   align-items: center;
-  width: 180px;
+  width: 185px;
 }
 
 .dc-search-box input {
   width: 100%;
-  min-height: 30px !important;
-  padding: 4px 28px 4px 9px !important;
-  border-radius: 6px !important;
-  border: 1px solid #35383f !important;
-  background: #15171a !important;
-  color: #f3f4f6 !important;
+  min-height: 32px !important;
+  padding: 4px 28px 4px 10px !important;
+  border-radius: 7px !important;
+  border: 1px solid #d1d5db !important;
+  background: #f8f9fa !important;
+  color: #111827 !important;
   font-size: 12px !important;
 }
 
 .dc-search-box .icon {
   position: absolute;
   right: 8px;
-  color: #80848e;
+  color: #6b7280;
   pointer-events: none;
 }
 
 .dc-guide-banner {
+  flex: 0 0 auto;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   padding: 10px 16px;
-  background: #163022;
-  border-bottom: 1px solid #166534;
+  background: #ecfdf5;
+  border-bottom: 1px solid #bbf7d0;
   font-size: 12.5px;
-  color: #dcfce7;
+  color: #14532d;
 }
 
 .dc-guide-banner p {
   margin: 4px 0 0;
-  color: #bbf7d0;
+  color: #166534;
   font-size: 12px;
 }
 
 .dc-error-bar {
+  flex: 0 0 auto;
   padding: 8px 16px;
-  background: #450a0a;
-  color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
   font-size: 12.5px;
-  border-bottom: 1px solid #7f1d1d;
+  border-bottom: 1px solid #fecaca;
 }
 
 .dc-content-split {
+  flex: 1 1 auto;
   display: flex;
   min-height: 0;
   min-width: 0;
@@ -591,35 +614,38 @@
 }
 
 .dc-stream-col {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
-  display: grid;
-  grid-template-rows: 1fr auto;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .dc-messages-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 18px 18px 10px;
+  padding: 18px 20px 12px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .dc-channel-welcome {
   padding-bottom: 16px;
   margin-bottom: 10px;
-  border-bottom: 1px solid #2e3138;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .dc-welcome-badge {
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: #2b2f36;
-  color: #ffffff;
-  font-size: 28px;
+  background: #ecfdf5;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  font-size: 26px;
   font-weight: 700;
   display: grid;
   place-items: center;
@@ -628,40 +654,40 @@
 
 .dc-channel-welcome h3 {
   margin: 0 0 4px;
-  font-size: 20px;
-  color: #ffffff;
+  font-size: 19px;
+  color: #111827;
 }
 
 .dc-channel-welcome p {
   margin: 0;
   font-size: 13.5px;
-  color: #949ba4;
+  color: #4b5563;
   max-width: 66ch;
 }
 
 .dc-inline-mention-link {
-  border: 0 !important;
-  padding: 1px 5px !important;
+  border: 1px solid #bbf7d0 !important;
+  padding: 1px 6px !important;
   min-height: 0 !important;
-  border-radius: 4px !important;
-  background: rgba(22, 101, 52, 0.35) !important;
-  color: #86efac !important;
+  border-radius: 5px !important;
+  background: #ecfdf5 !important;
+  color: #166534 !important;
   font-weight: 600;
   cursor: pointer;
 }
 
 .dc-stream-status {
-  color: #949ba4;
+  color: #6b7280;
   font-size: 13px;
 }
 
 .dc-empty-prompts {
-  padding: 12px 0;
+  padding: 8px 0;
 }
 
 .dc-empty-prompts p {
   margin: 0 0 8px;
-  color: #949ba4;
+  color: #6b7280;
   font-size: 13px;
 }
 
@@ -673,18 +699,19 @@
 
 .dc-starter-chip {
   min-height: 34px !important;
-  padding: 6px 11px !important;
+  padding: 6px 12px !important;
   border-radius: 8px !important;
-  border: 1px solid #35383f !important;
-  background: #26292e !important;
-  color: #e5e7eb !important;
+  border: 1px solid #e5e7eb !important;
+  background: #f8f9fa !important;
+  color: #111827 !important;
   font-size: 12.5px !important;
   cursor: pointer;
 }
 
 .dc-starter-chip:hover {
-  border-color: #22c55e !important;
-  background: #163022 !important;
+  border-color: #166534 !important;
+  background: #ecfdf5 !important;
+  color: #166534 !important;
 }
 
 /* Date Divider */
@@ -695,7 +722,7 @@
   margin: 14px 0 8px;
   font-size: 11.5px;
   font-weight: 600;
-  color: #949ba4;
+  color: #6b7280;
 }
 
 .dc-date-divider::before,
@@ -703,31 +730,31 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: #2f3238;
+  background: #e5e7eb;
 }
 
 /* Messages */
 .dc-message {
   position: relative;
-  padding: 6px 10px;
+  padding: 7px 10px;
   border-radius: 8px;
   transition: background-color 110ms ease;
 }
 
 .dc-message:hover {
-  background: rgba(255, 255, 255, 0.035);
+  background: #f8f9fa;
 }
 
 .dc-message-agent {
-  background: rgba(22, 101, 52, 0.09);
-  border-left: 2px solid #22c55e;
+  background: #f0fdf4;
+  border-left: 3px solid #166534;
 }
 
 .dc-message-agent:hover {
-  background: rgba(22, 101, 52, 0.14);
+  background: #ecfdf5;
 }
 
-/* Curved Inline Reply Quote (matching Discord 2nd image) */
+/* Curved Inline Reply Quote */
 .dc-reply-context {
   display: flex;
   align-items: center;
@@ -735,15 +762,15 @@
   margin-left: 18px;
   margin-bottom: 4px;
   font-size: 12px;
-  color: #949ba4;
+  color: #6b7280;
   min-width: 0;
 }
 
 .dc-reply-spine {
-  width: 24px;
-  height: 11px;
-  border-left: 2px solid #4e5058;
-  border-top: 2px solid #4e5058;
+  width: 22px;
+  height: 10px;
+  border-left: 2px solid #cbd5e1;
+  border-top: 2px solid #cbd5e1;
   border-top-left-radius: 6px;
   margin-top: 5px;
   flex-shrink: 0;
@@ -753,8 +780,8 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #2b2f36;
-  color: #ffffff;
+  background: #e2e8f0;
+  color: #1e293b;
   font-size: 9px;
   font-weight: 700;
   display: inline-flex;
@@ -772,7 +799,7 @@
 
 .dc-reply-author {
   font-weight: 600;
-  color: #dbdee1;
+  color: #374151;
   white-space: nowrap;
 }
 
@@ -780,7 +807,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #949ba4;
+  color: #6b7280;
 }
 
 .dc-message-row {
@@ -804,18 +831,18 @@
 }
 
 .dc-author-name {
-  font-size: 14.5px;
+  font-size: 14px;
   font-weight: 650;
-  color: #f3f4f6;
+  color: #111827;
 }
 
 .dc-author-agent {
-  color: #86efac;
+  color: #166534;
 }
 
 .dc-author-handle {
   font-size: 11.5px;
-  color: #80848e;
+  color: #6b7280;
   font-family: var(--font-code);
 }
 
@@ -825,40 +852,42 @@
   text-transform: uppercase;
   padding: 1px 6px;
   border-radius: 4px;
-  background: #2b2f36;
-  color: #d1d5db;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
 }
 
 .dc-role-agent {
   background: #166534;
-  color: #dcfce7;
+  color: #ffffff;
+  border-color: #166534;
   text-transform: none;
 }
 
 .dc-timestamp {
   font-size: 11px;
-  color: #80848e;
+  color: #6b7280;
 }
 
 .dc-message-body {
   font-size: 14px;
-  line-height: 1.48;
-  color: #dbdee1;
+  line-height: 1.5;
+  color: #1f2937;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .dc-mention {
-  background: rgba(99, 102, 241, 0.25);
-  color: #c7d2fe;
-  padding: 0 4px;
+  background: #eef2ff;
+  color: #3730a3;
+  padding: 1px 5px;
   border-radius: 4px;
   font-weight: 600;
 }
 
 .dc-mention-agent {
-  background: rgba(34, 197, 94, 0.22);
-  color: #86efac;
+  background: #dcfce7;
+  color: #166534;
 }
 
 .dc-message-actions {
@@ -875,23 +904,27 @@
   min-height: 26px !important;
   padding: 2px 8px !important;
   border-radius: 5px !important;
-  border: 1px solid #35383f !important;
-  background: #23262b !important;
-  color: #dbdee1 !important;
+  border: 1px solid #d1d5db !important;
+  background: #ffffff !important;
+  color: #374151 !important;
   font-size: 11.5px !important;
   cursor: pointer;
+}
+
+.dc-msg-action-btn:hover {
+  background: #f3f4f6 !important;
 }
 
 .dc-agent-action-embed {
   margin-top: 8px;
   padding: 10px 12px;
   border-radius: 8px;
-  background: #171b18;
-  border: 1px solid #166534;
+  background: #ffffff;
+  border: 1px solid #86efac;
   display: grid;
   gap: 8px;
   font-size: 12.5px;
-  color: #dcfce7;
+  color: #14532d;
 }
 
 .dc-embed-btns {
@@ -913,39 +946,42 @@
 }
 
 .dc-btn-primary:hover {
-  background: #15803d !important;
+  background: #14532d !important;
 }
 
 .dc-btn-secondary {
   min-height: 32px !important;
   padding: 5px 12px !important;
   border-radius: 6px !important;
-  border: 1px solid #4b5563 !important;
-  background: transparent !important;
-  color: #e5e7eb !important;
+  border: 1px solid #d1d5db !important;
+  background: #ffffff !important;
+  color: #374151 !important;
   font-size: 12.5px !important;
   cursor: pointer;
 }
 
-/* Composer Area */
+/* Composer Area — Pinned Strictly at Bottom of Stream */
 .dc-composer-area {
+  flex: 0 0 auto;
+  margin-top: auto;
   position: relative;
-  padding: 10px 16px 14px;
-  background: #1f2226;
+  padding: 12px 16px 14px;
+  background: #ffffff;
+  border-top: 1px solid var(--line, #e5e7eb);
 }
 
 .dc-mention-menu {
   position: absolute;
   left: 16px;
   right: 16px;
-  bottom: calc(100% - 4px);
-  background: #17191d;
-  border: 1px solid #35383f;
-  border-radius: 8px;
+  bottom: calc(100% + 2px);
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
   padding: 6px;
   display: grid;
   gap: 2px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.14);
   z-index: 15;
 }
 
@@ -959,13 +995,13 @@
   border: 0 !important;
   border-radius: 6px !important;
   background: transparent !important;
-  color: #f3f4f6 !important;
+  color: #111827 !important;
   text-align: left;
   cursor: pointer;
 }
 
 .dc-mention-option:hover {
-  background: #2b2d31 !important;
+  background: #f3f4f6 !important;
 }
 
 .dc-mention-opt-text {
@@ -975,11 +1011,12 @@
 
 .dc-mention-opt-text strong {
   font-size: 13px;
+  color: #111827;
 }
 
 .dc-mention-opt-text small {
   font-size: 11px;
-  color: #949ba4;
+  color: #6b7280;
 }
 
 .dc-reply-bar {
@@ -988,12 +1025,12 @@
   justify-content: space-between;
   gap: 8px;
   padding: 6px 12px;
-  background: #26292e;
+  background: #f8f9fa;
   border-radius: 8px 8px 0 0;
-  border: 1px solid #35383f;
+  border: 1px solid #d1d5db;
   border-bottom: 0;
   font-size: 12px;
-  color: #b5bac1;
+  color: #374151;
 }
 
 .dc-composer-box {
@@ -1001,13 +1038,16 @@
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
-  background: #2b2d31;
-  border: 1px solid #3c3f46;
-  border-radius: 8px;
+  background: #f8f9fa;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
 .dc-composer-box:focus-within {
-  border-color: #22c55e;
+  background: #ffffff;
+  border-color: #166534;
+  box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.1);
 }
 
 .dc-composer-plus {
@@ -1016,9 +1056,9 @@
   min-height: 30px !important;
   padding: 0 !important;
   border-radius: 50% !important;
-  border: 0 !important;
-  background: #3f4249 !important;
-  color: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+  background: #ffffff !important;
+  color: #374151 !important;
   font-size: 17px !important;
   font-weight: 700;
   display: inline-flex;
@@ -1028,6 +1068,11 @@
   flex-shrink: 0;
 }
 
+.dc-composer-plus:hover {
+  border-color: #166534 !important;
+  color: #166534 !important;
+}
+
 .dc-composer-input {
   flex: 1;
   min-height: 32px !important;
@@ -1035,7 +1080,7 @@
   padding: 6px 4px !important;
   border: 0 !important;
   background: transparent !important;
-  color: #f3f4f6 !important;
+  color: #111827 !important;
   font: inherit;
   font-size: 14px !important;
   line-height: 1.4;
@@ -1044,19 +1089,23 @@
 }
 
 .dc-composer-input::placeholder {
-  color: #80848e;
+  color: #6b7280;
 }
 
 .dc-composer-send {
-  min-height: 32px !important;
-  padding: 5px 14px !important;
-  border-radius: 6px !important;
+  min-height: 34px !important;
+  padding: 6px 14px !important;
+  border-radius: 7px !important;
   border: 0 !important;
   background: #166534 !important;
   color: #ffffff !important;
   font-size: 12.5px !important;
   font-weight: 600;
   cursor: pointer;
+}
+
+.dc-composer-send:hover:not(:disabled) {
+  background: #14532d !important;
 }
 
 .dc-composer-send:disabled {
@@ -1068,20 +1117,20 @@
 .dc-members-pane {
   width: 224px;
   flex: 0 0 224px;
-  background: #191b1f;
-  border-left: 1px solid #2b2e34;
+  background: #f8f9fa;
+  border-left: 1px solid var(--line, #e5e7eb);
   padding: 14px 10px;
   overflow-y: auto;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
-  align-content: start;
 }
 
 .dc-members-pane h4 {
   margin: 6px 4px 2px;
   font-size: 10.5px;
   letter-spacing: 0.05em;
-  color: #949ba4;
+  color: #6b7280;
 }
 
 .dc-member-item {
@@ -1095,13 +1144,13 @@
 .dc-member-item strong {
   display: block;
   font-size: 13px;
-  color: #f3f4f6;
+  color: #111827;
 }
 
 .dc-member-item small {
   display: block;
   font-size: 11px;
-  color: #949ba4;
+  color: #6b7280;
 }
 
 @media (max-width: 900px) {
@@ -1120,7 +1169,7 @@
     z-index: 25;
     transform: translateX(-105%);
     transition: transform 180ms ease;
-    box-shadow: 12px 0 28px rgba(0, 0, 0, 0.45);
+    box-shadow: 12px 0 28px rgba(17, 24, 39, 0.16);
   }
 
   .dc-rail.is-open {
@@ -1132,5 +1181,11 @@
   .dc-topbar-divider,
   .dc-members-pane {
     display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .dc-composer-input {
+    font-size: 16px !important;
   }
 }

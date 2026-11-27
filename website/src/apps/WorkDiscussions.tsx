@@ -123,10 +123,12 @@ export function WorkDiscussions({
   api,
   scope,
   currency = 'KES',
+  initialChannelId,
 }: {
   api: API;
   scope: string;
   currency?: string;
+  initialChannelId?: string;
 }) {
   const [directory, setDirectory] = useState<{
     workspace: { id: string; name: string; events_count: number; members_count: number };
@@ -169,6 +171,8 @@ export function WorkDiscussions({
       setAgentNameInput(res.agent?.display_name || 'Workspace Agent');
       if (!keepSelection || !activeChannelId) {
         const preferred =
+          (initialChannelId &&
+            res.channels?.find((c: ChannelItem) => c.id === initialChannelId)) ||
           res.channels?.find((c: ChannelItem) => c.slug === 'general-questions') ||
           res.channels?.find((c: ChannelItem) => c.slug === 'general') ||
           res.channels?.[0];
@@ -199,7 +203,7 @@ export function WorkDiscussions({
     setActiveChannelId('');
     setMessages([]);
     void loadDirectory(false);
-  }, [scope]);
+  }, [scope, initialChannelId]);
 
   useEffect(() => {
     if (activeChannelId) {

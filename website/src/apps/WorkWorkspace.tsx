@@ -8,7 +8,7 @@ import { appNavigationEvent } from './AppNavigation';
 import { WorkDateViews } from './WorkDateViews';
 import { WorkTaskDetails } from './WorkTaskDetails';
 import { useEffect, useRef, useState } from 'react';
-import { Field, Form, today, type API } from '../operations/UI';
+import { Field, today, type API } from '../operations/UI';
 import { useIdempotentAPI } from './useIdempotentAPI';
 import { ProjectEditor, TaskEditor } from './WorkEditors';
 import { WorkTimesheets } from './WorkTimesheets';
@@ -42,20 +42,17 @@ export function WorkWorkspace({
     [view, setView] = useState('board'),
     [busy, setBusy] = useState(false),
     [activity, setActivity] = useState<any[]>([]),
-    [reply, setReply] = useState<any>(null),
-    [messageTask, setMessageTask] = useState(''),
-    [mentions, setMentions] = useState<string[]>([]),
     [query, setQuery] = useState(''),
     [quickFilter, setQuickFilter] = useState('all'),
     [projectFilter, setProjectFilter] = useState('all'),
     [projectMode, setProjectMode] = useState('cards'),
     [projectGroup, setProjectGroup] = useState('none'),
-    [messageOffset, setMessageOffset] = useState(0),
     [statusFilter, setStatusFilter] = useState('all'),
     [assigneeFilter, setAssigneeFilter] = useState('all'),
     [workspaceMeetings, setWorkspaceMeetings] = useState<any[]>([]),
     [workspaceActivities, setWorkspaceActivities] = useState<any[]>([]),
-    [myAssignedTasksCount, setMyAssignedTasksCount] = useState(0);
+    [myAssignedTasksCount, setMyAssignedTasksCount] = useState(0),
+    [focusChannelId, setFocusChannelId] = useState<string | undefined>(undefined);
   const targetRequest = useRef(0);
   const [viewing, setViewing] = useState<any>(null),
     [targetTask, setTargetTask] = useState('');
@@ -83,7 +80,6 @@ export function WorkWorkspace({
                     'my-work',
                     'workload',
                     'report',
-                    'discussions',
                     'timesheets',
                     'planning',
                     'reporting',
@@ -172,7 +168,6 @@ export function WorkWorkspace({
     setBoard(null);
     setViewing(null);
     setActivity([]);
-    setMessageOffset(0);
     if (selected)
       api('/work/projects/' + selected)
         .then((d) => {
@@ -186,13 +181,18 @@ export function WorkWorkspace({
     };
   }, [scope, selected, revision]);
   useEffect(() => {
+    if (section === 'discussions') {
+      setSelected('');
+      setViewing(null);
+      setView('discussions');
+      return;
+    }
     if (
       [
         'calendar',
         'timeline',
         'workload',
         'my-work',
-        'discussions',
         'workflows',
         'timesheets',
         'planning',
@@ -464,6 +464,14 @@ export function WorkWorkspace({
           >
             My Tasks
           </button>
+          <button
+            onClick={() => {
+              setSelected('');
+              changeView('discussions');
+            }}
+          >
+            Discussions
+          </button>
           <button onClick={() => changeView('planning')}>Planning</button>
           <button aria-current="page" onClick={() => changeView('timesheets')}>
             Timesheets
@@ -622,7 +630,9 @@ export function WorkWorkspace({
               onOpen={openTask}
             />
           )}
-          {view === 'discussions' && <WorkDiscussions api={api} scope={scope} />}
+          {view === 'discussions' && (
+            <WorkDiscussions api={api} scope={scope} initialChannelId={focusChannelId} />
+          )}
           {view !== 'my-work' && !['reporting', 'planning', 'configuration', 'calendar', 'discussions'].includes(view) && (
             <>
               {(workspaceMeetings.length > 0 || workspaceActivities.length > 0) && (
@@ -898,6 +908,21 @@ export function WorkWorkspace({
               )}
               <button
                 className="secondary-button"
+                onClick={() => {
+                  setFocusChannelId('project:' + p.id);
+                  setSelected('');
+                  setViewing(null);
+                  const url = new URL(location.href);
+                  url.searchParams.delete('work_target');
+                  url.searchParams.set('work_view', 'discussions');
+                  history.pushState(null, '', url.pathname + url.search + url.hash);
+                  setView('discussions');
+                }}
+              >
+                Open #project channel
+              </button>
+              <button
+                className="secondary-button"
                 disabled={!board.permissions.manage || busy}
                 onClick={() => setEditingProject(p)}
               >
@@ -984,7 +1009,6 @@ export function WorkWorkspace({
               'my-work',
               'workload',
               'report',
-              'discussions',
               'updates',
             ].map((v) => (
               <button
@@ -997,7 +1021,7 @@ export function WorkWorkspace({
               </button>
             ))}
           </nav>
-          {!['discussions', 'workload', 'updates'].includes(view) && (
+          {!['workload', 'updates'].includes(view) && (
             <div className="work-toolbar">
               <Field label="Search loaded project tasks">
                 <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
@@ -1153,137 +1177,7 @@ export function WorkWorkspace({
                 );
               })}
             </section>
-          ) : view === 'workflows' ? null : (
-            <section className="panel">
-              <h3>Project discussions</h3>
-              <Field label="Discussion task">
-                <select
-                  value={messageTask}
-                  onChange={(e) => {
-                    setMessageTask(e.target.value);
-                    setReply(null);
-                  }}
-                >
-                  <option value="">Project discussion</option>
-                  {tasks.map((t: any) => (
-                    <option key={t.id} value={t.id}>
-                      {t.data.title}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <button
-                className="secondary-button"
-                disabled={!board.message_page?.has_more || busy}
-                onClick={async () => {
-                  setBusy(true);
-                  try {
-                    const offset = messageOffset + 100,
-                      result = await api('/work/projects/' + p.id + '?messages_offset=' + offset);
-                    setBoard((current: any) =>
-                      current?.project.id === p.id
-                        ? {
-                            ...current,
-                            messages: [
-                              ...result.messages,
-                              ...current.messages.filter(
-                                (m: any) => !result.messages.some((n: any) => n.id === m.id),
-                              ),
-                            ],
-                            message_page: result.message_page,
-                          }
-                        : current,
-                    );
-                    setMessageOffset(offset);
-                  } catch (e) {
-                    setError((e as Error).message);
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
-              >
-                Load earlier discussion
-              </button>
-              <ol className="work-messages">
-                {board.messages
-                  .filter((m: any) => (m.data.task_id || '') === messageTask)
-                  .map((m: any) => (
-                    <li key={m.id}>
-                      <strong>{name(m.data.author_id)}</strong>
-                      <small> · {new Date(m.created_at).toLocaleString()}</small>
-                      {m.data.reply_to && (
-                        <p>
-                          Reply to{' '}
-                          {name(
-                            board.messages.find((n: any) => n.id === m.data.reply_to)?.data
-                              .author_id,
-                          )}
-                        </p>
-                      )}
-                      <p className="work-message-body">{m.data.body}</p>
-                      {m.data.mentions.length > 0 && (
-                        <p>Mentioned: {m.data.mentions.map(name).join(', ')}</p>
-                      )}
-                      <button
-                        className="quiet-button"
-                        disabled={!board.permissions.write}
-                        onClick={() => setReply(m)}
-                      >
-                        Reply
-                      </button>
-                    </li>
-                  ))}
-              </ol>
-              {board.permissions.write && (
-                <Form
-                  key={reply?.id || 'new-message'}
-                  submit={async (d) => {
-                    await api('/work/projects/' + p.id + '/messages', 'POST', {
-                      body: d.body,
-                      task_id: messageTask || null,
-                      reply_to: reply?.id || null,
-                      mentions,
-                    });
-                    setReply(null);
-                    setMentions([]);
-                    saved('Discussion message saved.');
-                  }}
-                >
-                  {reply && (
-                    <p>
-                      Replying to {name(reply.data.author_id)}{' '}
-                      <button type="button" className="quiet-button" onClick={() => setReply(null)}>
-                        Cancel reply
-                      </button>
-                    </p>
-                  )}
-                  <Field label="Discussion message">
-                    <textarea name="body" required maxLength={10000} />
-                  </Field>
-                  <fieldset>
-                    <legend>Mention participants</legend>
-                    {members
-                      .filter((m) => p.data.members.some((n: any) => n.user_id === m.id))
-                      .map((m) => (
-                        <label key={m.id} className="checkbox-field">
-                          <input
-                            type="checkbox"
-                            checked={mentions.includes(m.id)}
-                            onChange={(e) =>
-                              setMentions((v) =>
-                                e.target.checked ? [...v, m.id] : v.filter((id) => id !== m.id),
-                              )
-                            }
-                          />
-                          {name(m.id)}
-                        </label>
-                      ))}
-                  </fieldset>
-                  <button className="button">Post discussion message</button>
-                </Form>
-              )}
-            </section>
-          )}
+          ) : view === 'workflows' ? null : null}
           {activity.length > 0 && (
             <section className="panel">
               <h3>Saved task revisions</h3>
@@ -1325,9 +1219,14 @@ export function WorkWorkspace({
             setViewing(null);
           }}
           onDiscuss={() => {
-            setMessageTask(viewing.id);
-            setView('discussions');
+            setFocusChannelId('project:' + p.id);
             setViewing(null);
+            setSelected('');
+            const url = new URL(location.href);
+            url.searchParams.delete('work_target');
+            url.searchParams.set('work_view', 'discussions');
+            history.pushState(null, '', url.pathname + url.search + url.hash);
+            setView('discussions');
           }}
           onClose={() => {
             if (p) recordUrl(p.id);

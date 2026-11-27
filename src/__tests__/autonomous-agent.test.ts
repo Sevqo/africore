@@ -343,11 +343,17 @@ test('User profile picture, custom agent @username, and Discord-style Work Discu
   assert.equal(handleRes.status, 200);
   assert.equal(handleRes.data.agent_handle, 'continua-agent');
 
-  // 3. List Discord-style Work Channels (auto-seeded) and create a custom channel
+  // 3. List Discord-style Work Channels (auto-seeded + auto-created project channels!) and create a custom channel
   const chList = await api(`/api/v1/organizations/${businessOrg1}/work/channels`);
   assert.equal(chList.status, 200);
   assert.equal(chList.data.agent.handle, 'continua-agent');
   assert.ok(chList.data.channels.some((c: any) => c.slug === 'general-questions'));
+  assert.ok(
+    chList.data.channels.some(
+      (c: any) => c.category === 'PROJECTS' && c.slug === 'nairobi-store-expansion',
+    ),
+    'Creating a project must automatically surface a #project channel in Discussions',
+  );
   assert.equal(chList.data.current_user.avatar_url, tinyPng);
 
   const customCh = await api(`/api/v1/organizations/${businessOrg1}/work/channels`, 'POST', {

@@ -348,10 +348,26 @@ export async function fetchSandboxCloneContext(
     }
     if (cloneKind === 'crm') {
       const rows = await dbAll(
-        "SELECT id, title, stage, amount_minor, currency FROM ac_crm_entries WHERE org_id=? AND environment=? AND status<>'archived' ORDER BY updated_at DESC LIMIT 5",
+        "SELECT id, kind, status, data FROM ac_crm_entries WHERE org_id=? AND environment=? AND status<>'archived' ORDER BY updated_at DESC LIMIT 5",
         [targetAccess.org, targetAccess.environment],
       ).catch(() => []);
-      return { existing_leads: rows };
+      return {
+        existing_leads: rows.map((r: any) => {
+          let parsed: any = {};
+          try {
+            parsed = JSON.parse(r.data || '{}');
+          } catch {
+            /* ignore */
+          }
+          return {
+            id: r.id,
+            title: parsed.title || 'Lead',
+            stage: parsed.stage || 'new',
+            amount_minor: Number(parsed.amount_minor || 0),
+            currency: parsed.currency || 'KES',
+          };
+        }),
+      };
     }
     if (cloneKind === 'invoices' || cloneKind === 'customers') {
       const [custs, invs] = await Promise.all([
@@ -421,9 +437,9 @@ export async function executeAgentTool(
 
   if (tool.id === 'analyze_business') {
     const snapshot = await financialSnapshot(targetAccess, { currency });
-    const [crmRows, workList, calList, customerRows] = await Promise.all([
+    const [rawCrmRows, workList, calList, customerRows] = await Promise.all([
       dbAll(
-        "SELECT id, kind, title, stage, status, amount_minor, currency FROM ac_crm_entries WHERE org_id=? AND environment=? AND status<>'archived'",
+        "SELECT id, kind, status, data FROM ac_crm_entries WHERE org_id=? AND environment=? AND status<>'archived'",
         [targetAccess.org, targetAccess.environment],
       ).catch(() => []),
       workProjects(targetAccess).catch(() => ({ data: [] })),
@@ -433,6 +449,23 @@ export async function executeAgentTool(
         [targetAccess.org, targetAccess.environment],
       ).catch(() => []),
     ]);
+    const crmRows = rawCrmRows.map((r: any) => {
+      let parsed: any = {};
+      try {
+        parsed = JSON.parse(r.data || '{}');
+      } catch {
+        /* ignore */
+      }
+      return {
+        id: r.id,
+        kind: r.kind,
+        status: r.status,
+        title: parsed.title || 'Lead',
+        stage: parsed.stage || 'new',
+        amount_minor: Number(parsed.amount_minor || 0),
+        currency: parsed.currency || currency,
+      };
+    });
 
     const projectRows = workList.data || [];
     const allTasks = projectRows.flatMap((p: any) => p.tasks || []);

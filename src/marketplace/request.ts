@@ -67,6 +67,7 @@ export async function withServiceRequest(req: Request, res: Response, fn: () => 
     '/organizations/:org/assistant/conversations/:id/messages',
     '/organizations/:org/agent/runs',
     '/organizations/:org/agent/approvals/:id/decide',
+    '/organizations/:org/agent/routines/:id/run',
     '/organizations/:org/work/channels/:channelId/messages',
     '/organizations/:org/payment-requests/:id/daraja',
     '/organizations/:org/payment-attempts/:id/refresh',
