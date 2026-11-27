@@ -319,7 +319,7 @@ export function AgentWorkspace({
     <section className="agent-studio" aria-label="AfriCore Autonomous Agent Studio">
       <header className="agent-studio-header">
         <div className="agent-studio-title">
-          <span className="eyebrow">AUTONOMOUS WORKSPACE AGENT · TOWNIE-INSPIRED</span>
+          <span className="eyebrow">PYTHON AUTONOMOUS AGENT · TOWNIE-INSPIRED</span>
           <h2>AfriCore Agent</h2>
           <p>
             Executes real workspace operations—scheduling meetings, setting up projects, managing

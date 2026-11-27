@@ -102,6 +102,7 @@ after(async () => {
 test('Business agent is strictly sandboxed and hard-blocks Personal, Developer, and other Business workspaces', async () => {
   const ov = await api(`/api/v1/organizations/${businessOrg1}/agent/overview`);
   assert.equal(ov.status, 200);
+  assert.equal(ov.data.runtime, 'python3');
   assert.equal(ov.data.boundary.source_kind, 'business');
   assert.equal(ov.data.boundary.cross_workspace_bridge, false);
   assert.deepEqual(ov.data.boundary.allowed_workspace_ids, [businessOrg1]);
@@ -220,6 +221,7 @@ test('Business agent enforces restraint-first approval, executes real meetings &
     computer_use: true,
   });
   assert.equal(projRun.status, 201);
+  assert.equal(projRun.data.engine, 'python_autonomous_agent_v1');
   assert.equal(projRun.data.status, 'completed');
   assert.equal(projRun.data.tool_name, 'create_project');
   assert.ok(projRun.data.result.record_id);

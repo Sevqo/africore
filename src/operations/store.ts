@@ -22,6 +22,13 @@ export const kinds = [
   'quotation_revision',
   'sales_pricelist',
   'sales_template',
+  'agent_policy',
+  'agent_run',
+  'agent_approval',
+  'agent_routine',
+  'agent_billing_account',
+  'agent_credit_ledger',
+  'agent_memory',
 ] as const;
 export type Kind = (typeof kinds)[number];
 export interface DomainObject {

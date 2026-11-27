@@ -1,14 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import { dbAll, dbGet, dbRun } from '../db/adapter';
+import { dbRun } from '../db/adapter';
 import { audit, fail, type Access } from '../platform/auth';
-import { hash, now } from '../platform/crypto';
-import type { WorkspaceKind } from '../marketplace/catalog';
+import { hash, now, seal, unseal } from '../platform/crypto';
 import { canonical } from '../finance/service';
-import {
-  AGENT_CREDIT_COSTS,
-  consumeAgentCredits,
-  getAgentBillingSummary,
-} from './billing';
+import { all, change, create, get } from '../operations/store';
+import { consumeAgentCredits, getAgentBillingSummary, type AgentCreditCategory } from './billing';
 import {
   agentApprovalDecisionInput,
   agentMemoryInput,
@@ -20,18 +16,12 @@ import {
 } from './contracts';
 import {
   assertAgentTargetAllowed,
+  buildBoundaryInput,
   resolveAgentBoundary,
   workspaceKindFor,
-  type AgentIsolationBoundary,
 } from './isolation';
-import {
-  defaultPermissionsForKind,
-  executeAgentTool,
-  toolById,
-  toolsForWorkspaceKind,
-  type AgentToolDefinition,
-  type ComputerUseStep,
-} from './tools';
+import { runPythonAgent } from './python-bridge';
+import { executeAgentTool, toolById, type ComputerUseStep } from './tools';
 
 export interface AgentPolicyRecord {
   org_id: string;
@@ -44,35 +34,59 @@ export interface AgentPolicyRecord {
   updated_at: string;
 }
 
+const sealCtx = (a: Access, kind: string, id: string) =>
+  JSON.stringify(['agent-object', kind, a.org, a.environment, id]);
+
+function decodePrompt(a: Access, row: any): string {
+  if (row.prompt_sealed) {
+    try {
+      return unseal(row.prompt_sealed, sealCtx(a, 'run', row.id));
+    } catch {
+      return row.prompt || '';
+    }
+  }
+  return row.prompt || '';
+}
+
+function decodeMemory(a: Access, row: any): string {
+  if (row.content_sealed) {
+    try {
+      return unseal(row.content_sealed, sealCtx(a, 'memory', row.id));
+    } catch {
+      return row.content || '';
+    }
+  }
+  return row.content || '';
+}
+
 export async function getAgentPolicy(a: Access): Promise<AgentPolicyRecord> {
   const kind = await workspaceKindFor(a.org);
-  const defaults = defaultPermissionsForKind(kind);
-  const row = await dbGet(
-    'SELECT * FROM ac_agent_policies WHERE org_id=? AND environment=?',
-    [a.org, a.environment],
-  );
-  if (!row) {
+  const pyTools = await runPythonAgent<{ tools: any[]; defaults: Record<string, AgentPermissionMode> }>({
+    op: 'list_tools',
+    workspace_kind: kind,
+  });
+  const stored = (await all(a, 'agent_policy'))[0];
+  if (!stored) {
     return {
       org_id: a.org,
       environment: a.environment,
       autonomy_mode: 'supervised',
       computer_use_enabled: true,
       cross_dev_bridge_enabled: kind !== 'business',
-      permissions: defaults,
+      permissions: pyTools.defaults,
       updated_by: 'system_default',
       updated_at: now(),
     };
   }
-  const stored = JSON.parse(row.permissions_json || '{}');
   return {
-    org_id: row.org_id,
-    environment: row.environment,
-    autonomy_mode: row.autonomy_mode || 'supervised',
-    computer_use_enabled: !!row.computer_use_enabled,
-    cross_dev_bridge_enabled: kind === 'business' ? false : !!row.cross_dev_bridge_enabled,
-    permissions: { ...defaults, ...stored },
-    updated_by: row.updated_by,
-    updated_at: row.updated_at,
+    org_id: a.org,
+    environment: a.environment,
+    autonomy_mode: stored.autonomy_mode || 'supervised',
+    computer_use_enabled: stored.computer_use_enabled !== false,
+    cross_dev_bridge_enabled: kind === 'business' ? false : stored.cross_dev_bridge_enabled !== false,
+    permissions: { ...pyTools.defaults, ...(stored.permissions || {}) },
+    updated_by: stored.updated_by || 'owner',
+    updated_at: stored.updated_at,
   };
 }
 
@@ -80,261 +94,33 @@ export async function updateAgentPolicy(a: Access, input: unknown): Promise<Agen
   if (a.api || !['owner', 'admin'].includes(a.role)) {
     fail(403, 'Workspace owner or admin is required to configure Agent permissions');
   }
-  const parsed = agentPermissionsUpdateInput.parse(input);
+  const patch = agentPermissionsUpdateInput.parse(input);
   const kind = await workspaceKindFor(a.org);
   const current = await getAgentPolicy(a);
-  const allowedTools = new Set(toolsForWorkspaceKind(kind).map((t) => t.id));
 
-  if (kind === 'business' && parsed.cross_dev_bridge_enabled === true) {
-    fail(
-      403,
-      'Business workspace agents are permanently sandboxed and cannot bridge to Personal or Developer workspaces.',
-    );
+  // Delegate policy validation & Business sandbox lock enforcement to Python engine
+  const evaluated = await runPythonAgent<any>({
+    op: 'evaluate_permissions',
+    workspace_kind: kind,
+    current_policy: current,
+    patch,
+  });
+  if (!evaluated.ok) {
+    fail(evaluated.status || 400, evaluated.reason);
   }
 
-  const nextPermissions = { ...current.permissions };
-  if (parsed.permissions) {
-    for (const [toolId, mode] of Object.entries(parsed.permissions)) {
-      if (!allowedTools.has(toolId)) {
-        fail(400, `Tool '${toolId}' is not available in ${kind} workspaces`);
-      }
-      nextPermissions[toolId] = mode;
-    }
-  }
-
-  const nextAutonomy = parsed.autonomy_mode || current.autonomy_mode;
-  const nextComputerUse =
-    parsed.computer_use_enabled === undefined
-      ? current.computer_use_enabled
-      : parsed.computer_use_enabled;
-  const nextBridge =
-    kind === 'business'
-      ? false
-      : parsed.cross_dev_bridge_enabled === undefined
-        ? current.cross_dev_bridge_enabled
-        : parsed.cross_dev_bridge_enabled;
-
-  const at = now();
-  await dbRun(
-    `INSERT INTO ac_agent_policies
-     (org_id, environment, autonomy_mode, computer_use_enabled, cross_dev_bridge_enabled, permissions_json, updated_by, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-     ON CONFLICT(org_id, environment) DO UPDATE SET
-       autonomy_mode=excluded.autonomy_mode,
-       computer_use_enabled=excluded.computer_use_enabled,
-       cross_dev_bridge_enabled=excluded.cross_dev_bridge_enabled,
-       permissions_json=excluded.permissions_json,
-       updated_by=excluded.updated_by,
-       updated_at=excluded.updated_at`,
-    [
-      a.org,
-      a.environment,
-      nextAutonomy,
-      nextComputerUse ? 1 : 0,
-      nextBridge ? 1 : 0,
-      JSON.stringify(nextPermissions),
-      a.actor,
-      at,
-    ],
-  );
-  await audit(a.org, a.actor, 'agent.permissions_updated', nextAutonomy);
-  return getAgentPolicy(a);
-}
-
-/**
- * Extracts structured parameters from natural language instructions for reliable,
- * zero-hallucination autonomous execution across AfriCore apps.
- */
-function extractAmountMinor(prompt: string, currency: string): number {
-  const match = prompt.match(/(?:kes|ksh|usd|eur|gbp|ugx|tzs|rwf|\$)?\s*(\d[\d,]*(?:\.\d{1,2})?)/i);
-  if (!match) return 15_000;
-  const numeric = Number(match[1].replace(/,/g, ''));
-  if (!Number.isFinite(numeric) || numeric <= 0) return 15_000;
-  const multiplier = ['UGX', 'RWF'].includes(currency) ? 1 : 100;
-  return Math.min(100_000_000_000, Math.round(numeric * multiplier));
-}
-
-function extractTitleAfter(prompt: string, keywords: RegExp, fallback: string): string {
-  const quoted = prompt.match(/["“]([^"”]{2,120})["”]/);
-  if (quoted) return quoted[1].trim();
-  const after = prompt.replace(keywords, '').trim().replace(/^(?:for|about|called|named|titled|with|to)\s+/i, '');
-  const cleaned = after.split(/\s+(?:for\s+(?:kes|ksh|usd)|on\s+\d|at\s+\d|tomorrow|today|next\s+)/i)[0]?.trim();
-  return cleaned && cleaned.length >= 2 ? cleaned.slice(0, 140) : fallback;
-}
-
-interface PlannedAction {
-  tool: AgentToolDefinition;
-  targetWorkspaceId: string;
-  params: Record<string, unknown>;
-  actionSummary: string;
-}
-
-function planAgentAction(
-  kind: WorkspaceKind,
-  boundary: AgentIsolationBoundary,
-  prompt: string,
-  currency: string,
-  toolHint?: string,
-  explicitTargetWorkspaceId?: string,
-  explicitParams?: Record<string, unknown>,
-): PlannedAction {
-  const available = toolsForWorkspaceKind(kind);
-  let chosen: AgentToolDefinition | undefined = toolHint ? available.find((t) => t.id === toolHint) : undefined;
-
-  if (!chosen) {
-    const p = prompt.toLowerCase();
-    if (kind === 'business') {
-      if (/\b(meet|meeting|calendar|call|sync|appointment|book|schedule)\b/.test(p))
-        chosen = available.find((t) => t.id === 'schedule_meeting');
-      else if (/\b(project|roadmap|initiative|launch|workspace board)\b/.test(p))
-        chosen = available.find((t) => t.id === 'create_project');
-      else if (/\b(task|todo|to-do|action item|checklist)\b/.test(p))
-        chosen = available.find((t) => t.id === 'create_task');
-      else if (/\b(lead|crm|deal|opportunity|pipeline|prospect)\b/.test(p))
-        chosen = available.find((t) => t.id === 'create_crm_lead');
-      else if (/\b(invoice|bill client|billing|quote)\b/.test(p))
-        chosen = available.find((t) => t.id === 'create_draft_invoice');
-      else if (/\b(customer|client|contact)\b/.test(p) && /\b(add|create|new|register)\b/.test(p))
-        chosen = available.find((t) => t.id === 'create_customer');
-      else if (/\b(expense|spent|cost|paid for|rent|utilities|receipt)\b/.test(p))
-        chosen = available.find((t) => t.id === 'record_expense');
-      else if (/\b(subscription|recurring|bill reminder|obligation)\b/.test(p))
-        chosen = available.find((t) => t.id === 'create_obligation');
-      else if (/\b(reply|notify|message|team|tell|announce|follow up)\b/.test(p))
-        chosen = available.find((t) => t.id === 'send_workspace_reply');
-      else if (/\b(forecast|project|next month|90 days|60 days|cash flow projection)\b/.test(p))
-        chosen = available.find((t) => t.id === 'forecast_cashflow');
-      else chosen = available.find((t) => t.id === 'analyze_business');
-    } else if (kind === 'personal') {
-      if (/\b(developer|dev workspace|api|webhook|sandbox app|request log)\b/.test(p)) {
-        chosen = /\b(create|new|add|register)\b/.test(p)
-          ? available.find((t) => t.id === 'create_developer_application')
-          : available.find((t) => t.id === 'inspect_linked_developer_workspace');
-      } else if (/\b(meet|meeting|calendar|appointment|schedule)\b/.test(p))
-        chosen = available.find((t) => t.id === 'schedule_meeting');
-      else if (/\b(income|salary|earned|freelance|received)\b/.test(p))
-        chosen = available.find((t) => t.id === 'record_personal_income');
-      else if (/\b(expense|spent|bought|cost|groceries|rent)\b/.test(p))
-        chosen = available.find((t) => t.id === 'record_expense');
-      else if (/\b(subscription|netflix|spotify|recurring|bill|obligation)\b/.test(p))
-        chosen = available.find((t) => t.id === 'create_obligation');
-      else if (/\b(invoice)\b/.test(p))
-        chosen = available.find((t) => t.id === 'create_draft_invoice');
-      else if (/\b(client|contact)\b/.test(p) && /\b(add|create|new)\b/.test(p))
-        chosen = available.find((t) => t.id === 'create_customer');
-      else if (/\b(forecast|next month)\b/.test(p))
-        chosen = available.find((t) => t.id === 'forecast_cashflow');
-      else if (/\b(reply|notify|remind|note)\b/.test(p))
-        chosen = available.find((t) => t.id === 'send_workspace_reply');
-      else chosen = available.find((t) => t.id === 'analyze_personal_finances');
-    } else {
-      // developer workspace
-      if (/\b(personal|my finances|my income|my expenses|my calendar)\b/.test(p))
-        chosen = available.find((t) => t.id === 'inspect_linked_personal_summary');
-      else if (/\b(create|new|add|register)\b/.test(p) && /\b(app|application|sandbox)\b/.test(p))
-        chosen = available.find((t) => t.id === 'create_developer_application');
-      else if (/\b(reply|notify|alert|message)\b/.test(p))
-        chosen = available.find((t) => t.id === 'send_workspace_reply');
-      else chosen = available.find((t) => t.id === 'inspect_developer_diagnostics');
-    }
-  }
-
-  if (!chosen) chosen = available[0];
-
-  // Determine target workspace (supporting Personal <-> Developer bridge when applicable)
-  let targetWorkspaceId = explicitTargetWorkspaceId || boundary.source_workspace_id;
-  if (!explicitTargetWorkspaceId) {
-    if (
-      chosen.cross_workspace_bridge === 'personal_to_developer' &&
-      kind === 'personal'
-    ) {
-      const devTarget = boundary.linked_workspaces.find((w) => w.kind === 'developer');
-      if (devTarget) targetWorkspaceId = devTarget.id;
-    } else if (
-      chosen.cross_workspace_bridge === 'developer_to_personal' &&
-      kind === 'developer'
-    ) {
-      const personalTarget = boundary.linked_workspaces.find((w) => w.kind === 'personal');
-      if (personalTarget) targetWorkspaceId = personalTarget.id;
-    }
-  }
-
-  // Synthesize typed parameters
-  const derived: Record<string, unknown> = {};
-  if (chosen.id === 'schedule_meeting') {
-    derived.title = extractTitleAfter(
-      prompt,
-      /^(?:please\s+)?(?:set up|schedule|book|create)\s+(?:a\s+)?(?:meeting|call|sync|appointment)\s*/i,
-      'Team Sync Meeting',
-    );
-    derived.hours_from_now = /tomorrow/i.test(prompt) ? 24 : /today/i.test(prompt) ? 2 : 24;
-    derived.duration_minutes = /30\s*min/i.test(prompt) ? 30 : /60\s*min|1\s*hour/i.test(prompt) ? 60 : 45;
-  } else if (chosen.id === 'create_project') {
-    derived.name = extractTitleAfter(
-      prompt,
-      /^(?:please\s+)?(?:set up|create|start|launch)\s+(?:a\s+)?(?:new\s+)?project\s*/i,
-      'Q4 Growth Project',
-    );
-  } else if (chosen.id === 'create_task') {
-    derived.title = extractTitleAfter(
-      prompt,
-      /^(?:please\s+)?(?:create|add)\s+(?:a\s+)?(?:new\s+)?(?:task|todo|action item)\s*/i,
-      'Follow-up action item',
-    );
-  } else if (chosen.id === 'create_customer') {
-    derived.name = extractTitleAfter(
-      prompt,
-      /^(?:please\s+)?(?:add|create|register)\s+(?:a\s+)?(?:new\s+)?(?:customer|client|contact)\s*/i,
-      'New Contact',
-    );
-  } else if (chosen.id === 'create_crm_lead') {
-    const label = extractTitleAfter(
-      prompt,
-      /^(?:please\s+)?(?:add|create|log)\s+(?:a\s+)?(?:new\s+)?(?:crm\s+)?(?:lead|deal|opportunity)\s*/i,
-      'Inbound Business Lead',
-    );
-    derived.title = label;
-    derived.customer_name = label;
-    if (/\d/.test(prompt)) derived.amount_minor = extractAmountMinor(prompt, currency);
-  } else if (chosen.id === 'create_draft_invoice') {
-    derived.customer_name = extractTitleAfter(
-      prompt,
-      /^(?:please\s+)?(?:draft|create|prepare)\s+(?:a\s+)?(?:draft\s+)?invoice\s*/i,
-      'Workspace Client',
-    );
-    derived.description = prompt.slice(0, 180);
-    derived.amount_minor = extractAmountMinor(prompt, currency);
-  } else if (chosen.id === 'record_expense' || chosen.id === 'record_personal_income' || chosen.id === 'create_obligation') {
-    derived.description = prompt.slice(0, 160);
-    derived.amount_minor = extractAmountMinor(prompt, currency);
-    if (/rent/i.test(prompt)) derived.category = 'rent';
-    else if (/software|cloud|hosting/i.test(prompt)) derived.category = 'software';
-    else if (/subscription|netflix|spotify/i.test(prompt)) derived.category = 'subscriptions';
-    else if (/transport|fuel|uber/i.test(prompt)) derived.category = 'transport';
-    else if (/groceries|food/i.test(prompt)) derived.category = 'groceries';
-    else derived.category = 'other';
-  } else if (chosen.id === 'send_workspace_reply') {
-    derived.title = 'Agent Workspace Update';
-    derived.body = prompt.slice(0, 500);
-  } else if (chosen.id === 'create_developer_application') {
-    derived.name = extractTitleAfter(
-      prompt,
-      /^(?:please\s+)?(?:create|add|register)\s+(?:a\s+)?(?:new\s+)?(?:sandbox\s+)?(?:developer\s+)?(?:app|application)\s*/i,
-      'Agent Sandbox App',
-    );
-  }
-
-  const params = { ...derived, ...(explicitParams || {}) };
-  const actionSummary = `${chosen.name}: ${
-    params.title || params.name || params.description || params.customer_name || prompt.slice(0, 120)
-  }`;
-
-  return {
-    tool: chosen,
-    targetWorkspaceId,
-    params,
-    actionSummary,
+  const existing = (await all(a, 'agent_policy'))[0];
+  const nextData = {
+    ...evaluated.policy,
+    updated_by: a.actor,
   };
+  if (existing) {
+    await change(a, existing, nextData);
+  } else {
+    await create(a, 'agent_policy', nextData);
+  }
+  await audit(a.org, a.actor, 'agent.permissions_updated', nextData.autonomy_mode);
+  return getAgentPolicy(a);
 }
 
 export async function runAgent(
@@ -347,154 +133,84 @@ export async function runAgent(
   const d = agentRunInput.parse(input);
   const fingerprint = hash(canonical({ ...d, routineId: opts.routineId || null }));
 
-  const existing = await dbGet(
-    'SELECT * FROM ac_agent_runs WHERE org_id=? AND environment=? AND actor=? AND idempotency_key=?',
-    [a.org, a.environment, a.actor, idempotencyKey],
+  const existingRuns = await all(a, 'agent_run');
+  const existing = existingRuns.find(
+    (r) => r.actor === a.actor && r.idempotency_key === idempotencyKey,
   );
   if (existing) {
     if (existing.fingerprint !== fingerprint) {
       fail(409, 'Idempotency key conflicts with a previous agent instruction');
     }
-    return formatRunRow(existing);
+    return formatRun(a, existing);
   }
 
   const policy = await getAgentPolicy(a);
-  const boundary = await resolveAgentBoundary(a, {
+  const boundaryInput = await buildBoundaryInput(a, {
     crossDevBridgeEnabled: policy.cross_dev_bridge_enabled,
   });
 
-  // Always check explicit target_workspace_id BEFORE planning if supplied
-  if (d.target_workspace_id) {
-    await assertAgentTargetAllowed(a, d.target_workspace_id, {
-      crossDevBridgeEnabled: policy.cross_dev_bridge_enabled,
-    });
-  }
-
-  const plan = planAgentAction(
-    boundary.source_kind,
-    boundary,
-    d.prompt,
-    d.currency,
-    d.tool_hint,
-    d.target_workspace_id,
-    d.params,
-  );
-
-  // Hard server-side isolation enforcement on resolved target workspace!
-  const target = await assertAgentTargetAllowed(a, plan.targetWorkspaceId, {
-    crossDevBridgeEnabled: policy.cross_dev_bridge_enabled,
+  // Delegate planning, intent extraction, isolation check, permissions & credit estimation to Python!
+  const plan = await runPythonAgent<any>({
+    op: 'plan_run',
+    boundary_input: boundaryInput,
+    prompt: d.prompt,
+    currency: d.currency,
+    tool_hint: d.tool_hint || null,
+    target_workspace_id: d.target_workspace_id || null,
+    params: d.params || {},
+    policy,
+    computer_use: d.computer_use,
+    routine_id: opts.routineId || null,
+    override_mode: opts.overrideMode || null,
   });
 
-  // If cross-workspace tool needs a companion workspace that doesn't exist yet
-  if (
-    plan.tool.cross_workspace_bridge === 'personal_to_developer' &&
-    boundary.source_kind === 'personal' &&
-    target.targetKind !== 'developer'
-  ) {
-    fail(
-      409,
-      'No linked Developer workspace found for your account. Create a Developer workspace first to bridge Personal → Developer.',
-    );
-  }
-  if (
-    plan.tool.cross_workspace_bridge === 'developer_to_personal' &&
-    boundary.source_kind === 'developer' &&
-    target.targetKind !== 'personal'
-  ) {
-    fail(
-      409,
-      'No linked Personal workspace found for your account. Create a Personal workspace first to bridge Developer → Personal.',
-    );
+  if (!plan.ok) {
+    if (plan.audit_violation) {
+      await audit(
+        a.org,
+        a.actor,
+        'agent.boundary_violation_blocked',
+        plan.violation_target || d.target_workspace_id || a.org,
+      );
+    }
+    fail(plan.status || 403, plan.reason);
   }
 
-  // Evaluate Owner Permission Matrix + Autonomy Mode
-  let effectiveMode: AgentPermissionMode =
-    opts.overrideMode || policy.permissions[plan.tool.id] || plan.tool.default_permission;
-  if (policy.autonomy_mode === 'read_only' && plan.tool.access_kind === 'write') {
-    effectiveMode = 'disabled';
-  } else if (policy.autonomy_mode === 'autonomous' && effectiveMode === 'approval_required') {
-    // Owner explicitly enabled full workspace autonomy
-    effectiveMode = 'autonomous';
-  }
-
-  if (effectiveMode === 'disabled') {
-    fail(
-      403,
-      `The '${plan.tool.name}' capability is disabled by the workspace owner in Agent Permissions.`,
-    );
-  }
+  // Re-verify live DB workspace membership & isolation before any data access or write
+  const target = await assertAgentTargetAllowed(a, plan.target_workspace_id, {
+    crossDevBridgeEnabled: policy.cross_dev_bridge_enabled,
+  });
 
   const runId = randomUUID();
-  const at = now();
-  const useComputerUse = d.computer_use && policy.computer_use_enabled;
+  const promptSealed = seal(d.prompt, sealCtx(a, 'run', runId));
 
-  // Determine separate Agent Credits cost
-  const creditCategory = opts.routineId
-    ? 'routine_run'
-    : useComputerUse && plan.tool.access_kind === 'write'
-      ? 'computer_use_session'
-      : plan.tool.credit_category;
-  const creditsCost = AGENT_CREDIT_COSTS[creditCategory];
-
-  if (effectiveMode === 'approval_required') {
-    // Restraint-first Townie pattern: charge only 1 planning credit now, pause for human approval!
+  if (plan.execution_mode === 'approval_required') {
     const billing = await consumeAgentCredits(a, {
-      credits: AGENT_CREDIT_COSTS.analysis_read,
+      credits: 1,
       runId,
       entryType: 'analysis_read',
-      reason: `Planned action (awaiting approval): ${plan.tool.name}`,
+      reason: `Python planner paused for approval: ${plan.tool.name}`,
     });
     const approvalId = randomUUID();
-    const previewSteps: ComputerUseStep[] = [
-      {
-        step_index: 1,
-        phase: 'observe',
-        label: 'Inspect Workspace Context & Isolation Lock',
-        detail: `${boundary.isolation_label} verified before planning.`,
-        target_tab: plan.tool.target_tab,
-        target_app: plan.tool.target_app,
-        target_element: 'Workspace Policy Gate',
-        cursor_hint: { x_pct: 22, y_pct: 20 },
-        status: 'completed',
-        duration_ms: 55,
-      },
-      {
-        step_index: 2,
-        phase: 'awaiting_approval',
-        label: `Awaiting Owner Approval: ${plan.tool.name}`,
-        detail: `Restraint-first guardrail paused execution. Review the parameters and approve to execute live.`,
-        target_tab: plan.tool.target_tab,
-        target_app: plan.tool.target_app,
-        target_element: 'Approval Decision Bar',
-        cursor_hint: { x_pct: 52, y_pct: 58 },
-        preview_fields: Object.fromEntries(
-          Object.entries(plan.params).map(([k, v]) => [k, typeof v === 'object' ? JSON.stringify(v) : (v as any)]),
-        ),
-        status: 'pending_approval',
-        duration_ms: 0,
-      },
-    ];
+    const summary = `Ready to execute "${plan.action_summary}". Owner permission for ${plan.tool.name} is set to Approval Required — approve below to run it live.`;
 
-    const summary = `Ready to execute "${plan.actionSummary}". Owner permission for ${plan.tool.name} is set to Approval Required — approve below to run it live.`;
-    await dbRun(
-      `INSERT INTO ac_agent_runs
-       (id, org_id, environment, workspace_kind, actor, idempotency_key, fingerprint, prompt, status, isolation_boundary, target_workspace_id, tool_name, summary, steps_json, result_json, credits_used, estimated_minor, currency, routine_id, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'awaiting_approval', ?, ?, ?, ?, ?, ?, ?, ?, 'KES', ?, ?, ?)`,
-      [
-        runId,
-        a.org,
-        a.environment,
-        boundary.source_kind,
-        a.actor,
-        idempotencyKey,
+    const savedRun = await create(
+      a,
+      'agent_run',
+      {
+        engine: plan.engine || 'python_autonomous_agent_v1',
+        workspace_kind: plan.boundary.source_kind,
+        actor: a.actor,
+        idempotency_key: idempotencyKey,
         fingerprint,
-        d.prompt,
-        JSON.stringify(boundary),
-        target.access.org,
-        plan.tool.id,
+        prompt_sealed: promptSealed,
+        status: 'awaiting_approval',
+        isolation_boundary: plan.boundary,
+        target_workspace_id: target.access.org,
+        tool_name: plan.tool.id,
         summary,
-        JSON.stringify(previewSteps),
-        JSON.stringify({
+        steps: plan.preview_steps || [],
+        result: {
           approval_id: approvalId,
           planned_params: plan.params,
           destination: {
@@ -504,131 +220,146 @@ export async function runAgent(
             workspace_kind: target.targetKind,
           },
           remaining_credits: billing.remaining_after,
-        }),
-        billing.credits_used,
-        billing.estimated_minor,
-        opts.routineId || null,
-        at,
-        at,
-      ],
+        },
+        credits_used: billing.credits_used,
+        estimated_minor: billing.estimated_minor,
+        currency: 'KES',
+        routine_id: opts.routineId || null,
+      },
+      runId,
     );
 
-    await dbRun(
-      `INSERT INTO ac_agent_approvals
-       (id, run_id, org_id, environment, actor, tool_name, target_workspace_id, action_summary, payload_json, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
-      [
-        approvalId,
-        runId,
-        a.org,
-        a.environment,
-        a.actor,
-        plan.tool.id,
-        target.access.org,
-        plan.actionSummary,
-        JSON.stringify({ params: plan.params, currency: d.currency, computer_use: useComputerUse }),
-        at,
-      ],
+    await create(
+      a,
+      'agent_approval',
+      {
+        run_id: runId,
+        actor: a.actor,
+        tool_name: plan.tool.id,
+        target_workspace_id: target.access.org,
+        action_summary: plan.action_summary,
+        payload: {
+          params: plan.params,
+          currency: d.currency,
+          computer_use: plan.computer_use,
+          consent_to_provider: d.consent_to_provider,
+        },
+        status: 'pending',
+        decision_note: null,
+        decided_by: null,
+        decided_at: null,
+      },
+      approvalId,
     );
 
     await audit(a.org, a.actor, 'agent.run_awaiting_approval', runId);
-    const saved = await dbGet('SELECT * FROM ac_agent_runs WHERE id=?', [runId]);
-    return formatRunRow(saved);
+    return formatRun(a, savedRun);
   }
 
-  // Execute autonomously now!
+  // Execute tool against canonical AfriCore services + synthesize Python Computer Use trace
+  const toolDef = toolById(plan.tool.id);
+  if (!toolDef) return fail(400, 'Tool unavailable: ' + plan.tool.id);
+
   const execution = await executeAgentTool(
     target.access,
     target.targetKind,
-    plan.tool,
+    toolDef,
     plan.params,
     d.currency,
     runId,
   );
-  const billing = await consumeAgentCredits(a, {
-    credits: creditsCost,
-    runId,
-    entryType: creditCategory,
-    reason: `Executed ${plan.tool.name}${useComputerUse ? ' (Computer Use)' : ''}`,
+  const trace = await runPythonAgent<{ steps: ComputerUseStep[]; llm_narrative: string | null }>({
+    op: 'synthesize_trace',
+    tool_id: toolDef.id,
+    target_tab: execution.destination.tab,
+    target_app: execution.destination.app || null,
+    isolation_label: plan.boundary.isolation_label,
+    preview_fields: plan.params,
+    verify_detail: execution.summary.split('\n')[0] || 'Verified canonical record.',
+    prompt: d.prompt,
+    summary: execution.summary,
+    evidence: execution.data,
+    consent_to_provider: d.consent_to_provider,
   });
 
-  await dbRun(
-    `INSERT INTO ac_agent_runs
-     (id, org_id, environment, workspace_kind, actor, idempotency_key, fingerprint, prompt, status, isolation_boundary, target_workspace_id, tool_name, summary, steps_json, result_json, credits_used, estimated_minor, currency, routine_id, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?, ?, ?, ?, ?, ?, ?, ?, 'KES', ?, ?, ?)`,
-    [
-      runId,
-      a.org,
-      a.environment,
-      boundary.source_kind,
-      a.actor,
-      idempotencyKey,
+  const billing = await consumeAgentCredits(a, {
+    credits: plan.credits_cost,
+    runId,
+    entryType: plan.credit_category as AgentCreditCategory,
+    reason: `Python Agent executed ${plan.tool.name}${plan.computer_use ? ' (Computer Use)' : ''}`,
+  });
+
+  const savedRun = await create(
+    a,
+    'agent_run',
+    {
+      engine: plan.engine || 'python_autonomous_agent_v1',
+      workspace_kind: plan.boundary.source_kind,
+      actor: a.actor,
+      idempotency_key: idempotencyKey,
       fingerprint,
-      d.prompt,
-      JSON.stringify(boundary),
-      target.access.org,
-      plan.tool.id,
-      execution.summary,
-      JSON.stringify(execution.steps),
-      JSON.stringify({
+      prompt_sealed: promptSealed,
+      status: 'completed',
+      isolation_boundary: plan.boundary,
+      target_workspace_id: target.access.org,
+      tool_name: plan.tool.id,
+      summary: trace.llm_narrative || execution.summary,
+      steps: trace.steps?.length ? trace.steps : execution.steps,
+      result: {
         record_id: execution.record_id || null,
         destination: execution.destination,
         data: execution.data,
-        computer_use: useComputerUse,
+        computer_use: plan.computer_use,
         remaining_credits: billing.remaining_after,
-      }),
-      billing.credits_used,
-      billing.estimated_minor,
-      opts.routineId || null,
-      at,
-      at,
-    ],
+      },
+      credits_used: billing.credits_used,
+      estimated_minor: billing.estimated_minor,
+      currency: 'KES',
+      routine_id: opts.routineId || null,
+    },
+    runId,
   );
+
   await audit(a.org, a.actor, 'agent.run_completed', runId);
-  const saved = await dbGet('SELECT * FROM ac_agent_runs WHERE id=?', [runId]);
-  return formatRunRow(saved);
+  return formatRun(a, savedRun);
 }
 
 export async function decideAgentApproval(a: Access, approvalId: string, input: unknown) {
   if (a.api) fail(403, 'Human session required to decide agent approvals');
   const d = agentApprovalDecisionInput.parse(input);
-  const approval = await dbGet(
-    'SELECT * FROM ac_agent_approvals WHERE id=? AND org_id=? AND environment=?',
-    [approvalId, a.org, a.environment],
-  );
-  if (!approval) fail(404, 'Agent approval not found');
+  const approval = await get(a, approvalId, 'agent_approval');
   if (approval.status !== 'pending') fail(409, 'Agent approval is already decided');
   if (a.actor !== approval.actor && !['owner', 'admin'].includes(a.role)) {
     fail(403, 'Requester or workspace owner/admin required to decide this approval');
   }
 
+  const runRow = await get(a, approval.run_id, 'agent_run');
   const at = now();
+
   if (d.decision === 'reject') {
-    await dbRun(
-      "UPDATE ac_agent_approvals SET status='rejected', decision_note=?, decided_by=?, decided_at=? WHERE id=?",
-      [d.note || 'Rejected by user', a.actor, at, approvalId],
-    );
-    await dbRun(
-      "UPDATE ac_agent_runs SET status='rejected', summary=?, updated_at=? WHERE id=?",
-      [
-        `Action rejected before execution: ${approval.action_summary}${d.note ? ` (${d.note})` : ''}.`,
-        at,
-        approval.run_id,
-      ],
-    );
+    await change(a, approval, {
+      status: 'rejected',
+      decision_note: d.note || 'Rejected by user',
+      decided_by: a.actor,
+      decided_at: at,
+    });
+    const updatedRun = await change(a, runRow, {
+      status: 'rejected',
+      summary: `Action rejected before execution: ${approval.action_summary}${d.note ? ` (${d.note})` : ''}.`,
+    });
     await audit(a.org, a.actor, 'agent.approval_rejected', approvalId);
-    const updated = await dbGet('SELECT * FROM ac_agent_runs WHERE id=?', [approval.run_id]);
-    return { approval_id: approvalId, status: 'rejected', run: formatRunRow(updated) };
+    return { approval_id: approvalId, status: 'rejected', run: formatRun(a, updatedRun) };
   }
 
-  // Approve & execute live (re-verifying isolation boundary at execution time!)
+  // Re-verify boundary in Python + DB at execution time
   const policy = await getAgentPolicy(a);
   const target = await assertAgentTargetAllowed(a, approval.target_workspace_id, {
     crossDevBridgeEnabled: policy.cross_dev_bridge_enabled,
   });
   const tool = toolById(approval.tool_name);
   if (!tool) return fail(400, 'Tool no longer available');
-  const payload = JSON.parse(approval.payload_json || '{}');
+
+  const payload = approval.payload || {};
   const execution = await executeAgentTool(
     target.access,
     target.targetKind,
@@ -637,69 +368,80 @@ export async function decideAgentApproval(a: Access, approvalId: string, input: 
     payload.currency || 'KES',
     approval.run_id,
   );
-  const creditCategory = payload.computer_use ? 'computer_use_session' : tool.credit_category;
-  const billing = await consumeAgentCredits(a, {
-    credits: AGENT_CREDIT_COSTS[creditCategory],
-    runId: approval.run_id,
-    entryType: creditCategory,
-    reason: `Approved execution: ${tool.name}`,
+
+  const trace = await runPythonAgent<{ steps: ComputerUseStep[]; llm_narrative: string | null }>({
+    op: 'synthesize_trace',
+    tool_id: tool.id,
+    target_tab: execution.destination.tab,
+    target_app: execution.destination.app || null,
+    isolation_label: target.boundary.isolation_label,
+    preview_fields: payload.params || {},
+    verify_detail: execution.summary.split('\n')[0] || 'Approved execution verified.',
+    prompt: decodePrompt(a, runRow),
+    summary: execution.summary,
+    evidence: execution.data,
+    consent_to_provider: !!payload.consent_to_provider,
   });
 
-  await dbRun(
-    "UPDATE ac_agent_approvals SET status='approved', decision_note=?, decided_by=?, decided_at=? WHERE id=?",
-    [d.note || 'Approved by user', a.actor, at, approvalId],
-  );
-  await dbRun(
-    `UPDATE ac_agent_runs
-     SET status='completed', summary=?, steps_json=?, result_json=?, credits_used = credits_used + ?, estimated_minor = estimated_minor + ?, updated_at=?
-     WHERE id=?`,
-    [
-      execution.summary,
-      JSON.stringify(execution.steps),
-      JSON.stringify({
-        approval_id: approvalId,
-        record_id: execution.record_id || null,
-        destination: execution.destination,
-        data: execution.data,
-        computer_use: !!payload.computer_use,
-        remaining_credits: billing.remaining_after,
-      }),
-      billing.credits_used,
-      billing.estimated_minor,
-      at,
-      approval.run_id,
-    ],
-  );
+  const creditCategory: AgentCreditCategory = payload.computer_use
+    ? 'computer_use_session'
+    : tool.credit_category;
+  const creditsCost = creditCategory === 'computer_use_session' ? 5 : 3;
+  const billing = await consumeAgentCredits(a, {
+    credits: creditsCost,
+    runId: approval.run_id,
+    entryType: creditCategory,
+    reason: `Approved Python Agent execution: ${tool.name}`,
+  });
+
+  await change(a, approval, {
+    status: 'approved',
+    decision_note: d.note || 'Approved by user',
+    decided_by: a.actor,
+    decided_at: at,
+  });
+
+  const updatedRun = await change(a, runRow, {
+    status: 'completed',
+    summary: trace.llm_narrative || execution.summary,
+    steps: trace.steps?.length ? trace.steps : execution.steps,
+    result: {
+      approval_id: approvalId,
+      record_id: execution.record_id || null,
+      destination: execution.destination,
+      data: execution.data,
+      computer_use: !!payload.computer_use,
+      remaining_credits: billing.remaining_after,
+    },
+    credits_used: Number(runRow.credits_used || 0) + billing.credits_used,
+    estimated_minor: Number(runRow.estimated_minor || 0) + billing.estimated_minor,
+  });
+
   await audit(a.org, a.actor, 'agent.approval_approved_and_executed', approvalId);
-  const updated = await dbGet('SELECT * FROM ac_agent_runs WHERE id=?', [approval.run_id]);
-  return { approval_id: approvalId, status: 'approved', run: formatRunRow(updated) };
+  return { approval_id: approvalId, status: 'approved', run: formatRun(a, updatedRun) };
 }
 
 export async function listAgentRuns(a: Access, limit = 30) {
-  const rows = await dbAll(
-    'SELECT * FROM ac_agent_runs WHERE org_id=? AND environment=? ORDER BY created_at DESC LIMIT ?',
-    [a.org, a.environment, Math.min(100, Math.max(1, limit))],
-  );
-  return rows.map(formatRunRow);
+  const rows = await all(a, 'agent_run');
+  return rows
+    .sort((x, y) => String(y.created_at).localeCompare(String(x.created_at)))
+    .slice(0, Math.min(100, Math.max(1, limit)))
+    .map((r) => formatRun(a, r));
 }
 
 export async function listAgentApprovals(a: Access) {
-  const rows = await dbAll(
-    'SELECT * FROM ac_agent_approvals WHERE org_id=? AND environment=? ORDER BY created_at DESC LIMIT 50',
-    [a.org, a.environment],
-  );
-  return rows.map((r: any) => ({
-    ...r,
-    payload: JSON.parse(r.payload_json || '{}'),
-  }));
+  const rows = await all(a, 'agent_approval');
+  return rows
+    .sort((x, y) => String(y.created_at).localeCompare(String(x.created_at)))
+    .slice(0, 50);
 }
 
 export async function listAgentRoutines(a: Access) {
-  const rows = await dbAll(
-    'SELECT * FROM ac_agent_routines WHERE org_id=? AND environment=? ORDER BY created_at DESC LIMIT 50',
-    [a.org, a.environment],
-  );
-  return rows.map((r: any) => ({ ...r, enabled: !!r.enabled }));
+  const rows = await all(a, 'agent_routine');
+  return rows
+    .sort((x, y) => String(y.created_at).localeCompare(String(x.created_at)))
+    .slice(0, 50)
+    .map((r) => ({ ...r, enabled: !!r.enabled }));
 }
 
 export async function createAgentRoutine(a: Access, input: unknown) {
@@ -708,83 +450,58 @@ export async function createAgentRoutine(a: Access, input: unknown) {
   }
   const d = agentRoutineCreateInput.parse(input);
   const kind = await workspaceKindFor(a.org);
-  const allowed = toolsForWorkspaceKind(kind);
-  if (!allowed.some((t) => t.id === d.tool_name)) {
+  const pyTools = await runPythonAgent<{ tools: any[] }>({
+    op: 'list_tools',
+    workspace_kind: kind,
+  });
+  if (!pyTools.tools.some((t) => t.id === d.tool_name)) {
     fail(400, `Tool '${d.tool_name}' is not available in ${kind} workspaces`);
   }
-  const id = randomUUID();
-  const at = now();
-  await dbRun(
-    `INSERT INTO ac_agent_routines
-     (id, org_id, environment, workspace_kind, name, description, trigger_type, schedule_label, prompt, tool_name, execution_mode, enabled, created_by, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      id,
-      a.org,
-      a.environment,
-      kind,
-      d.name,
-      d.description,
-      d.trigger_type,
-      d.schedule_label,
-      d.prompt,
-      d.tool_name,
-      d.execution_mode,
-      d.enabled ? 1 : 0,
-      a.actor,
-      at,
-      at,
-    ],
-  );
-  await audit(a.org, a.actor, 'agent.routine_created', id);
-  const row = await dbGet('SELECT * FROM ac_agent_routines WHERE id=?', [id]);
+  const row = await create(a, 'agent_routine', {
+    workspace_kind: kind,
+    name: d.name,
+    description: d.description,
+    trigger_type: d.trigger_type,
+    schedule_label: d.schedule_label,
+    prompt: d.prompt,
+    tool_name: d.tool_name,
+    execution_mode: d.execution_mode,
+    enabled: d.enabled,
+    last_run_id: null,
+    last_run_at: null,
+    last_status: null,
+    created_by: a.actor,
+  });
+  await audit(a.org, a.actor, 'agent.routine_created', row.id);
   return { ...row, enabled: !!row.enabled };
 }
 
 export async function updateAgentRoutine(a: Access, routineId: string, input: unknown) {
   if (a.api) fail(403, 'Human session required');
   const d = agentRoutinePatchInput.parse(input);
-  const row = await dbGet(
-    'SELECT * FROM ac_agent_routines WHERE id=? AND org_id=? AND environment=?',
-    [routineId, a.org, a.environment],
-  );
-  if (!row) fail(404, 'Agent routine not found');
-  await dbRun(
-    `UPDATE ac_agent_routines
-     SET enabled=?, execution_mode=?, schedule_label=?, prompt=?, updated_at=?
-     WHERE id=? AND org_id=? AND environment=?`,
-    [
-      d.enabled === undefined ? row.enabled : d.enabled ? 1 : 0,
-      d.execution_mode || row.execution_mode,
-      d.schedule_label || row.schedule_label,
-      d.prompt || row.prompt,
-      now(),
-      routineId,
-      a.org,
-      a.environment,
-    ],
-  );
-  const updated = await dbGet('SELECT * FROM ac_agent_routines WHERE id=?', [routineId]);
+  const row = await get(a, routineId, 'agent_routine');
+  const updated = await change(a, row, {
+    enabled: d.enabled === undefined ? !!row.enabled : d.enabled,
+    execution_mode: d.execution_mode || row.execution_mode,
+    schedule_label: d.schedule_label || row.schedule_label,
+    prompt: d.prompt || row.prompt,
+  });
   return { ...updated, enabled: !!updated.enabled };
 }
 
 export async function deleteAgentRoutine(a: Access, routineId: string) {
   if (a.api) fail(403, 'Human session required');
-  const res = await dbRun(
-    'DELETE FROM ac_agent_routines WHERE id=? AND org_id=? AND environment=?',
+  await get(a, routineId, 'agent_routine');
+  await dbRun(
+    "DELETE FROM ac2_objects WHERE id=? AND org_id=? AND environment=? AND kind='agent_routine'",
     [routineId, a.org, a.environment],
   );
-  if (!res.changes) fail(404, 'Agent routine not found');
   await audit(a.org, a.actor, 'agent.routine_deleted', routineId);
   return { deleted: true, id: routineId };
 }
 
 export async function triggerAgentRoutineNow(a: Access, routineId: string, idempotencyKey: string) {
-  const row = await dbGet(
-    'SELECT * FROM ac_agent_routines WHERE id=? AND org_id=? AND environment=?',
-    [routineId, a.org, a.environment],
-  );
-  if (!row) fail(404, 'Agent routine not found');
+  const row = await get(a, routineId, 'agent_routine');
   const run = await runAgent(
     a,
     {
@@ -799,18 +516,26 @@ export async function triggerAgentRoutineNow(a: Access, routineId: string, idemp
       overrideMode: row.execution_mode === 'autonomous' ? 'autonomous' : 'approval_required',
     },
   );
-  await dbRun(
-    'UPDATE ac_agent_routines SET last_run_id=?, last_run_at=?, last_status=?, updated_at=? WHERE id=?',
-    [run.id, now(), run.status, now(), routineId],
-  );
+  await change(a, row, {
+    last_run_id: run.id,
+    last_run_at: now(),
+    last_status: run.status,
+  });
   return { routine_id: routineId, run };
 }
 
 export async function listAgentMemory(a: Access) {
-  return dbAll(
-    'SELECT id, category, content, actor, created_at FROM ac_agent_memory WHERE org_id=? AND environment=? ORDER BY created_at DESC LIMIT 50',
-    [a.org, a.environment],
-  );
+  const rows = await all(a, 'agent_memory');
+  return rows
+    .sort((x, y) => String(y.created_at).localeCompare(String(x.created_at)))
+    .slice(0, 50)
+    .map((r) => ({
+      id: r.id,
+      category: r.category,
+      content: decodeMemory(a, r),
+      actor: r.actor,
+      created_at: r.created_at,
+    }));
 }
 
 export async function addAgentMemory(a: Access, input: unknown) {
@@ -818,21 +543,27 @@ export async function addAgentMemory(a: Access, input: unknown) {
   const d = agentMemoryInput.parse(input);
   const kind = await workspaceKindFor(a.org);
   const id = randomUUID();
-  const at = now();
-  await dbRun(
-    'INSERT INTO ac_agent_memory(id, org_id, environment, workspace_kind, actor, category, content, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    [id, a.org, a.environment, kind, a.actor, d.category, d.content, at],
+  const row = await create(
+    a,
+    'agent_memory',
+    {
+      workspace_kind: kind,
+      actor: a.actor,
+      category: d.category,
+      content_sealed: seal(d.content, sealCtx(a, 'memory', id)),
+    },
+    id,
   );
-  return { id, ...d, actor: a.actor, created_at: at };
+  return { id: row.id, category: d.category, content: d.content, actor: a.actor, created_at: row.created_at };
 }
 
 export async function deleteAgentMemory(a: Access, memoryId: string) {
   if (a.api) fail(403, 'Human session required');
-  const res = await dbRun(
-    'DELETE FROM ac_agent_memory WHERE id=? AND org_id=? AND environment=?',
+  await get(a, memoryId, 'agent_memory');
+  await dbRun(
+    "DELETE FROM ac2_objects WHERE id=? AND org_id=? AND environment=? AND kind='agent_memory'",
     [memoryId, a.org, a.environment],
   );
-  if (!res.changes) fail(404, 'Memory item not found');
   return { deleted: true, id: memoryId };
 }
 
@@ -848,14 +579,18 @@ export async function getAgentOverview(a: Access) {
   const boundary = await resolveAgentBoundary(a, {
     crossDevBridgeEnabled: policy.cross_dev_bridge_enabled,
   });
-  const tools = toolsForWorkspaceKind(boundary.source_kind).map((t) => ({
+  const pyTools = await runPythonAgent<{ tools: any[] }>({
+    op: 'list_tools',
+    workspace_kind: boundary.source_kind,
+  });
+  const tools = pyTools.tools.map((t) => ({
     ...t,
     permission: policy.permissions[t.id] || t.default_permission,
-    credit_cost: AGENT_CREDIT_COSTS[t.credit_category],
   }));
 
   return {
-    agent_name: 'AfriCore Agent',
+    agent_name: 'AfriCore Python Autonomous Agent',
+    runtime: 'python3',
     workspace_kind: boundary.source_kind,
     environment: a.environment,
     role: a.role,
@@ -872,21 +607,22 @@ export async function getAgentOverview(a: Access) {
   };
 }
 
-function formatRunRow(row: any) {
+function formatRun(a: Access, row: any) {
   return {
     id: row.id,
     org_id: row.org_id,
     environment: row.environment,
+    engine: row.engine || 'python_autonomous_agent_v1',
     workspace_kind: row.workspace_kind,
     actor: row.actor,
-    prompt: row.prompt,
+    prompt: decodePrompt(a, row),
     status: row.status,
-    isolation_boundary: JSON.parse(row.isolation_boundary || '{}'),
+    isolation_boundary: row.isolation_boundary || {},
     target_workspace_id: row.target_workspace_id,
     tool_name: row.tool_name,
     summary: row.summary,
-    steps: JSON.parse(row.steps_json || '[]') as ComputerUseStep[],
-    result: JSON.parse(row.result_json || '{}'),
+    steps: (row.steps || []) as ComputerUseStep[],
+    result: row.result || {},
     credits_used: Number(row.credits_used || 0),
     estimated_minor: Number(row.estimated_minor || 0),
     currency: row.currency || 'KES',
