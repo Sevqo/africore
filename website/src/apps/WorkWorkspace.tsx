@@ -454,15 +454,9 @@ export function WorkWorkspace({
   if (view === 'timesheets')
     return (
       <div className="apps-workspace work-app">
-        <nav className="work-module-nav ac-app-menubar" aria-label="Work modules">
+        <nav className="work-module-nav" aria-label="Work modules">
+          <button onClick={() => changeView('board')}>Projects</button>
           <button
-            className="ac-menubar-pill"
-            onClick={() => changeView('board')}
-          >
-            Projects
-          </button>
-          <button
-            className="ac-menubar-pill"
             onClick={() => {
               setSelected('');
               changeView('my-work');
@@ -471,16 +465,6 @@ export function WorkWorkspace({
             My Tasks
           </button>
           <button
-            className="ac-menubar-pill"
-            onClick={() => {
-              setSelected('');
-              changeView('calendar');
-            }}
-          >
-            Calendar
-          </button>
-          <button
-            className="ac-menubar-pill"
             onClick={() => {
               setSelected('');
               changeView('discussions');
@@ -488,27 +472,12 @@ export function WorkWorkspace({
           >
             Discussions
           </button>
-          <button className="ac-menubar-pill" onClick={() => changeView('planning')}>
-            Planning
-          </button>
-          <button
-            className="ac-menubar-pill active"
-            aria-current="page"
-            onClick={() => changeView('timesheets')}
-          >
+          <button onClick={() => changeView('planning')}>Planning</button>
+          <button aria-current="page" onClick={() => changeView('timesheets')}>
             Timesheets
           </button>
-          <button
-            className="ac-menubar-pill"
-            onClick={() => changeView(selected ? 'report' : 'reporting')}
-          >
-            Reporting
-          </button>
-          <button
-            className="ac-menubar-pill"
-            disabled={!board?.permissions.manage}
-            onClick={() => setEditingProject(p)}
-          >
+          <button onClick={() => changeView(selected ? 'report' : 'reporting')}>Reporting</button>
+          <button disabled={!board?.permissions.manage} onClick={() => setEditingProject(p)}>
             Configuration
           </button>
         </nav>
@@ -517,18 +486,8 @@ export function WorkWorkspace({
     );
   return (
     <div className="apps-workspace work-app">
-      <nav className="work-module-nav ac-app-menubar" aria-label="Work modules">
+      <nav className="work-module-nav" aria-label="Work modules">
         <button
-          className={
-            !['my-work', 'calendar', 'discussions', 'planning', 'timeline', 'timesheets', 'report', 'reporting', 'configuration'].includes(view)
-              ? 'ac-menubar-pill active'
-              : 'ac-menubar-pill'
-          }
-          aria-current={
-            !['my-work', 'calendar', 'discussions', 'planning', 'timeline', 'timesheets', 'report', 'reporting', 'configuration'].includes(view)
-              ? 'page'
-              : undefined
-          }
           onClick={() => {
             setSelected('');
             setViewing(null);
@@ -542,8 +501,6 @@ export function WorkWorkspace({
           Projects
         </button>
         <button
-          className={view === 'my-work' ? 'ac-menubar-pill active' : 'ac-menubar-pill'}
-          aria-current={view === 'my-work' ? 'page' : undefined}
           onClick={() => {
             setSelected('');
             changeView('my-work');
@@ -555,8 +512,6 @@ export function WorkWorkspace({
             : ''}
         </button>
         <button
-          className={view === 'calendar' ? 'ac-menubar-pill active' : 'ac-menubar-pill'}
-          aria-current={view === 'calendar' ? 'page' : undefined}
           onClick={() => {
             setSelected('');
             changeView('calendar');
@@ -565,7 +520,6 @@ export function WorkWorkspace({
           Calendar
         </button>
         <button
-          className={view === 'discussions' ? 'ac-menubar-pill active' : 'ac-menubar-pill'}
           aria-current={view === 'discussions' ? 'page' : undefined}
           onClick={() => {
             setSelected('');
@@ -574,25 +528,10 @@ export function WorkWorkspace({
         >
           Discussions
         </button>
+        <button onClick={() => changeView(selected ? 'timeline' : 'planning')}>Planning</button>
+        <button onClick={() => changeView('timesheets')}>Timesheets</button>
+        <button onClick={() => changeView(selected ? 'report' : 'reporting')}>Reporting</button>
         <button
-          className={['planning', 'timeline'].includes(view) ? 'ac-menubar-pill active' : 'ac-menubar-pill'}
-          aria-current={['planning', 'timeline'].includes(view) ? 'page' : undefined}
-          onClick={() => changeView(selected ? 'timeline' : 'planning')}
-        >
-          Planning
-        </button>
-        <button className="ac-menubar-pill" onClick={() => changeView('timesheets')}>
-          Timesheets
-        </button>
-        <button
-          className={['report', 'reporting'].includes(view) ? 'ac-menubar-pill active' : 'ac-menubar-pill'}
-          aria-current={['report', 'reporting'].includes(view) ? 'page' : undefined}
-          onClick={() => changeView(selected ? 'report' : 'reporting')}
-        >
-          Reporting
-        </button>
-        <button
-          className={view === 'configuration' ? 'ac-menubar-pill active' : 'ac-menubar-pill'}
           disabled={!selected || !board?.permissions.manage}
           onClick={() => setEditingProject(p)}
         >
@@ -697,11 +636,14 @@ export function WorkWorkspace({
           {view !== 'my-work' && !['reporting', 'planning', 'configuration', 'calendar', 'discussions'].includes(view) && (
             <>
               {(workspaceMeetings.length > 0 || workspaceActivities.length > 0) && (
-                <section className="panel o-work-schedule-strip" aria-label="Upcoming schedule and assigned work">
-                  <div className="o-strip-header">
-                    <div className="o-strip-title">
-                      <strong>Upcoming Schedule &amp; Assigned Work</strong>
-                      <span>Synced from Workspace Calendar &amp; cross-app assignments</span>
+                <section className="panel" aria-label="Upcoming schedule and assigned work">
+                  <div className="section-heading">
+                    <div>
+                      <h2>Upcoming meetings &amp; assigned schedule</h2>
+                      <p>
+                        Synced directly from Workspace Calendar and cross-app assignments so every
+                        team member stays up to date inside Work.
+                      </p>
                     </div>
                     <button
                       type="button"
@@ -714,117 +656,102 @@ export function WorkWorkspace({
                       Open full schedule &amp; RSVP
                     </button>
                   </div>
-                  <div className="o-schedule-chip-grid">
+                  <div className="app-directory">
                     {workspaceMeetings.slice(0, 4).map((m: any) => (
-                      <article className="o-schedule-chip" key={m.id}>
-                        <div className="o-schedule-chip-top">
+                      <article className="panel" key={m.id}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                           <strong>{m.title}</strong>
                           <span className="badge">
                             {m.invited ? `Invited (${m.my_response})` : m.my_response}
                           </span>
                         </div>
-                        <small>
+                        <p style={{ margin: '6px 0', fontSize: 13 }}>
                           {new Date(m.start).toLocaleString('en-KE', {
                             timeZone: m.timezone || 'Africa/Nairobi',
                             dateStyle: 'medium',
                             timeStyle: 'short',
                           })}
                           {m.location ? ` · ${m.location}` : ''}
-                        </small>
+                        </p>
                       </article>
                     ))}
                     {workspaceActivities.slice(0, 4).map((act: any) => (
-                      <article className="o-schedule-chip" key={act.kind + ':' + act.id}>
-                        <div className="o-schedule-chip-top">
+                      <article className="panel" key={act.kind + ':' + act.id}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                           <strong>{act.title}</strong>
                           <span className="badge">{act.kind.replaceAll('_', ' ')}</span>
                         </div>
-                        <small>
+                        <p style={{ margin: '6px 0', fontSize: 13 }}>
                           Status: {act.status}
                           {act.due_on ? ` · Due ${act.due_on}` : ''}
-                        </small>
+                        </p>
                       </article>
                     ))}
                   </div>
                 </section>
               )}
-              <section className="panel o-work-projects-sheet">
-                <div className="o-control-panel">
-                  <div className="o-calendar-cp-left">
-                    <button
-                      className="button"
-                      disabled={!directory.can_create || !members.length}
-                      onClick={() => setEditingProject({ new: true })}
+              <section className="panel">
+              <div className="section-heading">
+                <h2>Projects</h2>
+                <button
+                  className="button"
+                  disabled={!directory.can_create || !members.length}
+                  onClick={() => setEditingProject({ new: true })}
+                >
+                  Create project
+                </button>
+              </div>
+              <p>
+                Projects are private to their participants and workspace administrators. Task counts
+                cover the selected project.
+              </p>
+              {directory.truncated && (
+                <p role="status">Showing the first {directory.limit} authorized projects.</p>
+              )}
+              {!selected && (
+                <div className="work-toolbar">
+                  <Field label="Search projects">
+                    <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
+                  </Field>
+                  <Field label="Project filter">
+                    <select
+                      value={projectFilter}
+                      onChange={(e) => setProjectFilter(e.target.value)}
                     >
-                      + Create project
-                    </button>
-                    <div className="o-calendar-title-group">
-                      <h2>Projects</h2>
-                      <span className="o-cp-subtitle">
-                        {projects.length} visible · Private to participants &amp; admins
-                      </span>
-                    </div>
-                  </div>
-                  {!selected && (
-                    <div className="o-calendar-cp-right">
-                      <label className="o-calendar-search" aria-label="Search projects">
-                        <input
-                          type="search"
-                          placeholder="Filter projects..."
-                          value={query}
-                          onChange={(e) => setQuery(e.target.value)}
-                        />
-                      </label>
-                      <select
-                        aria-label="Project filter"
-                        className="o-cp-select"
-                        value={projectFilter}
-                        onChange={(e) => setProjectFilter(e.target.value)}
-                      >
-                        {['all', 'mine', 'active', 'on_hold', 'completed', 'archived'].map((v) => (
-                          <option key={v} value={v}>
-                            {v === 'mine'
-                              ? 'My projects'
-                              : v === 'all'
-                                ? 'All authorized'
-                                : v.replaceAll('_', ' ')}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        aria-label="Group projects by"
-                        className="o-cp-select"
-                        value={projectGroup}
-                        onChange={(e) => setProjectGroup(e.target.value)}
-                      >
-                        <option value="none">Group: None</option>
-                        <option value="owner">Group: Owner</option>
-                        <option value="status">Group: Status</option>
-                      </select>
-                      <div className="o-view-switcher" role="group" aria-label="Project view mode">
-                        <button
-                          type="button"
-                          className={projectMode === 'cards' ? 'o-view-btn is-active' : 'o-view-btn'}
-                          aria-pressed={projectMode === 'cards'}
-                          onClick={() => setProjectMode('cards')}
-                        >
-                          Cards
-                        </button>
-                        <button
-                          type="button"
-                          className={projectMode === 'list' ? 'o-view-btn is-active' : 'o-view-btn'}
-                          aria-pressed={projectMode === 'list'}
-                          onClick={() => setProjectMode('list')}
-                        >
-                          List
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                      {['all', 'mine', 'active', 'on_hold', 'completed', 'archived'].map((v) => (
+                        <option key={v} value={v}>
+                          {v === 'mine'
+                            ? 'My projects'
+                            : v === 'all'
+                              ? 'All authorized projects'
+                              : v.replaceAll('_', ' ')}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Group projects by">
+                    <select value={projectGroup} onChange={(e) => setProjectGroup(e.target.value)}>
+                      <option value="none">None</option>
+                      <option value="owner">Owner</option>
+                      <option value="status">Status</option>
+                    </select>
+                  </Field>
+                  <button
+                    className="secondary-button"
+                    aria-pressed={projectMode === 'cards'}
+                    onClick={() => setProjectMode('cards')}
+                  >
+                    Cards
+                  </button>
+                  <button
+                    className="secondary-button"
+                    aria-pressed={projectMode === 'list'}
+                    onClick={() => setProjectMode('list')}
+                  >
+                    List
+                  </button>
                 </div>
-                {directory.truncated && (
-                  <p role="status">Showing the first {directory.limit} authorized projects.</p>
-                )}
+              )}
               {!selected && projectMode === 'cards' && (
                 <div className="project-directory">
                   {projects.map((project: any, index: number) => (
@@ -1073,81 +1000,51 @@ export function WorkWorkspace({
               )}
             </details>
           </section>
-          <div className="o-control-panel o-work-board-cp">
-            <div className="o-calendar-cp-left">
-              {!['workload', 'updates'].includes(view) && (
-                <button
-                  className="button"
-                  disabled={!board.permissions.write || busy || p.status !== 'active'}
-                  onClick={() => setEditingTask({ new: true })}
-                >
-                  + Create task
-                </button>
-              )}
-              <nav className="o-view-switcher" aria-label="Project views">
-                {[
-                  'board',
-                  'list',
-                  'calendar',
-                  'timeline',
-                  'my-work',
-                  'workload',
-                  'report',
-                  'updates',
-                ].map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    className={view === v ? 'o-view-btn is-active' : 'o-view-btn'}
-                    aria-current={view === v ? 'page' : undefined}
-                    onClick={() => changeView(v)}
-                  >
-                    {v.replaceAll('-', ' ')}
-                  </button>
-                ))}
-              </nav>
-            </div>
-            {!['workload', 'updates'].includes(view) && (
-              <div className="o-calendar-cp-right">
-                <label className="o-calendar-search" aria-label="Search loaded project tasks">
-                  <input
-                    type="search"
-                    placeholder="Filter tasks..."
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                  />
-                </label>
-                <select
-                  aria-label="Quick filter"
-                  className="o-cp-select"
-                  value={quickFilter}
-                  onChange={(e) => setQuickFilter(e.target.value)}
-                >
+          <nav className="app-service-chips" aria-label="Project views">
+            {[
+              'board',
+              'list',
+              'calendar',
+              'timeline',
+              'my-work',
+              'workload',
+              'report',
+              'updates',
+            ].map((v) => (
+              <button
+                key={v}
+                className="secondary-button"
+                aria-current={view === v ? 'page' : undefined}
+                onClick={() => changeView(v)}
+              >
+                {v.replaceAll('-', ' ')}
+              </button>
+            ))}
+          </nav>
+          {!['workload', 'updates'].includes(view) && (
+            <div className="work-toolbar">
+              <Field label="Search loaded project tasks">
+                <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
+              </Field>
+              <Field label="Quick filter">
+                <select value={quickFilter} onChange={(e) => setQuickFilter(e.target.value)}>
                   <option value="all">All tasks</option>
                   <option value="overdue">Overdue</option>
                   <option value="priority">High priority</option>
                   <option value="blocked">Blocked completion</option>
                   <option value="week">Due this week</option>
                 </select>
-                <select
-                  aria-label="Status"
-                  className="o-cp-select"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
+              </Field>
+              <Field label="Status">
+                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                   {['all', 'open', 'completed', 'cancelled'].map((s) => (
-                    <option key={s} value={s}>
-                      Status: {s}
-                    </option>
+                    <option key={s}>{s}</option>
                   ))}
                 </select>
-                <select
-                  aria-label="Assignee"
-                  className="o-cp-select"
-                  value={assigneeFilter}
-                  onChange={(e) => setAssigneeFilter(e.target.value)}
-                >
-                  <option value="all">All assignees</option>
+              </Field>
+              <Field label="Assignee">
+                <select value={assigneeFilter} onChange={(e) => setAssigneeFilter(e.target.value)}>
+                  <option value="all">All project assignees</option>
                   <option value="unassigned">Unassigned</option>
                   {p.data.members.map((m: any) => (
                     <option key={m.user_id} value={m.user_id}>
@@ -1155,9 +1052,16 @@ export function WorkWorkspace({
                     </option>
                   ))}
                 </select>
-              </div>
-            )}
-          </div>
+              </Field>
+              <button
+                className="button"
+                disabled={!board.permissions.write || busy || p.status !== 'active'}
+                onClick={() => setEditingTask({ new: true })}
+              >
+                Create task
+              </button>
+            </div>
+          )}
           {view === 'board' ? (
             <div className="work-board">
               {p.data.stages.map((s: any) => (

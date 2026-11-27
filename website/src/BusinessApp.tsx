@@ -1144,39 +1144,58 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
       </aside>
       <div className="app-main" inert={navOpen || undefined}>
         <header className="app-header">
-          <div className="o-navbar-left">
-            <button
-              className="icon-button app-nav-toggle"
-              aria-label={navOpen ? 'Close app navigation' : 'Open workspace navigation'}
-              aria-expanded={navOpen}
-              aria-controls="workspace-menu"
-              onClick={() => setNavOpen(true)}
-            >
-              <Icon name="menu" />
-            </button>
-            {!isDemo() && org && (
-              <WorkspaceAppLauncher api={call} scope={org + '\0' + environment} navigate={setTab} />
-            )}
-            <div className="immersive-app-context" aria-live="polite">
-              <strong>
-                {immersiveApp
-                  ? appContext.app?.name.replace('AfriCore ', '') || 'App'
-                  : organization?.name || 'Business'}
-              </strong>
-              <span>
-                {immersiveApp ? appSectionLabel : tab === 'Overview' ? 'Overview' : tab}
-              </span>
-            </div>
-            {immersiveApp && (
+          <button
+            className="icon-button app-nav-toggle"
+            aria-label={navOpen ? 'Close app navigation' : 'Open workspace navigation'}
+            aria-expanded={navOpen}
+            aria-controls="workspace-menu"
+            onClick={() => setNavOpen(true)}
+          >
+            <Icon name="menu" />
+          </button>
+          {!isDemo() && org && (
+            <WorkspaceAppLauncher api={call} scope={org + '\0' + environment} navigate={setTab} />
+          )}
+          {immersiveApp && (
+            <>
+              <div className="immersive-app-context" aria-live="polite">
+                <strong>{appContext.app?.name.replace('AfriCore ', '') || 'App'}</strong>
+                <span>{appSectionLabel}</span>
+              </div>
               <button
                 className="icon-button immersive-app-info"
                 aria-label={'About ' + (appContext.app?.name || 'this app')}
-                title={'About ' + (appContext.app?.name || 'this app')}
                 onClick={() => setAppInfoOpen(true)}
               >
                 <Icon name="document" />
               </button>
-            )}
+            </>
+          )}
+          <div className="workspace-switcher-group">
+            <WorkspaceSwitcher
+              currentId={org}
+              workspaces={account?.workspaces}
+              fallbackOrgs={orgs}
+              demo={isDemo()}
+              onSelectSameBusiness={(id) => {
+                setCreating(false);
+                if (initialOrg && !isDemo() && id !== initialOrg) {
+                  const target = new URL(location.href);
+                  target.pathname = '/app/business/' + id;
+                  navigate(target.pathname + target.search + target.hash);
+                } else {
+                  setOrg(id);
+                }
+              }}
+              onError={setError}
+            />
+            <button
+              type="button"
+              className="quiet-button"
+              onClick={() => setCreating('workspace' as any)}
+            >
+              + Workspace
+            </button>
           </div>
           {!isDemo() && org && (
             <WorkspaceSearch
@@ -1187,11 +1206,10 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
               openRecord={openRecord}
             />
           )}
-          <div className="o-navbar-systray">
+          <div>
             {(isDemo() || tab === 'Developers') && (
               <select
                 aria-label="Data environment"
-                className="o-systray-select"
                 value={environment}
                 onChange={(e) => setEnvironment(e.target.value)}
               >
@@ -1199,34 +1217,6 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
                 <option value="production">Production (collection disabled)</option>
               </select>
             )}
-            <div className="workspace-switcher-group">
-              <WorkspaceSwitcher
-                currentId={org}
-                workspaces={account?.workspaces}
-                fallbackOrgs={orgs}
-                demo={isDemo()}
-                onSelectSameBusiness={(id) => {
-                  setCreating(false);
-                  if (initialOrg && !isDemo() && id !== initialOrg) {
-                    const target = new URL(location.href);
-                    target.pathname = '/app/business/' + id;
-                    navigate(target.pathname + target.search + target.hash);
-                  } else {
-                    setOrg(id);
-                  }
-                }}
-                onError={setError}
-              />
-              <button
-                type="button"
-                className="icon-button o-new-workspace-btn"
-                title="Create new workspace"
-                aria-label="Create new workspace"
-                onClick={() => setCreating('workspace' as any)}
-              >
-                +
-              </button>
-            </div>
             {org && !isDemo() && (
               <button
                 type="button"
@@ -1255,7 +1245,7 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
                 avatarUrl={account?.profile?.avatar_url}
               />
             ) : (
-              <span className="o-demo-user">{me?.email}</span>
+              <span>{me?.email}</span>
             )}
           </div>
         </header>

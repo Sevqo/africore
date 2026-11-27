@@ -32,7 +32,6 @@ import { appIcons as icons } from './appIcons';
 import { appPortfolioPath } from './app-portfolio-path';
 import './apps.css';
 import './minimal-workspace-shell.css';
-import '../odoo-unified-ui.css';
 type Props = {
   openRecord?: (tab: string, id: string) => void;
   role?: string;
@@ -510,7 +509,7 @@ export function AppsWorkspace({
             </section>
           ) : (
             <>
-              {!['crm', 'accounting', 'pos', 'procurement', 'sales', 'inventory', 'work'].includes(
+              {!['crm', 'accounting', 'pos', 'procurement', 'sales', 'inventory'].includes(
                 app.id,
               ) &&
                 app.navigation?.length > 1 && (
