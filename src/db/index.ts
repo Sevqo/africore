@@ -8,6 +8,7 @@ import { migratePeopleExpansion } from '../erp/people-expansion-schema';
 import { migrateAccounting } from '../erp/accounting-schema';
 import { migrateERP } from '../erp/schema';
 import { migrateConnected } from '../operations/connected-schema';
+import { migrateAgent } from '../agent/schema';
 import { migrateApps } from '../apps/schema';
 import { migrateBusinessOperations, migrateCrmExpansion } from '../operations/business-schema';
 import { migrateFinance } from '../finance/schema';
@@ -351,6 +352,7 @@ export async function migrate(): Promise<void> {
   await migrateCommerce();
   await migratePublicMedia();
   await migratePOS();
+  await migrateAgent();
 
   if (isPostgres) {
     await dbExec(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS matched_invoice_id TEXT;`);

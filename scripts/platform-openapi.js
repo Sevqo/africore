@@ -255,6 +255,9 @@ const operations = [
     .readFileSync('src/operations/business-routes.ts', 'utf8')
     .matchAll(/business\.(get|post|put|patch|delete)\s*\(\s*'([^']+)'/g),
   ...connected.matchAll(/connected\.(get|post|put|patch|delete)\s*\(\s*'([^']+)'/g),
+  ...fs
+    .readFileSync('src/agent/routes.ts', 'utf8')
+    .matchAll(/agentRoutes\.(get|post|put|patch|delete)\s*\(\s*'([^']+)'/g),
   ...finance.matchAll(/finance\.(get|post|put|patch|delete)\s*\(\s*'([^']+)'/g),
   ...source.matchAll(/platform\.(get|post|patch|delete)\s*\(\s*'([^']+)'/g),
   ...stage2.matchAll(/operations\.(get|post|put|patch|delete)\s*\(\s*'([^']+)'/g),

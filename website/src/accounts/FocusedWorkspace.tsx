@@ -11,6 +11,7 @@ import {
 import { ProductCatalog } from '../apps/ProductCatalog';
 import { DataPlatformView } from '../operations/DataPlatformView';
 import { AssistantView } from '../operations/AssistantView';
+import { FloatingAgent } from '../agent/FloatingAgent';
 import { OperationsWorkspace } from '../operations/OperationsWorkspace';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { PersonalSubscriptions } from './PersonalSubscriptions';
@@ -679,7 +680,16 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
               />
             )}{' '}
             {tab === 'Assistant' && (
-              <AssistantView key={w.id + environment} api={call} currency={currency} />
+              <AssistantView
+                key={w.id + environment}
+                api={call}
+                currency={currency}
+                workspaceId={w.id}
+                workspaceKind={w.kind}
+                onOpenDestination={(dest) => {
+                  if (dest.tab && items.includes(dest.tab)) navigateWorkspaceTab(dest.tab);
+                }}
+              />
             )}
             {personal && (
               <>
@@ -1075,6 +1085,16 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
           </ServiceGate>
         )}
       </main>
+      <FloatingAgent
+        api={call}
+        workspaceId={w.id}
+        workspaceKind={w.kind}
+        currency={currency}
+        onOpenFullStudio={() => navigateWorkspaceTab('Assistant')}
+        onNavigateDestination={(dest) => {
+          if (dest.tab && items.includes(dest.tab)) navigateWorkspaceTab(dest.tab);
+        }}
+      />
     </div>
   );
 }

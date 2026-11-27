@@ -65,6 +65,8 @@ export async function withServiceRequest(req: Request, res: Response, fn: () => 
   if (!req.params.org) return fn();
   const externalReads = new Set([
     '/organizations/:org/assistant/conversations/:id/messages',
+    '/organizations/:org/agent/runs',
+    '/organizations/:org/agent/approvals/:id/decide',
     '/organizations/:org/payment-requests/:id/daraja',
     '/organizations/:org/payment-attempts/:id/refresh',
     '/organizations/:org/assistant',

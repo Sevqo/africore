@@ -2,6 +2,7 @@ import { commerceRouteKinds } from '../commerce/metadata';
 import { posRouteKinds } from '../pos/metadata';
 import { erpRouteKinds } from '../erp/metadata';
 import { connectedRouteKinds } from '../operations/connected-metadata';
+import { agentRouteKinds } from '../agent/metadata';
 import { appRouteKinds } from '../apps/metadata';
 import { businessRouteKinds } from '../operations/business-metadata';
 import { financeRouteKinds } from '../finance/metadata';
@@ -139,6 +140,7 @@ export function workspaceRouteAllowed(
     marketplaceRouteKinds[key] ||
     financeRouteKinds[key] ||
     connectedRouteKinds[key] ||
+    agentRouteKinds[key] ||
     appRouteKinds[key] ||
     businessRouteKinds[key];
   if (!allowed?.includes(kind)) return false;

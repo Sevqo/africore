@@ -59,6 +59,7 @@ import { WebhooksConsole } from './marketplace/WebhooksConsole';
 import { VerificationConsole } from './marketplace/VerificationConsole';
 import { startDemo, isDemo } from './demo/transport';
 import { OperationsWorkspace, operationsTabs } from './operations/OperationsWorkspace';
+import { FloatingAgent } from './agent/FloatingAgent';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Logo } from './components/Logo';
 import { api } from './lib/api-client';
@@ -1363,7 +1364,8 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
                         Automations: 'Manage rules, approvals and workflow runs.',
                         Notifications: 'Review workspace notifications.',
                         Approvals: 'Review actions that need your approval.',
-                        Assistant: 'Ask questions grounded in your authorized records.',
+                        Assistant:
+                          'Autonomous business agent — sandboxed strictly to this business workspace with owner permissions, Computer Use, and separate credit billing.',
                         Fulfillment: 'Track orders through delivery.',
                         Connect: 'Manage supported data connections.',
                         'Business Passport':
@@ -2476,6 +2478,29 @@ export function BusinessApp({ initialOrg, account }: { initialOrg?: string; acco
           )}
         </main>
       </div>
+      {org && (
+        <FloatingAgent
+          api={call}
+          workspaceId={org}
+          workspaceKind="business"
+          currency={documentCurrency || 'KES'}
+          onOpenFullStudio={() => setTab('Assistant')}
+          onNavigateDestination={(dest) => {
+            if (dest.app) {
+              const url = new URL(location.href);
+              url.searchParams.set('app', dest.app);
+              if (dest.section) url.searchParams.set('section', dest.section);
+              url.hash = encodeURIComponent('Apps');
+              history.pushState(null, '', url.pathname + url.search + url.hash);
+              window.dispatchEvent(new Event('africore:app-navigation'));
+              setTab('Apps');
+              setUrlRevision((n) => n + 1);
+            } else if (dest.tab) {
+              setTab(dest.tab);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

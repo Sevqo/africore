@@ -654,6 +654,212 @@ export async function transport(path: string, options: RequestInit = {}): Promis
       disputes: rows('/disputes').filter((d: any) => d.protected_sale_id === sale.id),
     });
   }
+  if (route.startsWith('/agent')) {
+    state['/agent'] ||= {
+      policy: {
+        autonomy_mode: 'supervised',
+        computer_use_enabled: true,
+        cross_dev_bridge_enabled: false,
+        permissions: {
+          analyze_business: 'autonomous',
+          forecast_cashflow: 'autonomous',
+          schedule_meeting: 'approval_required',
+          create_project: 'approval_required',
+          create_crm_lead: 'approval_required',
+          create_draft_invoice: 'approval_required',
+          record_expense: 'approval_required',
+          send_workspace_reply: 'approval_required',
+        },
+      },
+      billing: {
+        billing_stream: 'separate_agent_credits',
+        excluded_from_workspace_all_apps_cap: true,
+        collection_enabled: false,
+        period: date().slice(0, 7),
+        currency: 'KES',
+        plan: {
+          id: 'agent_starter',
+          name: 'Agent Starter',
+          currency: 'KES',
+          monthly_minor: 0,
+          included_credits: 50,
+          overage_unit_minor: 1000,
+          summary: 'KSh 0/mo · 50 Agent Credits/mo included, then KSh 10/credit',
+        },
+        available_plans: [
+          {
+            id: 'agent_starter',
+            name: 'Agent Starter',
+            currency: 'KES',
+            monthly_minor: 0,
+            included_credits: 50,
+            overage_unit_minor: 1000,
+            summary: 'KSh 0/mo · 50 Agent Credits/mo included, then KSh 10/credit',
+          },
+          {
+            id: 'agent_growth',
+            name: 'Agent Growth',
+            currency: 'KES',
+            monthly_minor: 99000,
+            included_credits: 300,
+            overage_unit_minor: 600,
+            summary: 'KSh 990/mo · 300 Agent Credits/mo included, then KSh 6/credit',
+          },
+          {
+            id: 'agent_autonomous',
+            name: 'Agent Autonomous Pro',
+            currency: 'KES',
+            monthly_minor: 249000,
+            included_credits: 1000,
+            overage_unit_minor: 400,
+            summary: 'KSh 2,490/mo · 1,000 Agent Credits/mo included, then KSh 4/credit',
+          },
+        ],
+        included_credits: 50,
+        bonus_credits: 0,
+        total_credits_pool: 50,
+        credits_used: 0,
+        credits_remaining: 50,
+        overage_credits: 0,
+        overage_unit_minor: 1000,
+        plan_monthly_minor: 0,
+        overage_estimated_minor: 0,
+        total_estimated_minor: 0,
+        amount_due_minor: 0,
+        monthly_spend_cap_minor: 250000,
+        hard_stop: true,
+        ledger: [],
+        policy_note: 'Browser demo Agent Credit Wallet (separate from workspace ERP billing).',
+      },
+      runs: [],
+      approvals: [],
+      routines: [],
+      memory: [],
+    };
+    const ag = state['/agent'];
+    const buildOverview = () => ({
+      agent_name: 'AfriCore Agent',
+      workspace_kind: 'business',
+      environment: 'sandbox',
+      role: 'owner',
+      can_manage_policy: true,
+      boundary: {
+        source_workspace_id: state['/organization'].id,
+        source_kind: 'business',
+        allowed_workspace_ids: [state['/organization'].id],
+        linked_workspaces: [
+          { id: state['/organization'].id, kind: 'business', name: state['/organization'].name, relation: 'current' },
+        ],
+        blocked_kinds: ['personal', 'developer', 'other_business'],
+        cross_workspace_bridge: false,
+        sandbox_policy:
+          'Business Sandbox Lock: Strictly isolated inside this business workspace. Zero access to Personal or Developer workspaces.',
+        isolation_label: 'Business Sandboxed',
+      },
+      policy: ag.policy,
+      billing: ag.billing,
+      tools: [
+        { id: 'analyze_business', name: 'Analyze business performance', description: 'Executive business health brief.', access_kind: 'read', credit_cost: 1, permission: ag.policy.permissions.analyze_business || 'autonomous' },
+        { id: 'schedule_meeting', name: 'Schedule meeting', description: 'Create a calendar event.', access_kind: 'write', credit_cost: 3, permission: ag.policy.permissions.schedule_meeting || 'approval_required' },
+        { id: 'create_project', name: 'Set up project & starter tasks', description: 'Create a workspace project.', access_kind: 'write', credit_cost: 3, permission: ag.policy.permissions.create_project || 'approval_required' },
+        { id: 'create_crm_lead', name: 'Create CRM lead', description: 'Log a CRM opportunity.', access_kind: 'write', credit_cost: 3, permission: ag.policy.permissions.create_crm_lead || 'approval_required' },
+      ],
+      runs: ag.runs,
+      approvals: ag.approvals,
+      pending_approvals_count: ag.approvals.filter((a: any) => a.status === 'pending').length,
+      routines: ag.routines,
+      memory: ag.memory,
+    });
+    if (route === '/agent/overview' && method === 'GET') return finish(buildOverview());
+    if (route === '/agent/runs' && method === 'POST') {
+      const prompt = String(input.prompt || '');
+      const isWrite = /\b(meet|meeting|schedule|project|lead|invoice|expense)\b/i.test(prompt);
+      const toolName = /meet|schedule/i.test(prompt)
+        ? 'schedule_meeting'
+        : /project/i.test(prompt)
+          ? 'create_project'
+          : /lead|crm/i.test(prompt)
+            ? 'create_crm_lead'
+            : 'analyze_business';
+      const perm = ag.policy.autonomy_mode === 'autonomous' ? 'autonomous' : ag.policy.permissions[toolName] || (isWrite ? 'approval_required' : 'autonomous');
+      const runId = id();
+      const targetTab = toolName === 'schedule_meeting' ? 'Apps' : toolName === 'create_project' ? 'Work' : toolName === 'create_crm_lead' ? 'Customer Relationships' : 'Intelligence';
+      const credits = perm === 'approval_required' ? 1 : isWrite ? 5 : 1;
+      ag.billing.credits_used += credits;
+      ag.billing.credits_remaining = Math.max(0, ag.billing.total_credits_pool - ag.billing.credits_used);
+      ag.billing.ledger.unshift({ id: id(), entry_type: isWrite ? 'computer_use_session' : 'analysis_read', credits_delta: -credits, estimated_minor: 0, currency: 'KES', reason: `Demo run: ${toolName}`, created_at: now() });
+      const run: any = {
+        id: runId,
+        prompt,
+        tool_name: toolName,
+        status: perm === 'approval_required' ? 'awaiting_approval' : 'completed',
+        summary:
+          perm === 'approval_required'
+            ? `Planned "${prompt}". Approve below to execute live in this browser demo.`
+            : `Executed "${prompt}" inside your sandboxed Business workspace.`,
+        credits_used: credits,
+        steps: [
+          { step_index: 1, phase: 'observe', label: 'Verify Business Sandbox Lock', detail: 'Confirmed strict Business-only boundary.', target_tab: targetTab, target_element: 'Isolation Shield', cursor_hint: { x_pct: 22, y_pct: 20 }, status: 'completed', duration_ms: 50 },
+          { step_index: 2, phase: perm === 'approval_required' ? 'awaiting_approval' : 'verify', label: perm === 'approval_required' ? 'Awaiting Owner Approval' : `Completed on ${targetTab}`, detail: prompt, target_tab: targetTab, target_element: 'Workspace Action Panel', cursor_hint: { x_pct: 58, y_pct: 58 }, status: perm === 'approval_required' ? 'pending_approval' : 'completed', duration_ms: 110 },
+        ],
+        result: { destination: { tab: targetTab } },
+        created_at: now(),
+      };
+      ag.runs.unshift(run);
+      if (perm === 'approval_required') {
+        ag.approvals.unshift({ id: id(), run_id: runId, tool_name: toolName, target_workspace_id: state['/organization'].id, action_summary: prompt, status: 'pending', created_at: now() });
+      }
+      return finish(run, 201);
+    }
+    if (/^\/agent\/approvals\/[^/]+\/decide$/.test(route) && method === 'POST') {
+      const approvalId = route.split('/')[3];
+      const ap = ag.approvals.find((x: any) => x.id === approvalId);
+      if (ap) {
+        ap.status = input.decision === 'approve' ? 'approved' : 'rejected';
+        const run = ag.runs.find((r: any) => r.id === ap.run_id);
+        if (run) {
+          run.status = input.decision === 'approve' ? 'completed' : 'rejected';
+          run.summary = input.decision === 'approve' ? `Approved and executed "${run.prompt}" in browser demo.` : `Rejected "${run.prompt}".`;
+          if (run.steps?.[1]) run.steps[1].status = input.decision === 'approve' ? 'completed' : 'failed';
+        }
+        return finish({ approval_id: approvalId, status: ap.status, run });
+      }
+    }
+    if (route === '/agent/permissions' && method === 'PUT') {
+      if (input.autonomy_mode) ag.policy.autonomy_mode = input.autonomy_mode;
+      if (input.computer_use_enabled !== undefined) ag.policy.computer_use_enabled = input.computer_use_enabled;
+      if (input.permissions) ag.policy.permissions = { ...ag.policy.permissions, ...input.permissions };
+      return finish(ag.policy);
+    }
+    if (route === '/agent/billing' && method === 'PUT') {
+      const found = ag.billing.available_plans.find((p: any) => p.id === input.plan_tier);
+      if (found) {
+        ag.billing.plan = found;
+        ag.billing.included_credits = found.included_credits;
+        ag.billing.total_credits_pool = found.included_credits + ag.billing.bonus_credits;
+        ag.billing.credits_remaining = Math.max(0, ag.billing.total_credits_pool - ag.billing.credits_used);
+      }
+      if (input.monthly_spend_cap_minor !== undefined) ag.billing.monthly_spend_cap_minor = input.monthly_spend_cap_minor;
+      if (input.hard_stop !== undefined) ag.billing.hard_stop = input.hard_stop;
+      return finish(ag.billing);
+    }
+    if (route === '/agent/billing/credits' && method === 'POST') {
+      ag.billing.bonus_credits += Number(input.credits || 100);
+      ag.billing.total_credits_pool = ag.billing.included_credits + ag.billing.bonus_credits;
+      ag.billing.credits_remaining = Math.max(0, ag.billing.total_credits_pool - ag.billing.credits_used);
+      return finish(ag.billing);
+    }
+    if (route === '/agent/routines' && method === 'POST') {
+      const item = { id: id(), ...input, enabled: true, created_at: now() };
+      ag.routines.unshift(item);
+      return finish(item, 201);
+    }
+    if (route === '/agent/memory' && method === 'POST') {
+      const item = { id: id(), ...input, created_at: now() };
+      ag.memory.unshift(item);
+      return finish(item, 201);
+    }
+  }
   if (route.startsWith('/evidence/')) return finish(state[route] || { data: [] });
   if (route === '/credentials' && method === 'POST')
     return reject(

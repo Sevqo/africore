@@ -2,6 +2,7 @@ import { commerce } from './commerce/routes';
 import { pos } from './pos/routes';
 import { erp } from './erp/routes';
 import { connected } from './operations/connected-routes';
+import { agentRoutes } from './agent/routes';
 import { appRoutes } from './apps/routes';
 import { business } from './operations/business-routes';
 import { finance } from './finance/routes';
@@ -126,6 +127,7 @@ export function createApp() {
     next();
   });
   app.use('/api/v1', sameOrigin, connected);
+  app.use('/api/v1', sameOrigin, agentRoutes);
   app.use('/api/v1', sameOrigin, appRoutes);
   app.use('/api/v1', sameOrigin, business);
   app.use('/api/v1', sameOrigin, erp);

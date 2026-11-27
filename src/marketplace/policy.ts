@@ -2,6 +2,7 @@ import { commercePolicies } from '../commerce/metadata';
 import { posPolicies } from '../pos/metadata';
 import { erpPolicies } from '../erp/metadata';
 import { connectedPolicies } from '../operations/connected-metadata';
+import { agentPolicies } from '../agent/metadata';
 import { appPolicies } from '../apps/metadata';
 import { businessPolicies } from '../operations/business-metadata';
 import { financePolicies } from '../finance/metadata';
@@ -244,6 +245,7 @@ export function policyFor(method: string, route: string, kind?: string): Service
     servicePolicies[(method === 'HEAD' ? 'GET' : method) + ' ' + route] ||
     financePolicies[(method === 'HEAD' ? 'GET' : method) + ' ' + route] ||
     connectedPolicies[(method === 'HEAD' ? 'GET' : method) + ' ' + route] ||
+    agentPolicies[(method === 'HEAD' ? 'GET' : method) + ' ' + route] ||
     appPolicies[(method === 'HEAD' ? 'GET' : method) + ' ' + route] ||
     businessPolicies[(method === 'HEAD' ? 'GET' : method) + ' ' + route]
   );

@@ -239,7 +239,15 @@ export function OperationsWorkspace({
           }}
         />
       )}
-      {section === 'Assistant' && <AssistantView api={api} currency={currency} />}
+      {section === 'Assistant' && (
+        <AssistantView
+          api={api}
+          currency={currency}
+          workspaceId={org}
+          workspaceKind="business"
+          onOpenDestination={(dest) => onNavigate(dest.tab)}
+        />
+      )}
       {section === 'Automations' && (
         <AutomationView
           scope={org + '\0' + environment}

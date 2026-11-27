@@ -348,10 +348,11 @@ export const commercialServiceRates: Record<string, CommercialServiceRate> = {
     model: 'allowance',
     currency: 'KES',
     monthly_minor: 0,
-    included_units: 25,
-    overage_unit_minor: 500,
-    monthly_cap_minor: 99_000,
-    summary: 'KSh 0/mo · 25 AI explanations/mo included, then KSh 5/explanation',
+    included_units: 50,
+    overage_unit_minor: 1_000,
+    monthly_cap_minor: null,
+    summary:
+      'Separate Agent Billing · 50 Agent Credits/mo included on Starter (excluded from All-Apps cap; Growth KSh 990/mo · Pro KSh 2,490/mo)',
   },
   verification: {
     service_id: 'verification',

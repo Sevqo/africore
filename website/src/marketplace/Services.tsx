@@ -1117,6 +1117,15 @@ function UsageBilling({ market, manager }: { market: MarketplaceState; manager: 
               <small>No collection provider is configured</small>
             </section>
           </div>
+          <aside className="panel" aria-label="Separate Agent Billing Notice">
+            <h3>AfriCore Autonomous Agent — Separate Credit Billing</h3>
+            <p>
+              Autonomous Agent runs, Townie-style routines, and live Computer Use sessions are
+              billed on a dedicated Agent Credit Wallet separate from workspace module subscriptions
+              and excluded from the {money(WORKSPACE_ALL_APPS_CAP_MINOR)}/mo All-Apps ERP cap.
+              Manage Agent plans, spend caps, and credit ledger directly inside the Agent tab.
+            </p>
+          </aside>
           <div className="service-filters">
             <label className="field">
               <span>Search usage</span>
