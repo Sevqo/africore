@@ -194,6 +194,37 @@ export function RecordFinanceDetails({
               Document calendar: {invoice.pos_source?.timezone || invoice.commerce_source?.timezone}
             </p>
           )}
+          {writable && invoice.status === 'draft' && (
+            <div className="form-actions" style={{ margin: '10px 0' }}>
+              <button
+                type="button"
+                className="button"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  setError('');
+                  setNotice('');
+                  try {
+                    await api(
+                      '/records/invoices/' + row.id,
+                      'PATCH',
+                      { status: 'issued' },
+                      { 'Idempotency-Key': crypto.randomUUID() },
+                    );
+                    setNotice('Invoice issued. Payment status remains open until payment is recorded.');
+                    setVersion((v) => v + 1);
+                    onChanged?.();
+                  } catch (e) {
+                    setError((e as Error).message);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                {busy ? 'Issuing…' : 'Issue draft invoice'}
+              </button>
+            </div>
+          )}
           {writable &&
             invoice.outstanding_minor > 0 &&
             ['issued', 'partially_paid'].includes(invoice.status) && (

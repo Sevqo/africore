@@ -765,6 +765,166 @@ export function ProcurementEditor({
               )}
             </>
           )}
+          {['agreement', 'template'].includes(type) && (
+            <>
+              {lines.map((l, i) => (
+                <fieldset key={l.id}>
+                  <legend>Purchase line {i + 1}</legend>
+                  <Field label="Shared product">
+                    <select
+                      value={l.product_id}
+                      required
+                      onChange={(e) => {
+                        const productId = e.target.value;
+                        const chosenProduct = choices.products?.find((p: any) => p.id === productId);
+                        const defaultWh = chosenProduct?.track_inventory
+                          ? choices.warehouses?.find((w: any) => w.status === 'active')?.id || null
+                          : null;
+                        setLines((v) =>
+                          v.map((n) =>
+                            n.id === l.id ? { ...n, product_id: productId, warehouse_id: defaultWh } : n,
+                          ),
+                        );
+                        if (productId) applySupplierDefaults(productId);
+                      }}
+                    >
+                      <option value="">Choose product</option>
+                      {choices.products?.map((p: any) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} · {p.unit}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Receiving warehouse for tracked goods">
+                    <select
+                      value={l.warehouse_id || ''}
+                      required={!!choices.products?.find((p: any) => p.id === l.product_id)?.track_inventory}
+                      onChange={(e) =>
+                        setLines((v) =>
+                          v.map((n) =>
+                            n.id === l.id ? { ...n, warehouse_id: e.target.value || null } : n,
+                          ),
+                        )
+                      }
+                    >
+                      <option value="">
+                        {choices.products?.find((p: any) => p.id === l.product_id)?.track_inventory
+                          ? 'Choose receiving warehouse'
+                          : 'Untracked service'}
+                      </option>
+                      {choices.warehouses?.map((w: any) => (
+                        <option key={w.id} value={w.id}>
+                          {w.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field
+                    label={
+                      'Quantity (' +
+                      (choices.products?.find((p: any) => p.id === l.product_id)?.unit || 'unit') +
+                      ')'
+                    }
+                  >
+                    <input
+                      type="number"
+                      value={l.quantity_input ?? displayQuantity(l.quantity_milli)}
+                      min={1}
+                      max={100000000}
+                      step="0.001"
+                      required
+                      onChange={(e) =>
+                        setLines((v) =>
+                          v.map((n) => (n.id === l.id ? { ...n, quantity_input: e.target.value } : n)),
+                        )
+                      }
+                      onBlur={() => {
+                        try {
+                          const value = quantityMilli(l.quantity_input);
+                          setLines((v) =>
+                            v.map((n) =>
+                              n.id === l.id
+                                ? { ...n, quantity_milli: value, quantity_input: displayQuantity(value) }
+                                : n,
+                            ),
+                          );
+                          setError('');
+                          if (l.product_id) applySupplierDefaults(l.product_id, selectedSupplier, value);
+                        } catch (error) {
+                          setError((error as Error).message);
+                        }
+                      }}
+                    />
+                  </Field>
+                  <Field label={'Price per unit (' + currency + ')'}>
+                    <input
+                      type="number"
+                      value={
+                        l.price_input ??
+                        (l.unit_price_minor / factor(currency)).toFixed(currencyDigits[currency])
+                      }
+                      min={0}
+                      max={100000000000 / factor(currency)}
+                      step={1 / factor(currency)}
+                      required
+                      onChange={(e) =>
+                        setLines((v) =>
+                          v.map((n) => (n.id === l.id ? { ...n, price_input: e.target.value } : n)),
+                        )
+                      }
+                      onBlur={() => {
+                        try {
+                          const value = parseMoney(l.price_input ?? '0', currency);
+                          setLines((v) =>
+                            v.map((n) =>
+                              n.id === l.id
+                                ? {
+                                    ...n,
+                                    unit_price_minor: value,
+                                    price_input: (value / factor(currency)).toFixed(
+                                      currencyDigits[currency],
+                                    ),
+                                  }
+                                : n,
+                            ),
+                          );
+                          setError('');
+                        } catch (error) {
+                          setError((error as Error).message);
+                        }
+                      }}
+                    />
+                  </Field>
+                  <button
+                    type="button"
+                    className="quiet-button"
+                    onClick={() => setLines((v) => v.filter((n) => n.id !== l.id))}
+                  >
+                    Remove line
+                  </button>
+                </fieldset>
+              ))}
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setLines((v) => [...v, { ...blankLine() }])}
+              >
+                Add purchase line
+              </button>
+              <p>
+                Subtotal shown:{' '}
+                {money(
+                  lines.reduce(
+                    (n, l) => n + Math.round((l.quantity_milli * l.unit_price_minor) / 1000),
+                    0,
+                  ),
+                  currency,
+                )}
+                . The server checks exact integer rounding.
+              </p>
+            </>
+          )}
           <button className="button">
             Save {type === 'supplier' ? 'supplier profile' : 'draft for review'}
           </button>

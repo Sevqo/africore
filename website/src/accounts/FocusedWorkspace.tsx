@@ -96,7 +96,10 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
     [busy, setBusy] = useState(false),
     [revision, setRevision] = useState(0),
     [key, setKey] = useState(''),
-    [result, setResult] = useState('');
+    [result, setResult] = useState(''),
+    [studioSection, setStudioSection] = useState<'apps' | 'records'>('apps'),
+    [hubSection, setHubSection] = useState<'topology' | 'pipelines' | 'events'>('topology'),
+    [autoSection, setAutoSection] = useState<string>('dashboard');
   const creationKeys = useRef(new Map<string, string>());
   const generation = useRef(0),
     base = '/api/v1/organizations/' + w.id;
@@ -107,7 +110,15 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
     headers?: Record<string, string>,
   ) => {
     const intent = base + '\0' + environment + '\0' + suffix + '\0' + JSON.stringify(body),
-      idempotent = method === 'POST' && (/^\/records\//.test(suffix) || suffix === '/expenses');
+      idempotent =
+        method === 'POST' &&
+        !headers?.['Idempotency-Key'] &&
+        !headers?.['idempotency-key'] &&
+        (/^\/records\//.test(suffix) ||
+          suffix === '/expenses' ||
+          /^\/(?:studio|integrations-hub|connections|marketing|support|subscriptions|mrp|field-ops|maintenance|fleet|logistics|property|learning|automations|calendar|website|documents)\//.test(
+            suffix,
+          ));
     if (idempotent && !creationKeys.current.has(intent))
       creationKeys.current.set(intent, crypto.randomUUID());
     return api(
@@ -618,37 +629,108 @@ export function FocusedWorkspace({ workspace: w, account }: { workspace: any; ac
           </ServiceGate>
         ) : !personal && tab === 'Automations' ? (
           <ServiceGate market={market} tab={tab} navigate={setTab}>
+            <div className="ac-filter-pills" style={{ marginBottom: '10px' }}>
+              {(
+                [
+                  ['dashboard', 'Dashboard'],
+                  ['rules', 'Automation Rules'],
+                  ['scheduled', 'Scheduled Actions'],
+                  ['runs', 'Execution History'],
+                  ['templates', 'Templates'],
+                  ['configuration', 'Configuration'],
+                ] as const
+              ).map(([sec, label]) => (
+                <button
+                  key={sec}
+                  type="button"
+                  className="ac-pill"
+                  aria-pressed={autoSection === sec}
+                  onClick={() => setAutoSection(sec)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <Suspense fallback={<p role="status">Loading Automations…</p>}>
               <AutomationsWorkspace
                 role={w.role}
                 api={call}
                 scope={w.id + '\0' + environment}
-                navigate={setTab}
-                section="dashboard"
+                navigate={(target) => {
+                  const sec = new URLSearchParams(location.search).get('section');
+                  if (target === 'Apps' && sec) setAutoSection(sec);
+                  else if (items.includes(target)) setTab(target);
+                }}
+                section={autoSection}
               />
             </Suspense>
           </ServiceGate>
         ) : !personal && tab === 'Studio' ? (
           <ServiceGate market={market} tab={tab} navigate={setTab}>
+            <div className="ac-filter-pills" style={{ marginBottom: '10px' }}>
+              <button
+                type="button"
+                className="ac-pill"
+                aria-pressed={studioSection === 'apps'}
+                onClick={() => setStudioSection('apps')}
+              >
+                Custom Apps
+              </button>
+              <button
+                type="button"
+                className="ac-pill"
+                aria-pressed={studioSection === 'records'}
+                onClick={() => setStudioSection('records')}
+              >
+                Live Records
+              </button>
+            </div>
             <Suspense fallback={<p role="status">Loading Schema Studio…</p>}>
               <ExtendedAppWorkspace
                 appId="studio"
-                section="apps"
+                section={studioSection}
                 api={call}
                 scope={w.id + '\0' + environment}
                 writable={['owner', 'admin', 'operations'].includes(w.role)}
+                workspaceKind="developer"
+                onSectionChange={(next) => setStudioSection(next === 'records' ? 'records' : 'apps')}
               />
             </Suspense>
           </ServiceGate>
         ) : !personal && tab === 'Integrations Hub' ? (
           <ServiceGate market={market} tab={tab} navigate={setTab}>
+            <div className="ac-filter-pills" style={{ marginBottom: '10px' }}>
+              {(
+                [
+                  ['topology', 'Connected Flows'],
+                  ['pipelines', 'Connectors & Pipelines'],
+                  ['events', 'Live Event Bus'],
+                ] as const
+              ).map(([sec, label]) => (
+                <button
+                  key={sec}
+                  type="button"
+                  className="ac-pill"
+                  aria-pressed={hubSection === sec}
+                  onClick={() => setHubSection(sec)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <Suspense fallback={<p role="status">Loading Integrations Hub…</p>}>
               <ExtendedAppWorkspace
                 appId="integrations_hub"
-                section="topology"
+                section={hubSection}
                 api={call}
                 scope={w.id + '\0' + environment}
                 writable={['owner', 'admin', 'operations'].includes(w.role)}
+                workspaceKind="developer"
+                onSectionChange={(next) =>
+                  setHubSection(
+                    next === 'pipelines' ? 'pipelines' : next === 'events' ? 'events' : 'topology',
+                  )
+                }
               />
             </Suspense>
           </ServiceGate>

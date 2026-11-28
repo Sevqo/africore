@@ -90,8 +90,10 @@ export function WorkTimesheets({
       await work();
       await reload();
       setNotice(message);
+      return true;
     } catch (e) {
       setError((e as Error).message);
+      return false;
     } finally {
       setBusy(false);
     }
@@ -101,7 +103,7 @@ export function WorkTimesheets({
       setError('Choose a project and task first.');
       return;
     }
-    await act(
+    const ok = await act(
       () =>
         api('/work/timesheets', 'POST', {
           project_id: projectId,
@@ -112,7 +114,7 @@ export function WorkTimesheets({
         }),
       'Draft time entry saved.',
     );
-    setDescription('');
+    if (ok) setDescription('');
   }
   async function startTimer() {
     if (!projectId || !taskId) {

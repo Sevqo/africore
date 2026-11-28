@@ -157,6 +157,12 @@ export function ProductCatalog({
             writable={writable}
             onSaved={() => {
               setEditing(null);
+              if (productId) {
+                const url = new URL(location.href);
+                url.searchParams.delete('product-id');
+                history.replaceState(null, '', url.pathname + url.search + url.hash);
+                setProductId('');
+              }
               setRevision((v) => v + 1);
             }}
           />

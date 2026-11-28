@@ -124,7 +124,16 @@ export function WorkflowBranchFields({
                           ? {
                               field: e.target.value,
                               operator: 'eq',
-                              value: e.target.value === 'amount_minor' ? 0 : '',
+                              value:
+                                e.target.value === 'amount_minor'
+                                  ? 0
+                                  : e.target.value === 'currency'
+                                    ? 'KES'
+                                    : e.target.value === 'kind'
+                                      ? 'lead'
+                                      : e.target.value === 'stage'
+                                        ? stages[0]?.id || 'new'
+                                        : '',
                             }
                           : c,
                       ),

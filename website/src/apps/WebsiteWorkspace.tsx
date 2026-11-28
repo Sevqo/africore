@@ -337,12 +337,18 @@ export function WebsiteWorkspace({
     addEventListener('popstate', restorePage);
     return () => removeEventListener('popstate', restorePage);
   }, [pages]);
-  function selectPage(page: any) {
+  function selectPage(page: any, openEditor = true) {
     const url = new URL(location.href);
     if (page?.id) url.searchParams.set('page', page.id);
     else url.searchParams.delete('page');
+    if (page?.id && openEditor && section === 'pages') {
+      url.searchParams.set('section', 'editor');
+    }
     history.pushState(null, '', url.pathname + url.search + url.hash);
     setSelected(page);
+    if (page?.id && openEditor && section === 'pages') {
+      dispatchEvent(new Event(appNavigationEvent));
+    }
   }
   async function save() {
     if (!selected) return;
@@ -1959,8 +1965,8 @@ export function WebsiteWorkspace({
               <div className="website-media-grid">
                 {media.map((asset: any) => (
                   <div className="website-media-card" key={asset.id}>
-                    {mediaPreviews[asset.id] ? <img src={mediaPreviews[asset.id]} alt={asset.alt_text || asset.label} /> : <button className="secondary-button" onClick={() => void previewMedia(asset.id)}>Load preview</button>}
-                    <strong>{asset.label}</strong><span>{asset.alt_text || 'Alternative text missing'}</span>
+                    {mediaPreviews[asset.id] ? <img src={mediaPreviews[asset.id]} alt={asset.alt || asset.alt_text || asset.label} /> : <button className="secondary-button" onClick={() => void previewMedia(asset.id)}>Load preview</button>}
+                    <strong>{asset.label}</strong><span>{asset.alt || asset.alt_text || 'Alternative text missing'}</span>
                     <span>{asset.status === 'active' ? 'Active public media' : 'Withdrawn'}</span>
                     {asset.status === 'active' && <button className="secondary-button" disabled={busy} onClick={() => void withdrawMedia(asset)}>Withdraw public media</button>}
                   </div>

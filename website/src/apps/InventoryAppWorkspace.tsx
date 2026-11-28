@@ -159,6 +159,7 @@ export function InventoryAppWorkspace({
     setReceiptId(null);
     setDeliveryId(null);
     setProductId(null);
+    setFilter('all');
     setPage(0);
   }, [section]);
 

@@ -231,7 +231,11 @@ export function POSAppReporting({
             <select
               value={registerIds.length === 1 ? registerIds[0] : ''}
               onChange={(event) => {
-                setRegisterIds(event.currentTarget.value ? [event.currentTarget.value] : []);
+                setRegisterIds(
+                  event.currentTarget.value
+                    ? [event.currentTarget.value]
+                    : registers.map((row: any) => row.id),
+                );
                 setOffset(0);
               }}
             >

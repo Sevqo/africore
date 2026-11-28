@@ -1345,69 +1345,361 @@
 }
 
 /* ==========================================================================
- * Apple Continuous Corner (Squircle) Geometry System — Platform-Wide
- * - Concentric Apple HIG radius scale (--apple-r-xs..xl, pill)
- * - Native CSS `corner-shape: squircle` progressive enhancement where supported
- * - Keeps `.calendar-workspace` internal time-slot grid pure & untouched
- * - Preserves flat cardless Odoo sheet hierarchy (zero extra nested cards)
+ * Apple HIG Capsule Buttons, Concentric Corners & Liquid Glass Layering
+ * Grounded in:
+ *  - https://developer.apple.com/design/human-interface-guidelines/buttons
+ *  - https://developer.apple.com/design/
+ *
+ * Design rules:
+ *  - Capsule pill geometry (9999px) on ALL action buttons, segmented controls,
+ *    quick-action buttons, pill tabs, search bars, and icon buttons platform-wide
+ *  - Generous horizontal capsule padding & clean spacing between adjacent buttons
+ *  - Concentric continuous corners (14px–24px + native `corner-shape: squircle`)
+ *    for sheets, popovers, dialogs, inputs, and Kanban cards
+ *  - Apple Liquid Glass translucent chrome ONLY on floating control layers
+ *    (sticky header, popovers, dialogs, floating agent) — zero glass-on-glass
+ *  - Preserves flat cardless Odoo sheet hierarchy & clean Calendar time grid
  * ========================================================================== */
 :root {
-  --apple-r-xs: 8px;
-  --apple-r-sm: 10px;
-  --apple-r-md: 12px;
-  --apple-r-lg: 16px;
-  --apple-r-xl: 20px;
+  --apple-r-xs: 10px;
+  --apple-r-sm: 14px;
+  --apple-r-md: 16px;
+  --apple-r-lg: 20px;
+  --apple-r-xl: 24px;
   --apple-r-pill: 9999px;
+  --apple-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --apple-glass-bg: rgba(255, 255, 255, 0.84);
+  --apple-glass-border: rgba(15, 23, 42, 0.09);
+  --apple-glass-shadow: 0 14px 36px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.05);
 }
 
-/* Buttons, Triggers, Inputs, Selects & Search Controls — Apple 10px continuous edge */
-:is(.business-shell, .focused-account, .account-entry, .agent-float-window, .agent-workspace)
+/* 1. ALL Interactive Buttons Across Every Workspace & App — True Apple Capsule */
+:is(
+    .business-shell,
+    .business-shell[data-platform-density],
+    .focused-account,
+    .focused-account[data-platform-density],
+    .account-entry,
+    .account-entry[data-platform-density],
+    .agent-float-window,
+    .agent-workspace,
+    .sv-root
+  )
   :is(
+    button:not(.cal-slot-hit):not(.cal-event-block):not(.sv-metric-hit):not(.dc-channel-btn),
     .button,
     .secondary-button,
     .quiet-button,
     .danger-button,
     .ac-odoo-new-btn,
     .sales-new,
+    .ac-pill,
     .ac-menubar-pill,
     .ac-menubar-trigger,
     .ac-view-switcher button,
-    .workspace-switcher-select,
+    .ac-filter-popover > summary,
     .workspace-account-button,
+    .workspace-switcher-select,
     .icon-button,
     .workspace-launcher-trigger,
     .notification-bell,
     .workspace-search-trigger,
-    input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='hidden']),
-    select,
-    textarea,
-    .ac-faceted-search
+    .sv-btn,
+    .sv-segment,
+    a.button,
+    a.secondary-button
   ) {
-  border-radius: var(--apple-r-sm) !important;
+  border-radius: var(--apple-r-pill) !important;
+  transition:
+    transform 150ms var(--apple-ease),
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    color 150ms ease;
 }
 
-/* Compact chips, pills, badges & filter tags — Apple capsule/8px continuous edge */
-:is(.business-shell, .focused-account, .agent-float-window, .agent-workspace)
-  :is(.badge, .ac-facet-chip, .agent-status-chip, .dc-agent-pill, .dc-channel-btn) {
-  border-radius: var(--apple-r-xs) !important;
+/* Primary filled Apple capsule buttons: generous horizontal curve room & subtle specular highlight */
+:is(
+    .business-shell,
+    .business-shell[data-platform-density],
+    .focused-account,
+    .focused-account[data-platform-density],
+    .account-entry,
+    .agent-float-window,
+    .agent-workspace
+  )
+  :is(.button, .ac-odoo-new-btn, .sales-new) {
+  min-height: 34px !important;
+  padding: 6px 18px !important;
+  border-radius: var(--apple-r-pill) !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 1px 2px rgba(15, 23, 42, 0.08) !important;
 }
 
-:is(.business-shell, .focused-account, .agent-float-window, .agent-workspace)
-  :is(.agent-fab, .notification-count, .dc-composer-send, .agent-pill-btn) {
+:is(
+    .business-shell,
+    .business-shell[data-platform-density],
+    .focused-account,
+    .focused-account[data-platform-density],
+    .account-entry,
+    .agent-float-window,
+    .agent-workspace
+  )
+  :is(.button, .ac-odoo-new-btn, .sales-new):hover:not(:disabled) {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 4px 12px rgba(22, 101, 52, 0.22) !important;
+}
+
+/* Secondary & bordered Apple capsule buttons */
+:is(
+    .business-shell,
+    .business-shell[data-platform-density],
+    .focused-account,
+    .focused-account[data-platform-density],
+    .account-entry,
+    .agent-float-window,
+    .agent-workspace
+  )
+  :is(.secondary-button, .ac-filter-popover > summary, .ac-pill) {
+  min-height: 32px !important;
+  padding: 5px 15px !important;
+  border-radius: var(--apple-r-pill) !important;
+  border: 1px solid rgba(15, 23, 42, 0.12) !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: #111827 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+}
+
+:is(
+    .business-shell,
+    .business-shell[data-platform-density],
+    .focused-account,
+    .focused-account[data-platform-density],
+    .account-entry,
+    .agent-float-window,
+    .agent-workspace
+  )
+  :is(.secondary-button, .ac-filter-popover > summary, .ac-pill):hover:not(:disabled) {
+  background: #f3f4f6 !important;
+  border-color: rgba(15, 23, 42, 0.2) !important;
+}
+
+/* Quiet & Tinted Apple capsule buttons */
+:is(
+    .business-shell,
+    .business-shell[data-platform-density],
+    .focused-account,
+    .focused-account[data-platform-density],
+    .account-entry,
+    .agent-float-window,
+    .agent-workspace
+  )
+  :is(.quiet-button, .ac-menubar-pill, .ac-menubar-trigger) {
+  padding: 5px 13px !important;
   border-radius: var(--apple-r-pill) !important;
 }
 
-/* Sheets, Standalone Panels, Kanban Items, Popovers, Dialogs & Floating Windows — Apple 14–20px continuous edge */
+:is(
+    .business-shell,
+    .business-shell[data-platform-density],
+    .focused-account,
+    .focused-account[data-platform-density],
+    .account-entry,
+    .agent-float-window,
+    .agent-workspace
+  )
+  :is(.button, .secondary-button, .quiet-button, .danger-button, .ac-pill, .sv-segment):active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* Accessible high-contrast keyboard focus ring across all interactive controls */
+:is(.business-shell, .focused-account, .account-entry, .agent-float-window, .agent-workspace)
+  :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid #166534 !important;
+  outline-offset: 2px !important;
+}
+
+/* 2. Apple Capsule Segmented Controls (7D / 30D / 90D / YTD / 1Y / All, View Switchers, Calendar Switchers) */
+:is(.business-shell, .focused-account, .sv-root)
+  :is(.sv-segmented, .ac-view-switcher, .cal-view-switch, .cal-range-controls) {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  padding: 3px !important;
+  background: rgba(15, 23, 42, 0.055) !important;
+  border: 1px solid rgba(15, 23, 42, 0.07) !important;
+  border-radius: var(--apple-r-pill) !important;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+}
+
+:is(.business-shell, .business-shell[data-platform-density], .focused-account, .focused-account[data-platform-density], .sv-root)
+  :is(button.sv-segment, .ac-view-switcher button, .cal-view-switch button) {
+  min-height: 28px !important;
+  padding: 4px 12px !important;
+  border: 0 !important;
+  border-radius: var(--apple-r-pill) !important;
+  background: transparent !important;
+  color: #4b5563 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+:is(.business-shell, .business-shell[data-platform-density], .focused-account, .focused-account[data-platform-density], .sv-root)
+  :is(button.sv-segment, .ac-view-switcher button, .cal-view-switch button):hover:not(:disabled) {
+  color: #111827 !important;
+  background: rgba(255, 255, 255, 0.55) !important;
+}
+
+:is(.business-shell, .business-shell[data-platform-density], .focused-account, .focused-account[data-platform-density], .sv-root)
+  :is(
+    button.sv-segment[aria-pressed='true'],
+    .ac-view-switcher button[aria-pressed='true'],
+    .cal-view-switch button[aria-pressed='true'],
+    .cal-view-switch button.active
+  ) {
+  background: #ffffff !important;
+  color: #111827 !important;
+  box-shadow:
+    0 1px 3px rgba(15, 23, 42, 0.12),
+    0 0 0 0.5px rgba(15, 23, 42, 0.06) !important;
+}
+
+/* 3. Quick Actions Capsule Rows (Business & Personal Overview) */
+:is(.business-shell, .business-shell[data-platform-density], .focused-account, .focused-account[data-platform-density])
+  .dashboard-quick-actions nav {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+:is(.business-shell, .business-shell[data-platform-density], .focused-account, .focused-account[data-platform-density])
+  .dashboard-quick-actions nav > button {
+  display: grid !important;
+  grid-template-columns: 32px minmax(0, 1fr) 16px !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 44px !important;
+  padding: 6px 14px 6px 8px !important;
+  border: 1px solid rgba(15, 23, 42, 0.09) !important;
+  border-radius: var(--apple-r-pill) !important;
+  background: #ffffff !important;
+  color: #111827 !important;
+  font-size: 13px !important;
+  font-weight: 550 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+}
+
+:is(.business-shell, .business-shell[data-platform-density], .focused-account, .focused-account[data-platform-density])
+  .dashboard-quick-actions nav > button:hover {
+  background: #f8faf9 !important;
+  border-color: rgba(22, 101, 52, 0.25) !important;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.06) !important;
+}
+
+:is(.business-shell, .focused-account) :is(.dashboard-action-mark, .dashboard-action-icon) {
+  border-radius: var(--apple-r-pill) !important;
+}
+
+/* 4. Sidebar Navigation Pills & Module Sub-Bar Capsule Tabs */
+:is(.business-shell, .business-shell[data-platform-density], .focused-account, .focused-account[data-platform-density])
+  :is(
+    .workspace-primary-nav button,
+    .app-context-links button,
+    .workspace-admin-group summary,
+    .workspace-admin-links button,
+    .account-nav nav a
+  ) {
+  border-radius: var(--apple-r-pill) !important;
+  padding-inline: 14px !important;
+}
+
+:is(.business-shell, .focused-account)
+  :is(
+    .ac-app-menubar,
+    .sales-nav,
+    .sales-module-nav,
+    .app-section-tabs,
+    .crm-section-nav,
+    .acc-module-nav,
+    .proc-app-nav,
+    .inventory-module-nav,
+    .pos-app-module,
+    .finance-operation-nav
+  )
+  :is(button:not(.sales-new):not(.button), .ac-menubar-pill, .ac-menubar-trigger) {
+  border-radius: var(--apple-r-pill) !important;
+  padding: 5px 13px !important;
+}
+
+/* 5. Apple Capsule Search Bars, Badges, Chips & Header Pickers */
+:is(.business-shell, .business-shell[data-platform-density], .focused-account, .focused-account[data-platform-density], .agent-float-window, .agent-workspace)
+  :is(
+    .ac-faceted-search,
+    .workspace-switcher-select,
+    .app-header select,
+    input[type='search'],
+    .badge,
+    .ac-facet-chip,
+    .agent-status-chip,
+    .dc-agent-pill,
+    .agent-fab,
+    .notification-count,
+    .dc-composer-send,
+    .agent-pill-btn
+  ) {
+  border-radius: var(--apple-r-pill) !important;
+}
+
+:is(.business-shell, .focused-account) .ac-faceted-search {
+  padding: 2px 12px !important;
+  min-height: 34px !important;
+  height: 34px !important;
+}
+
+:is(.business-shell, .focused-account) .ac-facet-chip {
+  padding: 0 10px !important;
+}
+
+/* 6. Concentric Continuous Inputs & Form Controls (14px concentric inside 20px sheets) */
+:is(.business-shell, .business-shell[data-platform-density], .focused-account, .focused-account[data-platform-density], .account-entry, .agent-float-window, .agent-workspace)
+  :is(
+    input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='hidden']):not([type='search']),
+    select:not(.workspace-switcher-select),
+    textarea
+  ) {
+  border-radius: var(--apple-r-sm) !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+  padding: 6px 12px !important;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+:is(.business-shell, .focused-account, .account-entry, .agent-float-window, .agent-workspace)
+  :is(input:not([type='checkbox']):not([type='radio']), select, textarea):focus {
+  border-color: #166534 !important;
+  box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.14) !important;
+  outline: none !important;
+}
+
+/* 7. Concentric Sheets, Popovers, Kanban Items & Apple Liquid Glass Floating Layer */
+:is(.business-shell, .focused-account) .app-header {
+  background: var(--apple-glass-bg) !important;
+  backdrop-filter: saturate(180%) blur(20px) !important;
+  -webkit-backdrop-filter: saturate(180%) blur(20px) !important;
+  border-bottom: 1px solid var(--apple-glass-border) !important;
+}
+
 :is(.business-shell, .focused-account)
   :is(
     .o-app-sheet,
     .panel:not(.o-flat-section):not(form.panel),
-    .o-kanban-item,
-    .project-directory-card,
-    .account-record,
-    .crm-customer-options,
-    .ac-menubar-popover,
-    .ac-filter-popover-panel,
+    .focused-sheet-body,
+    .business-metric,
+    .app-directory-card,
     .dc-shell,
     .dc-msg-agent,
     .dc-composer,
@@ -1418,8 +1710,38 @@
   border-radius: var(--apple-r-lg) !important;
 }
 
-:is(.agent-float-window, [role='dialog'], .modal-panel, .launcher-modal, .command-palette) {
+:is(.business-shell, .focused-account)
+  :is(.o-kanban-item, .crm-opportunity, .project-directory-card, .account-record) {
+  border-radius: var(--apple-r-md) !important;
+}
+
+/* Floating Control Layers get Apple Liquid Glass translucency + 22–24px concentric radius */
+:is(
+    .ac-menubar-popover,
+    .ac-filter-popover-panel,
+    .crm-customer-options,
+    .workspace-account-menu,
+    .agent-float-window,
+    [role='dialog'],
+    .modal-panel,
+    .launcher-modal,
+    .command-palette
+  ) {
   border-radius: var(--apple-r-xl) !important;
+  background: var(--apple-glass-bg) !important;
+  backdrop-filter: saturate(180%) blur(22px) !important;
+  -webkit-backdrop-filter: saturate(180%) blur(22px) !important;
+  border: 1px solid var(--apple-glass-border) !important;
+  box-shadow: var(--apple-glass-shadow) !important;
+}
+
+:is(.business-shell, .focused-account) .ac-menubar-popover > button {
+  border-radius: var(--apple-r-pill) !important;
+  padding: 7px 14px !important;
+}
+
+:is(.business-shell, .focused-account) .dc-channel-btn {
+  border-radius: var(--apple-r-xs) !important;
 }
 
 /* Keep top bar & sub-module bar flush full-bleed (0px on outer bar container) */
@@ -1440,34 +1762,26 @@
   border-radius: 0 !important;
 }
 
-/* Progressive enhancement: true Apple continuous squircle curves (superellipse) */
+/* Keep form-actions & button groups cleanly spaced per Apple HIG */
+:is(.business-shell, .focused-account, .agent-float-window, .agent-workspace)
+  :is(.form-actions, .ac-filter-pills, .crm-document-actions) {
+  gap: 8px !important;
+}
+
+/* Progressive enhancement: true Apple superellipse squircle curves where supported */
 @supports (corner-shape: squircle) {
   :is(.business-shell, .focused-account, .account-entry, .agent-float-window, .agent-workspace)
     :is(
-      .button,
-      .secondary-button,
-      .quiet-button,
-      .danger-button,
-      .ac-odoo-new-btn,
-      .sales-new,
-      .ac-menubar-pill,
-      .ac-menubar-trigger,
-      .workspace-switcher-select,
-      .workspace-account-button,
-      .icon-button,
-      .workspace-launcher-trigger,
-      .notification-bell,
-      .workspace-search-trigger,
-      input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='hidden']),
-      select,
+      input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='hidden']):not([type='search']),
+      select:not(.workspace-switcher-select),
       textarea,
-      .ac-faceted-search,
-      .badge,
-      .ac-facet-chip,
-      .agent-status-chip,
       .o-app-sheet,
       .panel:not(.o-flat-section):not(form.panel),
+      .focused-sheet-body,
+      .business-metric,
+      .app-directory-card,
       .o-kanban-item,
+      .crm-opportunity,
       .project-directory-card,
       .account-record,
       .crm-customer-options,
@@ -1486,5 +1800,12 @@
       .command-palette
     ) {
     corner-shape: squircle;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.business-shell, .focused-account, .account-entry, .agent-float-window, .agent-workspace) * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 }

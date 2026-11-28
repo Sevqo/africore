@@ -305,7 +305,7 @@ export function PassportWorkspace({
       });
     return () => { sourceLoadGeneration.current++; };
   }, [dialog, sourcePickerKind, sourcePage, org, environment, serviceScope, editable]);
-  async function act(fn: () => Promise<any>) {
+  async function act(fn: () => Promise<any>, rethrow = false) {
     setError('');
     setNotice('');
     setBusy(true);
@@ -316,6 +316,7 @@ export function PassportWorkspace({
       return result;
     } catch (e) {
       setError((e as Error).message);
+      if (rethrow) throw e;
       return null;
     } finally {
       setBusy(false);
@@ -862,6 +863,36 @@ export function PassportWorkspace({
                   <button className="button" disabled={!editable || !selected.length || !issuers.some((i) => i.status === 'approved_sandbox')}>Authorize selected evidence</button>
                 </Form>
               )}
+              {issuance.length > 0 && (
+                <section className="business-id-register">
+                  <header className="business-id-register-toolbar">
+                    <div>
+                      <h3>Pending &amp; Recorded Issuance Requests</h3>
+                      <p>Holder-authorized requests awaiting issuer review or completion.</p>
+                    </div>
+                  </header>
+                  <DataTable className="business-id-table">
+                    <thead>
+                      <tr>
+                        <th>Reference</th>
+                        <th>Credential Type</th>
+                        <th>Status</th>
+                        <th>Evidence</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {issuance.map((r: any) => (
+                        <tr key={r.id}>
+                          <td>{String(r.id).slice(0, 8).toUpperCase()}</td>
+                          <td>{r.type}</td>
+                          <td><Provenance label={r.status} /></td>
+                          <td>{r.evidence?.length || 0} record(s)</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </DataTable>
+                </section>
+              )}
             </>
           )}
           {(tab === 'Trust Evidence' || tab === 'Evidence') && (
@@ -876,12 +907,12 @@ export function PassportWorkspace({
               {dialog === 'evidence' && <Overlay onClose={() => setDialog('')}><section className="business-id-modal" role="dialog" aria-modal="true" aria-labelledby="business-id-evidence-title"><header><h2 id="business-id-evidence-title">Add Evidence</h2><button type="button" aria-label="Close" onClick={() => setDialog('')}>×</button></header><Form className="business-id-modal-form" submit={(d) => {
                 const source = sources.find((s: any) => s.key === d.source);
                 if (!source) throw Error('Choose an authorized source record.');
-                return act(() => api('/evidence', 'POST', { source_kind: source.kind, source_id: source.id, lawful_basis: d.lawful_basis, purpose: d.purpose })).then((r) => { if (r) setDialog(''); });
+                return act(() => api('/evidence', 'POST', { source_kind: source.kind, source_id: source.id, lawful_basis: d.lawful_basis, purpose: d.purpose }), true).then((r) => { if (r) setDialog(''); });
               }}>
                 <div className="business-id-edit-columns"><div><Field label="Source Type"><select value={sourcePickerKind} onChange={(e) => { setSourcePickerKind(e.target.value); setSourcePage(1); setSourceChoice(''); }}><option value="profile">Business profile</option><option value="payment">Successful payment</option><option value="invoice">Invoice</option><option value="order">Order</option><option value="shipment">Shipment</option><option value="relationship">Confirmed relationship</option></select></Field><Field label="Authorized Source Record"><select name="source" value={sourceChoice} onChange={(e) => setSourceChoice(e.target.value)} required disabled={sourceLoading || !sourceMeta.available}><option value="" disabled>{sourceLoading ? 'Loading eligible records…' : 'Choose an authorized record'}</option>{sources.map((s: any) => <option key={s.key} value={s.key}>{s.label} · {s.kind}</option>)}</select></Field><div className="business-id-pagination"><span>{sourceMessage || (sourceMeta.total ? `Page ${sourcePage} · ${sourceMeta.total} eligible records` : sourceLoading ? 'Loading source records…' : 'No eligible records for this source type.')}</span><div><button type="button" className="secondary-button" disabled={sourcePage <= 1 || sourceLoading} onClick={() => { setSourceChoice(''); setSourcePage((page) => page - 1); }}>Previous</button><button type="button" className="secondary-button" disabled={!sourceMeta.has_more || sourceLoading} onClick={() => { setSourceChoice(''); setSourcePage((page) => page + 1); }}>Next</button></div></div></div><div><Field label="Lawful Basis"><select name="lawful_basis" required><option value="consent">Consent</option><option value="contract">Contract</option><option value="legitimate_interests">Legitimate interests (assess first)</option></select></Field><Field label="Specific Purpose"><textarea name="purpose" minLength={10} maxLength={500} required /></Field></div></div>
                 <footer><button className="button" disabled={!editable || !sourceMeta.available || !sources.length || sourceLoading}>Save &amp; Close</button><button type="button" className="secondary-button" onClick={() => setDialog('')}>Discard</button></footer>
               </Form></section></Overlay>}
-              {dialog === 'correction' && <Overlay onClose={() => setDialog('')}><section className="business-id-modal" role="dialog" aria-modal="true" aria-labelledby="business-id-correction-title"><header><h2 id="business-id-correction-title">Request a Correction</h2><button type="button" aria-label="Close" onClick={() => setDialog('')}>×</button></header><Form className="business-id-modal-form" submit={(d) => act(() => api('/corrections', 'POST', d)).then((r) => { if (r) setDialog(''); })}><div className="business-id-edit-columns"><Field label="Record Type"><select name="kind" value={correctionKind} onChange={(e) => { const kind = e.target.value as 'evidence' | 'credential'; setCorrectionKind(kind); setCorrectionTarget(''); }}><option value="evidence">Evidence</option><option value="credential">Credential</option></select></Field><Field label="Evidence or credential"><select name="resource_id" value={correctionTarget} onChange={(e) => setCorrectionTarget(e.target.value)} required><option value="" disabled>Select a record</option>{(correctionKind === 'evidence' ? evidence : creds).map((item: any) => <option key={item.id} value={item.id}>{correctionKind === 'evidence' ? `${item.source_kind} · ${item.purpose}` : `${item.type} · ${item.status}`} · ${String(item.id).slice(0, 8).toUpperCase()}</option>)}</select></Field><Field label="Reason"><textarea name="reason" minLength={10} maxLength={1000} required /></Field><Field label="Supporting Statement"><textarea name="supporting_statement" maxLength={1000} /></Field></div><footer><button className="button" disabled={!correctionTarget}>Request Correction</button><button type="button" className="secondary-button" onClick={() => setDialog('')}>Discard</button></footer></Form></section></Overlay>}
+              {dialog === 'correction' && <Overlay onClose={() => setDialog('')}><section className="business-id-modal" role="dialog" aria-modal="true" aria-labelledby="business-id-correction-title"><header><h2 id="business-id-correction-title">Request a Correction</h2><button type="button" aria-label="Close" onClick={() => setDialog('')}>×</button></header><Form className="business-id-modal-form" submit={(d) => act(() => api('/corrections', 'POST', d), true).then((r) => { if (r) setDialog(''); })}><div className="business-id-edit-columns"><Field label="Record Type"><select name="kind" value={correctionKind} onChange={(e) => { const kind = e.target.value as 'evidence' | 'credential'; setCorrectionKind(kind); setCorrectionTarget(''); }}><option value="evidence">Evidence</option><option value="credential">Credential</option></select></Field><Field label="Evidence or credential"><select name="resource_id" value={correctionTarget} onChange={(e) => setCorrectionTarget(e.target.value)} required><option value="" disabled>Select a record</option>{(correctionKind === 'evidence' ? evidence : creds).map((item: any) => <option key={item.id} value={item.id}>{correctionKind === 'evidence' ? `${item.source_kind} · ${item.purpose}` : `${item.type} · ${item.status}`} · ${String(item.id).slice(0, 8).toUpperCase()}</option>)}</select></Field><Field label="Reason"><textarea name="reason" minLength={10} maxLength={1000} required /></Field><Field label="Supporting Statement"><textarea name="supporting_statement" maxLength={1000} /></Field></div><footer><button className="button" disabled={!correctionTarget}>Request Correction</button><button type="button" className="secondary-button" onClick={() => setDialog('')}>Discard</button></footer></Form></section></Overlay>}
               {data.disputes?.map((r: any) => (
                 <article className="panel" key={r.id}>
                   <h3>Correction · {r.status}</h3>
@@ -982,19 +1013,19 @@ export function PassportWorkspace({
               {dialog === 'sharing' && <Overlay onClose={closeShareDialog}><section className="business-id-modal" role="dialog" aria-modal="true" aria-labelledby="business-id-sharing-title"><header><h2 id="business-id-sharing-title">Authorize a minimal presentation</h2><button type="button" aria-label="Close" onClick={closeShareDialog}>×</button></header><Form className="business-id-modal-form" submit={async (d) => {
                 if (!shareCredentialIds.length) throw Error('Choose at least one credential to share.');
                 if (!d.consent || d.consent !== 'on') throw Error('Confirm consent for this specific disclosure.');
-                const result = await act(() => api('/grants', 'POST', { recipient_org: shareRecipient, credential_ids: shareCredentialIds, purpose: d.purpose, expires_hours: Number(d.expires_hours), one_time: d.one_time === 'on', ...(shareRequest ? { request_id: shareRequest } : {}), consent: true }));
+                const result = await act(() => api('/grants', 'POST', { recipient_org: shareRecipient, credential_ids: shareCredentialIds, purpose: d.purpose, expires_hours: Number(d.expires_hours), one_time: d.one_time === 'on', ...(shareRequest ? { request_id: shareRequest } : {}), consent: true }), true);
                 if (result?.url) { setGrantLink(location.origin + result.url); closeShareDialog(); }
               }}><div className="business-id-edit-columns"><div><BusinessSelector api={api} name="recipient_org" label="Named recipient business" value={shareRecipient} onChange={(id) => { setShareRecipient(id); setShareRequest(''); }} /><Field label="Matching inbound verification request (optional)"><select value={shareRequest} onChange={(e) => setShareRequest(e.target.value)} disabled={!shareRecipient}><option value="">No linked request</option>{matchingShareRequests.map((r: any) => <option key={r.id} value={r.id}>{(r.types || []).join(', ')} · {r.purpose} · expires {new Date(r.expires_at).toLocaleDateString('en-KE')}</option>)}</select></Field><p className="business-id-help">When using a request, credential types and purpose must exactly match it. The server checks the recipient, purpose, expiry and credentials again.</p></div><div><Field label="Purpose"><textarea name="purpose" minLength={10} maxLength={500} required /></Field><Field label="Expires in hours"><input type="number" name="expires_hours" min={1} max={720} defaultValue={168} required /></Field><Field label="One-time access"><input type="checkbox" name="one_time" defaultChecked /></Field></div></div><fieldset className="business-id-choice-list"><legend>Eligible active credentials</legend>{activeShareCredentials.length ? activeShareCredentials.map((c: any) => <label className="check-row" key={c.id}><input type="checkbox" checked={shareCredentialIds.includes(c.id)} onChange={(e) => setShareCredentialIds(e.target.checked ? [...shareCredentialIds, c.id] : shareCredentialIds.filter((id) => id !== c.id))} />{c.type.replace(/Credential$/, '').replace(/([A-Z])/g, ' $1').trim()} · {c.issuer_name || 'Issuer unavailable'} · valid until {new Date(c.valid_until).toLocaleDateString('en-KE')}</label>) : <p>No active, unexpired credentials are available to share.</p>}</fieldset>{consent}<p className="business-id-help">Credentials are re-verified at creation and again when accessed. Revocation blocks future access but cannot erase copies already disclosed.</p><footer><button className="button" disabled={!editable || !shareRecipient || !shareCredentialIds.length}>Create recipient-bound share</button><button type="button" className="secondary-button" onClick={closeShareDialog}>Discard</button></footer></Form></section></Overlay>}
             </>
           )}
-          {tab === 'Activity History' && (
+          {(tab === 'Activity History' || tab === 'History') && (
             <section className="business-id-register">
               <header className="business-id-register-toolbar"><div><h2>Trust activity history</h2><p>Events are scoped to this business and environment. Resource references are shortened in the interface.</p></div></header>
               {readError('history') ? <p role="alert">History unavailable: {readError('history')}</p> : history.length ? <DataTable className="business-id-table"><thead><tr><th>Date and Time</th><th>Event</th><th>Resource Reference</th><th>Actor</th></tr></thead><tbody>{history.map((h: any) => <tr key={h.id}><td>{new Date(h.created_at).toLocaleString('en-KE')}</td><td>{String(h.action).replaceAll('.', ' ').replaceAll('_', ' ')}</td><td>{String(h.resource_id).slice(0, 8).toUpperCase()}</td><td>Authorized business member</td></tr>)}</tbody></DataTable> : <p>No trust activity has been recorded yet.</p>}
               <footer className="business-id-pagination"><span>{historyMeta.total ? `Showing page ${historyPage} · ${historyMeta.total} events` : 'No events'}</span><div><button type="button" className="secondary-button" disabled={historyPage <= 1 || loading} onClick={() => void load(historyPage - 1)}>Previous</button><button type="button" className="secondary-button" disabled={!historyMeta.has_more || loading} onClick={() => void load(historyPage + 1)}>Next</button></div></footer>
             </section>
           )}
-          {tab === 'Privacy & Security' && (
+          {(tab === 'Privacy & Security' || tab === 'Settings') && (
             <section className="business-id-register business-id-settings">
               <header className="business-id-register-toolbar"><div><h2>Business ID settings</h2><p>Manage public discoverability and review the actual trust environment.</p></div></header>
               <section className="business-id-settings-group"><h3>Public business profile</h3><p>Opting in exposes only the display name, category, industry, country, public reference and identity review status. It does not publish evidence, financial records, credentials or contact details.</p><div className="business-id-settings-state"><Provenance label={p.public_profile ? 'public_profile_enabled' : 'private_profile'} /><span>{p.public_profile ? 'Public profile is discoverable by name in this environment.' : 'Profile is private and excluded from business search.'}</span></div>{editable && <button className="secondary-button" disabled={busy} onClick={() => act(() => api('/passport', 'PATCH', { public_profile: !p.public_profile }))}>{p.public_profile ? 'Disable public profile' : 'Enable minimal public profile'}</button>}</section>
@@ -1049,9 +1080,12 @@ export function PassportWorkspace({
                     act(() =>
                       api('/issuers', 'POST', {
                         name: d.name,
-                        types: trustTypes.filter((type) => d['type_' + type] === 'on'),
+                        types: d.type
+                          ? [d.type]
+                          : trustTypes.filter((type) => d['type_' + type] === 'on'),
                         statement: d.statement,
                       }),
+                      true,
                     )
                   }
                 >

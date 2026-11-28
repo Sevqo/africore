@@ -309,9 +309,18 @@ export function AnalyticsWorkspace({
       ),
     ),
     fallbackWidgets = useMemo(() => defaultWidgets(availableMetrics), [registry]),
-    dashboardWidgets: Widget[] = activeDashboard?.configuration?.widgets?.length
-      ? activeDashboard.configuration.widgets
+    dashboardWidgets: Widget[] = activeDashboard
+      ? activeDashboard.configuration?.widgets || []
       : fallbackWidgets,
+    goSection = (target: string) => {
+      const url = new URL(location.href);
+      url.searchParams.set('app', 'analytics');
+      url.searchParams.set('section', target);
+      url.hash = 'Apps';
+      history.pushState(null, '', url.pathname + url.search + url.hash);
+      dispatchEvent(new Event('africore:app-navigation'));
+      navigate?.('Apps');
+    },
     selectedMetric = availableMetrics.find((item: any) => item.id === reportMetric),
     selectedWidgetMetric = availableMetrics.find((item: any) => item.id === widgetMetric),
     selectedWidget =
@@ -853,6 +862,7 @@ export function AnalyticsWorkspace({
       setBuilder(false);
       setQuery({ currency: 'KES', ...result.configuration.filters });
       setActiveDashboardId(result.id);
+      if (section !== 'dashboard') goSection('dashboard');
       setRevision((value) => value + 1);
     } catch (error) {
       setBuilderPreviewError((error as Error).message || 'Dashboard could not be saved.');
@@ -2107,7 +2117,7 @@ export function AnalyticsWorkspace({
                     className={reportView === 'graph' ? 'selected' : ''}
                     onClick={() => {
                       setReportView('graph');
-                      navigate?.('reporting');
+                      goSection('reporting');
                     }}
                   >
                     Graph
@@ -2117,7 +2127,7 @@ export function AnalyticsWorkspace({
                     className={reportView === 'pivot' ? 'selected' : ''}
                     onClick={() => {
                       setReportView('pivot');
-                      navigate?.('explore');
+                      goSection('explore');
                     }}
                   >
                     Pivot
@@ -2689,15 +2699,27 @@ export function AnalyticsWorkspace({
                   onClick={() =>
                     activeDashboard &&
                     void (async () => {
-                      await api(`/business/analytics/dashboards/${activeDashboard.id}`, 'PATCH', {
-                        expected_version: activeDashboard.version,
-                        name: activeDashboard.name,
-                        configuration: {
-                          filters: draftFilters,
-                          widgets: activeDashboard.configuration.widgets,
-                        },
-                      });
-                      setRevision((value) => value + 1);
+                      try {
+                        setLoadErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.defaults;
+                          return next;
+                        });
+                        await api(`/business/analytics/dashboards/${activeDashboard.id}`, 'PATCH', {
+                          expected_version: activeDashboard.version,
+                          name: activeDashboard.name,
+                          configuration: {
+                            filters: draftFilters,
+                            widgets: activeDashboard.configuration.widgets,
+                          },
+                        });
+                        setRevision((value) => value + 1);
+                      } catch (e) {
+                        setLoadErrors((prev) => ({
+                          ...prev,
+                          defaults: (e as Error).message || 'Could not save dashboard defaults.',
+                        }));
+                      }
                     })()
                   }
                 >
@@ -2736,7 +2758,7 @@ export function AnalyticsWorkspace({
                         className="secondary-button"
                         onClick={() => {
                           setActiveDashboardId(dashboard.id);
-                          navigate?.('dashboard');
+                          goSection('dashboard');
                         }}
                       >
                         Open
@@ -2774,8 +2796,8 @@ export function AnalyticsWorkspace({
               }}
               onRefresh={() => setRevision((value) => value + 1)}
               onLoad={(configuration) => {
-                setQuery(configuration.query);
-                if (configuration.exploration) {
+                if (configuration?.query) setQuery(configuration.query);
+                if (configuration?.exploration) {
                   setReportMetric(configuration.exploration.metric);
                   setReportGroup(configuration.exploration.group_by);
                   setReportChart(configuration.exploration.chart);
@@ -2784,7 +2806,7 @@ export function AnalyticsWorkspace({
                     setPivotRows(configuration.exploration.row_by);
                   if (configuration.exploration.column_by)
                     setPivotColumns(configuration.exploration.column_by);
-                  navigate?.(configuration.exploration.view === 'pivot' ? 'explore' : 'reporting');
+                  goSection(configuration.exploration.view === 'pivot' ? 'explore' : 'reporting');
                 }
               }}
             />
@@ -3179,7 +3201,7 @@ export function AnalyticsWorkspace({
                     <section className="analytics-panel panel sh-span-4">
                       <div className="sh-card-head">
                         <h2>Orders by status</h2>
-                        <button className="quiet-button" onClick={() => navigate?.('reporting')}>
+                        <button className="quiet-button" onClick={() => goSection('reporting')}>
                           Open report
                         </button>
                       </div>
@@ -3255,7 +3277,7 @@ export function AnalyticsWorkspace({
                     >
                       <div className="sh-card-head">
                         <h2>Authorized data sources</h2>
-                        <button className="quiet-button" onClick={() => navigate?.('coverage')}>
+                        <button className="quiet-button" onClick={() => goSection('coverage')}>
                           Data quality
                         </button>
                       </div>

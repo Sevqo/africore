@@ -501,7 +501,7 @@ export function CalendarWorkspace({
         active: !type.data.active,
         expected_version: type.version,
       }, { 'Idempotency-Key': crypto.randomUUID() });
-      const updated = result.data || result;
+      const updated = result?.id && result?.data ? result : { ...type, data: { ...type.data, active: !type.data.active } };
       setAppointmentTypes((current) => current.map((item) => item.id === type.id ? updated : item));
       setNotice(updated.data.active ? 'Appointment type activated.' : 'Appointment type deactivated.');
     } catch (e) {
@@ -1433,6 +1433,11 @@ export function CalendarWorkspace({
                 ×
               </button>
             </header>
+            {error && (
+              <p className="alert error" role="alert">
+                {error}
+              </p>
+            )}
             <Field label="Title">
               <input
                 autoFocus
@@ -1763,12 +1768,24 @@ export function CalendarWorkspace({
                     <Field label="Ends">
                       <select
                         value={form.recurrence_rule.end}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const nextEnd = e.target.value;
                           setForm({
                             ...form,
-                            recurrence_rule: { ...form.recurrence_rule, end: e.target.value },
-                          })
-                        }
+                            recurrence_rule: {
+                              ...form.recurrence_rule,
+                              end: nextEnd,
+                              count:
+                                nextEnd === 'count'
+                                  ? Math.max(1, Number(form.recurrence_rule.count || 1))
+                                  : null,
+                              until:
+                                nextEnd === 'until'
+                                  ? form.recurrence_rule.until || dayKey(new Date(form.start))
+                                  : null,
+                            },
+                          });
+                        }}
                       >
                         <option value="never">Never</option>
                         <option value="count">After a number of events</option>

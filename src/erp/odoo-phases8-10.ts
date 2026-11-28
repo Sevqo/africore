@@ -287,8 +287,16 @@ export async function supportSlaReport(a: Access) {
 }
 
 export async function listMarketingCampaigns(a: Access) {
+  const [campaigns, activities] = await Promise.all([
+    records(a, 'marketing_campaign'),
+    records(a, 'crm_scheduled_activity'),
+  ]);
   return {
-    data: (await records(a, 'marketing_campaign'))
+    data: campaigns
+      .map((r) => ({ id: r.id, version: r.version, status: r.status, created_at: r.created_at, ...r.data }))
+      .reverse(),
+    attributed_leads: activities
+      .filter((r) => Boolean(r.data?.source_campaign_id))
       .map((r) => ({ id: r.id, version: r.version, status: r.status, created_at: r.created_at, ...r.data }))
       .reverse(),
   };

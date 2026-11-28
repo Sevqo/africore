@@ -192,6 +192,8 @@ export function WorkTaskDetails({
               onClick={() => {
                 const url = new URL(location.href);
                 url.searchParams.set('section', 'timesheets');
+                url.searchParams.delete('work_target');
+                url.searchParams.delete('work_view');
                 window.history.pushState(null, '', url.pathname + url.search + url.hash);
                 dispatchEvent(new PopStateEvent('popstate'));
               }}

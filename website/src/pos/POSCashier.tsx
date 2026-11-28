@@ -491,7 +491,7 @@ export function POSCashier({
             <button
               type="button"
               className="button pos-validate"
-              disabled={!canWrite || !!preview}
+              disabled={!canWrite || (!!preview && !preview.startsWith('Change:'))}
               onClick={() => mutate(confirmPayment).catch((e) => setError(e.message))}
             >
               Validate

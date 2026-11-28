@@ -222,6 +222,7 @@ export function PersonalExpenses({
       .filter((b) => b.currency === currency)
       .map((b) => [String(b.category), Number(b.monthly_limit_minor || 0)]),
   );
+  const otherCurrencyBudgets = budgets.filter((b) => b.currency !== currency);
   const monthByCat = new Map<string, number>();
   for (const exp of monthExpenses) {
     const cat = String(exp.category || 'other');
@@ -381,6 +382,20 @@ export function PersonalExpenses({
           </div>
         ) : (
           <p className="empty">No expenses recorded in {currentMonth} yet.</p>
+        )}
+        {otherCurrencyBudgets.length > 0 && (
+          <div style={{ marginTop: '10px', display: 'grid', gap: '6px' }}>
+            <small className="muted">Monthly budgets in other currencies</small>
+            {otherCurrencyBudgets.map((b: any) => (
+              <div
+                key={`${b.category}:${b.currency}`}
+                style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px' }}
+              >
+                <strong style={{ textTransform: 'capitalize' }}>{b.category}</strong>
+                <span>{money(Number(b.monthly_limit_minor || 0), b.currency)} / mo</span>
+              </div>
+            ))}
+          </div>
         )}
         {writable && (
           <form className="account-inline-form" onSubmit={saveBudget}>

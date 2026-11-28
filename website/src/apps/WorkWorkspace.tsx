@@ -1294,7 +1294,12 @@ export function WorkWorkspace({
               recordUrl(record.id, 'board');
             }
           }}
-          onClose={() => setEditingProject(null)}
+          onClose={() => {
+            setEditingProject(null);
+            if (view === 'configuration') {
+              setView(selected ? 'board' : 'projects');
+            }
+          }}
         />
       )}{' '}
       {editingTask && p && (

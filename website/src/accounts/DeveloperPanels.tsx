@@ -246,18 +246,20 @@ export function DeveloperPanels({
           <button
             className="button"
             disabled={busy}
-            onClick={() =>
-              mutate(() =>
+            onClick={async () => {
+              const created = await mutate(() =>
                 call('/records/customers', 'POST', {
                   name: 'Synthetic sandbox client',
                   type: 'individual',
                   notes: 'Developer-created synthetic test data',
                 }),
-              )
-            }
+              );
+              if (created) setResult(JSON.stringify(created, null, 2));
+            }}
           >
             Create synthetic client
           </button>
+          {result && <pre className="account-code">{result}</pre>}
           <p>
             Use the finance-scoped API to create test invoices and payment requests.{' '}
             <a href="/api/openapi.json">Open the API contract</a>.

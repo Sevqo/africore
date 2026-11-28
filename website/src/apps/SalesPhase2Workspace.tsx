@@ -154,12 +154,15 @@ function DownPaymentsView({ api, orders, onNotify }: Props) {
         <Form
           submit={async (d) => {
             const mode = d.mode === 'fixed' ? 'fixed' : 'percentage';
+            const ord = eligible.find((o) => o.id === d.order_id);
+            const curr = ord?.currency || 'KES';
+            const scale = ['UGX', 'RWF'].includes(curr) ? 1 : 100;
             await api('/sales/down-payments', 'POST', {
               order_id: d.order_id,
               mode,
               ...(mode === 'percentage'
                 ? { percentage_bps: Math.round(Number(d.percentage || 30) * 100) }
-                : { fixed_amount_minor: Math.round(Number(d.fixed_amount || 0) * 100) }),
+                : { fixed_amount_minor: Math.round(Number(d.fixed_amount || 0) * scale) }),
               reference: d.reference,
               due_on: d.due_on,
               notes: d.notes || '',
@@ -236,21 +239,25 @@ function DownPaymentsView({ api, orders, onNotify }: Props) {
 
 function OptionalProductsView({ api, quotations, products, onNotify }: Props) {
   const [rev, setRev] = useState(0);
+  const [actionError, setActionError] = useState('');
   const { data, error } = useSalesData(api, '/sales/optional-products', rev);
   const activeProducts = products.filter((p) => p.status === 'active');
   return (
     <section className="panel">
       <h2>Quotation Optional Products (Upsells)</h2>
       <p>Offer complementary add-on items on quotations and track customer acceptance.</p>
-      {error && <p className="alert error" role="alert">{error}</p>}
+      {(error || actionError) && <p className="alert error" role="alert">{error || actionError}</p>}
       {quotations.length > 0 && activeProducts.length > 0 && (
         <Form
           submit={async (d) => {
+            const q = quotations.find((item) => item.id === d.quotation_id);
+            const curr = q?.currency || 'KES';
+            const scale = ['UGX', 'RWF'].includes(curr) ? 1 : 100;
             await api('/sales/optional-products', 'POST', {
               quotation_id: d.quotation_id,
               product_id: d.product_id,
               quantity_milli: quantityMilli(String(d.quantity || '1')),
-              unit_price_minor: Math.round(Number(d.unit_price || 0) * 100),
+              unit_price_minor: Math.round(Number(d.unit_price || 0) * scale),
               description: d.description || '',
             });
             setRev((n) => n + 1);
@@ -314,12 +321,17 @@ function OptionalProductsView({ api, quotations, products, onNotify }: Props) {
                         type="button"
                         className="acc-primary"
                         onClick={async () => {
-                          await api('/sales/optional-products/' + item.id, 'PATCH', {
-                            expected_version: item.version,
-                            status: 'accepted',
-                          });
-                          setRev((n) => n + 1);
-                          onNotify('Optional product accepted.');
+                          setActionError('');
+                          try {
+                            await api('/sales/optional-products/' + item.id, 'PATCH', {
+                              expected_version: item.version,
+                              status: 'accepted',
+                            });
+                            setRev((n) => n + 1);
+                            onNotify('Optional product accepted.');
+                          } catch (e) {
+                            setActionError((e as Error).message);
+                          }
                         }}
                       >
                         Accept
@@ -328,12 +340,17 @@ function OptionalProductsView({ api, quotations, products, onNotify }: Props) {
                         type="button"
                         className="acc-secondary"
                         onClick={async () => {
-                          await api('/sales/optional-products/' + item.id, 'PATCH', {
-                            expected_version: item.version,
-                            status: 'declined',
-                          });
-                          setRev((n) => n + 1);
-                          onNotify('Optional product declined.');
+                          setActionError('');
+                          try {
+                            await api('/sales/optional-products/' + item.id, 'PATCH', {
+                              expected_version: item.version,
+                              status: 'declined',
+                            });
+                            setRev((n) => n + 1);
+                            onNotify('Optional product declined.');
+                          } catch (e) {
+                            setActionError((e as Error).message);
+                          }
                         }}
                       >
                         Decline

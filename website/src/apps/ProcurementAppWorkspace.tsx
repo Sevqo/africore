@@ -346,6 +346,8 @@ export function ProcurementAppWorkspace({
               { id: 'rfqs', label: 'Requests for Quotation', active: view === 'rfqs', onSelect: () => go('rfqs') },
               { id: 'orders', label: 'Purchase Orders', active: view === 'orders', onSelect: () => go('orders') },
               { id: 'agreements', label: 'Purchase Agreements', active: view === 'agreements', onSelect: () => go('agreements') },
+              { id: 'blanket-orders', label: 'Blanket Orders', active: view === 'blanket-orders', onSelect: () => go('blanket-orders') },
+              { id: 'three-way-match', label: '3-Way Matching', active: view === 'three-way-match', onSelect: () => go('three-way-match') },
               { id: 'approvals', label: 'Orders Awaiting Approval', active: view === 'approvals', onSelect: () => go('approvals') },
               { id: 'receipts', label: 'Receipts', active: view === 'receipts', onSelect: () => go('receipts') },
               { id: 'bills', label: 'Vendor Bills', active: view === 'bills', onSelect: () => go('bills') },
@@ -449,7 +451,10 @@ export function ProcurementAppWorkspace({
           record={editor.record}
           defaultSource={editor.source}
           onSaved={() => {
+            const savedType = editor.type;
             setEditor(null);
+            if (savedType === 'request' && view === 'dashboard') go('requests');
+            else if (savedType === 'supplier' && view === 'dashboard') go('vendors');
             refresh('Purchase draft saved for review.');
           }}
           onClose={() => setEditor(null)}

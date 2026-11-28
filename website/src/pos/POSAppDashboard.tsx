@@ -242,6 +242,7 @@ export function POSAppDashboard({
                   className="secondary-button"
                   onClick={(e) => {
                     e.stopPropagation();
+                    onSelect(register.id);
                     onConfigure();
                   }}
                 >

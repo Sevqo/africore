@@ -70,7 +70,7 @@ export function FinanceAppWorkspace({
     services.some((service) => service.id === id && service.status === 'active');
   const invoiceAvailable = activeService('invoicing');
   const expenseAvailable = activeService('expenses');
-  const customerWritable = ['owner', 'admin', 'operations'].includes(role);
+  const customerWritable = ['owner', 'admin', 'operations', 'finance', 'accountant'].includes(role);
   const paymentAvailable = activeService('payments');
   const reconciliationAvailable = activeService('reconciliation');
   useEffect(() => {
@@ -144,7 +144,6 @@ export function FinanceAppWorkspace({
   useEffect(() => {
     let live = true;
     setError('');
-    setNotice('');
     if (section === 'Invoices' || section === 'Customers') {
       setLoading(true);
       setRecords([]);
@@ -222,6 +221,7 @@ export function FinanceAppWorkspace({
           { 'Idempotency-Key': key },
         );
         setNotice('Customer saved: ' + result.name);
+        if (section !== 'Customers') navigateSection('Customers');
       } else {
         const invoiceCurrency = String(values.get('currency'));
         const result = await api(
@@ -249,6 +249,8 @@ export function FinanceAppWorkspace({
           },
           { 'Idempotency-Key': key },
         );
+        if (invoiceCurrency && invoiceCurrency !== currency) setCurrency(invoiceCurrency);
+        if (section !== 'Invoices') navigateSection('Invoices');
         setNotice(
           `Draft invoice ${result.reference} created. Review and issue it from its detail.`,
         );

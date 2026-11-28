@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Field, Form, money, today, type API } from '../operations/UI';
+import { factor, Field, Form, money, today, type API } from '../operations/UI';
 import { quantityMilli } from '../../../src/inventory/quantity';
 
 type Props = {
@@ -55,8 +55,8 @@ function ThreeWayView({ api, writable, onNotify }: Props) {
                   ordered_milli: quantityMilli(String(d.ordered || '0')),
                   received_milli: quantityMilli(String(d.received || '0')),
                   billed_milli: quantityMilli(String(d.billed || '0')),
-                  po_unit_price_minor: Math.round(Number(d.po_price || 0) * 100),
-                  bill_unit_price_minor: Math.round(Number(d.bill_price || 0) * 100),
+                  po_unit_price_minor: Math.round(Number(d.po_price || 0) * factor(d.currency || 'KES')),
+                  bill_unit_price_minor: Math.round(Number(d.bill_price || 0) * factor(d.currency || 'KES')),
                 },
               ],
             });
@@ -143,12 +143,13 @@ function ThreeWayView({ api, writable, onNotify }: Props) {
 
 function BlanketOrdersView({ api, writable, onNotify }: Props) {
   const [rev, setRev] = useState(0);
+  const [actionError, setActionError] = useState('');
   const { data, error } = useProcData(api, '/procurement/blanket-orders', rev);
   return (
     <section className="panel">
       <h2>Blanket Purchase Orders</h2>
       <p>Long-term supplier quantity and unit-price agreements with validity windows.</p>
-      {error && <p className="alert error" role="alert">{error}</p>}
+      {(error || actionError) && <p className="alert error" role="alert">{error || actionError}</p>}
       {writable && (
         <Form
           submit={async (d) => {
@@ -164,7 +165,7 @@ function BlanketOrdersView({ api, writable, onNotify }: Props) {
                   description: d.description,
                   agreed_quantity_milli: quantityMilli(String(d.qty || '100')),
                   ordered_quantity_milli: 0,
-                  unit_price_minor: Math.round(Number(d.price || 0) * 100),
+                  unit_price_minor: Math.round(Number(d.price || 0) * factor(d.currency || 'KES')),
                 },
               ],
               notes: d.notes || '',
@@ -237,13 +238,18 @@ function BlanketOrdersView({ api, writable, onNotify }: Props) {
                         type="button"
                         className="acc-secondary"
                         onClick={async () => {
-                          await api('/procurement/blanket-orders/' + bo.id, 'PATCH', {
-                            expected_version: bo.version,
-                            status: 'closed',
-                            reason: 'Agreement fulfilled',
-                          });
-                          setRev((n) => n + 1);
-                          onNotify(`Blanket order ${bo.reference} closed.`);
+                          setActionError('');
+                          try {
+                            await api('/procurement/blanket-orders/' + bo.id, 'PATCH', {
+                              expected_version: bo.version,
+                              status: 'closed',
+                              reason: 'Agreement fulfilled',
+                            });
+                            setRev((n) => n + 1);
+                            onNotify(`Blanket order ${bo.reference} closed.`);
+                          } catch (e) {
+                            setActionError((e as Error).message);
+                          }
                         }}
                       >
                         Close

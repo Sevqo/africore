@@ -1590,6 +1590,14 @@ export function DocumentsWorkspace({
           onSaved={(savedDocument) => {
             setCreating(false);
             setInitialFile(undefined);
+            if (!['all', 'mine', 'recent'].includes(view)) {
+              setView('mine');
+            }
+            if (savedDocument?.parent_id && savedDocument.parent_id !== currentFolderId) {
+              setFolderPath([{ id: savedDocument.parent_id, name: 'Folder' }]);
+            } else if (!savedDocument?.parent_id && currentFolderId !== 'root') {
+              setFolderPath([]);
+            }
             setRevision((value) => value + 1);
             if (savedDocument?.id) {
               setSelected(savedDocument.id);

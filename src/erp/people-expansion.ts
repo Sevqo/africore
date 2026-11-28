@@ -1076,7 +1076,7 @@ export async function peopleGoals(a: Access, input: unknown = {}) {
       'SELECT employee_id FROM ac_people_employees WHERE org_id=? AND environment=? AND linked_user_id=?',
       [a.org, a.environment, a.actor],
     ),
-    employeeId = q.employee_id || own?.employee_id;
+    employeeId = q.employee_id || (c.performance_view ? undefined : own?.employee_id);
   if (!c.performance_view && !own) fail(403, 'Performance visibility required');
   if (!c.performance_view && employeeId !== own?.employee_id) fail(404, 'Employee goals not found');
   const rows = await resourceRows(a, 'people_goal', 5001),

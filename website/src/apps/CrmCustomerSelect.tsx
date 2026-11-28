@@ -80,6 +80,21 @@ export function CrmCustomerSelect({
           setSearch(selected?.name || '');
           setOpen(true);
         }}
+        onBlur={() => {
+          window.setTimeout(() => {
+            setOpen(false);
+            if (!selected && search.trim()) {
+              const q = search.trim().toLowerCase();
+              const exact =
+                results.find((c) => String(c.name || '').trim().toLowerCase() === q) ||
+                (results.length === 1 ? results[0] : null);
+              if (exact) {
+                setSelected(exact);
+                setSearch('');
+              }
+            }
+          }, 160);
+        }}
         onChange={(event) => {
           setSelected(null);
           setSearch(event.target.value);

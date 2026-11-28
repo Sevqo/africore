@@ -171,12 +171,16 @@ function LotsView({ api, products, warehouses, writable, revision, refresh }: Pr
                       type="button"
                       className="acc-secondary"
                       onClick={async () => {
-                        const nextStatus = lot.status === 'quarantined' ? 'active' : 'quarantined';
-                        await api('/inventory/lots/' + lot.id, 'PATCH', {
-                          expected_version: lot.version,
-                          status: nextStatus,
-                        });
-                        refresh(`Lot ${lot.lot_number} marked ${nextStatus}.`);
+                        try {
+                          const nextStatus = lot.status === 'quarantined' ? 'active' : 'quarantined';
+                          await api('/inventory/lots/' + lot.id, 'PATCH', {
+                            expected_version: lot.version,
+                            status: nextStatus,
+                          });
+                          refresh(`Lot ${lot.lot_number} marked ${nextStatus}.`);
+                        } catch (e) {
+                          refresh(`Could not update lot: ${(e as Error).message}`);
+                        }
                       }}
                     >
                       {lot.status === 'quarantined' ? 'Release' : 'Quarantine'}
@@ -409,12 +413,15 @@ function LandedCostsView({ api, movements, writable, revision, refresh }: Props)
         <Form
           submit={async (d) => {
             if (!selectedIds.length) throw new Error('Select at least one stock receipt.');
+            const curr = String(d.currency || 'KES');
             await api('/inventory/landed-costs', 'POST', {
               reference: d.reference,
               date_on: d.date_on,
-              currency: d.currency,
+              currency: curr,
               split_method: d.split_method,
-              total_cost_minor: Math.round(Number(d.total_cost) * 100),
+              total_cost_minor: Math.round(
+                Number(d.total_cost) * (['UGX', 'RWF'].includes(curr) ? 1 : 100),
+              ),
               description: d.description,
               movement_ids: selectedIds,
             });

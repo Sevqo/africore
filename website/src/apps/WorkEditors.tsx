@@ -95,11 +95,14 @@ export function ProjectEditor({
                 value={owner}
                 required
                 onChange={(e) => {
-                  setOwner(e.target.value);
-                  setParticipants((v) => [
-                    ...v.filter((m) => m.user_id !== e.target.value),
-                    { user_id: e.target.value, permission: 'manage' },
-                  ]);
+                  const nextOwner = e.target.value;
+                  setOwner(nextOwner);
+                  if (nextOwner) {
+                    setParticipants((v) => [
+                      ...v.filter((m) => m.user_id && m.user_id !== nextOwner),
+                      { user_id: nextOwner, permission: 'manage' },
+                    ]);
+                  }
                 }}
               >
                 <option value="">Choose current member</option>
@@ -303,7 +306,7 @@ export function ProjectEditor({
                     <option value="">No owner</option>
                     {members
                       .filter((member) =>
-                        p?.data.members.some(
+                        participants.some(
                           (item: any) => item.user_id === member.id && item.permission !== 'view',
                         ),
                       )
@@ -445,7 +448,7 @@ export function TaskEditor({
                         unit: d.recurrence_unit,
                         interval: Number(d.recurrence_interval),
                         ends_on: d.recurrence_end || null,
-                        next_on: t?.data.recurrence?.next_on || d.recurrence_start || undefined,
+                        next_on: d.recurrence_start || t?.data.recurrence?.next_on || undefined,
                         active: true,
                       }
                     : null,

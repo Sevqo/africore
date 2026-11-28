@@ -4,7 +4,7 @@ import { DonutChart } from '../charts/DonutChart';
 import { WorkspaceSkeleton } from '../components/Skeleton';
 import { isDemo } from '../demo/transport';
 import { peekQuery } from '../lib/query-cache';
-import { Field as BaseField, Form as BaseForm, money, today, type API } from '../operations/UI';
+import { factor, Field as BaseField, Form as BaseForm, money, today, type API } from '../operations/UI';
 import { AppControlPanel, KpiStrip } from './MinimalAppChrome';
 import { appNavigationEvent } from './AppNavigation';
 
@@ -14,6 +14,8 @@ type Props = {
   api: API;
   scope: string;
   writable: boolean;
+  workspaceKind?: 'business' | 'personal' | 'developer';
+  onSectionChange?: (section: string) => void;
 };
 
 function Field({
@@ -138,7 +140,15 @@ function goSection(appId: string, targetSection: string) {
   dispatchEvent(new Event(appNavigationEvent));
 }
 
-export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: Props) {
+export function ExtendedAppWorkspace({
+  appId,
+  section,
+  api,
+  scope,
+  writable,
+  workspaceKind = 'business',
+  onSectionChange,
+}: Props) {
   const [rev, setRev] = useState(0);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
@@ -159,6 +169,14 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
     setError('');
     setRev((n) => n + 1);
     setNotice(msg);
+  };
+  const runAction = async (fn: () => Promise<void>) => {
+    setError('');
+    try {
+      await fn();
+    } catch (e) {
+      setError((e as Error).message || 'Action could not be completed.');
+    }
   };
   const matches = (text: string) =>
     !query.trim() || text.toLowerCase().includes(query.trim().toLowerCase());
@@ -295,11 +313,44 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
     ? (Object.entries(mrr.data.totals_by_currency)[0] as [string, any] | undefined)
     : undefined;
 
+  const marketingAttributedLeads: any[] =
+    campaigns.data?.attributed_leads ||
+    (crmLeads.data?.data || []).filter((a: any) => a.source_campaign_id);
+  const activeFetchError =
+    [
+      campaigns,
+      tickets,
+      kb,
+      sla,
+      plans,
+      contracts,
+      mrr,
+      boms,
+      mos,
+      qcs,
+      dispatches,
+      maint,
+      fleet,
+      shipments,
+      units,
+      leases,
+      reservations,
+      articles,
+      courses,
+      enrollments,
+      studioApps,
+      studioRecords,
+      topology,
+      connectors,
+      pipelines,
+      events,
+    ].find((item) => item.error)?.error || '';
+
   return (
     <div className="o-app-sheet">
-      {error && (
+      {(error || activeFetchError) && (
         <p className="alert error" role="alert">
-          {error}
+          {error || activeFetchError}
         </p>
       )}
       {notice && (
@@ -334,7 +385,7 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
               },
               {
                 label: 'CRM Attributed Leads',
-                value: (crmLeads.data?.data || []).filter((a: any) => a.source_campaign_id).length,
+                value: marketingAttributedLeads.length,
                 delta: 'Zero double-entry',
               },
             ]}
@@ -348,7 +399,7 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                   Leads captured from campaigns flow straight into CRM scheduled follow-ups.
                 </p>
                 <div className="ac-record-list">
-                  {(crmLeads.data?.data || [])
+                  {marketingAttributedLeads
                     .filter((l: any) => matches(`${l.summary} ${l.lead_ref} ${l.notes || ''}`))
                     .map((l: any) => (
                       <div className="ac-record-row" key={l.id}>
@@ -361,7 +412,7 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                         <span className="badge">{l.status}</span>
                       </div>
                     ))}
-                  {!(crmLeads.data?.data || []).length && (
+                  {!marketingAttributedLeads.length && (
                     <p className="muted">No attributed leads yet. Capture a response from any campaign.</p>
                   )}
                 </div>
@@ -442,15 +493,17 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                               <button
                                 type="button"
                                 className="secondary-button"
-                                onClick={async () => {
-                                  await api(`/marketing/campaigns/${c.id}`, 'PATCH', {
-                                    expected_version: c.version,
-                                    status: 'sent',
-                                    observed_delivered: 250,
-                                    observed_clicks: 42,
-                                  });
-                                  refresh(`Marked "${c.name}" as sent with delivery telemetry.`);
-                                }}
+                                onClick={() =>
+                                  void runAction(async () => {
+                                    await api(`/marketing/campaigns/${c.id}`, 'PATCH', {
+                                      expected_version: c.version,
+                                      status: 'sent',
+                                      observed_delivered: 250,
+                                      observed_clicks: 42,
+                                    });
+                                    refresh(`Marked "${c.name}" as sent with delivery telemetry.`);
+                                  })
+                                }
                               >
                                 Mark Sent
                               </button>
@@ -459,13 +512,15 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                               <button
                                 type="button"
                                 className="secondary-button"
-                                onClick={async () => {
-                                  await api(`/marketing/campaigns/${c.id}/capture-lead`, 'POST', {
-                                    lead_name: `Prospect from ${c.name}`,
-                                    due_on: today(),
-                                  });
-                                  refresh('Lead captured directly into CRM scheduled activities.');
-                                }}
+                                onClick={() =>
+                                  void runAction(async () => {
+                                    await api(`/marketing/campaigns/${c.id}/capture-lead`, 'POST', {
+                                      lead_name: `Prospect from ${c.name}`,
+                                      due_on: today(),
+                                    });
+                                    refresh('Lead captured directly into CRM scheduled activities.');
+                                  })
+                                }
                               >
                                 Capture Lead → CRM
                               </button>
@@ -549,8 +604,9 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                     filter: (t: any) => ['new', 'open'].includes(t.status),
                   },
                   {
-                    lane: 'In Progress / Escalated',
-                    filter: (t: any) => ['in_progress', 'pending', 'escalated'].includes(t.status),
+                    lane: 'In Progress / Waiting',
+                    filter: (t: any) =>
+                      ['in_progress', 'waiting_customer', 'pending', 'escalated'].includes(t.status),
                   },
                   {
                     lane: 'Solved & Closed',
@@ -580,28 +636,32 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                               <button
                                 type="button"
                                 className="quiet-button"
-                                onClick={async () => {
-                                  await api(`/support/tickets/${t.id}`, 'PATCH', {
-                                    expected_version: t.version,
-                                    status: 'solved',
-                                    resolution_note: 'Resolved by support desk',
-                                  });
-                                  refresh(`Marked "${t.subject}" solved.`);
-                                }}
+                                onClick={() =>
+                                  void runAction(async () => {
+                                    await api(`/support/tickets/${t.id}`, 'PATCH', {
+                                      expected_version: t.version,
+                                      status: 'solved',
+                                      resolution_note: 'Resolved by support desk',
+                                    });
+                                    refresh(`Marked "${t.subject}" solved.`);
+                                  })
+                                }
                               >
                                 Mark Solved
                               </button>
                               <button
                                 type="button"
                                 className="quiet-button"
-                                onClick={async () => {
-                                  await api(`/support/tickets/${t.id}/escalate`, 'POST', {
-                                    target: 'field_operations',
-                                    scheduled_on: today(),
-                                    assignee: 'Field Technician',
-                                  });
-                                  refresh('Escalated ticket to Field Operations dispatch.');
-                                }}
+                                onClick={() =>
+                                  void runAction(async () => {
+                                    await api(`/support/tickets/${t.id}/escalate`, 'POST', {
+                                      target: 'field_operations',
+                                      scheduled_on: today(),
+                                      assignee: 'Field Technician',
+                                    });
+                                    refresh('Escalated ticket to Field Operations dispatch.');
+                                  })
+                                }
                               >
                                 → Field Ops
                               </button>
@@ -814,15 +874,17 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                               <button
                                 type="button"
                                 className="secondary-button"
-                                onClick={async () => {
-                                  const res = await api(`/subscriptions/contracts/${c.id}/bill`, 'POST', {
-                                    expected_version: c.version,
-                                    issue_date: today(),
-                                  });
-                                  refresh(
-                                    `Auto-created canonical invoice ${res.invoice?.reference || ''} in Accounting.`,
-                                  );
-                                }}
+                                onClick={() =>
+                                  void runAction(async () => {
+                                    const res = await api(`/subscriptions/contracts/${c.id}/bill`, 'POST', {
+                                      expected_version: c.version,
+                                      issue_date: today(),
+                                    });
+                                    refresh(
+                                      `Auto-created canonical invoice ${res.invoice?.reference || ''} in Accounting.`,
+                                    );
+                                  })
+                                }
                               >
                                 Auto-Bill → Invoice
                               </button>
@@ -842,12 +904,13 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                     <Form
                       label="Create plan"
                       submit={async (d) => {
+                        const curr = String(d.currency || 'KES').trim().toUpperCase();
                         await api('/subscriptions/plans', 'POST', {
                           code: d.code,
                           name: d.name,
-                          currency: d.currency || 'KES',
+                          currency: curr,
                           interval: d.interval,
-                          price_minor: Math.round(Number(d.price || 0) * 100),
+                          price_minor: Math.round(Number(d.price || 0) * factor(curr)),
                           trial_days: Number(d.trial_days || 0),
                         });
                         refresh('Subscription plan created.');
@@ -1048,15 +1111,17 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                             <button
                               type="button"
                               className="secondary-button"
-                              onClick={async () => {
-                                await api(`/mrp/orders/${mo.id}/complete`, 'POST', {
-                                  expected_version: mo.version,
-                                  quality_passed: true,
-                                });
-                                refresh(
-                                  'Completed MO: passed Quality Check and auto-received finished goods into Inventory.',
-                                );
-                              }}
+                              onClick={() =>
+                                void runAction(async () => {
+                                  await api(`/mrp/orders/${mo.id}/complete`, 'POST', {
+                                    expected_version: mo.version,
+                                    quality_passed: true,
+                                  });
+                                  refresh(
+                                    'Completed MO: passed Quality Check and auto-received finished goods into Inventory.',
+                                  );
+                                })
+                              }
                             >
                               Pass QC &amp; Receive → Inventory
                             </button>
@@ -1199,6 +1264,28 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                     />
                     <Field name="scheduled_on" label="Service date" type="date" defaultValue={today()} required />
                   </Form>
+                  <div style={{ marginTop: '18px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
+                    <h4>Register Fleet Vehicle</h4>
+                    <Form
+                      label="Register vehicle"
+                      submit={async (d) => {
+                        await api('/fleet/vehicles', 'POST', {
+                          plate_number: d.plate_number,
+                          model: d.model,
+                          driver_name: d.driver_name || '',
+                          odometer_km: Math.max(0, Math.round(Number(d.odometer_km || 0))),
+                          next_service_on: d.next_service_on || null,
+                        });
+                        refresh('Fleet vehicle registered.');
+                      }}
+                    >
+                      <Field name="plate_number" label="Plate number" defaultValue="KDL 402A" required />
+                      <Field name="model" label="Vehicle model" defaultValue="Toyota Hilux Double Cab" required />
+                      <Field name="driver_name" label="Assigned driver" defaultValue="Samuel Njoroge" />
+                      <Field name="odometer_km" label="Odometer (km)" type="number" defaultValue="14200" />
+                      <Field name="next_service_on" label="Next service date" type="date" defaultValue={today()} />
+                    </Form>
+                  </div>
                 </section>
               )}
             </div>
@@ -1312,14 +1399,16 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                           <button
                             type="button"
                             className="button"
-                            onClick={async () => {
-                              await api(`/logistics/shipments/${s.id}/pod`, 'POST', {
-                                expected_version: s.version,
-                                received_by: 'Authorized Receiving Clerk',
-                                delivered_on: today(),
-                              });
-                              refresh('Signed Proof of Delivery recorded and synced to Sales.');
-                            }}
+                            onClick={() =>
+                              void runAction(async () => {
+                                await api(`/logistics/shipments/${s.id}/pod`, 'POST', {
+                                  expected_version: s.version,
+                                  received_by: 'Authorized Receiving Clerk',
+                                  delivered_on: today(),
+                                });
+                                refresh('Signed Proof of Delivery recorded and synced to Sales.');
+                              })
+                            }
                           >
                             Sign &amp; Confirm POD
                           </button>
@@ -1351,14 +1440,16 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                             <button
                               type="button"
                               className="secondary-button"
-                              onClick={async () => {
-                                await api(`/logistics/shipments/${s.id}/pod`, 'POST', {
-                                  expected_version: s.version,
-                                  received_by: 'Receiving Clerk',
-                                  delivered_on: today(),
-                                });
-                                refresh('Signed Proof of Delivery recorded and synced to Sales.');
-                              }}
+                              onClick={() =>
+                                void runAction(async () => {
+                                  await api(`/logistics/shipments/${s.id}/pod`, 'POST', {
+                                    expected_version: s.version,
+                                    received_by: 'Receiving Clerk',
+                                    delivered_on: today(),
+                                  });
+                                  refresh('Signed Proof of Delivery recorded and synced to Sales.');
+                                })
+                              }
                             >
                               Capture POD
                             </button>
@@ -1445,14 +1536,16 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                             <button
                               type="button"
                               className="secondary-button"
-                              onClick={async () => {
-                                await api(`/property/reservations/${r.id}/checkout`, 'POST', {
-                                  expected_version: r.version,
-                                  checkout_date: today(),
-                                  extras_minor: 0,
-                                });
-                                refresh('Guest checked out and folio invoice issued in Accounting.');
-                              }}
+                              onClick={() =>
+                                void runAction(async () => {
+                                  await api(`/property/reservations/${r.id}/checkout`, 'POST', {
+                                    expected_version: r.version,
+                                    checkout_date: today(),
+                                    extras_minor: 0,
+                                  });
+                                  refresh('Guest checked out and folio invoice issued in Accounting.');
+                                })
+                              }
                             >
                               Checkout → Issue Folio Invoice
                             </button>
@@ -1542,13 +1635,15 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                             <button
                               type="button"
                               className="secondary-button"
-                              onClick={async () => {
-                                await api(`/property/leases/${l.id}/bill`, 'POST', {
-                                  billing_month: today().slice(0, 7),
-                                  issue_date: today(),
-                                });
-                                refresh('Rent invoice auto-created in Accounting.');
-                              }}
+                              onClick={() =>
+                                void runAction(async () => {
+                                  await api(`/property/leases/${l.id}/bill`, 'POST', {
+                                    billing_month: today().slice(0, 7),
+                                    issue_date: today(),
+                                  });
+                                  refresh('Rent invoice auto-created in Accounting.');
+                                })
+                              }
                             >
                               Auto-Bill Rent → Invoice
                             </button>
@@ -1564,12 +1659,13 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                     <Form
                       label="Add unit / room"
                       submit={async (d) => {
+                        const curr = String(d.currency || 'KES').trim().toUpperCase();
                         await api('/property/units', 'POST', {
                           code: d.code,
                           name: d.name,
                           unit_type: d.unit_type,
-                          currency: d.currency || 'KES',
-                          rate_minor: Math.round(Number(d.rate || 0) * 100),
+                          currency: curr,
+                          rate_minor: Math.round(Number(d.rate || 0) * factor(curr)),
                           rate_period: d.rate_period,
                         });
                         refresh('Property unit registered.');
@@ -1599,6 +1695,40 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                       <Field name="rate" label="Rate" type="number" defaultValue="85000" required />
                       <Field name="currency" label="Currency" defaultValue="KES" required />
                     </Form>
+                    {(units.data?.data || []).length > 0 && (
+                      <div style={{ marginTop: '18px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
+                        <h4>Create Tenant Lease</h4>
+                        <Form
+                          label="Create lease"
+                          submit={async (d) => {
+                            const curr = String(d.currency || 'KES').trim().toUpperCase();
+                            await api('/property/leases', 'POST', {
+                              unit_id: d.unit_id,
+                              tenant_name: d.tenant_name,
+                              starts_on: d.starts_on,
+                              ends_on: d.ends_on,
+                              monthly_rent_minor: Math.round(Number(d.rent || 0) * factor(curr)),
+                              currency: curr,
+                            });
+                            refresh('Tenant lease created and unit marked occupied.');
+                          }}
+                        >
+                          <SelectField
+                            name="unit_id"
+                            label="Property unit"
+                            options={(units.data?.data || []).map((u: any) => ({
+                              value: u.id,
+                              label: `${u.code} — ${u.name}`,
+                            }))}
+                          />
+                          <Field name="tenant_name" label="Tenant name" defaultValue="Savannah Tech Ltd" required />
+                          <Field name="starts_on" label="Lease start" type="date" defaultValue={today()} required />
+                          <Field name="ends_on" label="Lease end" type="date" defaultValue={today()} required />
+                          <Field name="rent" label="Monthly rent" type="number" defaultValue="85000" required />
+                          <Field name="currency" label="Currency" defaultValue="KES" required />
+                        </Form>
+                      </div>
+                    )}
                   </section>
                 )}
               </div>
@@ -1735,14 +1865,20 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                               <button
                                 type="button"
                                 className="secondary-button"
-                                onClick={async () => {
-                                  await api(`/learning/enrollments/${en.id}/assess`, 'POST', {
-                                    expected_version: en.version,
-                                    correct_answers: 9,
-                                    total_questions: 10,
-                                  });
-                                  refresh(`Graded ${en.employee_name} (90%) and issued completion certificate.`);
-                                }}
+                                onClick={() =>
+                                  void runAction(async () => {
+                                    const res = await api(`/learning/enrollments/${en.id}/assess`, 'POST', {
+                                      expected_version: en.version,
+                                      correct_answers: 9,
+                                      total_questions: 10,
+                                    });
+                                    refresh(
+                                      res?.certificate_ref
+                                        ? `Graded ${en.employee_name} (${res.score_pct ?? 90}%) and issued certificate ${res.certificate_ref}.`
+                                        : `Graded ${en.employee_name} (${res?.score_pct ?? 90}%) — status: ${res?.status || 'recorded'}.`,
+                                    );
+                                  })
+                                }
                               >
                                 Grade Quiz (90%) → Certify
                               </button>
@@ -1927,7 +2063,8 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                           className="secondary-button"
                           onClick={() => {
                             setSelectedStudioApp(a.id);
-                            goSection('studio', 'records');
+                            if (onSectionChange) onSectionChange('records');
+                            else goSection('studio', 'records');
                           }}
                         >
                           Open Live Records →
@@ -2084,6 +2221,21 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
               <section className="panel">
                 <h3>Sync Pipelines &amp; Connectors</h3>
                 <div className="ac-record-list">
+                  {(connectors.data?.data || [])
+                    .filter((c: any) => matches(`${c.name} ${c.connector_type} ${c.source_app} ${c.target_app}`))
+                    .map((c: any) => (
+                      <div className="ac-record-row" key={c.id}>
+                        <div className="ac-record-main">
+                          <span className="ac-record-title">
+                            {c.name} <span className="badge">{c.connector_type}</span>
+                          </span>
+                          <span className="ac-record-meta">
+                            <code>{c.source_app}</code> → <code>{c.target_app}</code> · {c.endpoint_hint}
+                          </span>
+                        </div>
+                        <span className="badge">{c.status}</span>
+                      </div>
+                    ))}
                   {(pipelines.data?.data || [])
                     .filter((p: any) => matches(`${p.name} ${p.source_app} ${p.target_app}`))
                     .map((p: any) => (
@@ -2099,18 +2251,20 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                           <button
                             type="button"
                             className="secondary-button"
-                            onClick={async () => {
-                              await api(`/integrations-hub/pipelines/${p.id}/run`, 'POST', {});
-                              refresh(`Executed pipeline "${p.name}".`);
-                            }}
+                            onClick={() =>
+                              void runAction(async () => {
+                                await api(`/integrations-hub/pipelines/${p.id}/run`, 'POST', {});
+                                refresh(`Executed pipeline "${p.name}".`);
+                              })
+                            }
                           >
                             Run Now
                           </button>
                         )}
                       </div>
                     ))}
-                  {!(pipelines.data?.data || []).length && (
-                    <p className="muted">No custom sync pipelines configured yet.</p>
+                  {!(pipelines.data?.data || []).length && !(connectors.data?.data || []).length && (
+                    <p className="muted">No connectors or sync pipelines configured yet.</p>
                   )}
                 </div>
               </section>
@@ -2141,6 +2295,38 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                       required
                     />
                   </Form>
+                  <div style={{ marginTop: '18px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
+                    <h4>Register Connector</h4>
+                    <Form
+                      label="Save connector"
+                      submit={async (d) => {
+                        await api('/integrations-hub/connectors', 'POST', {
+                          name: d.name,
+                          connector_type: d.connector_type,
+                          source_app: d.source_app,
+                          target_app: d.target_app,
+                          endpoint_hint: d.endpoint_hint || 'internal://africore-bus',
+                        });
+                        refresh('Connector registered.');
+                      }}
+                    >
+                      <Field name="name" label="Connector name" defaultValue="ERP Order Webhook" required />
+                      <SelectField
+                        name="connector_type"
+                        label="Connector type"
+                        options={[
+                          { value: 'webhook', label: 'Webhook' },
+                          { value: 'rest_api', label: 'REST API' },
+                          { value: 'database_sync', label: 'Database Sync' },
+                          { value: 'payment_rail', label: 'Payment Rail' },
+                          { value: 'messaging_provider', label: 'Messaging Provider' },
+                        ]}
+                      />
+                      <Field name="source_app" label="Source app" defaultValue="sales" required />
+                      <Field name="target_app" label="Target app" defaultValue="accounting" required />
+                      <Field name="endpoint_hint" label="Endpoint hint" defaultValue="internal://africore-bus" />
+                    </Form>
+                  </div>
                 </section>
               )}
             </div>
@@ -2183,7 +2369,7 @@ export function ExtendedAppWorkspace({ appId, section, api, scope, writable }: P
                   ))}
                 </div>
               </section>
-              {writable && (
+              {writable && workspaceKind === 'business' && (
                 <section className="panel">
                   <h3>1-Click Connected Sale (Order + Invoice + Stock + Shipment)</h3>
                   <Form

@@ -37,7 +37,12 @@ export function CrmWorkspace({
     selectionRequest = useRef(0);
   currentScope.current = scope;
   const [moveNotice, setMoveNotice] = useState('');
-  useEffect(() => setMoveNotice(''), [scope]);
+  const [lastCreatedId, setLastCreatedId] = useState<string | null>(null);
+  const [createFormKey, setCreateFormKey] = useState(0);
+  useEffect(() => {
+    setMoveNotice('');
+    setLastCreatedId(null);
+  }, [scope]);
   const [data, setData] = useState<any>(null),
     [entryPage, setEntryPage] = useState<any>(null),
     [customers, setCustomers] = useState<any[]>([]),
@@ -67,12 +72,13 @@ export function CrmWorkspace({
     ),
     [stateFilter, setStateFilter] = useState('all'),
     [outcomeFilter, setOutcomeFilter] = useState('active'),
-    [ownerFilter, setOwnerFilter] = useState('mine'),
+    [ownerFilter, setOwnerFilter] = useState('all'),
     [stageFilter, setStageFilter] = useState('all'),
     [teamFilter, setTeamFilter] = useState('all'),
     [currencyFilter, setCurrencyFilter] = useState('all'),
     [leadFilter, setLeadFilter] = useState('all'),
     [activityWindow, setActivityWindow] = useState('all'),
+    [activityKindFilter, setActivityKindFilter] = useState<'follow_up' | 'interaction'>('follow_up'),
     [sortOrder, setSortOrder] = useState('recent'),
     [page, setPage] = useState(1),
     [board, setBoard] = useState(initialSection === 'dashboard' || initialSection === 'pipeline'),
@@ -90,6 +96,9 @@ export function CrmWorkspace({
     url.hash = 'Apps';
     history[replace ? 'replaceState' : 'pushState'](null, '', url.pathname + url.search + url.hash);
     setSection(next);
+    setBoard(next === 'pipeline');
+    setCalendar(false);
+    setCreateKind(next === 'leads' ? 'lead' : next === 'followups' ? 'follow_up' : 'opportunity');
     dispatchEvent(new Event('africore:app-navigation'));
     navigate('Apps');
   }
@@ -111,7 +120,14 @@ export function CrmWorkspace({
         params.set('assigned_to', leadFilter);
       if (leadFilter === 'unassigned') params.set('unassigned', 'true');
       if (leadFilter === 'open' || leadFilter === 'cancelled') params.set('status', leadFilter);
-    } else if (section === 'followups') { params.set('kind', 'follow_up'); if (activityWindow !== 'all') params.set('activity_window', activityWindow); if (ownerFilter === 'mine' && data?.current_actor) params.set('assigned_to', data.current_actor); else if (!['mine','all'].includes(ownerFilter)) params.set('assigned_to', ownerFilter); }
+    } else if (section === 'followups') {
+      params.set('kind', activityKindFilter);
+      if (activityKindFilter === 'follow_up' && activityWindow !== 'all')
+        params.set('activity_window', activityWindow);
+      if (ownerFilter === 'mine' && data?.current_actor)
+        params.set('assigned_to', data.current_actor);
+      else if (!['mine', 'all'].includes(ownerFilter)) params.set('assigned_to', ownerFilter);
+    }
     if (stateFilter !== 'all') params.set('status', stateFilter);
     if (currencyFilter !== 'all') params.set('currency', currencyFilter);
     if (query.trim()) params.set('q', query.trim());
@@ -184,11 +200,13 @@ export function CrmWorkspace({
     };
   }, [scope, section, customerQuery, customerOffset, revision]);
   useEffect(() => {
+    setEntryPage(null);
+  }, [scope, section]);
+  useEffect(() => {
     if (!data) return;
     let current = true;
     const params = entryParams(0);
     setListLoading(true);
-    setEntryPage(null);
     api('/crm/entries?' + params)
       .then((result) => {
         if (current) {
@@ -215,6 +233,7 @@ export function CrmWorkspace({
     currencyFilter,
     leadFilter,
     activityWindow,
+    activityKindFilter,
     sortOrder,
     data?.current_actor,
   ]);
@@ -333,7 +352,16 @@ export function CrmWorkspace({
     <div className="apps-workspace crm-workspace">
       {moveNotice && (
         <p role="status" className="alert">
-          {moveNotice}
+          {moveNotice}{' '}
+          {lastCreatedId && (
+            <button
+              type="button"
+              className="quiet-button"
+              onClick={() => openRecord(lastCreatedId)}
+            >
+              Open record
+            </button>
+          )}
         </p>
       )}
       {!writable && <p className="environment-note">Read-only access in your current role.</p>}
@@ -789,6 +817,21 @@ export function CrmWorkspace({
                             </Field>
                           )}
                           {section === 'followups' && (
+                            <Field label="Activity record type">
+                              <select
+                                value={activityKindFilter}
+                                onChange={(e) =>
+                                  setActivityKindFilter(
+                                    e.target.value as 'follow_up' | 'interaction',
+                                  )
+                                }
+                              >
+                                <option value="follow_up">Follow-ups</option>
+                                <option value="interaction">Interactions & notes</option>
+                              </select>
+                            </Field>
+                          )}
+                          {section === 'followups' && activityKindFilter === 'follow_up' && (
                             <Field label="Activity window">
                               <select value={activityWindow} onChange={(e) => setActivityWindow(e.target.value)}>
                                 <option value="all">All activities</option>
@@ -926,10 +969,10 @@ export function CrmWorkspace({
                       </div>
                     </div>
                   </div>
-                  <div className={board ? 'ac-odoo-kanban-surface' : 'panel crm-record-list'}>
-                  {calendar ? (
+                  <div className={section === 'pipeline' && board ? 'ac-odoo-kanban-surface' : 'panel crm-record-list'}>
+                  {calendar && section === 'pipeline' ? (
                     <CrmCalendar entries={entries} open={openRecord} />
-                  ) : board ? (
+                  ) : section === 'pipeline' && board ? (
                     <CrmPipeline
                       stages={data.configuration.stages}
                       entries={entries}
@@ -947,6 +990,7 @@ export function CrmWorkspace({
                         );
                       }}
                       add={(stage) => {
+                        setCreateKind('opportunity');
                         setCreateStage(stage);
                         const el = document.getElementById(
                           'crm-create',
@@ -1068,11 +1112,15 @@ export function CrmWorkspace({
                 <details className="panel" id="crm-create">
                   <summary>New relationship record</summary>
                   <Form
+                    key={createFormKey}
                     disabled={!writable}
                     submit={async (d) => {
                       const entryKind = d.kind || createKind;
-                      if (entryKind !== 'lead' && !d.customer)
-                        throw new Error('Choose a customer from the search results.');
+                      const customerId = String(d.customer || '').trim() || null;
+                      if (entryKind !== 'lead' && !customerId)
+                        throw new Error(
+                          'Select a customer from the dropdown results (or add one under Customers first).',
+                        );
                       let dueIso: string | null = null;
                       if (d.due) {
                         const parsed = new Date(d.due);
@@ -1082,40 +1130,127 @@ export function CrmWorkspace({
                       }
                       if (entryKind === 'follow_up' && !dueIso)
                         throw new Error('Choose a due date and time for this follow-up.');
+                      const rawWebsite = String(d.website || '').trim();
+                      const normalizedWebsite =
+                        rawWebsite && !/^https?:\/\//i.test(rawWebsite)
+                          ? `https://${rawWebsite}`
+                          : rawWebsite;
+                      const rawTitle = String(d.title || '').trim();
+                      const contactName =
+                        String(d.contact_name || '').trim() ||
+                        (entryKind === 'lead' && !customerId && !String(d.company || '').trim()
+                          ? rawTitle
+                          : '');
                       const cleanAmount = String(d.amount || '0').replace(/[\s,]+/g, '') || '0';
+                      const chosenStage =
+                        d.stage || createStage || data.configuration.stages[0]?.id || 'new';
+                      const assignedTo = String(d.assigned_to || '').trim() || null;
                       const created = await write('/crm/entries', {
                         ...crmExtraValues(d, parseMoney),
-                        customer_id: d.customer || null,
+                        customer_id: customerId,
                         kind: entryKind,
-                        title: d.title,
+                        title: rawTitle,
                         notes: d.notes || '',
-                        contact_name: d.contact_name || '',
+                        contact_name: contactName,
                         company: d.company || '',
                         email: d.email || '',
                         phone: d.phone || '',
-                        website: d.website || '',
+                        website: normalizedWebsite,
                         country: d.country || '',
                         source: d.source || 'manual',
                         source_ref: d.source_ref || '',
                         business_need: d.business_need || '',
                         qualification_notes: d.qualification_notes || '',
-                        stage: d.stage || data.configuration.stages[0]?.id || 'new',
-                        assigned_to: d.assigned_to || null,
+                        stage: chosenStage,
+                        assigned_to: assignedTo,
                         due_at: dueIso,
                         amount_minor: parseMoney(cleanAmount, d.currency || 'KES'),
                         currency: d.currency || 'KES',
                       });
                       const el = document.getElementById('crm-create') as HTMLDetailsElement | null;
                       if (el) el.open = false;
-                      if (!d.assigned_to) setOwnerFilter('all');
+                      setCreateFormKey((k) => k + 1);
+                      setLastCreatedId(created?.id || null);
+                      // Reset any filter that would hide the newly created record
+                      if (
+                        ownerFilter !== 'all' &&
+                        (ownerFilter === 'mine'
+                          ? assignedTo !== data?.current_actor
+                          : ownerFilter !== assignedTo)
+                      ) {
+                        setOwnerFilter('all');
+                      }
+                      if (['won', 'lost'].includes(chosenStage) && outcomeFilter === 'active') {
+                        setOutcomeFilter('all');
+                      }
+                      if (stageFilter !== 'all' && stageFilter !== chosenStage) {
+                        setStageFilter('all');
+                      }
+                      if (teamFilter !== 'all' && teamFilter !== (d.team_id || '')) {
+                        setTeamFilter('all');
+                      }
+                      if (currencyFilter !== 'all' && currencyFilter !== (d.currency || 'KES')) {
+                        setCurrencyFilter('all');
+                      }
+                      if (stateFilter !== 'all' && stateFilter !== 'open') {
+                        setStateFilter('all');
+                      }
+                      if (query.trim()) setQuery('');
+                      if (entryKind === 'lead' && leadFilter !== 'all') {
+                        setLeadFilter('all');
+                      }
+                      if (entryKind === 'follow_up') {
+                        setActivityKindFilter('follow_up');
+                        if (activityWindow !== 'all') setActivityWindow('all');
+                      } else if (entryKind === 'interaction') {
+                        setActivityKindFilter('interaction');
+                      }
                       const targetSec =
                         entryKind === 'lead'
                           ? 'leads'
-                          : entryKind === 'follow_up'
+                          : entryKind === 'follow_up' || entryKind === 'interaction'
                             ? 'followups'
                             : 'pipeline';
-                      if (targetSec !== section) changeSection(targetSec);
-                      setMoveNotice(`${entryKind.replaceAll('_', ' ')} "${d.title}" created.`);
+                      if (targetSec !== section) {
+                        changeSection(targetSec);
+                      } else if (created?.id) {
+                        setEntryPage((previous: any) => {
+                          if (!previous?.data) return previous;
+                          if (previous.data.some((item: any) => item.id === created.id))
+                            return previous;
+                          const nextData = [created, ...previous.data];
+                          const nextStages = [...(previous.stages || [])];
+                          const stageIdx = nextStages.findIndex((s) => s.stage === created.stage);
+                          if (stageIdx >= 0) {
+                            const existingStage = nextStages[stageIdx];
+                            nextStages[stageIdx] = {
+                              ...existingStage,
+                              count: (existingStage.count || 0) + 1,
+                              totals: {
+                                ...(existingStage.totals || {}),
+                                [created.currency]:
+                                  (existingStage.totals?.[created.currency] || 0) +
+                                  Number(created.amount_minor || 0),
+                              },
+                            };
+                          } else {
+                            nextStages.push({
+                              stage: created.stage,
+                              count: 1,
+                              totals: { [created.currency]: Number(created.amount_minor || 0) },
+                            });
+                          }
+                          return {
+                            ...previous,
+                            data: nextData,
+                            total: Number(previous.total || 0) + 1,
+                            stages: nextStages,
+                          };
+                        });
+                      }
+                      setMoveNotice(
+                        `${entryKind.replaceAll('_', ' ')} "${rawTitle}" created${targetSec === 'leads' ? ' in Leads' : targetSec === 'followups' ? ' in Activities' : ' on Pipeline'}.`,
+                      );
                       return created;
                     }}
                   >
@@ -1125,16 +1260,9 @@ export function CrmWorkspace({
                       </Field>
                       <Field label="Type">
                         <select
-                          key={section}
                           name="kind"
+                          value={createKind}
                           onChange={(event) => setCreateKind(event.target.value)}
-                          defaultValue={
-                            section === 'pipeline'
-                              ? 'opportunity'
-                              : section === 'leads'
-                                ? 'lead'
-                                : 'follow_up'
-                          }
                         >
                           {['lead', 'opportunity', 'follow_up', 'interaction'].map((s) => (
                             <option key={s} value={s}>
@@ -1151,7 +1279,7 @@ export function CrmWorkspace({
                         <Field label="Company"><input name="company" maxLength={200} placeholder="Prospect organization" /></Field>
                         <Field label="Email"><input name="email" type="email" maxLength={254} /></Field>
                         <Field label="Phone"><input name="phone" type="tel" maxLength={50} /></Field>
-                        <Field label="Website"><input name="website" type="url" maxLength={500} /></Field>
+                        <Field label="Website"><input name="website" type="text" maxLength={500} placeholder="https://example.com" /></Field>
                         <Field label="Country"><input name="country" maxLength={100} /></Field>
                         <Field label="Lead source"><select name="source" defaultValue="manual">{['manual', 'imported', 'website', 'referral', 'campaign', 'other'].map((source) => <option key={source}>{source}</option>)}</select></Field>
                         <Field label="Source reference"><input name="source_ref" maxLength={200} /></Field>
@@ -1160,9 +1288,9 @@ export function CrmWorkspace({
                       </>}
                       <Field label="Stage">
                         <select
-                          key={createStage}
                           name="stage"
-                          defaultValue={createStage || data.configuration.stages[0]?.id}
+                          value={createStage || data.configuration.stages[0]?.id || 'new'}
+                          onChange={(event) => setCreateStage(event.target.value)}
                         >
                           {data.configuration.stages.map((s: any) => (
                             <option key={s.id} value={s.id}>

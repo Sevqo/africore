@@ -183,7 +183,7 @@ export function SalesAppWorkspace({
       setCustomers(rowsOf(value(3)));
       setProducts(rowsOf(value(4)));
       const warehousePayload = value(5);
-      setLocations([...(warehousePayload?.data || []), ...(warehousePayload?.locations || [])]);
+      setLocations(warehousePayload?.data || []);
       const failures = results
         .map((result, index) =>
           result.status === 'rejected'
@@ -1303,7 +1303,7 @@ function QuotationDocument({
   const [orderLink, setOrderLink] = useState<string>(quote?.order_id || '');
 
   const status = current?.status || (isNew ? 'draft' : '');
-  const editable = writable && (isNew || status === 'draft');
+  const editable = writable && ((!current && isNew) || status === 'draft');
 
   useEffect(() => {
     if (!quote?.id) {
@@ -1417,7 +1417,7 @@ function QuotationDocument({
       tax_bps: Math.round(Number(taxPercent || 0) * 100),
       issue_date: issueDate,
       due_date: dueDate,
-      valid_until: validUntil,
+      valid_until: validUntil || null,
       terms,
       notes,
       payment_instructions: paymentInstructions,
@@ -1637,7 +1637,7 @@ function QuotationDocument({
               Save
             </button>
           )}
-          {status === 'draft' && writable && (
+          {status === 'draft' && !!current?.id && writable && (
             <button disabled={busy} onClick={() => setSendOpen(true)}>
               Send
             </button>
@@ -1647,7 +1647,7 @@ function QuotationDocument({
               Preview
             </button>
           )}
-          {['draft', 'shared', 'accepted'].includes(status) && writable && (
+          {['draft', 'shared', 'accepted'].includes(status) && !!current?.id && writable && (
             <button className="sales-primary" disabled={busy} onClick={confirm}>
               Confirm
             </button>

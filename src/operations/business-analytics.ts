@@ -363,7 +363,9 @@ export async function savedReports(a: Access) {
       'SELECT * FROM ac_saved_reports WHERE org_id=? AND environment=? AND actor=? ORDER BY updated_at DESC,id DESC LIMIT 100',
       [a.org, a.environment, a.actor],
     )
-  ).map((row) => ({ ...row, configuration: JSON.parse(row.configuration) }));
+  )
+    .map((row) => ({ ...row, configuration: JSON.parse(row.configuration) }))
+    .filter((row) => row.configuration?.type !== 'analytics_dashboard');
 }
 export async function saveReport(a: Access, input: unknown) {
   if (a.api) fail(403, 'Human member required');
@@ -663,7 +665,7 @@ async function assertDashboardMetrics(
         : [
             'day',
             'month',
-            ...(definition.status && definition.filterStatus !== false ? ['status'] : []),
+            ...(definition.status ? ['status'] : []),
             ...(definition.currency ? ['currency'] : []),
           ];
     if ((definition.source === 'financial' || definition.snapshot) && widget.chart !== 'kpi')

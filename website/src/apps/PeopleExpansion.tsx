@@ -101,8 +101,9 @@ export function PeopleRecruitment({
                   <summary>Edit position</summary>
                   <Form
                     submit={async (d) => {
+                      const { required_skill_names: _ignoredSkills, ...cleanPos } = position.data || {};
                       await api('/people/positions/' + position.id, 'PUT', {
-                        ...position.data,
+                        ...cleanPos,
                         expected_version: position.version,
                         title: d.title,
                         description: d.description,
@@ -256,12 +257,17 @@ export function PeopleRecruitment({
               <button
                 className="quiet-button"
                 onClick={async () => {
-                  await api('/people/recruitment/openings/' + opening.id, 'PUT', {
-                    ...opening.data,
-                    expected_version: opening.version,
-                    status: 'closed',
-                  });
-                  onSaved('Recruitment opening closed.');
+                  try {
+                    const { position_title: _ignoredTitle, ...cleanOpening } = opening.data || {};
+                    await api('/people/recruitment/openings/' + opening.id, 'PUT', {
+                      ...cleanOpening,
+                      expected_version: opening.version,
+                      status: 'closed',
+                    });
+                    onSaved('Recruitment opening closed.');
+                  } catch (e) {
+                    setError((e as Error).message);
+                  }
                 }}
               >
                 Close opening
@@ -396,12 +402,14 @@ export function PeopleRecruitment({
           <h2>Applications</h2>
           <p>Move applications forward through screening, interview, assessment and offer.</p>
         </header>
-        {applications.map((application) => (
+        {applications.map((application) => {
+          const appStage = application.stage || application.data?.stage || 'new';
+          return (
           <div className="people-expansion-card people-application-card" key={application.id}>
             <div>
-              <h3>{application.candidate.name}</h3>
+              <h3>{application.candidate?.name || application.data?.candidate_name || 'Candidate'}</h3>
               <p>
-                {application.opening.position_title} · {application.stage}
+                {application.opening?.position_title || application.data?.opening_title || 'Opening'} · {appStage}
               </p>
               <p>
                 {application.data.interview_on
@@ -410,11 +418,17 @@ export function PeopleRecruitment({
                 {application.data.decision_reason ? ' · ' + application.data.decision_reason : ''}
               </p>
             </div>
-            {canRecruit && application.stage !== 'hired' && application.stage !== 'rejected' && (
+            {canRecruit && appStage !== 'hired' && appStage !== 'rejected' && (
               <Form
                 submit={async (d) => {
+                  const {
+                    opening_title: _ot,
+                    candidate_name: _cn,
+                    employee_id: _eid,
+                    ...cleanApp
+                  } = application.data || {};
                   await api('/people/recruitment/applications/' + application.id, 'PUT', {
-                    ...application.data,
+                    ...cleanApp,
                     expected_version: application.version,
                     stage: d.stage,
                     interview_on: d.interview_on || null,
@@ -423,7 +437,7 @@ export function PeopleRecruitment({
                 }}
               >
                 <Field label="Next stage">
-                  <select name="stage" defaultValue={application.stage}>
+                  <select name="stage" defaultValue={appStage}>
                     {(
                       {
                         new: ['new', 'screening', 'rejected'],
@@ -432,7 +446,7 @@ export function PeopleRecruitment({
                         assessment: ['assessment', 'offer', 'rejected'],
                         offer: ['offer', 'rejected'],
                       } as Record<string, string[]>
-                    )[application.stage]?.map((stage) => (
+                    )[appStage]?.map((stage) => (
                       <option key={stage} value={stage}>
                         {stage.replace('_', ' ')}
                       </option>
@@ -449,7 +463,7 @@ export function PeopleRecruitment({
                 <button className="secondary-button">Save stage</button>
               </Form>
             )}
-            {canHR && application.stage === 'offer' && (
+            {canHR && appStage === 'offer' && (
               <Form
                 submit={async (d) => {
                   await api(
@@ -488,7 +502,8 @@ export function PeopleRecruitment({
               </Form>
             )}
           </div>
-        ))}
+          );
+        })}
         {!applications.length && (
           <p>
             No applications yet. Add a candidate and an opening before recording an application.
@@ -1311,7 +1326,7 @@ export function PeopleLifecycle({ api, scope, configuration, employees, onSaved 
         .map((record) => (
           <div className="people-lifecycle-case" key={record.id}>
             <h4>
-              {employees.find((e) => e.id === record.root_id)?.data.name || 'Employee'} ·{' '}
+              {employees.find((e) => e.id === (record.data?.employee_id || record.root_id))?.data.name || 'Employee'} ·{' '}
               {record.data.direction}
             </h4>
             <p>
@@ -1606,8 +1621,8 @@ export function PeopleProfileExpansion({
                   private_email: d.private_email,
                   private_phone: d.private_phone,
                   birthday: d.birthday || null,
-                  place_of_birth: d.place_of_birth,
-                  gender: d.gender || null,
+                  place_of_birth: d.place_of_birth ?? privateProfile?.data?.place_of_birth ?? '',
+                  gender: (d.gender ?? privateProfile?.data?.gender) || null,
                   emergency_contact_name: d.emergency_contact_name,
                   emergency_contact_phone: d.emergency_contact_phone,
                   visa_reference: d.visa_reference,

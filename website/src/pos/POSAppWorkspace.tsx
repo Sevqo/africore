@@ -666,8 +666,8 @@ export function POSAppWorkspace({
               <Field label={'Counted cash (' + shift.session.data.currency + ')'}>
                 <input name="counted" required inputMode="decimal" placeholder="0.00" autoFocus />
               </Field>
-              <Field label="Closing note / variance explanation">
-                <textarea name="reason" maxLength={1000} required minLength={0} />
+              <Field label="Closing note / variance explanation (required if variance is non-zero)">
+                <textarea name="reason" maxLength={1000} />
               </Field>
               <label className="checkbox-field">
                 <input name="close" type="checkbox" required />I confirm the counted cash and

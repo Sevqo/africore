@@ -530,7 +530,7 @@ export function AccountingAppWorkspace({
               onChanged={() => refresh('Tax code revision retained.')}
               onPrepared={(entry) => {
                 setSelected(entry);
-                setView('entries');
+                go('entries');
                 refresh('Tax adjustment draft prepared for separate review.');
               }}
             />
@@ -583,7 +583,7 @@ export function AccountingAppWorkspace({
               onSaved={(saved: any) => {
                 setEditor(null);
                 setSelected(saved);
-                if (!saved.data.opening_entry) setView('entries');
+                if (!saved.data.opening_entry) go('entries');
                 refresh('Journal draft saved. Posting requires a separate approval.');
               }}
               onClose={() => setEditor(null)}
@@ -1148,6 +1148,7 @@ function EntriesView({
 function ChartOfAccounts({ accounts, api, writable, onSaved, query, setQuery }: any) {
   const [editing, setEditing] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState('');
   const visible = accounts.filter(
     (account: any) =>
       !query ||
@@ -1157,6 +1158,7 @@ function ChartOfAccounts({ accounts, api, writable, onSaved, query, setQuery }: 
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     setSaving(true);
+    setFormError('');
     try {
       await api(
         '/accounting/accounts' + (editing.id ? '/' + editing.id : ''),
@@ -1171,12 +1173,15 @@ function ChartOfAccounts({ accounts, api, writable, onSaved, query, setQuery }: 
       );
       setEditing(null);
       onSaved();
+    } catch (e) {
+      setFormError((e as Error).message);
     } finally {
       setSaving(false);
     }
   }
   return (
     <section className="acc-panel">
+      {formError && <p className="alert error" role="alert">{formError}</p>}
       <header>
         <h2>Chart of Accounts</h2>
         <button className="acc-primary" disabled={!writable} onClick={() => setEditing({})}>
@@ -1289,24 +1294,31 @@ function ChartOfAccounts({ accounts, api, writable, onSaved, query, setQuery }: 
 
 function Journals({ journals, api, writable, onSaved }: any) {
   const [editing, setEditing] = useState<any>(null);
+  const [formError, setFormError] = useState('');
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    await api(
-      '/accounting/journals' + (editing.id ? '/' + editing.id : ''),
-      editing.id ? 'PUT' : 'POST',
-      {
-        expected_version: Number(editing.version || 0),
-        code: String(data.get('code')).toUpperCase(),
-        name: String(data.get('name')),
-        active: data.get('active') === 'on',
-      },
-    );
-    setEditing(null);
-    onSaved();
+    setFormError('');
+    try {
+      await api(
+        '/accounting/journals' + (editing.id ? '/' + editing.id : ''),
+        editing.id ? 'PUT' : 'POST',
+        {
+          expected_version: Number(editing.version || 0),
+          code: String(data.get('code')).toUpperCase(),
+          name: String(data.get('name')),
+          active: data.get('active') === 'on',
+        },
+      );
+      setEditing(null);
+      onSaved();
+    } catch (e) {
+      setFormError((e as Error).message);
+    }
   }
   return (
     <section className="acc-panel">
+      {formError && <p className="alert error" role="alert">{formError}</p>}
       <header>
         <h2>Journals</h2>
         <button className="acc-primary" disabled={!writable} onClick={() => setEditing({})}>
@@ -1398,16 +1410,22 @@ function Journals({ journals, api, writable, onSaved }: any) {
 
 function Periods({ periods, api, writable, start, onSaved }: any) {
   const [creating, setCreating] = useState(false);
+  const [formError, setFormError] = useState('');
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    await api('/accounting/periods', 'POST', {
-      name: String(data.get('name')),
-      starts_on: String(data.get('starts_on')),
-      ends_on: String(data.get('ends_on')),
-    });
-    setCreating(false);
-    onSaved();
+    setFormError('');
+    try {
+      await api('/accounting/periods', 'POST', {
+        name: String(data.get('name')),
+        starts_on: String(data.get('starts_on')),
+        ends_on: String(data.get('ends_on')),
+      });
+      setCreating(false);
+      onSaved();
+    } catch (e) {
+      setFormError((e as Error).message);
+    }
   }
   async function toggle(period: any) {
     const status = period.status === 'locked' ? 'open' : 'locked';
@@ -1417,15 +1435,21 @@ function Periods({ periods, api, writable, start, onSaved }: any) {
         : 'Reason for reopening this period (at least 8 characters)',
     );
     if (!reason || reason.trim().length < 8) return;
-    await api('/accounting/periods/' + period.id + '/state', 'PUT', {
-      expected_version: Number(period.version),
-      status,
-      reason,
-    });
-    onSaved();
+    setFormError('');
+    try {
+      await api('/accounting/periods/' + period.id + '/state', 'PUT', {
+        expected_version: Number(period.version),
+        status,
+        reason,
+      });
+      onSaved();
+    } catch (e) {
+      setFormError((e as Error).message);
+    }
   }
   return (
     <section className="acc-panel">
+      {formError && <p className="alert error" role="alert">{formError}</p>}
       <header>
         <h2>Lock Dates</h2>
         <button className="acc-primary" disabled={!writable} onClick={() => setCreating(true)}>
