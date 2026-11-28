@@ -106,7 +106,7 @@ export function createApp() {
   app.use((req, res, next) => {
     const documentUploadRoute =
       req.method === 'POST' &&
-      /^\/api\/v1\/organizations\/[^/]+\/(?:documents|documents\/[^/]+\/versions|document-requests\/[^/]+\/submit)$/.test(
+      /^\/api\/v1\/organizations\/[^/]+\/(?:documents|documents\/[^/]+\/versions|document-requests\/[^/]+\/submit|agent\/runs|agent\/transcribe)$/.test(
         req.path,
       );
     if (documentUploadRoute) return documentUploadJson(req, res, next);

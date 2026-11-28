@@ -13,7 +13,7 @@ function secured(response, { privateResponse = false, html = false, authOrigin =
   result.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   result.headers.set('X-Frame-Options', 'DENY');
   result.headers.set('Strict-Transport-Security', 'max-age=31536000');
-  result.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  result.headers.set('Permissions-Policy', 'camera=(), microphone=(self), geolocation=()');
   if (privateResponse || html) result.headers.set('Cache-Control', 'no-store');
   if (privateResponse) {
     result.headers.delete('Access-Control-Allow-Origin');

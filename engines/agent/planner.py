@@ -24,6 +24,7 @@ from typing import Any
 from agent.billing import AGENT_CREDIT_COSTS
 from agent.computer_use import build_approval_preview_steps, build_sandbox_clone_blueprint
 from agent.isolation import check_target_access, evaluate_boundary
+from agent.privacy import check_prompt_guardrails, sanitize_for_external_llm
 from agent.skills import extract_memory_preferences, match_procedural_skill, skills_for_kind
 
 TOOL_CATALOG: list[dict[str, Any]] = [
@@ -38,6 +39,107 @@ TOOL_CATALOG: list[dict[str, Any]] = [
         "default_permission": "autonomous",
         "credit_category": "analysis_read",
         "target_tab": "Intelligence",
+    },
+    {
+        "id": "analyze_app",
+        "name": "Deep-dive analyze any workspace app",
+        "description": "Inspect live records, KPIs, bottlenecks, and recommendations across any of the 26 AfriCore apps (Work projects, CRM, Sales, POS, Procurement, Inventory, Accounting, People, Documents, Marketing, Support, Subscriptions, Manufacturing, Field Ops, Logistics, Property, Learning, Studio, Integrations Hub).",
+        "category": "analysis",
+        "access_kind": "read",
+        "workspace_kinds": ["business"],
+        "required_capability": "read",
+        "default_permission": "autonomous",
+        "credit_category": "analysis_read",
+        "target_tab": "Apps",
+    },
+    {
+        "id": "fetch_document",
+        "name": "Find & fetch workspace document",
+        "description": "Search authorized files and folders in Documents, verify access rights, and retrieve metadata and safe text previews for a specific document.",
+        "category": "analysis",
+        "access_kind": "read",
+        "workspace_kinds": ["business", "personal"],
+        "required_capability": "read",
+        "default_permission": "autonomous",
+        "credit_category": "analysis_read",
+        "target_tab": "Apps",
+        "target_app": "documents",
+    },
+    {
+        "id": "web_research",
+        "name": "Privacy-safe internet web research",
+        "description": "Search public internet reference sources with strict PII scrubbing and SSRF protection to answer external market, regulatory, and general research questions with citations.",
+        "category": "analysis",
+        "access_kind": "read",
+        "workspace_kinds": ["business", "personal", "developer"],
+        "required_capability": "read",
+        "default_permission": "autonomous",
+        "credit_category": "analysis_read",
+        "target_tab": "Overview",
+    },
+    {
+        "id": "create_sales_quotation",
+        "name": "Prepare Sales quotation",
+        "description": "Stage a new Sales quotation in AfriCore Sales linked to a customer with line items and currency.",
+        "category": "crm",
+        "access_kind": "write",
+        "workspace_kinds": ["business"],
+        "required_capability": "operations",
+        "default_permission": "approval_required",
+        "credit_category": "tool_action",
+        "target_tab": "Apps",
+        "target_app": "sales",
+    },
+    {
+        "id": "create_inventory_product",
+        "name": "Add Inventory product",
+        "description": "Stage a new SKU/product in AfriCore Inventory with unit price, SKU, and currency.",
+        "category": "operations",
+        "access_kind": "write",
+        "workspace_kinds": ["business"],
+        "required_capability": "operations",
+        "default_permission": "approval_required",
+        "credit_category": "tool_action",
+        "target_tab": "Apps",
+        "target_app": "inventory",
+    },
+    {
+        "id": "create_support_ticket",
+        "name": "Log Support ticket",
+        "description": "Stage a customer support ticket with priority and SLA target in AfriCore Support.",
+        "category": "operations",
+        "access_kind": "write",
+        "workspace_kinds": ["business"],
+        "required_capability": "operations",
+        "default_permission": "approval_required",
+        "credit_category": "tool_action",
+        "target_tab": "Apps",
+        "target_app": "support",
+    },
+    {
+        "id": "create_marketing_campaign",
+        "name": "Create Marketing campaign",
+        "description": "Stage an omnichannel campaign in AfriCore Marketing with target audience and channel.",
+        "category": "crm",
+        "access_kind": "write",
+        "workspace_kinds": ["business"],
+        "required_capability": "operations",
+        "default_permission": "approval_required",
+        "credit_category": "tool_action",
+        "target_tab": "Apps",
+        "target_app": "marketing",
+    },
+    {
+        "id": "create_suite_record",
+        "name": "Create record in any ERP / Suite app",
+        "description": "Stage a record across Subscriptions, Property & Hospitality, Knowledge & Learning, Studio, Manufacturing, Field Ops, or Logistics.",
+        "category": "operations",
+        "access_kind": "write",
+        "workspace_kinds": ["business"],
+        "required_capability": "operations",
+        "default_permission": "approval_required",
+        "credit_category": "tool_action",
+        "target_tab": "Apps",
     },
     {
         "id": "forecast_cashflow",
@@ -489,20 +591,51 @@ def _select_tool(kind: str, available: list[dict[str, Any]], prompt: str, tool_h
         and not re.search(r"\b(schedule|book|set\s+up\s+a|create\s+a|draft\s+an?|record\s+an?)\b", p)
     )
 
+    # Safe internet web research (available across all workspace kinds)
+    if "web_research" in by_id and re.search(
+        r"\b(search\s+(?:the\s+)?(?:web|internet|online)|web\s+research|research\s+online|look\s+up\s+online|google\s+|find\s+online|internet\s+search|market\s+trends\s+online)\b",
+        p,
+    ):
+        return by_id["web_research"]
+
+    # Fetch / find a specific document in Documents vault
+    if "fetch_document" in by_id and re.search(
+        r"\b(fetch|find|get|read|open|show|pull|retrieve|locate)\b", p
+    ) and re.search(r"\b(document|doc|file|pdf|contract|report\s+file|folder|attachment|policy\s+doc)\b", p):
+        return by_id["fetch_document"]
+
     if kind == "business":
+        # Specific app deep-dive analysis (e.g. "analyze inventory", "inspect project Alpha", "check support tickets")
+        if "analyze_app" in by_id and re.search(
+            r"\b(analyz\w*|inspect|check|audit|review|summariz\w*|status\s+of|how\s+is)\b", p
+        ) and re.search(
+            r"\b(project|work\s+board|crm|pipeline|sales|quotation|pos|point\s+of\s+sale|procurement|purchas\w*|inventory|stock|warehouse|accounting|people|hr|employees?|documents?|commerce|storefront|website|passport|business\s+id|analytics|automation|marketing|campaign|support|ticket|subscription|manufacturing|mrp|field\s+ops?|logistics|shipment|property|hospitality|learning|knowledge|studio|integrations?)\b",
+            p,
+        ) and not re.search(r"\b(create|add|new|log|schedule|book|draft|record)\b", p):
+            return by_id["analyze_app"]
         if is_advisory_question:
             return by_id["analyze_business"]
-        if re.search(r"\b(project|roadmap|initiative|launch|workspace board)\b", p) and re.search(r"\b(set up|create|start|launch|new)\b", p):
+        if "create_sales_quotation" in by_id and re.search(r"\b(quotation|sales\s+quote|quote)\b", p) and re.search(r"\b(create|add|new|draft|prepare|make)\b", p):
+            return by_id["create_sales_quotation"]
+        if "create_inventory_product" in by_id and re.search(r"\b(product|sku|inventory\s+item|stock\s+item)\b", p) and re.search(r"\b(create|add|new|register)\b", p):
+            return by_id["create_inventory_product"]
+        if "create_support_ticket" in by_id and re.search(r"\b(support\s+ticket|ticket|helpdesk\s+issue)\b", p) and re.search(r"\b(create|add|new|log|open)\b", p):
+            return by_id["create_support_ticket"]
+        if "create_marketing_campaign" in by_id and re.search(r"\b(marketing\s+campaign|campaign)\b", p) and re.search(r"\b(create|add|new|launch|start)\b", p):
+            return by_id["create_marketing_campaign"]
+        if "create_suite_record" in by_id and re.search(r"\b(subscription\s+plan|property\s+unit|room|learning\s+article|knowledge\s+article|studio\s+app)\b", p) and re.search(r"\b(create|add|new|publish)\b", p):
+            return by_id["create_suite_record"]
+        if re.search(r"\b(task|todo|to-do|action item|checklist)\b", p) and re.search(r"\b(add|create|new|make|assign)\b", p):
+            return by_id["create_task"]
+        if re.search(r"\b(project|roadmap|initiative|workspace board)\b", p) and re.search(r"\b(set up|create|start|launch|new)\b", p):
             return by_id["create_project"]
         if re.search(r"\b(meet|meeting|calendar|calender|calendars|calenders|call|sync|appointment|book|schedule)\b", p):
             return by_id["schedule_meeting"]
         if re.search(r"\b(project|roadmap|initiative|workspace board)\b", p):
             return by_id["create_project"]
-        if re.search(r"\b(task|todo|to-do|action item|checklist)\b", p) and re.search(r"\b(add|create|new|make|assign)\b", p):
-            return by_id["create_task"]
         if re.search(r"\b(lead|crm|deal|opportunity|pipeline|prospect)\b", p) and re.search(r"\b(add|create|new|log|seed)\b", p):
             return by_id["create_crm_lead"]
-        if re.search(r"\b(invoice|bill client|quote)\b", p) and re.search(r"\b(draft|create|prepare|send|make|new|for)\b", p):
+        if re.search(r"\b(invoice|bill client)\b", p) and re.search(r"\b(draft|create|prepare|send|make|new|for)\b", p):
             return by_id["create_draft_invoice"]
         if re.search(r"\b(customer|client|contact)\b", p) and re.search(r"\b(add|create|new|register|onboard)\b", p):
             return by_id["create_customer"]
@@ -672,12 +805,119 @@ def _derive_params(
         derived["priority"] = "high" if re.search(r"\b(urgent|high|critical)\b", prompt, re.I) else "normal"
 
     elif tool_id == "create_task":
-        stripped = _strip_scheduling_boilerplate(prompt)
+        # Extract optional target project name (e.g. "add task 'Audit invoices' to project Alpha Launch")
+        proj_m = re.search(r"\b(?:to|in|under|for)\s+(?:the\s+)?project\s+[\"“]?([A-Za-z0-9 _-]{2,80})[\"”]?", prompt, re.I)
+        if proj_m:
+            derived["project_name"] = proj_m.group(1).strip().rstrip(".,!?")
+        stripped = _strip_scheduling_boilerplate(re.sub(r"\b(?:to|in|under|for)\s+(?:the\s+)?project\s+[\"“]?[A-Za-z0-9 _-]{2,80}[\"”]?", "", prompt, flags=re.I))
         title = stripped[:140] if _has_meaningful_topic(stripped) else "Follow-up action item"
         if title and title[0].islower():
             title = title[0].upper() + title[1:]
         derived["title"] = title
         derived["priority"] = "high" if re.search(r"\b(urgent|high)\b", prompt, re.I) else "normal"
+
+    elif tool_id == "analyze_app":
+        p_low = prompt.lower()
+        app_map = [
+            ("work", r"\b(project|work\s+board|task)\b"),
+            ("crm", r"\b(crm|pipeline|lead|opportunit)\b"),
+            ("sales", r"\b(sales|quotation|quote)\b"),
+            ("pos", r"\b(pos|point\s+of\s+sale|register|cashier)\b"),
+            ("procurement", r"\b(procurement|purchas\w*|rfq|supplier|vendor)\b"),
+            ("inventory", r"\b(inventory|stock|warehouse|product|sku)\b"),
+            ("accounting", r"\b(accounting|ledger|journal|balance\s+sheet|trial\s+balance)\b"),
+            ("people", r"\b(people|hr|employee|leave|attendance|payroll)\b"),
+            ("documents", r"\b(documents?|vault|folder)\b"),
+            ("commerce", r"\b(commerce|storefront|cart)\b"),
+            ("website", r"\b(website|site|landing\s+page)\b"),
+            ("business_id", r"\b(passport|business\s+id|credential|trust)\b"),
+            ("analytics", r"\b(analytics|dashboard|kpi)\b"),
+            ("automations", r"\b(automation|workflow\s+rule)\b"),
+            ("marketing", r"\b(marketing|campaign)\b"),
+            ("support", r"\b(support|ticket|helpdesk|sla)\b"),
+            ("subscriptions", r"\b(subscription|mrr|recurring\s+plan)\b"),
+            ("manufacturing", r"\b(manufacturing|mrp|bom|work\s+order)\b"),
+            ("field_operations", r"\b(field\s+ops?|dispatch|technician)\b"),
+            ("logistics", r"\b(logistics|shipment|fleet|delivery)\b"),
+            ("property_hospitality", r"\b(property|hospitality|lease|room|reservation)\b"),
+            ("knowledge_learning", r"\b(learning|knowledge|course|sop|article)\b"),
+            ("studio", r"\b(studio|custom\s+app)\b"),
+            ("integrations_hub", r"\b(integrations?|connector|webhook\s+hub)\b"),
+        ]
+        target_app = "work"
+        for app_id, pat in app_map:
+            if re.search(pat, p_low):
+                target_app = app_id
+                break
+        derived["app_id"] = target_app
+        proj_m = re.search(r"\bproject\s+[\"“]?([A-Za-z0-9 _-]{2,80})[\"”]?", prompt, re.I)
+        if proj_m:
+            derived["focus_name"] = proj_m.group(1).strip().rstrip(".,!?")
+
+    elif tool_id == "fetch_document":
+        quoted = re.search(r'["“]([^"”]{2,120})["”]', prompt)
+        if quoted:
+            derived["query"] = quoted.group(1).strip()
+        else:
+            cleaned_q = re.sub(
+                r"^(?:please\s+)?(?:fetch|find|get|read|open|show|pull|retrieve|locate)\s+(?:me\s+)?(?:the\s+|my\s+|our\s+)?(?:specific\s+)?(?:document|doc|file|pdf|folder)?\s*(?:named|called|about|for)?\s*",
+                "",
+                prompt.strip(),
+                flags=re.I,
+            ).strip(" ?.")
+            derived["query"] = cleaned_q[:120]
+
+    elif tool_id == "web_research":
+        derived["query"] = prompt[:200]
+
+    elif tool_id == "create_sales_quotation":
+        stripped = _strip_scheduling_boilerplate(prompt)
+        stripped = re.sub(r"\b(?:kes|ksh|usd|eur|gbp|ugx|tzs|rwf|\$)\s*\d[\d,]*(?:\.\d{1,2})?\b", "", stripped, flags=re.I).strip(" ,.-")
+        derived["customer_name"] = stripped[:120] if _has_meaningful_topic(stripped) else "Workspace Client"
+        derived["description"] = f"Quoted services — {derived['customer_name']}"[:180]
+        derived["amount_minor"] = _extract_amount_minor(prompt, currency)
+
+    elif tool_id == "create_inventory_product":
+        stripped = _strip_scheduling_boilerplate(prompt)
+        stripped = re.sub(r"\b(?:kes|ksh|usd|eur|gbp|ugx|tzs|rwf|\$)\s*\d[\d,]*(?:\.\d{1,2})?\b", "", stripped, flags=re.I).strip(" ,.-")
+        name = stripped[:100] if _has_meaningful_topic(stripped) else "New Catalog Product"
+        sku_base = re.sub(r"[^A-Z0-9]+", "", name.upper())[:6] or "ITEM"
+        derived["name"] = name
+        derived["sku"] = f"{sku_base}-001"
+        derived["sale_price_minor"] = _extract_amount_minor(prompt, currency)
+
+    elif tool_id == "create_support_ticket":
+        stripped = _strip_scheduling_boilerplate(prompt)
+        derived["subject"] = stripped[:140] if _has_meaningful_topic(stripped) else "Customer Support Request"
+        derived["priority"] = "high" if re.search(r"\b(urgent|high|critical)\b", prompt, re.I) else "normal"
+        derived["description"] = prompt[:400]
+
+    elif tool_id == "create_marketing_campaign":
+        stripped = _strip_scheduling_boilerplate(prompt)
+        derived["name"] = stripped[:120] if _has_meaningful_topic(stripped) else "Growth Campaign"
+        derived["channel"] = "sms" if re.search(r"\bsms\b", prompt, re.I) else ("social" if re.search(r"\bsocial\b", prompt, re.I) else "email")
+        derived["audience_segment"] = "All Active Buyers"
+        derived["subject_line"] = derived["name"]
+
+    elif tool_id == "create_suite_record":
+        p_low = prompt.lower()
+        stripped = _strip_scheduling_boilerplate(prompt)
+        title = stripped[:120] if _has_meaningful_topic(stripped) else "New Workspace Record"
+        if re.search(r"\bsubscription\b", p_low):
+            derived["suite_app"] = "subscriptions"
+            derived["name"] = title
+            derived["amount_minor"] = _extract_amount_minor(prompt, currency)
+        elif re.search(r"\bproperty|room|unit|hotel\b", p_low):
+            derived["suite_app"] = "property_hospitality"
+            derived["name"] = title
+            derived["amount_minor"] = _extract_amount_minor(prompt, currency)
+        elif re.search(r"\bstudio\b", p_low):
+            derived["suite_app"] = "studio"
+            derived["name"] = title
+        else:
+            derived["suite_app"] = "knowledge_learning"
+            derived["title"] = title
+            derived["content"] = prompt[:800]
 
     elif tool_id == "create_customer":
         stripped = _strip_scheduling_boilerplate(prompt)
@@ -1117,10 +1357,29 @@ def evaluate_permissions_update(payload: dict[str, Any]) -> dict[str, Any]:
                 "status": 400,
                 "reason": "Agent username must be 2-31 lowercase letters, numbers, hyphens, or underscores (e.g. continua-agent).",
             }
+        if not cleaned_handle.endswith("agent") or cleaned_handle == "agent":
+            return {
+                "ok": False,
+                "status": 400,
+                "reason": "Workspace agent handle must end with 'agent' (for example, 'continua-agent').",
+            }
         next_handle = cleaned_handle
 
     raw_display = patch.get("agent_display_name") if "agent_display_name" in patch and patch["agent_display_name"] is not None else current.get("agent_display_name")
     next_display = str(raw_display).strip()[:60] if raw_display else None
+
+    raw_floating_roles = (
+        patch.get("floating_agent_roles")
+        if "floating_agent_roles" in patch and patch["floating_agent_roles"] is not None
+        else current.get("floating_agent_roles")
+    )
+    next_floating_roles = (
+        [str(r).strip() for r in raw_floating_roles if str(r).strip()]
+        if isinstance(raw_floating_roles, list)
+        else ["owner", "admin"]
+    )
+    if "owner" not in next_floating_roles:
+        next_floating_roles.insert(0, "owner")
 
     return {
         "ok": True,
@@ -1130,6 +1389,7 @@ def evaluate_permissions_update(payload: dict[str, Any]) -> dict[str, Any]:
             "computer_use_enabled": next_cu,
             "cross_dev_bridge_enabled": next_bridge,
             "permissions": next_permissions,
+            "floating_agent_roles": next_floating_roles,
             **({"agent_handle": next_handle} if next_handle else {}),
             **({"agent_display_name": next_display} if next_display else {}),
         },
@@ -1137,12 +1397,20 @@ def evaluate_permissions_update(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def optional_llm_narrative(prompt: str, summary: str, evidence: dict[str, Any], consent: bool) -> str | None:
-    """Optional stdlib HTTPS call to OpenAI Responses API when explicitly consented & configured."""
+    """Optional stdlib HTTPS call to OpenAI Responses API routed strictly through the Privacy Shield.
+
+    Raw customer names, emails, phones, tax/bank/M-Pesa IDs, and private keys NEVER leave the workspace:
+    they are replaced with reversible session tokens before egress and re-hydrated locally.
+    """
     api_key = os.environ.get("OPENAI_API_KEY", "").strip()
     model = os.environ.get("AFRICORE_AI_MODEL", "").strip()
     if not consent or not api_key or not model or os.environ.get("AFRICORE_AI_DISABLED") == "true":
         return None
     if not re.match(r"^(gpt-4\.1-mini|gpt-4o-mini|gpt-5-mini)(-\d{4}-\d{2}-\d{2})?$", model):
+        return None
+
+    shield = sanitize_for_external_llm(prompt, summary, evidence)
+    if shield["blocked"]:
         return None
 
     body = json.dumps(
@@ -1151,13 +1419,24 @@ def optional_llm_narrative(prompt: str, summary: str, evidence: dict[str, Any], 
             "store": False,
             "max_output_tokens": 460,
             "instructions": (
-                "You are AfriCore Python Autonomous Agent (Hermes & Townie-caliber strategic co-pilot). "
+                "You are AfriCore Python Autonomous Agent (Hermes-caliber strategic co-pilot). "
                 "Answer the user's exact question thoughtfully and conversationally using ONLY the supplied "
-                "workspace evidence. Diagnose root bottlenecks (such as customer concentration, empty CRM pipeline, "
-                "overdue aging, or unissued drafts), propose concrete prioritized actions tailored to this business, "
-                "and never fabricate monetary figures or claim unexecuted transfers."
+                "pseudonymized workspace evidence. Preserve opaque tokens like [ENTITY_1] verbatim so the local "
+                "workspace vault can re-hydrate them securely. Diagnose root bottlenecks, propose concrete "
+                "prioritized actions, and never fabricate monetary figures."
             ),
-            "input": [{"role": "user", "content": json.dumps({"prompt": prompt, "summary": summary, "evidence": evidence})[:6000]}],
+            "input": [
+                {
+                    "role": "user",
+                    "content": json.dumps(
+                        {
+                            "prompt": shield["safe_prompt"],
+                            "summary": shield["safe_summary"],
+                            "evidence": shield["safe_evidence"],
+                        }
+                    )[:6000],
+                }
+            ],
         }
     ).encode("utf-8")
     req = urllib.request.Request(
@@ -1171,7 +1450,8 @@ def optional_llm_narrative(prompt: str, summary: str, evidence: dict[str, Any], 
             parsed = json.loads(resp.read().decode("utf-8"))
             output_text = parsed.get("output_text")
             if isinstance(output_text, str) and output_text.strip():
-                return output_text.strip()[:2200]
+                rehydrated = shield["vault"].rehydrate(output_text.strip())
+                return rehydrated[:2200]
     except (urllib.error.URLError, TimeoutError, ValueError, KeyError):
         return None
     return None

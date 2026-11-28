@@ -12,7 +12,10 @@ import {
   workspaceKind,
 } from '../marketplace/engine';
 import { appCatalog } from './catalog';
-import { roleAllowsApp } from '../platform/domain';
+import {
+  getMemberAccessOverride,
+  memberCanUseApp,
+} from '../platform/member-access';
 
 const optionalInput = z.array(z.string().max(60)).max(12).default([]);
 export const installInput = z
@@ -46,10 +49,13 @@ export async function appsFor(a: Access) {
       [a.org, a.environment],
     );
   const services = await catalogFor(a);
+  const memberOverride = await getMemberAccessOverride(a.org, a.actor);
   const eligibleForKind = appCatalog.filter((app) => app.kinds.includes(kind));
-  const permittedApps = eligibleForKind.filter((app) => roleAllowsApp(a.role, app.id, kind));
+  const permittedApps = eligibleForKind.filter((app) =>
+    memberCanUseApp(a.role, app.id, kind, memberOverride),
+  );
   const restrictedApps = eligibleForKind
-    .filter((app) => !roleAllowsApp(a.role, app.id, kind))
+    .filter((app) => !memberCanUseApp(a.role, app.id, kind, memberOverride))
     .map((app) => ({ id: app.id, name: app.name, description: app.description }));
   return {
     kind,
@@ -57,6 +63,11 @@ export async function appsFor(a: Access) {
     environment: a.environment,
     installation_fee_minor: 0,
     total_workspace_apps: eligibleForKind.length,
+    member_override: {
+      extra_apps: memberOverride.extra_apps,
+      revoked_apps: memberOverride.revoked_apps,
+      floating_agent_access: memberOverride.floating_agent_access,
+    },
     restricted_apps: restrictedApps,
     apps: permittedApps
       .map((app) => {

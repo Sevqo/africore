@@ -14,10 +14,13 @@ import {
   listAgentRoutines,
   listAgentRuns,
   runAgent,
+  searchAgentSessions,
   triggerAgentRoutineNow,
+  updateAgentMemory,
   updateAgentPolicy,
   updateAgentRoutine,
 } from './engine';
+import { transcribeAgentVoice } from './transcribe';
 import {
   getAgentBillingSummary,
   grantEvaluationAgentCredits,
@@ -180,10 +183,35 @@ agentRoutes.post(
   }),
 );
 
+agentRoutes.patch(
+  '/organizations/:org/agent/memory/:id',
+  route(async (req, res) => {
+    const a = await access(req);
+    res.json(await updateAgentMemory(a, String(req.params.id), req.body));
+  }),
+);
+
 agentRoutes.delete(
   '/organizations/:org/agent/memory/:id',
   route(async (req, res) => {
     const a = await access(req);
     res.json(await deleteAgentMemory(a, String(req.params.id)));
+  }),
+);
+
+agentRoutes.post(
+  '/organizations/:org/agent/transcribe',
+  route(async (req, res) => {
+    const a = await access(req);
+    res.json(await transcribeAgentVoice(a, req.body));
+  }),
+);
+
+agentRoutes.get(
+  '/organizations/:org/agent/sessions/search',
+  route(async (req, res) => {
+    const a = await access(req);
+    const q = z.string().trim().min(1).max(200).parse(req.query.q);
+    res.json(await searchAgentSessions(a, q));
   }),
 );

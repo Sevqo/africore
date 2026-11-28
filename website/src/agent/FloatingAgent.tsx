@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon } from '../components/Icon';
 import { SandboxCloneStage } from './SandboxCloneStage';
+import { useMultimodalInput } from './useMultimodalInput';
 import {
   dispatchAgentWorkspaceCommitted,
   type AgentDestination,
@@ -16,21 +17,20 @@ const FLOAT_PROMPTS: Record<'business' | 'personal' | 'developer', { label: stri
       label: 'Growth & sales diagnosis',
       prompt: 'How is our business faring and how can we improve sales and win more customers?',
     },
+    { label: 'Fetch a document', prompt: 'Fetch my latest documents' },
+    { label: 'Web research', prompt: 'Search the web for East Africa SME invoicing trends' },
     { label: 'Schedule meeting', prompt: 'Schedule a meeting tomorrow' },
-    {
-      label: 'Q4 Launch project',
-      prompt: 'Set up a Q4 Launch project and schedule kickoff meeting',
-    },
     { label: 'Log CRM lead', prompt: 'Create a CRM lead for Savannah Retail KES 65000' },
   ],
   personal: [
     { label: 'Savings & budget check', prompt: 'Analyze my personal finances & savings rate' },
+    { label: 'Web research', prompt: 'Search the web for personal emergency fund best practices' },
     { label: 'Schedule check-in', prompt: 'Schedule a Personal Budget Review tomorrow at 9am' },
-    { label: 'Dev API health', prompt: 'Check my linked Developer workspace API health' },
     { label: 'Log expense', prompt: 'Record an expense of KES 2500 for groceries' },
   ],
   developer: [
     { label: 'API & webhook audit', prompt: 'Diagnose my sandbox API logs & error rate' },
+    { label: 'Web research', prompt: 'Search the web for webhook idempotency best practices' },
     { label: 'New sandbox app', prompt: 'Create a sandbox developer app called Checkout Sync' },
     { label: 'Personal summary', prompt: 'Inspect my linked Personal workspace summary' },
   ],
@@ -87,7 +87,18 @@ export function FloatingAgent({
   } | null>(null);
   const [editedParams, setEditedParams] = useState<Record<string, any>>({});
   const [sandboxWidth, setSandboxWidth] = useState<number>(480);
+  const [usedVoice, setUsedVoice] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const multimodal = useMultimodalInput(
+    api,
+    useCallback((transcript: string) => {
+      setPrompt((prev) => (prev.trim() ? `${prev.trim()} ${transcript}` : transcript));
+      setUsedVoice(true);
+    }, []),
+    useCallback((msg: string) => setError(msg), []),
+  );
 
   const closeAllSandbox = useCallback(() => {
     setSandboxRun(null);
@@ -123,22 +134,36 @@ export function FloatingAgent({
 
   async function submitPrompt(text?: string) {
     const clean = (text ?? prompt).trim();
-    if (clean.length < 2 || busy) return;
+    const hasImages = multimodal.attachments.length > 0;
+    const effectivePrompt = clean || (hasImages ? 'Analyze this attached image and suggest the best workspace action' : '');
+    if (effectivePrompt.length < 2 || busy) return;
     setBusy(true);
     setError('');
     try {
+      const modality =
+        hasImages && usedVoice
+          ? 'multimodal'
+          : hasImages
+            ? 'image'
+            : usedVoice
+              ? 'voice'
+              : 'text';
       const run = await api(
         '/agent/runs',
         'POST',
         {
-          prompt: clean,
+          prompt: effectivePrompt,
           currency,
           computer_use: true,
           stage_in_sandbox: true,
+          input_modality: modality,
+          attachments: multimodal.attachments,
         },
         { 'Idempotency-Key': crypto.randomUUID() },
       );
       setPrompt('');
+      setUsedVoice(false);
+      multimodal.clearAttachments();
       await refresh();
 
       const clone: SandboxCloneBlueprint | undefined = run?.result?.sandbox_clone;
@@ -308,19 +333,71 @@ export function FloatingAgent({
               </div>
             )}
 
-            <div className="agent-quick-chips" aria-label="Quick agent actions">
-              {(FLOAT_PROMPTS[workspaceKind] || FLOAT_PROMPTS.business).map((item) => (
+            {overview && overview.can_use_floating_agent === false ? (
+              <div
+                className="agent-run-card"
+                style={{ display: 'grid', gap: 10, padding: 14, background: '#f8fafc' }}
+              >
+                <strong>Floating Agent is restricted for your role</strong>
+                <p style={{ margin: 0, fontSize: 12.5, color: '#475569' }}>
+                  Floating Agent access is granted by workspace administrators. You can still
+                  collaborate with{' '}
+                  <code>@{agentHandle || 'workspace-agent'}</code> anytime inside{' '}
+                  <strong>Work Discussions</strong>.
+                </p>
                 <button
-                  key={item.label}
                   type="button"
-                  className="agent-quick-chip"
-                  disabled={busy}
-                  onClick={() => void submitPrompt(item.prompt)}
+                  className="button"
+                  onClick={() => {
+                    setOpen(false);
+                    onNavigateDestination({
+                      tab: 'Apps',
+                      app: 'work',
+                      section: 'discussions',
+                      workspace_id: workspaceId,
+                      workspace_kind: workspaceKind,
+                    });
+                  }}
                 >
-                  {item.label}
+                  Open Work Discussions
                 </button>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 8,
+                    fontSize: 11,
+                    color: '#0f766e',
+                    background: '#ecfdf5',
+                    padding: '5px 9px',
+                    borderRadius: 8,
+                  }}
+                >
+                  <span>Privacy Shield Active · Encrypted at rest</span>
+                  {overview?.memory_blocks && (
+                    <span>
+                      Hermes Memory: {overview.memory?.length || 0} facts
+                    </span>
+                  )}
+                </div>
+
+                <div className="agent-quick-chips" aria-label="Quick agent actions">
+                  {(FLOAT_PROMPTS[workspaceKind] || FLOAT_PROMPTS.business).map((item) => (
+                    <button
+                      key={item.label}
+                      type="button"
+                      className="agent-quick-chip"
+                      disabled={busy}
+                      onClick={() => void submitPrompt(item.prompt)}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
 
             {pendingApprovals.map((item: any) => (
               <article key={item.id} className="agent-approval-card">
@@ -411,9 +488,58 @@ export function FloatingAgent({
                   )}
               </article>
             ))}
+              </>
+            )}
           </div>
 
+          {overview?.can_use_floating_agent !== false && (
           <footer className="agent-float-footer">
+            {multimodal.attachments.length > 0 && (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+                {multimodal.attachments.map((att, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '3px 7px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: 10,
+                      background: '#f9fafb',
+                      fontSize: 11,
+                    }}
+                  >
+                    <img
+                      src={att.data_url}
+                      alt={att.filename}
+                      style={{ width: 22, height: 22, objectFit: 'cover', borderRadius: 6 }}
+                    />
+                    <span style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {att.filename}
+                    </span>
+                    <button
+                      type="button"
+                      className="quiet-button"
+                      style={{ padding: '0 4px', minHeight: 18, fontSize: 11 }}
+                      onClick={() => multimodal.removeAttachment(idx)}
+                      aria-label={`Remove ${att.filename}`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {(multimodal.recording || multimodal.transcribing || multimodal.voiceNote) && (
+              <div style={{ fontSize: 11, color: multimodal.recording ? '#b91c1c' : '#475569', marginBottom: 4 }}>
+                {multimodal.recording
+                  ? `Recording voice (${multimodal.recordSeconds}s)${multimodal.liveSpeech ? `: "${multimodal.liveSpeech}"` : '…'}`
+                  : multimodal.transcribing
+                    ? 'Transcribing voice clip…'
+                    : multimodal.voiceNote}
+              </div>
+            )}
             <form
               className="agent-composer-shell"
               onSubmit={(e) => {
@@ -421,6 +547,17 @@ export function FloatingAgent({
                 void submitPrompt();
               }}
             >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                multiple
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  if (e.target.files) void multimodal.addImageFiles(e.target.files);
+                  e.target.value = '';
+                }}
+              />
               <textarea
                 ref={textareaRef}
                 className="agent-chat-textarea"
@@ -428,11 +565,17 @@ export function FloatingAgent({
                 placeholder={
                   activeClarificationRun
                     ? 'Reply with the topic, title, or preferred time…'
-                    : 'Ask a strategic question or tell your agent what to execute…'
+                    : 'Ask anything, paste/attach an image, or record voice…'
                 }
                 value={prompt}
                 rows={1}
                 onChange={(e) => setPrompt(e.target.value)}
+                onPaste={(e) => {
+                  const files = Array.from(e.clipboardData?.files || []).filter((f) =>
+                    f.type.startsWith('image/'),
+                  );
+                  if (files.length) void multimodal.addImageFiles(files);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -442,15 +585,38 @@ export function FloatingAgent({
                 disabled={busy}
               />
               <div className="agent-composer-bar">
-                <span className="agent-composer-hint">
-                  {activeClarificationRun
-                    ? 'Replying to agent question · Auto-crafts title & agenda'
-                    : 'Enter to send · Stages writes in Sandbox Clone'}
-                </span>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <button
+                    type="button"
+                    className={multimodal.recording ? 'danger-button' : 'quiet-button'}
+                    style={{ padding: '4px 8px', minHeight: 28, fontSize: 11.5 }}
+                    disabled={busy || multimodal.transcribing}
+                    aria-label={multimodal.recording ? 'Stop voice recording' : 'Record voice instruction'}
+                    title={multimodal.recording ? 'Stop recording' : 'Voice record'}
+                    onClick={() =>
+                      multimodal.recording
+                        ? multimodal.stopVoiceRecording()
+                        : void multimodal.startVoiceRecording()
+                    }
+                  >
+                    {multimodal.recording ? `Stop (${multimodal.recordSeconds}s)` : 'Mic'}
+                  </button>
+                  <button
+                    type="button"
+                    className="quiet-button"
+                    style={{ padding: '4px 8px', minHeight: 28, fontSize: 11.5 }}
+                    disabled={busy}
+                    aria-label="Attach image"
+                    title="Upload PNG/JPEG/WebP image"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Image
+                  </button>
+                </div>
                 <button
                   type="submit"
                   className="button agent-send-btn"
-                  disabled={busy || prompt.trim().length < 2}
+                  disabled={busy || (prompt.trim().length < 2 && multimodal.attachments.length === 0)}
                 >
                   <Icon name="bolt" width={13} height={13} />
                   <span>{busy ? '…' : 'Send'}</span>
@@ -458,6 +624,7 @@ export function FloatingAgent({
               </div>
             </form>
           </footer>
+          )}
         </aside>
       )}
 

@@ -29,11 +29,12 @@
 /* Always show crisp 2-line Title / Subtitle in top bar on every page (like Screenshot 1) */
 :is(.business-shell, .focused-account) .app-header > .immersive-app-context {
   display: flex !important;
-  flex: 1 1 auto !important;
+  flex: 1 1 0% !important;
   flex-direction: column !important;
   align-items: flex-start !important;
   gap: 0 !important;
-  min-width: 80px;
+  min-width: 0 !important;
+  overflow: hidden !important;
   line-height: 1.2 !important;
 }
 
@@ -153,6 +154,9 @@
   width: auto !important;
   min-width: 150px;
   max-width: 210px;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 :is(.business-shell, .focused-account) .app-header > div:last-child {
@@ -1337,5 +1341,150 @@
   :is(.business-shell, .focused-account, .account-entry)
     :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
     font-size: 16px !important;
+  }
+}
+
+/* ==========================================================================
+ * Apple Continuous Corner (Squircle) Geometry System — Platform-Wide
+ * - Concentric Apple HIG radius scale (--apple-r-xs..xl, pill)
+ * - Native CSS `corner-shape: squircle` progressive enhancement where supported
+ * - Keeps `.calendar-workspace` internal time-slot grid pure & untouched
+ * - Preserves flat cardless Odoo sheet hierarchy (zero extra nested cards)
+ * ========================================================================== */
+:root {
+  --apple-r-xs: 8px;
+  --apple-r-sm: 10px;
+  --apple-r-md: 12px;
+  --apple-r-lg: 16px;
+  --apple-r-xl: 20px;
+  --apple-r-pill: 9999px;
+}
+
+/* Buttons, Triggers, Inputs, Selects & Search Controls — Apple 10px continuous edge */
+:is(.business-shell, .focused-account, .account-entry, .agent-float-window, .agent-workspace)
+  :is(
+    .button,
+    .secondary-button,
+    .quiet-button,
+    .danger-button,
+    .ac-odoo-new-btn,
+    .sales-new,
+    .ac-menubar-pill,
+    .ac-menubar-trigger,
+    .ac-view-switcher button,
+    .workspace-switcher-select,
+    .workspace-account-button,
+    .icon-button,
+    .workspace-launcher-trigger,
+    .notification-bell,
+    .workspace-search-trigger,
+    input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='hidden']),
+    select,
+    textarea,
+    .ac-faceted-search
+  ) {
+  border-radius: var(--apple-r-sm) !important;
+}
+
+/* Compact chips, pills, badges & filter tags — Apple capsule/8px continuous edge */
+:is(.business-shell, .focused-account, .agent-float-window, .agent-workspace)
+  :is(.badge, .ac-facet-chip, .agent-status-chip, .dc-agent-pill, .dc-channel-btn) {
+  border-radius: var(--apple-r-xs) !important;
+}
+
+:is(.business-shell, .focused-account, .agent-float-window, .agent-workspace)
+  :is(.agent-fab, .notification-count, .dc-composer-send, .agent-pill-btn) {
+  border-radius: var(--apple-r-pill) !important;
+}
+
+/* Sheets, Standalone Panels, Kanban Items, Popovers, Dialogs & Floating Windows — Apple 14–20px continuous edge */
+:is(.business-shell, .focused-account)
+  :is(
+    .o-app-sheet,
+    .panel:not(.o-flat-section):not(form.panel),
+    .o-kanban-item,
+    .project-directory-card,
+    .account-record,
+    .crm-customer-options,
+    .ac-menubar-popover,
+    .ac-filter-popover-panel,
+    .dc-shell,
+    .dc-msg-agent,
+    .dc-composer,
+    .agent-sandbox-pane,
+    .agent-cu-stage,
+    .agent-memory-card
+  ) {
+  border-radius: var(--apple-r-lg) !important;
+}
+
+:is(.agent-float-window, [role='dialog'], .modal-panel, .launcher-modal, .command-palette) {
+  border-radius: var(--apple-r-xl) !important;
+}
+
+/* Keep top bar & sub-module bar flush full-bleed (0px on outer bar container) */
+:is(.business-shell, .focused-account) .app-header,
+:is(.business-shell, .focused-account)
+  :is(
+    .ac-app-menubar,
+    .sales-nav,
+    .sales-module-nav,
+    .app-section-tabs,
+    .crm-section-nav,
+    .acc-module-nav,
+    .proc-app-nav,
+    .inventory-module-nav,
+    .pos-app-module,
+    .finance-operation-nav
+  ) {
+  border-radius: 0 !important;
+}
+
+/* Progressive enhancement: true Apple continuous squircle curves (superellipse) */
+@supports (corner-shape: squircle) {
+  :is(.business-shell, .focused-account, .account-entry, .agent-float-window, .agent-workspace)
+    :is(
+      .button,
+      .secondary-button,
+      .quiet-button,
+      .danger-button,
+      .ac-odoo-new-btn,
+      .sales-new,
+      .ac-menubar-pill,
+      .ac-menubar-trigger,
+      .workspace-switcher-select,
+      .workspace-account-button,
+      .icon-button,
+      .workspace-launcher-trigger,
+      .notification-bell,
+      .workspace-search-trigger,
+      input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='hidden']),
+      select,
+      textarea,
+      .ac-faceted-search,
+      .badge,
+      .ac-facet-chip,
+      .agent-status-chip,
+      .o-app-sheet,
+      .panel:not(.o-flat-section):not(form.panel),
+      .o-kanban-item,
+      .project-directory-card,
+      .account-record,
+      .crm-customer-options,
+      .ac-menubar-popover,
+      .ac-filter-popover-panel,
+      .dc-shell,
+      .dc-msg-agent,
+      .dc-composer,
+      .agent-float-window,
+      .agent-sandbox-pane,
+      .agent-cu-stage,
+      .agent-memory-card,
+      [role='dialog'],
+      .modal-panel,
+      .launcher-modal,
+      .command-palette
+    ) {
+    corner-shape: squircle;
   }
 }

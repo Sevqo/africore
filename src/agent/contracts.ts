@@ -1,8 +1,25 @@
 import { z } from 'zod';
-import { currencySchema } from '../platform/domain';
+import { currencySchema, roles } from '../platform/domain';
 
 export const agentPermissionMode = z.enum(['disabled', 'approval_required', 'autonomous']);
 export type AgentPermissionMode = z.infer<typeof agentPermissionMode>;
+
+export const agentImageAttachmentInput = z
+  .object({
+    kind: z.literal('image').default('image'),
+    filename: z.string().trim().min(1).max(160).default('attachment.png'),
+    mime_type: z.enum(['image/png', 'image/jpeg', 'image/webp']),
+    data_url: z
+      .string()
+      .min(32)
+      .max(2_900_000)
+      .refine(
+        (v) => /^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(v),
+        'Image attachment must be a valid PNG, JPEG, or WebP data URL',
+      ),
+    alt_text: z.string().trim().max(400).optional(),
+  })
+  .strict();
 
 export const agentRunInput = z
   .object({
@@ -10,7 +27,7 @@ export const agentRunInput = z
       .string()
       .trim()
       .min(2)
-      .max(2000)
+      .max(2500)
       .refine(
         (v) =>
           !/\bsk-[A-Za-z0-9_-]{20,}|postgres(?:ql)?:\/\/|-----BEGIN [A-Z ]*PRIVATE KEY/.test(v),
@@ -23,6 +40,20 @@ export const agentRunInput = z
     computer_use: z.boolean().default(true),
     stage_in_sandbox: z.boolean().default(false),
     consent_to_provider: z.boolean().default(false),
+    input_modality: z.enum(['text', 'voice', 'image', 'multimodal']).default('text'),
+    attachments: z.array(agentImageAttachmentInput).max(3).default([]),
+  })
+  .strict();
+
+export const agentTranscribeInput = z
+  .object({
+    audio_base64: z.string().max(4_500_000).optional(),
+    mime_type: z
+      .enum(['audio/webm', 'audio/ogg', 'audio/wav', 'audio/mp4', 'audio/mpeg', 'audio/webm;codecs=opus'])
+      .default('audio/webm'),
+    duration_ms: z.number().int().min(0).max(180_000).default(0),
+    client_transcript: z.string().trim().max(2500).default(''),
+    language: z.string().trim().max(16).default('en'),
   })
   .strict();
 
@@ -45,8 +76,16 @@ export const agentPermissionsUpdateInput = z
       .min(2)
       .max(32)
       .regex(/^@?[a-zA-Z0-9][a-zA-Z0-9_-]{1,30}$/, 'Use 2-31 letters, numbers, hyphens, or underscores')
+      .refine(
+        (v) => {
+          const clean = v.replace(/^@+/, '').toLowerCase();
+          return clean.endsWith('agent') && clean !== 'agent';
+        },
+        "Workspace agent handle must end with 'agent' (for example, 'continua-agent')",
+      )
       .optional(),
     agent_display_name: z.string().trim().min(2).max(60).optional(),
+    floating_agent_roles: z.array(z.enum(roles)).max(15).optional(),
     permissions: z.record(z.string(), agentPermissionMode).optional(),
   })
   .strict();
@@ -90,7 +129,20 @@ export const agentCreditsGrantInput = z
 
 export const agentMemoryInput = z
   .object({
-    category: z.enum(['preference', 'business_context', 'workflow_rule', 'tone']).default('preference'),
+    category: z
+      .enum(['preference', 'business_context', 'workflow_rule', 'tone', 'user_profile', 'learned_fact'])
+      .default('preference'),
+    scope: z.enum(['workspace_memory', 'user_profile']).default('workspace_memory'),
+    content: z.string().trim().min(3).max(800),
+  })
+  .strict();
+
+export const agentMemoryPatchInput = z
+  .object({
+    category: z
+      .enum(['preference', 'business_context', 'workflow_rule', 'tone', 'user_profile', 'learned_fact'])
+      .optional(),
+    scope: z.enum(['workspace_memory', 'user_profile']).optional(),
     content: z.string().trim().min(3).max(800),
   })
   .strict();

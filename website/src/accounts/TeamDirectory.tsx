@@ -1,7 +1,20 @@
 import { useState } from 'react';
 import { invitableRoles, roleAppAccess } from '../../../src/platform/roles';
 
-type Member = { id: string; email: string; role: string; display_name?: string };
+type Member = {
+  id: string;
+  email: string;
+  role: string;
+  display_name?: string;
+  username?: string;
+  extra_apps?: string[];
+  revoked_apps?: string[];
+  floating_agent_access?: 'default' | 'allow' | 'deny';
+  can_use_floating_agent?: boolean;
+  default_apps?: string[];
+  effective_apps?: string[];
+};
+type AvailableApp = { id: string; name: string };
 type Invitation = {
   id: string;
   email: string;
@@ -77,7 +90,12 @@ export function TeamDirectory({
   role,
   actor,
 }: {
-  data?: { data?: Member[]; invitations?: Invitation[] };
+  data?: {
+    data?: Member[];
+    invitations?: Invitation[];
+    available_apps?: AvailableApp[];
+    agent_handle?: string | null;
+  };
   call: Call;
   action: (fn: () => Promise<any>) => Promise<any>;
   role: string;
@@ -86,9 +104,12 @@ export function TeamDirectory({
   const [search, setSearch] = useState(''),
     [selectedInviteRole, setSelectedInviteRole] = useState<string>('accountant'),
     [token, setToken] = useState(''),
-    [pending, setPending] = useState(false);
+    [pending, setPending] = useState(false),
+    [expandedMember, setExpandedMember] = useState<string | null>(null),
+    [usernameDrafts, setUsernameDrafts] = useState<Record<string, string>>({});
   const admin = ['owner', 'admin'].includes(role),
-    roles = [...invitableRoles];
+    roles = [...invitableRoles],
+    availableApps = data?.available_apps || [];
   async function run(fn: () => Promise<any>) {
     setPending(true);
     setToken('');
@@ -109,68 +130,219 @@ export function TeamDirectory({
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Name or email"
+            placeholder="Name, @username or email"
           />
         </label>
         {(data?.data || [])
           .filter((m) =>
-            (m.email + ' ' + (m.display_name || '')).toLowerCase().includes(search.toLowerCase()),
+            (m.email + ' ' + (m.display_name || '') + ' ' + (m.username || ''))
+              .toLowerCase()
+              .includes(search.toLowerCase()),
           )
-          .map((m) => (
-            <article className="account-record team-member" key={m.id}>
-              <span className="member-initials" aria-hidden="true">
-                {(m.display_name || m.email).slice(0, 2).toUpperCase()}
-              </span>
-              <div>
-                <strong>{m.display_name || m.email}</strong>
-                {m.display_name && <p>{m.email}</p>}
-                <small>
-                  {formatRoleName(m.role)} · Active{m.id === actor ? ' · You' : ''}
-                </small>
-                <small style={{ display: 'block', color: '#6b7280', marginTop: 2 }}>
-                  Apps: {formatRoleApps(m.role)}
-                </small>
-              </div>
-              {admin && (
-                <div className="row-actions">
-                  <label className="field">
-                    <span>Role for {m.email}</span>
-                    <select
-                      aria-label={'Role for ' + m.email}
-                      value={m.role}
-                      disabled={
-                        pending || m.id === actor || (m.role === 'owner' && role !== 'owner')
-                      }
-                      onChange={(e) =>
-                        run(() => call('/team/' + m.id, 'PATCH', { role: e.target.value }))
-                      }
+          .map((m) => {
+            const extraApps = m.extra_apps || [];
+            const defaultApps = m.default_apps || [];
+            const canEditUsername = admin || m.id === actor;
+            const draftUsername =
+              usernameDrafts[m.id] !== undefined ? usernameDrafts[m.id] : m.username || '';
+            const isExpanded = expandedMember === m.id;
+            return (
+              <article className="account-record team-member" key={m.id} style={{ flexWrap: 'wrap' }}>
+                <span className="member-initials" aria-hidden="true">
+                  {(m.display_name || m.email).slice(0, 2).toUpperCase()}
+                </span>
+                <div style={{ flex: '1 1 240px', minWidth: 200 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <strong>{m.display_name || m.email}</strong>
+                    {m.username && (
+                      <span className="badge" style={{ fontSize: 11 }}>
+                        @{m.username}
+                      </span>
+                    )}
+                    <span
+                      className="badge"
+                      style={{
+                        fontSize: 11,
+                        background: m.can_use_floating_agent ? '#ecfdf5' : '#f3f4f6',
+                        color: m.can_use_floating_agent ? '#166534' : '#4b5563',
+                      }}
                     >
-                      {['owner', ...roles].map((r) => (
-                        <option key={r} value={r} disabled={r === 'owner' && role !== 'owner'}>
-                          {formatRoleName(r)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <button
-                    disabled={pending || (m.role === 'owner' && role !== 'owner')}
-                    onClick={() => {
-                      if (
-                        confirm(
-                          'Remove ' +
-                            m.email +
-                            ' from this workspace? Their account and records will remain.',
+                      {m.can_use_floating_agent
+                        ? 'Floating Agent: Allowed'
+                        : 'Work Discussions @agent only'}
+                    </span>
+                  </div>
+                  {m.display_name && <p>{m.email}</p>}
+                  <small>
+                    {formatRoleName(m.role)} · Active{m.id === actor ? ' · You' : ''}
+                  </small>
+                  <small style={{ display: 'block', color: '#6b7280', marginTop: 2 }}>
+                    Apps: {formatRoleApps(m.role)}
+                    {extraApps.length > 0 && (
+                      <span style={{ color: '#0f766e', fontWeight: 600 }}>
+                        {' '}
+                        + {extraApps.length} extra ({extraApps.map((id) => id.replaceAll('_', ' ')).join(', ')})
+                      </span>
+                    )}
+                  </small>
+                </div>
+                <div className="row-actions" style={{ alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                  {admin && (
+                    <label className="field">
+                      <span>Role for {m.email}</span>
+                      <select
+                        aria-label={'Role for ' + m.email}
+                        value={m.role}
+                        disabled={
+                          pending || m.id === actor || (m.role === 'owner' && role !== 'owner')
+                        }
+                        onChange={(e) =>
+                          run(() => call('/team/' + m.id, 'PATCH', { role: e.target.value }))
+                        }
+                      >
+                        {['owner', ...roles].map((r) => (
+                          <option key={r} value={r} disabled={r === 'owner' && role !== 'owner'}>
+                            {formatRoleName(r)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  {(admin || canEditUsername) && (
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      disabled={pending}
+                      onClick={() => setExpandedMember(isExpanded ? null : m.id)}
+                    >
+                      {isExpanded ? 'Close access' : admin ? 'Access & @username' : 'Edit @username'}
+                    </button>
+                  )}
+                  {admin && (
+                    <button
+                      disabled={pending || (m.role === 'owner' && role !== 'owner')}
+                      onClick={() => {
+                        if (
+                          confirm(
+                            'Remove ' +
+                              m.email +
+                              ' from this workspace? Their account and records will remain.',
+                          )
                         )
-                      )
-                        void run(() => call('/team/' + m.id, 'DELETE'));
+                          void run(() => call('/team/' + m.id, 'DELETE'));
+                      }}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+
+                {isExpanded && (
+                  <div
+                    style={{
+                      flexBasis: '100%',
+                      marginTop: 10,
+                      paddingTop: 10,
+                      borderTop: '1px solid #e5e7eb',
+                      display: 'grid',
+                      gap: 12,
                     }}
                   >
-                    Remove
-                  </button>
-                </div>
-              )}
-            </article>
-          ))}
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                      <label className="field" style={{ flex: '1 1 200px' }}>
+                        <span>Workspace @username (unique inside this workspace)</span>
+                        <input
+                          value={draftUsername}
+                          onChange={(e) =>
+                            setUsernameDrafts((prev) => ({ ...prev, [m.id]: e.target.value }))
+                          }
+                          placeholder="e.g. cyprian.finance"
+                          maxLength={32}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        disabled={pending}
+                        onClick={() =>
+                          run(() => call('/team/' + m.id, 'PATCH', { username: draftUsername.trim() }))
+                        }
+                      >
+                        Save @username
+                      </button>
+
+                      {admin && m.role !== 'owner' && (
+                        <label className="field" style={{ flex: '1 1 200px' }}>
+                          <span>Floating Agent access</span>
+                          <select
+                            aria-label={'Floating Agent access for ' + m.email}
+                            value={m.floating_agent_access || 'default'}
+                            disabled={pending}
+                            onChange={(e) =>
+                              run(() =>
+                                call('/team/' + m.id, 'PATCH', {
+                                  floating_agent_access: e.target.value,
+                                }),
+                              )
+                            }
+                          >
+                            <option value="default">Role default ({m.role === 'admin' ? 'Allowed' : 'Discussions only'})</option>
+                            <option value="allow">Allow Floating Agent</option>
+                            <option value="deny">Restrict (Work Discussions @agent only)</option>
+                          </select>
+                        </label>
+                      )}
+                    </div>
+
+                    {admin && m.role !== 'owner' && m.role !== 'admin' && availableApps.length > 0 && (
+                      <div>
+                        <strong style={{ fontSize: 12.5, display: 'block', marginBottom: 6 }}>
+                          Extra app access beyond {formatRoleName(m.role)} defaults
+                        </strong>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                          {availableApps.map((app) => {
+                            const isDefault = defaultApps.includes(app.id);
+                            const isExtra = extraApps.includes(app.id);
+                            if (isDefault) {
+                              return (
+                                <span
+                                  key={app.id}
+                                  className="badge"
+                                  style={{ background: '#f1f5f9', color: '#475569', fontSize: 11.5 }}
+                                  title="Included by role default"
+                                >
+                                  ✓ {app.name}
+                                </span>
+                              );
+                            }
+                            return (
+                              <button
+                                key={app.id}
+                                type="button"
+                                className={isExtra ? 'button' : 'secondary-button'}
+                                style={{ padding: '4px 10px', fontSize: 11.5, minHeight: 28 }}
+                                disabled={pending}
+                                onClick={() => {
+                                  const nextExtra = isExtra
+                                    ? extraApps.filter((id) => id !== app.id)
+                                    : [...extraApps, app.id];
+                                  void run(() =>
+                                    call('/team/' + m.id, 'PATCH', { extra_apps: nextExtra }),
+                                  );
+                                }}
+                              >
+                                {isExtra ? `✓ ${app.name} (Extra)` : `+ ${app.name}`}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </article>
+            );
+          })}
         {!data?.data?.length && <p>No members are available for this workspace.</p>}
         <small>Join dates and last activity are not recorded; they are not estimated.</small>
       </section>

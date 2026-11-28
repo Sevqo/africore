@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon } from '../components/Icon';
 import { DataTable } from '../components/DataTable';
 import { ComputerUseStage } from './ComputerUseStage';
+import { useMultimodalInput } from './useMultimodalInput';
 import { formatAgentMoney, type AgentDestination } from './computer-use';
+import { roles as allWorkspaceRoles } from '../../../src/platform/roles';
 import type { API } from '../operations/UI';
 import './agent.css';
 
@@ -11,24 +13,26 @@ type StudioTab = 'command' | 'routines' | 'permissions' | 'billing' | 'memory';
 const QUICK_PROMPTS: Record<'business' | 'personal' | 'developer', string[]> = {
   business: [
     'Analyze my business performance and receivables',
+    'Fetch my latest documents',
+    'Search the web for East Africa SME invoicing trends',
+    'Analyze inventory stock and low-stock items',
     'Schedule a meeting for Client Quarterly Review tomorrow',
     'Set up a project for Q4 Growth Launch',
     'Create a CRM lead for Savannah Retail KES 45000',
     'Draft an invoice for Nairobi Traders KES 25000',
-    'Run a 30-day cash-flow forecast',
   ],
   personal: [
     'Analyze my personal finances and subscriptions',
+    'Search the web for personal emergency fund best practices',
     'Schedule a meeting for Personal Budget Check-in tomorrow',
     'Record an expense of KES 4500 for groceries',
     'Check my linked Developer workspace API health',
-    'Create a sandbox developer app called Personal Finance Bot',
   ],
   developer: [
     'Diagnose my sandbox API logs and webhook health',
+    'Search the web for webhook idempotency best practices',
     'Create a sandbox developer app called Checkout Sync Service',
     'Inspect my linked Personal workspace summary',
-    'Send a developer workspace notice about webhook testing',
   ],
 };
 
@@ -120,13 +124,30 @@ export function AgentWorkspace({
   // Billing spend cap form state
   const [capInput, setCapInput] = useState('');
   // Memory form state
-  const [memoryCategory, setMemoryCategory] = useState<'preference' | 'business_context' | 'workflow_rule' | 'tone'>('business_context');
+  const [memoryCategory, setMemoryCategory] = useState<'preference' | 'business_context' | 'workflow_rule' | 'tone' | 'user_profile'>('business_context');
+  const [memoryScope, setMemoryScope] = useState<'workspace_memory' | 'user_profile'>('workspace_memory');
   const [memoryText, setMemoryText] = useState('');
+  const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null);
+  const [editingMemoryText, setEditingMemoryText] = useState('');
+  const [sessionQuery, setSessionQuery] = useState('');
+  const [sessionHits, setSessionHits] = useState<any[]>([]);
+  // Multimodal voice/image composer state
+  const [usedVoice, setUsedVoice] = useState(false);
+  const studioFileInputRef = useRef<HTMLInputElement | null>(null);
   // Agent username/identity form state
   const [agentHandleDraft, setAgentHandleDraft] = useState('');
   const [agentNameDraft, setAgentNameDraft] = useState('');
 
   const alive = useRef(true);
+
+  const multimodal = useMultimodalInput(
+    api,
+    useCallback((transcript: string) => {
+      setPrompt((prev) => (prev.trim() ? `${prev.trim()} ${transcript}` : transcript));
+      setUsedVoice(true);
+    }, []),
+    useCallback((msg: string) => setError(msg), []),
+  );
 
   async function loadOverview() {
     setError('');
@@ -168,23 +189,38 @@ export function AgentWorkspace({
 
   async function runInstruction(text?: string, toolHint?: string) {
     const clean = (text ?? prompt).trim();
-    if (clean.length < 2 || busy) return;
+    const hasImages = multimodal.attachments.length > 0;
+    const effectivePrompt =
+      clean || (hasImages ? 'Analyze this attached image and suggest the best workspace action' : '');
+    if (effectivePrompt.length < 2 || busy) return;
     setBusy(true);
     setError('');
     setNotice('');
     try {
+      const modality =
+        hasImages && usedVoice
+          ? 'multimodal'
+          : hasImages
+            ? 'image'
+            : usedVoice
+              ? 'voice'
+              : 'text';
       const run = await api(
         '/agent/runs',
         'POST',
         {
-          prompt: clean,
+          prompt: effectivePrompt,
           currency,
           ...(toolHint ? { tool_hint: toolHint } : {}),
           computer_use: true,
+          input_modality: modality,
+          attachments: multimodal.attachments,
         },
         { 'Idempotency-Key': crypto.randomUUID() },
       );
       setPrompt('');
+      setUsedVoice(false);
+      multimodal.clearAttachments();
       setSelectedRunId(run.id);
       setNotice(
         run.status === 'awaiting_approval'
@@ -424,27 +460,112 @@ export function AgentWorkspace({
                 void runInstruction();
               }}
             >
+              <input
+                ref={studioFileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                multiple
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  if (e.target.files) void multimodal.addImageFiles(e.target.files);
+                  e.target.value = '';
+                }}
+              />
+              {multimodal.attachments.length > 0 && (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+                  {multimodal.attachments.map((att, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '4px 8px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: 10,
+                        background: '#f9fafb',
+                        fontSize: 12,
+                      }}
+                    >
+                      <img
+                        src={att.data_url}
+                        alt={att.filename}
+                        style={{ width: 24, height: 24, objectFit: 'cover', borderRadius: 6 }}
+                      />
+                      <span>{att.filename}</span>
+                      <button
+                        type="button"
+                        className="quiet-button"
+                        style={{ padding: '0 4px', minHeight: 20 }}
+                        onClick={() => multimodal.removeAttachment(idx)}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {(multimodal.recording || multimodal.transcribing || multimodal.voiceNote) && (
+                <p style={{ margin: '0 0 6px', fontSize: 12, color: multimodal.recording ? '#b91c1c' : '#0f766e' }}>
+                  {multimodal.recording
+                    ? `Recording voice (${multimodal.recordSeconds}s)${multimodal.liveSpeech ? `: "${multimodal.liveSpeech}"` : '…'}`
+                    : multimodal.transcribing
+                      ? 'Transcribing voice clip…'
+                      : multimodal.voiceNote}
+                </p>
+              )}
               <label className="field">
-                <span>Instruction or business task</span>
+                <span>Instruction, voice note, or image analysis task (Privacy Shield Active)</span>
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="e.g. Schedule a sales review meeting tomorrow, create a Q4 Launch project, or analyze my overdue invoices…"
+                  onPaste={(e) => {
+                    const files = Array.from(e.clipboardData?.files || []).filter((f) =>
+                      f.type.startsWith('image/'),
+                    );
+                    if (files.length) void multimodal.addImageFiles(files);
+                  }}
+                  placeholder="e.g. Fetch my Q4 Plan document, search the web for SME tax deadlines, analyze Inventory, or attach a receipt image…"
                   disabled={busy}
                   minLength={2}
-                  maxLength={2000}
+                  maxLength={2500}
                 />
               </label>
-              <div className="agent-composer-row">
-                <label className="agent-toggle-label">
-                  <input
-                    type="checkbox"
-                    checked={driveLive}
-                    onChange={(e) => setDriveLive(e.target.checked)}
-                  />
-                  Show live Computer Use in workspace
-                </label>
-                <button className="button" disabled={busy || prompt.trim().length < 2}>
+              <div className="agent-composer-row" style={{ flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className={multimodal.recording ? 'danger-button' : 'secondary-button'}
+                    disabled={busy || multimodal.transcribing}
+                    onClick={() =>
+                      multimodal.recording
+                        ? multimodal.stopVoiceRecording()
+                        : void multimodal.startVoiceRecording()
+                    }
+                  >
+                    {multimodal.recording ? `Stop recording (${multimodal.recordSeconds}s)` : 'Record voice'}
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    disabled={busy}
+                    onClick={() => studioFileInputRef.current?.click()}
+                  >
+                    Attach image
+                  </button>
+                  <label className="agent-toggle-label">
+                    <input
+                      type="checkbox"
+                      checked={driveLive}
+                      onChange={(e) => setDriveLive(e.target.checked)}
+                    />
+                    Live Computer Use
+                  </label>
+                </div>
+                <button
+                  className="button"
+                  disabled={busy || (prompt.trim().length < 2 && multimodal.attachments.length === 0)}
+                >
                   {busy ? 'Agent working…' : 'Run autonomously'}
                 </button>
               </div>
@@ -759,7 +880,7 @@ export function AgentWorkspace({
               }}
             >
               <label className="field">
-                <span>Agent @username</span>
+                <span>Agent @username (must end with &quot;agent&quot;)</span>
                 <input
                   disabled={!overview.can_manage_policy || busy}
                   value={agentHandleDraft}
@@ -839,6 +960,39 @@ export function AgentWorkspace({
                 )}
               </div>
             </div>
+            {resolvedKind === 'business' && (
+              <div className="agent-boundary-box" style={{ marginTop: 12 }}>
+                <h4>Default Roles Allowed to Use Floating Agent</h4>
+                <p className="agent-card-muted" style={{ marginTop: 2 }}>
+                  Other workspace members cannot spam the Floating Agent unless explicitly granted
+                  access in Team settings. All members can always mention{' '}
+                  <code>@{policy?.agent_handle || 'workspace-agent'}</code> in Work Discussions.
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                  {allWorkspaceRoles.map((r) => {
+                    const activeRoles: string[] = policy?.floating_agent_roles || ['owner', 'admin'];
+                    const checked = r === 'owner' || activeRoles.includes(r);
+                    return (
+                      <button
+                        key={r}
+                        type="button"
+                        className={checked ? 'button' : 'secondary-button'}
+                        style={{ padding: '4px 10px', fontSize: 12, minHeight: 28 }}
+                        disabled={!overview.can_manage_policy || busy || r === 'owner'}
+                        onClick={() => {
+                          const next = checked
+                            ? activeRoles.filter((x) => x !== r)
+                            : [...new Set([...activeRoles, r])];
+                          void updatePermissions({ floating_agent_roles: next });
+                        }}
+                      >
+                        {checked ? `✓ ${r.replaceAll('_', ' ')}` : `+ ${r.replaceAll('_', ' ')}`}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </section>
 
           <section className="agent-card">
@@ -1050,85 +1204,256 @@ export function AgentWorkspace({
       )}
 
       {overview && subTab === 'memory' && (
-        <div className="agent-grid-2">
+        <div style={{ display: 'grid', gap: 16 }}>
           <section className="agent-card">
-            <h3>Workspace Memory ({overview.memory?.length || 0})</h3>
-            <p className="agent-card-muted">
-              Saved context stays strictly inside this workspace boundary. It never leaks across
-              Business, Personal, or Developer boundaries.
-            </p>
-            {!overview.memory?.length && (
-              <p className="agent-card-muted">No saved workspace preferences yet.</p>
-            )}
-            {(overview.memory || []).map((item: any) => (
-              <div key={item.id} className="agent-run-card">
-                <div className="agent-run-top">
-                  <span className="agent-status-chip">{item.category.replaceAll('_', ' ')}</span>
-                  <button
-                    type="button"
-                    className="quiet-button"
-                    onClick={async () => {
-                      await api(`/agent/memory/${item.id}`, 'DELETE', {});
-                      await loadOverview();
-                    }}
-                  >
-                    Remove
-                  </button>
-                </div>
-                <p className="agent-run-summary">{item.content}</p>
+            <div className="agent-run-top">
+              <div>
+                <span className="eyebrow">HERMES CONTINUOUS LEARNING MEMORY · ENCRYPTED &amp; WORKSPACE-ISOLATED</span>
+                <h3>
+                  Living Memory ({overview.memory?.length || 0} facts ·{' '}
+                  {overview.memory_blocks?.auto_learned_count || 0} auto-learned)
+                </h3>
               </div>
-            ))}
+              <span className="agent-credits-pill">
+                {resolvedKind.toUpperCase()} ISOLATED
+              </span>
+            </div>
+            <p className="agent-card-muted">
+              Your agent automatically learns durable workspace facts and preferences after every
+              conversation, updates outdated entries instead of duplicating them, and keeps{' '}
+              <strong>{resolvedKind}</strong> memory strictly encrypted and isolated.
+            </p>
+            {overview.memory_blocks && (
+              <div className="agent-boundary-grid" style={{ marginTop: 10 }}>
+                <div className="agent-boundary-box">
+                  <h4>
+                    User Profile Block ({overview.memory_blocks.user_profile?.chars_used || 0} /{' '}
+                    {overview.memory_blocks.user_profile?.char_budget || 1375} chars)
+                  </h4>
+                  <div className="agent-meter-bar">
+                    <div
+                      className="agent-meter-fill"
+                      style={{ width: `${overview.memory_blocks.user_profile?.utilization_pct || 0}%` }}
+                    />
+                  </div>
+                  <small className="agent-card-muted">
+                    {overview.memory_blocks.user_profile?.entries || 0} preference / style entries
+                  </small>
+                </div>
+                <div className="agent-boundary-box">
+                  <h4>
+                    Workspace Knowledge Block ({overview.memory_blocks.workspace_memory?.chars_used || 0} /{' '}
+                    {overview.memory_blocks.workspace_memory?.char_budget || 2200} chars)
+                  </h4>
+                  <div className="agent-meter-bar">
+                    <div
+                      className="agent-meter-fill"
+                      style={{ width: `${overview.memory_blocks.workspace_memory?.utilization_pct || 0}%` }}
+                    />
+                  </div>
+                  <small className="agent-card-muted">
+                    {overview.memory_blocks.workspace_memory?.entries || 0} durable business / workspace facts
+                  </small>
+                </div>
+              </div>
+            )}
           </section>
 
-          <form
-            className="agent-card"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              if (memoryText.trim().length < 3 || busy) return;
-              setBusy(true);
-              try {
-                await api('/agent/memory', 'POST', {
-                  category: memoryCategory,
-                  content: memoryText.trim(),
-                });
-                setMemoryText('');
-                setNotice('Workspace memory saved.');
-                await loadOverview();
-              } catch (err) {
-                setError((err as Error).message);
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            <h3>Teach Your Agent</h3>
-            <label className="field">
-              <span>Category</span>
-              <select
-                value={memoryCategory}
-                onChange={(e) => setMemoryCategory(e.target.value as any)}
+          <div className="agent-grid-2">
+            <section className="agent-card">
+              <h3>Saved &amp; Learned Memory ({overview.memory?.length || 0})</h3>
+              {!overview.memory?.length && (
+                <p className="agent-card-muted">
+                  No memories yet. Chat with your agent or teach it a rule on the right — it will
+                  also learn automatically as you work.
+                </p>
+              )}
+              {(overview.memory || []).map((item: any) => (
+                <div key={item.id} className="agent-run-card agent-memory-card">
+                  <div className="agent-run-top">
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <span className="agent-status-chip">
+                        {(item.scope || 'workspace_memory') === 'user_profile' ? 'User profile' : 'Workspace'}
+                      </span>
+                      <span className="agent-status-chip">
+                        {String(item.category || 'preference').replaceAll('_', ' ')}
+                      </span>
+                      <span
+                        className="agent-status-chip"
+                        style={{
+                          background: item.source === 'auto_learned' ? '#ecfdf5' : '#f1f5f9',
+                          color: item.source === 'auto_learned' ? '#166534' : '#334155',
+                        }}
+                      >
+                        {item.source === 'auto_learned' ? 'Auto-learned' : 'Manual'}
+                        {item.hit_count > 1 ? ` · ×${item.hit_count}` : ''}
+                      </span>
+                    </div>
+                    <div style={{ display: 'inline-flex', gap: 4 }}>
+                      <button
+                        type="button"
+                        className="quiet-button"
+                        onClick={() => {
+                          setEditingMemoryId(editingMemoryId === item.id ? null : item.id);
+                          setEditingMemoryText(item.content);
+                        }}
+                      >
+                        {editingMemoryId === item.id ? 'Cancel' : 'Edit'}
+                      </button>
+                      <button
+                        type="button"
+                        className="quiet-button"
+                        onClick={async () => {
+                          await api(`/agent/memory/${item.id}`, 'DELETE', {});
+                          await loadOverview();
+                        }}
+                      >
+                        Forget
+                      </button>
+                    </div>
+                  </div>
+                  {editingMemoryId === item.id ? (
+                    <div style={{ display: 'grid', gap: 6, marginTop: 6 }}>
+                      <textarea
+                        rows={2}
+                        value={editingMemoryText}
+                        onChange={(e) => setEditingMemoryText(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        className="button"
+                        disabled={busy || editingMemoryText.trim().length < 3}
+                        onClick={async () => {
+                          setBusy(true);
+                          try {
+                            await api(`/agent/memory/${item.id}`, 'PATCH', {
+                              content: editingMemoryText.trim(),
+                              category: item.category,
+                              scope: item.scope || 'workspace_memory',
+                            });
+                            setEditingMemoryId(null);
+                            setNotice('Memory updated.');
+                            await loadOverview();
+                          } catch (err) {
+                            setError((err as Error).message);
+                          } finally {
+                            setBusy(false);
+                          }
+                        }}
+                      >
+                        Save change
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="agent-run-summary">{item.content}</p>
+                  )}
+                </div>
+              ))}
+            </section>
+
+            <div style={{ display: 'grid', gap: 14, alignContent: 'start' }}>
+              <form
+                className="agent-card"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (memoryText.trim().length < 3 || busy) return;
+                  setBusy(true);
+                  try {
+                    await api('/agent/memory', 'POST', {
+                      category: memoryCategory,
+                      scope: memoryScope,
+                      content: memoryText.trim(),
+                    });
+                    setMemoryText('');
+                    setNotice('Encrypted memory saved to workspace.');
+                    await loadOverview();
+                  } catch (err) {
+                    setError((err as Error).message);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
               >
-                <option value="business_context">Workspace context</option>
-                <option value="workflow_rule">Workflow rule</option>
-                <option value="preference">Preference</option>
-                <option value="tone">Communication tone</option>
-              </select>
-            </label>
-            <label className="field">
-              <span>Memory note</span>
-              <textarea
-                required
-                minLength={3}
-                maxLength={800}
-                value={memoryText}
-                onChange={(e) => setMemoryText(e.target.value)}
-                placeholder="e.g. Always schedule client calls in EAT mornings between 9am and 11am."
-              />
-            </label>
-            <button className="button" disabled={busy || memoryText.trim().length < 3}>
-              Save memory
-            </button>
-          </form>
+                <h3>Teach Your Agent</h3>
+                <label className="field">
+                  <span>Memory store</span>
+                  <select
+                    value={memoryScope}
+                    onChange={(e) => setMemoryScope(e.target.value as any)}
+                  >
+                    <option value="workspace_memory">Workspace Knowledge (business / ops facts)</option>
+                    <option value="user_profile">User Profile (personal style &amp; preferences)</option>
+                  </select>
+                </label>
+                <label className="field">
+                  <span>Category</span>
+                  <select
+                    value={memoryCategory}
+                    onChange={(e) => setMemoryCategory(e.target.value as any)}
+                  >
+                    <option value="business_context">Workspace context</option>
+                    <option value="workflow_rule">Workflow rule</option>
+                    <option value="preference">Preference</option>
+                    <option value="tone">Communication tone</option>
+                    <option value="user_profile">User profile</option>
+                  </select>
+                </label>
+                <label className="field">
+                  <span>Memory note</span>
+                  <textarea
+                    required
+                    minLength={3}
+                    maxLength={800}
+                    value={memoryText}
+                    onChange={(e) => setMemoryText(e.target.value)}
+                    placeholder="e.g. Always schedule client calls in EAT mornings between 9am and 11am, and report figures in KES."
+                  />
+                </label>
+                <button className="button" disabled={busy || memoryText.trim().length < 3}>
+                  Save encrypted memory
+                </button>
+              </form>
+
+              <form
+                className="agent-card"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!sessionQuery.trim()) return;
+                  try {
+                    const res = await api(
+                      '/agent/sessions/search?' + new URLSearchParams({ q: sessionQuery.trim() }),
+                    );
+                    setSessionHits(res.hits || []);
+                  } catch (err) {
+                    setError((err as Error).message);
+                  }
+                }}
+              >
+                <h3>Search Past Sessions (Episodic Recall)</h3>
+                <div className="agent-composer-row">
+                  <input
+                    type="search"
+                    value={sessionQuery}
+                    onChange={(e) => setSessionQuery(e.target.value)}
+                    placeholder="Search past agent conversations in this workspace…"
+                  />
+                  <button className="secondary-button" disabled={!sessionQuery.trim()}>
+                    Recall
+                  </button>
+                </div>
+                {sessionHits.map((hit: any) => (
+                  <div key={hit.run_id} className="agent-run-card" style={{ marginTop: 8 }}>
+                    <div className="agent-run-top">
+                      <code>{hit.tool_name}</code>
+                      <small>{hit.created_at ? new Date(hit.created_at).toLocaleDateString() : ''}</small>
+                    </div>
+                    <p className="agent-run-prompt">{hit.prompt}</p>
+                    <p className="agent-run-summary">{hit.summary}</p>
+                  </div>
+                ))}
+              </form>
+            </div>
+          </div>
         </div>
       )}
     </section>

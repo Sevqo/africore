@@ -905,7 +905,7 @@ erp.post(
       .status(201)
       .json(
         await postWorkChannelMessage(
-          await access(req, 'operations'),
+          await access(req),
           String(req.params.channelId),
           req.body,
         ),

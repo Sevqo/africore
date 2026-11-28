@@ -541,20 +541,64 @@ platform.get(
   '/organizations/:org/team',
   route(async (req, res) => {
     const a = await access(req);
-    const rows = await dbAll(
-      'SELECT u.id,u.email,m.role,p.display_name FROM ac_memberships m JOIN ac_users u ON u.id=m.user_id LEFT JOIN ac_profiles p ON p.user_id=u.id WHERE m.org_id=? ORDER BY u.email',
-      [a.org],
-    );
+    const {
+      getWorkspaceMemberOverrides,
+      memberAllowedAppIds,
+      memberCanUseFloatingAgent,
+      resolveWorkspaceUsernames,
+      roleDefaultApps,
+      DEFAULT_FLOATING_AGENT_ROLES,
+    } = await import('./member-access');
+    const { appCatalog } = await import('../apps/catalog');
+    const { workspaceKind } = await import('../marketplace/engine');
+    const { getAgentPolicy } = await import('../agent/engine');
+
+    const [rows, overrides, kind, agentPolicy] = await Promise.all([
+      dbAll(
+        'SELECT u.id,u.email,m.role,p.display_name FROM ac_memberships m JOIN ac_users u ON u.id=m.user_id LEFT JOIN ac_profiles p ON p.user_id=u.id WHERE m.org_id=? ORDER BY u.email',
+        [a.org],
+      ),
+      getWorkspaceMemberOverrides(a.org),
+      workspaceKind(a.org),
+      getAgentPolicy(a).catch(() => null),
+    ]);
     const avatarMap = await getUserAvatarProfiles(rows.map((r: any) => String(r.id)));
+    const agentHandle = agentPolicy?.agent_handle || '';
+    const policyFloatingRoles = agentPolicy?.floating_agent_roles || [...DEFAULT_FLOATING_AGENT_ROLES];
+    const usernameMap = resolveWorkspaceUsernames(
+      rows.map((r: any) => ({
+        id: String(r.id),
+        email: String(r.email || ''),
+        display_name: String(r.display_name || ''),
+      })),
+      overrides,
+      avatarMap,
+      agentHandle,
+    );
+    const availableApps = appCatalog
+      .filter((app) => app.kinds.includes(kind))
+      .map((app) => ({ id: app.id, name: app.name }));
+
     res.json({
       data: rows.map((r: any) => {
-        const extra = avatarMap.get(String(r.id));
+        const uid = String(r.id);
+        const extra = avatarMap.get(uid);
+        const ov = overrides.get(uid);
         return {
           ...r,
           avatar_url: extra?.avatar_url || '',
-          username: extra?.username || deriveUsername(r.display_name, r.email),
+          username: usernameMap.get(uid) || deriveUsername(r.display_name, r.email),
+          extra_apps: ov?.extra_apps || [],
+          revoked_apps: ov?.revoked_apps || [],
+          floating_agent_access: ov?.floating_agent_access || 'default',
+          can_use_floating_agent: memberCanUseFloatingAgent(r.role, ov, policyFloatingRoles),
+          default_apps: roleDefaultApps(r.role, kind),
+          effective_apps: memberAllowedAppIds(r.role, kind, ov),
         };
       }),
+      available_apps: availableApps,
+      floating_agent_default_roles: policyFloatingRoles,
+      agent_handle: agentHandle || null,
       invitations: await dbAll(
         "SELECT i.id,i.email,i.role,i.expires_at,i.accepted_at,(SELECT COUNT(*) FROM ac_audit a WHERE a.resource_id=i.id AND a.org_id=i.org_id AND a.action='invitation.revoked') AS revoked FROM ac_invitations i WHERE i.org_id=? ORDER BY i.expires_at DESC",
         [a.org],
@@ -639,26 +683,120 @@ platform.post(
 platform.patch(
   '/organizations/:org/team/:member',
   route(async (req, res) => {
-    const a = await access(req, 'admin'),
-      role = z.enum(roles).parse(req.body.role);
-    if (a.api || a.actor === req.params.member) fail(403, 'Cannot change your own role');
+    const a = await access(req);
+    if (a.api) fail(403, 'Session required');
+    const memberId = String(req.params.member);
+    const body = z
+      .object({
+        role: z.enum(roles).optional(),
+        username: z.string().trim().max(40).optional(),
+        extra_apps: z.array(z.string().trim().min(1).max(60)).max(40).optional(),
+        revoked_apps: z.array(z.string().trim().min(1).max(60)).max(40).optional(),
+        floating_agent_access: z.enum(['default', 'allow', 'deny']).optional(),
+      })
+      .strict()
+      .parse(req.body || {});
+
+    const isSelfUsernameOnly =
+      a.actor === memberId &&
+      body.username !== undefined &&
+      body.role === undefined &&
+      body.extra_apps === undefined &&
+      body.revoked_apps === undefined &&
+      body.floating_agent_access === undefined;
+
+    if (!isSelfUsernameOnly && !['owner', 'admin'].includes(a.role)) {
+      fail(403, 'Workspace owner or administrator required');
+    }
+    if (body.role !== undefined && a.actor === memberId) {
+      fail(403, 'Cannot change your own role');
+    }
+
+    const {
+      assertWorkspaceUsernameAvailable,
+      memberAllowedAppIds,
+      memberCanUseFloatingAgent,
+      saveMemberAccessOverride,
+      getMemberAccessOverride,
+      DEFAULT_FLOATING_AGENT_ROLES,
+    } = await import('./member-access');
+    const { workspaceKind } = await import('../marketplace/engine');
+    const { getAgentPolicy } = await import('../agent/engine');
+
+    const agentPolicy = await getAgentPolicy(a).catch(() => null);
+    let validatedUsername: string | undefined;
+    if (body.username !== undefined && body.username !== '') {
+      validatedUsername = await assertWorkspaceUsernameAvailable(
+        a.org,
+        memberId,
+        body.username,
+        agentPolicy?.agent_handle,
+      );
+    } else if (body.username === '') {
+      validatedUsername = '';
+    }
+
+    let finalRole = '';
     await dbTransaction(async () => {
-      await lockTeam(a);
+      if (isSelfUsernameOnly) {
+        await dbGet(
+          'SELECT id FROM ac_organizations WHERE id=?' + (isPostgres ? ' FOR UPDATE' : ''),
+          [a.org],
+        );
+      } else {
+        await lockTeam(a);
+      }
       const target = await dbGet('SELECT role FROM ac_memberships WHERE org_id=? AND user_id=?', [
         a.org,
-        String(req.params.member),
+        memberId,
       ]);
-      if (!target || ((target.role === 'owner' || role === 'owner') && a.role !== 'owner'))
-        fail(403, 'Owner permission required');
+      if (!target) fail(404, 'Member not found');
+      finalRole = String(target.role);
 
-      await dbRun('UPDATE ac_memberships SET role=? WHERE org_id=? AND user_id=?', [
-        role,
-        a.org,
-        String(req.params.member),
-      ]);
-      await audit(a.org, a.actor, 'membership.updated', String(req.params.member));
+      if (body.role !== undefined) {
+        if ((target.role === 'owner' || body.role === 'owner') && a.role !== 'owner')
+          fail(403, 'Owner permission required');
+        await dbRun('UPDATE ac_memberships SET role=? WHERE org_id=? AND user_id=?', [
+          body.role,
+          a.org,
+          memberId,
+        ]);
+        finalRole = body.role;
+        await audit(a.org, a.actor, 'membership.updated', memberId);
+      }
+
+      if (
+        validatedUsername !== undefined ||
+        body.extra_apps !== undefined ||
+        body.revoked_apps !== undefined ||
+        body.floating_agent_access !== undefined
+      ) {
+        await saveMemberAccessOverride(a.org, memberId, {
+          ...(validatedUsername !== undefined ? { username: validatedUsername } : {}),
+          ...(body.extra_apps !== undefined ? { extra_apps: body.extra_apps } : {}),
+          ...(body.revoked_apps !== undefined ? { revoked_apps: body.revoked_apps } : {}),
+          ...(body.floating_agent_access !== undefined
+            ? { floating_agent_access: body.floating_agent_access }
+            : {}),
+        });
+        await audit(a.org, a.actor, 'membership.access_updated', memberId);
+      }
     });
-    res.json({ role });
+
+    const [override, kind] = await Promise.all([
+      getMemberAccessOverride(a.org, memberId),
+      workspaceKind(a.org),
+    ]);
+    const policyFloatingRoles = agentPolicy?.floating_agent_roles || [...DEFAULT_FLOATING_AGENT_ROLES];
+    res.json({
+      role: finalRole,
+      username: override.username,
+      extra_apps: override.extra_apps,
+      revoked_apps: override.revoked_apps,
+      floating_agent_access: override.floating_agent_access,
+      can_use_floating_agent: memberCanUseFloatingAgent(finalRole, override, policyFloatingRoles),
+      effective_apps: memberAllowedAppIds(finalRole, kind, override),
+    });
   }),
 );
 platform.delete(

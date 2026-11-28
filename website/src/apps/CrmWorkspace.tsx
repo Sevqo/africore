@@ -140,7 +140,18 @@ export function CrmWorkspace({
           current &&
           setMembers(
             (r.data || []).filter((m: any) =>
-              ['owner', 'admin', 'finance', 'operations'].includes(m.role),
+              [
+                'owner',
+                'admin',
+                'finance',
+                'accountant',
+                'operations',
+                'sales',
+                'hr',
+                'inventory_manager',
+                'support_agent',
+                'marketing_manager',
+              ].includes(m.role),
             ),
           ),
       )
@@ -1058,14 +1069,26 @@ export function CrmWorkspace({
                   <summary>New relationship record</summary>
                   <Form
                     disabled={!writable}
-                    submit={(d) => {
-                      if (createKind !== 'lead' && !d.customer) throw new Error('Choose a customer from the search results.');
-                      return write('/crm/entries', {
+                    submit={async (d) => {
+                      const entryKind = d.kind || createKind;
+                      if (entryKind !== 'lead' && !d.customer)
+                        throw new Error('Choose a customer from the search results.');
+                      let dueIso: string | null = null;
+                      if (d.due) {
+                        const parsed = new Date(d.due);
+                        if (Number.isNaN(parsed.getTime()))
+                          throw new Error('Enter a valid due date and time.');
+                        dueIso = parsed.toISOString();
+                      }
+                      if (entryKind === 'follow_up' && !dueIso)
+                        throw new Error('Choose a due date and time for this follow-up.');
+                      const cleanAmount = String(d.amount || '0').replace(/[\s,]+/g, '') || '0';
+                      const created = await write('/crm/entries', {
                         ...crmExtraValues(d, parseMoney),
                         customer_id: d.customer || null,
-                        kind: d.kind,
+                        kind: entryKind,
                         title: d.title,
-                        notes: d.notes,
+                        notes: d.notes || '',
                         contact_name: d.contact_name || '',
                         company: d.company || '',
                         email: d.email || '',
@@ -1076,12 +1099,24 @@ export function CrmWorkspace({
                         source_ref: d.source_ref || '',
                         business_need: d.business_need || '',
                         qualification_notes: d.qualification_notes || '',
-                        stage: d.stage,
+                        stage: d.stage || data.configuration.stages[0]?.id || 'new',
                         assigned_to: d.assigned_to || null,
-                        due_at: d.due ? new Date(d.due).toISOString() : null,
-                        amount_minor: parseMoney(d.amount || '0', d.currency),
-                        currency: d.currency,
+                        due_at: dueIso,
+                        amount_minor: parseMoney(cleanAmount, d.currency || 'KES'),
+                        currency: d.currency || 'KES',
                       });
+                      const el = document.getElementById('crm-create') as HTMLDetailsElement | null;
+                      if (el) el.open = false;
+                      if (!d.assigned_to) setOwnerFilter('all');
+                      const targetSec =
+                        entryKind === 'lead'
+                          ? 'leads'
+                          : entryKind === 'follow_up'
+                            ? 'followups'
+                            : 'pipeline';
+                      if (targetSec !== section) changeSection(targetSec);
+                      setMoveNotice(`${entryKind.replaceAll('_', ' ')} "${d.title}" created.`);
+                      return created;
                     }}
                   >
                     <div className="form-grid">

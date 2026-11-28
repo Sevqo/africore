@@ -20,25 +20,11 @@ export function ComputerUseStage({
   compact?: boolean;
   onOpenDestination?: (dest: AgentDestination) => void;
 }) {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [playing, setPlaying] = useState(true);
+  const [activeIndex, setActiveIndex] = useState(Math.max(0, steps.length - 1));
 
   useEffect(() => {
-    setActiveIndex(0);
-    setPlaying(true);
+    setActiveIndex(Math.max(0, steps.length - 1));
   }, [steps]);
-
-  useEffect(() => {
-    if (!playing || !steps.length) return;
-    if (activeIndex >= steps.length - 1) {
-      setPlaying(false);
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      setActiveIndex((idx) => Math.min(steps.length - 1, idx + 1));
-    }, compact ? 650 : 800);
-    return () => window.clearTimeout(timer);
-  }, [activeIndex, playing, steps, compact]);
 
   if (!steps.length) return null;
   const active = steps[Math.min(activeIndex, steps.length - 1)];
@@ -51,7 +37,7 @@ export function ComputerUseStage({
       <div className="agent-cu-chrome">
         <div className="agent-cu-chrome-left">
           <span className="agent-cu-dot" aria-hidden="true" />
-          <strong>Execution Trace</strong>
+          <strong>Live Execution Inspector</strong>
           <span className="agent-cu-route">
             {active.target_tab}
             {active.target_app ? ` · ${active.target_app}` : ''}
@@ -61,12 +47,18 @@ export function ComputerUseStage({
           <button
             type="button"
             className="quiet-button agent-cu-btn"
-            onClick={() => {
-              setActiveIndex(0);
-              setPlaying(true);
-            }}
+            disabled={activeIndex <= 0}
+            onClick={() => setActiveIndex((i) => Math.max(0, i - 1))}
           >
-            Replay
+            Prev step
+          </button>
+          <button
+            type="button"
+            className="quiet-button agent-cu-btn"
+            disabled={activeIndex >= steps.length - 1}
+            onClick={() => setActiveIndex((i) => Math.min(steps.length - 1, i + 1))}
+          >
+            Next step
           </button>
           {destination && onOpenDestination && status === 'completed' && (
             <button
@@ -92,7 +84,7 @@ export function ComputerUseStage({
           <div className="agent-cu-surface-card">
             <div className="agent-cu-step-heading">
               <span>
-                Step {active.step_index} of {steps.length}
+                Step {active.step_index} of {steps.length} · Verified Workspace Telemetry
               </span>
               <h4>{active.label}</h4>
               <p>{active.detail}</p>
@@ -108,18 +100,6 @@ export function ComputerUseStage({
               </dl>
             )}
           </div>
-
-          <div
-            className="agent-cu-cursor"
-            style={{
-              left: `${Math.max(8, Math.min(88, active.cursor_hint.x_pct))}%`,
-              top: `${Math.max(12, Math.min(84, active.cursor_hint.y_pct))}%`,
-            }}
-            aria-hidden="true"
-          >
-            <span className="agent-cu-cursor-tip" />
-            <span className="agent-cu-cursor-tag">Agent</span>
-          </div>
         </div>
       </div>
 
@@ -133,10 +113,7 @@ export function ComputerUseStage({
                   ? 'agent-cu-step-item agent-cu-step-active'
                   : 'agent-cu-step-item'
               }
-              onClick={() => {
-                setPlaying(false);
-                setActiveIndex(index);
-              }}
+              onClick={() => setActiveIndex(index)}
             >
               <span className="agent-cu-step-num">{step.step_index}</span>
               <span className="agent-cu-step-label">{step.label}</span>

@@ -77,6 +77,36 @@ PAGE_CLONE_MAP: dict[str, dict[str, str]] = {
         "section_label": "Sandbox Application Registry",
         "primary_cta": "Approve & Register App",
     },
+    "create_sales_quotation": {
+        "clone_kind": "sales",
+        "page_title": "AfriCore Sales · Quotations",
+        "section_label": "Customer Quotation Composer",
+        "primary_cta": "Approve & Create Quotation",
+    },
+    "create_inventory_product": {
+        "clone_kind": "inventory",
+        "page_title": "AfriCore Inventory · Products",
+        "section_label": "Catalog & Stock Registry",
+        "primary_cta": "Approve & Add Product",
+    },
+    "create_support_ticket": {
+        "clone_kind": "support",
+        "page_title": "AfriCore Support · Tickets & SLA",
+        "section_label": "Helpdesk Triage Queue",
+        "primary_cta": "Approve & Log Ticket",
+    },
+    "create_marketing_campaign": {
+        "clone_kind": "marketing",
+        "page_title": "AfriCore Marketing · Campaigns",
+        "section_label": "Omnichannel Campaign Studio",
+        "primary_cta": "Approve & Stage Campaign",
+    },
+    "create_suite_record": {
+        "clone_kind": "suite",
+        "page_title": "AfriCore Suite · Operational Record",
+        "section_label": "Cross-App Live Staging",
+        "primary_cta": "Approve & Save Record",
+    },
 }
 
 
@@ -115,7 +145,39 @@ def build_sandbox_clone_blueprint(
     elif tid == "create_task":
         editable_fields = [
             {"key": "title", "label": "Task title", "type": "text", "value": str(params.get("title") or "Follow-up action item")},
+            {"key": "project_name", "label": "Target project (optional)", "type": "text", "value": str(params.get("project_name") or "")},
             {"key": "priority", "label": "Priority", "type": "text", "value": str(params.get("priority") or "normal")},
+        ]
+    elif tid == "create_sales_quotation":
+        editable_fields = [
+            {"key": "customer_name", "label": "Customer", "type": "text", "value": str(params.get("customer_name") or "Workspace Client")},
+            {"key": "description", "label": "Line item", "type": "text", "value": str(params.get("description") or "Quoted services")},
+            {"key": "amount_minor", "label": f"Amount ({currency} minor)", "type": "number", "value": int(params.get("amount_minor") or 25000)},
+        ]
+    elif tid == "create_inventory_product":
+        editable_fields = [
+            {"key": "name", "label": "Product name", "type": "text", "value": str(params.get("name") or "New Product")},
+            {"key": "sku", "label": "SKU", "type": "text", "value": str(params.get("sku") or "SKU-001")},
+            {"key": "sale_price_minor", "label": f"Sale price ({currency} minor)", "type": "number", "value": int(params.get("sale_price_minor") or 10000)},
+        ]
+    elif tid == "create_support_ticket":
+        editable_fields = [
+            {"key": "subject", "label": "Ticket subject", "type": "text", "value": str(params.get("subject") or "Support Request")},
+            {"key": "priority", "label": "Priority", "type": "text", "value": str(params.get("priority") or "normal")},
+            {"key": "description", "label": "Issue details", "type": "textarea", "value": str(params.get("description") or "")},
+        ]
+    elif tid == "create_marketing_campaign":
+        editable_fields = [
+            {"key": "name", "label": "Campaign name", "type": "text", "value": str(params.get("name") or "Growth Campaign")},
+            {"key": "channel", "label": "Channel (email/sms/social)", "type": "text", "value": str(params.get("channel") or "email")},
+            {"key": "audience_segment", "label": "Audience", "type": "text", "value": str(params.get("audience_segment") or "All Active Buyers")},
+            {"key": "subject_line", "label": "Subject / Headline", "type": "text", "value": str(params.get("subject_line") or "")},
+        ]
+    elif tid == "create_suite_record":
+        editable_fields = [
+            {"key": "suite_app", "label": "Target suite app", "type": "text", "value": str(params.get("suite_app") or "knowledge_learning")},
+            {"key": "name", "label": "Name / Title", "type": "text", "value": str(params.get("name") or params.get("title") or "New Record")},
+            {"key": "content", "label": "Details / Content", "type": "textarea", "value": str(params.get("content") or "")},
         ]
     elif tid == "create_crm_lead":
         editable_fields = [

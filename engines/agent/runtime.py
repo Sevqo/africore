@@ -20,6 +20,12 @@ from agent.billing import AGENT_CREDIT_COSTS, evaluate_credit_charge, summarize_
 from agent.computer_use import build_execution_steps  # noqa: E402
 from agent.discussion import handle_discussion_mention  # noqa: E402
 from agent.isolation import check_target_access, evaluate_boundary  # noqa: E402
+from agent.memory import (  # noqa: E402
+    extract_turn_memories,
+    search_episodic_sessions,
+    summarize_memory_blocks,
+)
+from agent.multimodal import analyze_attachments  # noqa: E402
 from agent.planner import (  # noqa: E402
     default_permissions_for_kind,
     evaluate_permissions_update,
@@ -27,6 +33,7 @@ from agent.planner import (  # noqa: E402
     plan_agent_run,
     tools_for_kind,
 )
+from agent.privacy import check_prompt_guardrails, sanitize_for_external_llm  # noqa: E402
 from agent.skills import skills_for_kind  # noqa: E402
 
 
@@ -65,6 +72,46 @@ def dispatch(payload: dict[str, Any]) -> dict[str, Any]:
         return summarize_billing(payload)
     if op == "evaluate_credit_charge":
         return evaluate_credit_charge(payload)
+    if op == "consolidate_memory":
+        return extract_turn_memories(
+            prompt=str(payload.get("prompt") or ""),
+            summary=str(payload.get("summary") or ""),
+            tool_id=str(payload.get("tool_id") or ""),
+            workspace_kind=str(payload.get("workspace_kind") or "business"),
+            existing_memories=list(payload.get("existing_memories") or []),
+            params=dict(payload.get("params") or {}),
+        )
+    if op == "summarize_memory":
+        return summarize_memory_blocks(list(payload.get("memories") or []))
+    if op == "search_sessions":
+        return {
+            "hits": search_episodic_sessions(
+                str(payload.get("query") or ""),
+                list(payload.get("past_runs") or []),
+                int(payload.get("limit") or 4),
+            )
+        }
+    if op == "analyze_attachments":
+        return analyze_attachments(
+            attachments=list(payload.get("attachments") or []),
+            prompt=str(payload.get("prompt") or ""),
+            workspace_kind=str(payload.get("workspace_kind") or "business"),
+            currency=str(payload.get("currency") or "KES"),
+        )
+    if op == "check_guardrails":
+        return check_prompt_guardrails(str(payload.get("text") or ""))
+    if op == "preview_privacy_shield":
+        shield = sanitize_for_external_llm(
+            str(payload.get("prompt") or ""),
+            str(payload.get("summary") or ""),
+            dict(payload.get("evidence") or {}),
+        )
+        return {
+            "blocked": shield["blocked"],
+            "block_reason": shield["block_reason"],
+            "stats": shield["stats"],
+            "safe_prompt": shield["safe_prompt"],
+        }
     if op == "synthesize_trace":
         steps = build_execution_steps(
             tool_id=str(payload.get("tool_id") or ""),

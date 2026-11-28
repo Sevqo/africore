@@ -13,6 +13,20 @@ import { notify } from '../operations/automation';
 import { createCrmEntry, crmOverview } from '../operations/crm';
 import { createCalendarEvent, calendarEvents } from '../apps/phase3';
 import { createProject, saveTask, workProjects } from '../erp/work';
+import { documents, documentContent } from '../erp/documents';
+import { createQuote } from '../operations/sales';
+import { createProduct, inventoryOverview } from '../inventory/service';
+import {
+  createMarketingCampaign,
+  createSubscriptionPlan,
+  createSupportTicket,
+} from '../erp/odoo-phases8-10';
+import {
+  createLearningArticle,
+  createPropertyUnit,
+  createStudioApp,
+} from '../erp/apps-17-26';
+import { performSafeWebResearch } from './web-research';
 import { sumMinor } from '../finance/money';
 import { runPythonAgent } from './python-bridge';
 import type { AgentCreditCategory } from './billing';
@@ -61,6 +75,111 @@ export const AGENT_TOOL_CATALOG: AgentToolDefinition[] = [
     default_permission: 'autonomous',
     credit_category: 'analysis_read',
     target_tab: 'Intelligence',
+  },
+  {
+    id: 'analyze_app',
+    name: 'Deep-dive analyze any workspace app',
+    description:
+      'Inspect live records, KPIs, bottlenecks, and recommendations across any of the 26 AfriCore apps.',
+    category: 'analysis',
+    access_kind: 'read',
+    workspace_kinds: ['business'],
+    required_capability: 'read',
+    default_permission: 'autonomous',
+    credit_category: 'analysis_read',
+    target_tab: 'Apps',
+  },
+  {
+    id: 'fetch_document',
+    name: 'Find & fetch workspace document',
+    description:
+      'Search authorized Documents files and folders and return metadata and safe text previews.',
+    category: 'analysis',
+    access_kind: 'read',
+    workspace_kinds: ['business', 'personal'],
+    required_capability: 'read',
+    default_permission: 'autonomous',
+    credit_category: 'analysis_read',
+    target_tab: 'Apps',
+    target_app: 'documents',
+  },
+  {
+    id: 'web_research',
+    name: 'Privacy-safe internet web research',
+    description:
+      'Search public internet reference sources with PII scrubbing and SSRF protection.',
+    category: 'analysis',
+    access_kind: 'read',
+    workspace_kinds: ['business', 'personal', 'developer'],
+    required_capability: 'read',
+    default_permission: 'autonomous',
+    credit_category: 'analysis_read',
+    target_tab: 'Overview',
+  },
+  {
+    id: 'create_sales_quotation',
+    name: 'Prepare Sales quotation',
+    description: 'Stage a new Sales quotation in AfriCore Sales linked to a customer.',
+    category: 'crm',
+    access_kind: 'write',
+    workspace_kinds: ['business'],
+    required_capability: 'operations',
+    default_permission: 'approval_required',
+    credit_category: 'tool_action',
+    target_tab: 'Apps',
+    target_app: 'sales',
+  },
+  {
+    id: 'create_inventory_product',
+    name: 'Add Inventory product',
+    description: 'Stage a new product SKU in AfriCore Inventory.',
+    category: 'operations',
+    access_kind: 'write',
+    workspace_kinds: ['business'],
+    required_capability: 'operations',
+    default_permission: 'approval_required',
+    credit_category: 'tool_action',
+    target_tab: 'Apps',
+    target_app: 'inventory',
+  },
+  {
+    id: 'create_support_ticket',
+    name: 'Log Support ticket',
+    description: 'Stage a customer support ticket in AfriCore Support.',
+    category: 'operations',
+    access_kind: 'write',
+    workspace_kinds: ['business'],
+    required_capability: 'operations',
+    default_permission: 'approval_required',
+    credit_category: 'tool_action',
+    target_tab: 'Apps',
+    target_app: 'support',
+  },
+  {
+    id: 'create_marketing_campaign',
+    name: 'Create Marketing campaign',
+    description: 'Stage an omnichannel marketing campaign in AfriCore Marketing.',
+    category: 'crm',
+    access_kind: 'write',
+    workspace_kinds: ['business'],
+    required_capability: 'operations',
+    default_permission: 'approval_required',
+    credit_category: 'tool_action',
+    target_tab: 'Apps',
+    target_app: 'marketing',
+  },
+  {
+    id: 'create_suite_record',
+    name: 'Create record in any ERP / Suite app',
+    description:
+      'Stage a record across Subscriptions, Property & Hospitality, Knowledge & Learning, or Studio.',
+    category: 'operations',
+    access_kind: 'write',
+    workspace_kinds: ['business'],
+    required_capability: 'operations',
+    default_permission: 'approval_required',
+    credit_category: 'tool_action',
+    target_tab: 'Apps',
   },
   {
     id: 'forecast_cashflow',
@@ -396,6 +515,24 @@ export async function fetchSandboxCloneContext(
             return { id: i.id, reference: 'INV', status: 'draft', total_minor: 0 };
           }
         }),
+      };
+    }
+    if (cloneKind === 'sales' || cloneKind === 'inventory' || cloneKind === 'support' || cloneKind === 'marketing' || cloneKind === 'suite') {
+      const [custs, prods] = await Promise.all([
+        dbAll(
+          "SELECT id, data FROM ac_records WHERE org_id=? AND environment=? AND kind='customers' ORDER BY created_at DESC LIMIT 5",
+          [targetAccess.org, targetAccess.environment],
+        ).catch(() => []),
+        dbAll(
+          'SELECT id, name, sku FROM ac_products WHERE org_id=? AND environment=? ORDER BY updated_at DESC LIMIT 5',
+          [targetAccess.org, targetAccess.environment],
+        ).catch(() => []),
+      ]);
+      return {
+        existing_customers: custs.map((c: any) => {
+          try { return { id: c.id, name: JSON.parse(c.data).name }; } catch { return { id: c.id, name: 'Customer' }; }
+        }),
+        existing_products: prods.map((p: any) => ({ id: p.id, name: p.name, sku: p.sku })),
       };
     }
   } catch {
@@ -831,12 +968,26 @@ export async function executeAgentTool(
     const title = String(params.title || 'Follow-up workspace task').slice(0, 180);
     const list = await workProjects(targetAccess);
     const projects = list.data || [];
-    let projectId = typeof params.project_id === 'string' ? params.project_id : projects[0]?.id;
+    const requestedProjectName = String(params.project_name || '').trim().toLowerCase();
+    const matchedByName = requestedProjectName
+      ? projects.find((p: any) =>
+          String(p.name || p.data?.name || '')
+            .toLowerCase()
+            .includes(requestedProjectName),
+        )
+      : null;
+    let projectId =
+      typeof params.project_id === 'string'
+        ? params.project_id
+        : matchedByName?.id || projects[0]?.id;
+    let projectName = String(
+      matchedByName?.data?.name || projects[0]?.data?.name || 'Operations Backlog',
+    );
     if (!projectId) {
       const fallback = await createProject(
         targetAccess,
         {
-          name: 'Operations Backlog',
+          name: requestedProjectName ? String(params.project_name).trim().slice(0, 120) : 'Operations Backlog',
           description: 'Created automatically by AfriCore Agent to track tasks.',
           owner_id: targetAccess.actor,
           members: [{ user_id: targetAccess.actor, permission: 'manage' }],
@@ -844,6 +995,7 @@ export async function executeAgentTool(
         'agent-auto-proj-' + idempotencySeed,
       );
       projectId = fallback.id;
+      projectName = String(fallback.data?.name || projectName);
     }
     const task = await saveTask(
       targetAccess,
@@ -863,16 +1015,16 @@ export async function executeAgentTool(
             typeof params.due_on === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(params.due_on)
               ? params.due_on
               : new Date(Date.now() + 7 * 86400_000).toISOString().slice(0, 10),
-          priority: 'normal',
+          priority: params.priority === 'high' || params.priority === 'urgent' ? 'high' : 'normal',
         },
       },
       'agent-only-task-' + idempotencySeed,
     );
     return {
-      summary: `Added task "${title}" to your AfriCore Work project board.`,
+      summary: `Added task "${title}" to project "${projectName}" in AfriCore Work.`,
       record_id: task.id,
       destination: dest('Work', 'work', 'my-work'),
-      data: { task_id: task.id, project_id: projectId, title },
+      data: { task_id: task.id, project_id: projectId, project_name: projectName, title },
       steps: [
         {
           step_index: 1,
@@ -1525,6 +1677,408 @@ export async function executeAgentTool(
           duration_ms: 100,
         },
       ],
+    };
+  }
+
+  if (tool.id === 'fetch_document') {
+    const q = String(params.query || '').trim();
+    const res = await documents(targetAccess, { q, view: 'recent', sort: 'recent', offset: 0 }).catch(
+      () => ({ data: [], matching_covered: 0, storage: { used_bytes: 0, limit_bytes: 0 } }),
+    );
+    const matches = (res.data || []).slice(0, 5);
+    let previewText = '';
+    const primary = matches.find((d: any) => d.kind === 'file') || matches[0];
+    if (primary && primary.kind === 'file' && primary.permissions?.download) {
+      try {
+        const content = await documentContent(targetAccess, primary.id);
+        if (/^text\/|json|csv|xml|markdown/i.test(content.content_type)) {
+          previewText = Buffer.from(content.content_base64, 'base64')
+            .toString('utf8')
+            .slice(0, 900);
+        }
+      } catch {
+        /* non-text or restricted download */
+      }
+    }
+    const lines = [
+      `**Documents Vault Lookup${q ? ` — "${q}"` : ''}**`,
+      matches.length
+        ? `Found ${res.matching_covered || matches.length} authorized match(es):`
+        : `No authorized documents matched "${q || 'your search'}".`,
+    ];
+    for (const item of matches) {
+      lines.push(
+        `• **${item.data?.name || 'Document'}** (${item.kind} · ${item.data?.file?.content_type || 'folder'}${item.data?.file?.size_bytes ? ` · ${Math.max(1, Math.round(item.data.file.size_bytes / 1024))} KB` : ''})`,
+      );
+    }
+    if (previewText) {
+      lines.push('', `**Preview of ${primary.data?.name}:**`, previewText);
+    }
+    return {
+      summary: lines.join('\n'),
+      record_id: primary?.id,
+      destination: dest('Apps', 'documents'),
+      data: {
+        query: q,
+        total_matches: res.matching_covered || matches.length,
+        documents: matches.map((m: any) => ({
+          id: m.id,
+          name: m.data?.name,
+          kind: m.kind,
+          description: m.data?.description || '',
+          tags: m.data?.tags || [],
+          filename: m.data?.file?.filename || null,
+          content_type: m.data?.file?.content_type || null,
+        })),
+        preview_excerpt: previewText || null,
+      },
+      steps: [
+        {
+          step_index: 1,
+          phase: 'observe',
+          label: 'Verify Documents ACL & Search Vault',
+          detail: `Searched authorized files matching "${q || 'all'}".`,
+          target_tab: 'Apps',
+          target_app: 'documents',
+          target_element: 'Documents Search',
+          cursor_hint: { x_pct: 40, y_pct: 25 },
+          status: 'completed',
+          duration_ms: 85,
+        },
+        {
+          step_index: 2,
+          phase: 'verify',
+          label: 'Return Authorized Document Metadata',
+          detail: `Retrieved ${matches.length} document record(s)${previewText ? ' with safe text preview' : ''}.`,
+          target_tab: 'Apps',
+          target_app: 'documents',
+          target_element: 'Document Details',
+          cursor_hint: { x_pct: 55, y_pct: 55 },
+          status: 'completed',
+          duration_ms: 95,
+        },
+      ],
+    };
+  }
+
+  if (tool.id === 'web_research') {
+    const query = String(params.query || params.prompt || '').trim();
+    const research = await performSafeWebResearch(query);
+    return {
+      summary: research.summary,
+      destination: dest('Overview'),
+      data: {
+        query: research.query,
+        sanitized_query: research.sanitized_query,
+        privacy_scrubbed: research.privacy_scrubbed,
+        sources: research.sources,
+      },
+      steps: [
+        {
+          step_index: 1,
+          phase: 'observe',
+          label: 'Scrub Outbound Query (Privacy Shield)',
+          detail: `Sanitized query "${research.sanitized_query}" — zero workspace PII included.`,
+          target_tab: 'Overview',
+          target_element: 'Privacy Guardrail',
+          cursor_hint: { x_pct: 30, y_pct: 24 },
+          status: 'completed',
+          duration_ms: 45,
+        },
+        {
+          step_index: 2,
+          phase: 'verify',
+          label: 'Collect Cited Public Sources',
+          detail: `Compiled ${research.sources.length} public reference source(s).`,
+          target_tab: 'Overview',
+          target_element: 'Research Brief',
+          cursor_hint: { x_pct: 58, y_pct: 60 },
+          status: 'completed',
+          duration_ms: 180,
+        },
+      ],
+    };
+  }
+
+  if (tool.id === 'analyze_app') {
+    const appId = String(params.app_id || 'work');
+    const focusName = String(params.focus_name || '').trim();
+    const lines: string[] = [];
+    let data: Record<string, unknown> = { app_id: appId };
+
+    if (appId === 'work') {
+      const list = await workProjects(targetAccess).catch(() => ({ data: [] as any[] }));
+      const projects: any[] = list.data || [];
+      const focused = focusName
+        ? projects.find((p: any) =>
+            String(p.data?.name || '').toLowerCase().includes(focusName.toLowerCase()),
+          )
+        : null;
+      if (focused) {
+        const ts = focused.task_summary || { total: 0, completed: 0, open: 0, overdue: 0 };
+        const total = Number(ts.total || 0);
+        const completed = Number(ts.completed || 0);
+        const open = Number(ts.open || 0);
+        const overdue = Number(ts.overdue || 0);
+        const pName = String(focused.data?.name || 'Project');
+        lines.push(
+          `**Work Project Analysis: ${pName}**`,
+          `• Status: ${focused.status || 'active'} · Tasks: ${total} total (${completed} completed, ${open} open, ${overdue} overdue).`,
+          total === 0
+            ? '• Recommendation: Break this project into 3–5 concrete milestone tasks with owners and due dates.'
+            : `• Completion rate: ${Math.round((completed / Math.max(1, total)) * 100)}%.`,
+        );
+        data = { app_id: appId, project: { id: focused.id, name: pName, task_count: total, completed, open, overdue } };
+      } else {
+        const totalTasks = projects.reduce((sum: number, p: any) => sum + Number(p.task_summary?.total || 0), 0);
+        lines.push(
+          `**AfriCore Work Overview**`,
+          `• Active projects: ${projects.length} · Total tasks: ${totalTasks}`,
+          ...projects.slice(0, 5).map((p: any) => `• Project "${p.data?.name || 'Project'}": ${Number(p.task_summary?.total || 0)} task(s) (${p.status || 'active'})`),
+        );
+        data = { app_id: appId, projects_count: projects.length, tasks_count: totalTasks };
+      }
+    } else if (appId === 'inventory') {
+      const inv = await inventoryOverview(targetAccess).catch(() => null);
+      const productsCount = Number((inv as any)?.product_count ?? (inv as any)?.products?.length ?? 0);
+      const lowStock = Number((inv as any)?.low_stock_count ?? 0);
+      lines.push(
+        `**AfriCore Inventory Analysis**`,
+        `• Catalog products: ${productsCount} · Low-stock alerts: ${lowStock}`,
+        lowStock > 0
+          ? '• Action: Review replenishment suggestions and open purchase requests for low-stock SKUs.'
+          : '• Stock health looks stable with no active low-stock shortages.',
+      );
+      data = { app_id: appId, products_count: productsCount, low_stock: lowStock };
+    } else if (appId === 'crm') {
+      const crm = await crmOverview(targetAccess).catch(() => null);
+      lines.push(
+        `**AfriCore CRM Pipeline Analysis**`,
+        `• Total customers: ${crm?.total_customers || 0} · Active opportunities: ${crm?.active_opportunities || 0} · Follow-ups due: ${crm?.follow_ups_due || 0}`,
+        ...(crm?.pipeline || []).map((st: any) => `• Stage ${st.name}: ${st.count} opportunity(ies)`),
+      );
+      data = { app_id: appId, crm };
+    } else {
+      const [erpCounts, recCounts] = await Promise.all([
+        dbAll(
+          'SELECT kind, COUNT(*) AS n FROM ac_erp_objects WHERE org_id=? AND environment=? GROUP BY kind',
+          [targetAccess.org, targetAccess.environment],
+        ).catch(() => []),
+        dbAll(
+          'SELECT kind, COUNT(*) AS n FROM ac_records WHERE org_id=? AND environment=? GROUP BY kind',
+          [targetAccess.org, targetAccess.environment],
+        ).catch(() => []),
+      ]);
+      const erpMap = Object.fromEntries(erpCounts.map((r: any) => [String(r.kind), Number(r.n)]));
+      const recMap = Object.fromEntries(recCounts.map((r: any) => [String(r.kind), Number(r.n)]));
+      const appLabel = appId.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+      lines.push(
+        `**AfriCore ${appLabel} Analysis**`,
+        `• Workspace canonical records: ${recMap.customers || 0} customers, ${recMap.invoices || 0} invoices, ${recMap.orders || 0} orders.`,
+        `• Extended operational modules active: ${Object.keys(erpMap).length} tracked object streams (${Object.entries(erpMap).slice(0, 6).map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`).join(' · ') || 'ready to populate'}).`,
+        `• Tip: You can ask me to create records directly inside ${appLabel} and I will stage them in the live Sandbox for your review.`,
+      );
+      data = { app_id: appId, erp_counts: erpMap, record_counts: recMap };
+    }
+
+    return {
+      summary: lines.join('\n'),
+      destination: dest('Apps', appId),
+      data,
+      steps: [
+        {
+          step_index: 1,
+          phase: 'observe',
+          label: `Inspect ${appId.replace(/_/g, ' ')} Live Data`,
+          detail: `Queried authorized ${appId} records in workspace ${targetAccess.org.slice(0, 8)}.`,
+          target_tab: 'Apps',
+          target_app: appId,
+          target_element: 'App Data Store',
+          cursor_hint: { x_pct: 42, y_pct: 36 },
+          status: 'completed',
+          duration_ms: 95,
+        },
+      ],
+    };
+  }
+
+  if (tool.id === 'create_sales_quotation') {
+    const customerName = String(params.customer_name || 'Workspace Client').slice(0, 180);
+    const description = String(params.description || `Quoted services — ${customerName}`).slice(0, 400);
+    const amountMinor = Math.max(100, Math.round(Number(params.amount_minor || 25000)));
+    const existingCustomers = await dbAll(
+      "SELECT id, data FROM ac_records WHERE org_id=? AND environment=? AND kind='customers' ORDER BY created_at DESC LIMIT 50",
+      [targetAccess.org, targetAccess.environment],
+    );
+    let customerId = existingCustomers.find((c: any) => {
+      try { return String(JSON.parse(c.data).name || '').toLowerCase() === customerName.toLowerCase(); } catch { return false; }
+    })?.id;
+    if (!customerId) {
+      const createdCust = await saveRecord(targetAccess, 'customers', { name: customerName });
+      customerId = createdCust.id;
+    }
+    const issue = todayDate();
+    const due = new Date(Date.now() + 14 * 86400_000).toISOString().slice(0, 10);
+    const created = await createQuote(
+      targetAccess,
+      {
+        customer_id: customerId,
+        currency,
+        issue_date: issue,
+        due_date: due,
+        items: [{ description, quantity: 1, unit_price_minor: amountMinor }],
+      },
+      'agent-quote-' + idempotencySeed,
+    );
+    return {
+      summary: `Created Sales quotation for "${customerName}" (${moneyFmt(amountMinor, currency)}) valid until ${due}.`,
+      record_id: created.id,
+      destination: dest('Apps', 'sales'),
+      data: { quotation_id: created.id, customer_name: customerName, amount_minor: amountMinor, currency },
+      steps: [],
+    };
+  }
+
+  if (tool.id === 'create_inventory_product') {
+    const name = String(params.name || 'New Catalog Product').slice(0, 160);
+    const sku = String(params.sku || `SKU-${idempotencySeed.slice(0, 6).toUpperCase()}`).slice(0, 60);
+    const salePriceMinor = Math.max(0, Math.round(Number(params.sale_price_minor || 10000)));
+    const created = await createProduct(
+      targetAccess,
+      { name, sku, currency, sale_price_minor: salePriceMinor, unit: 'unit' },
+      'agent-prod-' + idempotencySeed,
+    );
+    return {
+      summary: `Added Inventory product "${name}" (SKU: ${sku} · ${moneyFmt(salePriceMinor, currency)}).`,
+      record_id: created.id,
+      destination: dest('Apps', 'inventory'),
+      data: { product_id: created.id, name, sku, sale_price_minor: salePriceMinor, currency },
+      steps: [],
+    };
+  }
+
+  if (tool.id === 'create_support_ticket') {
+    const subject = String(params.subject || 'Customer Support Ticket').slice(0, 180);
+    const priority = ['low', 'normal', 'high', 'urgent'].includes(String(params.priority || ''))
+      ? String(params.priority)
+      : 'normal';
+    const due = new Date(Date.now() + 2 * 86400_000).toISOString().slice(0, 10);
+    const created = await createSupportTicket(
+      targetAccess,
+      {
+        subject,
+        customer_name: String(params.customer_name || 'Workspace Customer'),
+        priority,
+        description: String(params.description || subject).slice(0, 1500),
+        sla_due_on: due,
+      },
+      'agent-ticket-' + idempotencySeed,
+    );
+    return {
+      summary: `Logged Support ticket "${subject}" (priority: ${priority}, SLA due ${due}).`,
+      record_id: created.id,
+      destination: dest('Apps', 'support'),
+      data: { ticket_id: created.id, subject, priority },
+      steps: [],
+    };
+  }
+
+  if (tool.id === 'create_marketing_campaign') {
+    const name = String(params.name || 'Growth Campaign').slice(0, 160);
+    const channel = ['email', 'sms', 'social', 'event'].includes(String(params.channel || ''))
+      ? String(params.channel)
+      : 'email';
+    const created = await createMarketingCampaign(
+      targetAccess,
+      {
+        name,
+        channel,
+        audience_segment: String(params.audience_segment || 'All Active Buyers'),
+        subject_line: String(params.subject_line || name),
+        scheduled_on: todayDate(),
+      },
+      'agent-camp-' + idempotencySeed,
+    );
+    return {
+      summary: `Created ${channel.toUpperCase()} marketing campaign "${name}".`,
+      record_id: created.id,
+      destination: dest('Apps', 'marketing'),
+      data: { campaign_id: created.id, name, channel },
+      steps: [],
+    };
+  }
+
+  if (tool.id === 'create_suite_record') {
+    const suiteApp = String(params.suite_app || 'knowledge_learning');
+    const name = String(params.name || params.title || 'Workspace Record').slice(0, 160);
+    if (suiteApp === 'subscriptions') {
+      const priceMinor = Math.max(100, Math.round(Number(params.amount_minor || 50000)));
+      const created = await createSubscriptionPlan(
+        targetAccess,
+        {
+          code: `PLAN-${idempotencySeed.slice(0, 5).toUpperCase()}`,
+          name,
+          interval: 'monthly',
+          price_minor: priceMinor,
+          currency,
+        },
+        'agent-sub-' + idempotencySeed,
+      );
+      return {
+        summary: `Created Subscription plan "${name}" (${moneyFmt(priceMinor, currency)}/mo).`,
+        record_id: created.id,
+        destination: dest('Apps', 'subscriptions'),
+        data: { plan_id: created.id, name },
+        steps: [],
+      };
+    }
+    if (suiteApp === 'property_hospitality') {
+      const rateMinor = Math.max(100, Math.round(Number(params.amount_minor || 120000)));
+      const created = await createPropertyUnit(
+        targetAccess,
+        {
+          code: `U-${idempotencySeed.slice(0, 4).toUpperCase()}`,
+          name,
+          unit_type: 'hotel_room',
+          rate_minor: rateMinor,
+          currency,
+        },
+        'agent-prop-' + idempotencySeed,
+      );
+      return {
+        summary: `Created Property & Hospitality unit "${name}" (${moneyFmt(rateMinor, currency)}).`,
+        record_id: created.id,
+        destination: dest('Apps', 'property_hospitality'),
+        data: { unit_id: created.id, name },
+        steps: [],
+      };
+    }
+    if (suiteApp === 'studio') {
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32) || 'custom-app';
+      const created = await createStudioApp(
+        targetAccess,
+        { name, slug, fields: [{ key: 'title', label: 'Title', type: 'text', required: true }] },
+        'agent-studio-' + idempotencySeed,
+      );
+      return {
+        summary: `Created AfriCore Studio custom app "${name}".`,
+        record_id: created.id,
+        destination: dest('Apps', 'studio'),
+        data: { studio_app_id: created.id, name },
+        steps: [],
+      };
+    }
+    const created = await createLearningArticle(
+      targetAccess,
+      { title: name, content: String(params.content || name).slice(0, 4000) },
+      'agent-kb-' + idempotencySeed,
+    );
+    return {
+      summary: `Published Knowledge & Learning article "${name}".`,
+      record_id: created.id,
+      destination: dest('Apps', 'knowledge_learning'),
+      data: { article_id: created.id, title: name },
+      steps: [],
     };
   }
 

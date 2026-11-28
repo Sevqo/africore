@@ -23,7 +23,10 @@ const routes = [
   'POST /agent/billing/credits',
   'GET /agent/memory',
   'POST /agent/memory',
+  'PATCH /agent/memory/:id',
   'DELETE /agent/memory/:id',
+  'POST /agent/transcribe',
+  'GET /agent/sessions/search',
 ];
 
 for (const entry of routes) {

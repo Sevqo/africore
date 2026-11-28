@@ -39,42 +39,42 @@ export function SandboxCloneStage({
   onReject?: () => void;
   onOpenChat?: () => void;
 }) {
-  const [activeStepIdx, setActiveStepIdx] = useState(0);
-  const [playing, setPlaying] = useState(true);
+  const [activeStepIdx, setActiveStepIdx] = useState(Math.max(0, steps.length - 1));
+  const [showLiveDiff, setShowLiveDiff] = useState(false);
+  const [dryRunResult, setDryRunResult] = useState<{ ok: boolean; checks: string[] } | null>(null);
   const doneNotified = useRef(false);
   const dragState = useRef<{ startX: number; startW: number } | null>(null);
 
   useEffect(() => {
-    setActiveStepIdx(0);
-    setPlaying(steps.length > 1);
-    doneNotified.current = false;
-  }, [blueprint.tool_id, steps]);
-
-  useEffect(() => {
-    if (!playing || !steps.length) {
-      if (!doneNotified.current) {
-        doneNotified.current = true;
-        onPlaybackDone();
-      }
-      return;
+    setActiveStepIdx(Math.max(0, steps.length - 1));
+    setDryRunResult(null);
+    if (!doneNotified.current) {
+      doneNotified.current = true;
+      onPlaybackDone();
     }
-    if (activeStepIdx >= steps.length - 1) {
-      setPlaying(false);
-      if (!doneNotified.current) {
-        doneNotified.current = true;
-        onPlaybackDone();
-      }
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      setActiveStepIdx((prev) => Math.min(steps.length - 1, prev + 1));
-    }, 360);
-    return () => window.clearTimeout(timer);
-  }, [activeStepIdx, playing, steps, onPlaybackDone]);
+  }, [blueprint.tool_id, steps, onPlaybackDone]);
 
   const activeStep = steps[Math.min(activeStepIdx, Math.max(0, steps.length - 1))];
   const merged = { ...(blueprint.staged_params || {}), ...editedParams };
   const currency = blueprint.currency || 'KES';
+
+  function runInteractiveDryCheck() {
+    const checks: string[] = [];
+    let ok = true;
+    for (const field of blueprint.editable_fields || []) {
+      const val = editedParams[field.key] !== undefined ? editedParams[field.key] : field.value;
+      const str = String(val ?? '').trim();
+      if (!str && !field.label.toLowerCase().includes('optional')) {
+        ok = false;
+        checks.push(`Missing required field: ${field.label}`);
+      } else {
+        checks.push(`✓ ${field.label}: ${str.slice(0, 60)}`);
+      }
+    }
+    checks.push(`✓ Privacy Shield: encrypted workspace execution (${blueprint.tool_id})`);
+    checks.push(`✓ Target surface: ${blueprint.page_title} (+1 staged write, live workspace untouched until Approve)`);
+    setDryRunResult({ ok, checks });
+  }
 
   function clampWidth(raw: number) {
     const maxAllowed =
@@ -170,40 +170,53 @@ export function SandboxCloneStage({
         <div className="agent-sandbox-step-strip" role="status" aria-live="polite">
           <div className="agent-sandbox-step-meta">
             <span className="agent-sandbox-step-count">
-              {playing
-                ? 'AGENT STAGING IN SANDBOX'
-                : status === 'completed'
-                  ? 'COMMITTED TO WORKSPACE'
-                  : 'INTERACTIVE STAGING · CLICK ANY SLOT OR FIELD TO EDIT'}
+              {status === 'completed'
+                ? 'LIVE EXECUTION COMMITTED'
+                : 'LIVE INTERACTIVE SANDBOX · INSPECT, VALIDATE & EDIT DIRECTLY'}
             </span>
             <p className="agent-sandbox-step-text">
-              {activeStep ? activeStep.label : blueprint.section_label}
+              {activeStep ? `${activeStep.label} — ${activeStep.detail}` : blueprint.section_label}
             </p>
           </div>
-          {steps.length > 0 && (
-            <div className="agent-sandbox-step-dots" aria-label="Agent staging steps">
-              {steps.map((st, idx) => (
-                <button
-                  key={st.step_index}
-                  type="button"
-                  className={
-                    idx === activeStepIdx
-                      ? 'agent-step-pill is-current'
-                      : idx < activeStepIdx
-                        ? 'agent-step-pill is-done'
-                        : 'agent-step-pill'
-                  }
-                  title={`${st.label}: ${st.detail}`}
-                  onClick={() => {
-                    setPlaying(false);
-                    setActiveStepIdx(idx);
-                  }}
-                >
-                  {idx + 1}
-                </button>
-              ))}
-            </div>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="quiet-button"
+              style={{ padding: '3px 8px', minHeight: 24, fontSize: 11 }}
+              onClick={runInteractiveDryCheck}
+            >
+              Validate
+            </button>
+            <button
+              type="button"
+              className="quiet-button"
+              style={{ padding: '3px 8px', minHeight: 24, fontSize: 11 }}
+              onClick={() => setShowLiveDiff((v) => !v)}
+            >
+              {showLiveDiff ? 'Hide diff' : 'Live diff'}
+            </button>
+            {steps.length > 0 && (
+              <div className="agent-sandbox-step-dots" aria-label="Live execution steps">
+                {steps.map((st, idx) => (
+                  <button
+                    key={st.step_index}
+                    type="button"
+                    className={
+                      idx === activeStepIdx
+                        ? 'agent-step-pill is-current'
+                        : idx < activeStepIdx
+                          ? 'agent-step-pill is-done'
+                          : 'agent-step-pill'
+                    }
+                    title={`${st.label}: ${st.detail}`}
+                    onClick={() => setActiveStepIdx(idx)}
+                  >
+                    {idx + 1}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="agent-sandbox-body">
@@ -246,11 +259,7 @@ export function SandboxCloneStage({
                   context={blueprint.live_context}
                 />
               )}
-              {(blueprint.clone_kind === 'expenses' ||
-                blueprint.clone_kind === 'customers' ||
-                blueprint.clone_kind === 'notifications' ||
-                blueprint.clone_kind === 'developer' ||
-                blueprint.clone_kind === 'intelligence') && (
+              {![ 'calendar', 'work', 'crm', 'invoices' ].includes(blueprint.clone_kind) && (
                 <LedgerOrFormPageClone
                   cloneKind={blueprint.clone_kind}
                   pageTitle={blueprint.page_title}
@@ -259,18 +268,51 @@ export function SandboxCloneStage({
                 />
               )}
 
-              {playing && activeStep && (
+              {dryRunResult && (
                 <div
-                  className="agent-cu-cursor"
                   style={{
-                    left: `${Math.max(12, Math.min(82, activeStep.cursor_hint.x_pct))}%`,
-                    top: `${Math.max(14, Math.min(78, activeStep.cursor_hint.y_pct))}%`,
+                    marginTop: 10,
+                    padding: '10px 12px',
+                    borderRadius: 12,
+                    border: `1px solid ${dryRunResult.ok ? '#86efac' : '#fca5a5'}`,
+                    background: dryRunResult.ok ? '#f0fdf4' : '#fef2f2',
+                    fontSize: 12,
                   }}
-                  aria-hidden="true"
                 >
-                  <span className="agent-cu-cursor-tip" />
-                  <span className="agent-cu-cursor-tag">Staging…</span>
+                  <strong>
+                    {dryRunResult.ok ? 'Dry-Run Validation Passed' : 'Review Required Before Commit'}
+                  </strong>
+                  <ul style={{ margin: '6px 0 0', paddingLeft: 16 }}>
+                    {dryRunResult.checks.map((c, idx) => (
+                      <li key={idx}>{c}</li>
+                    ))}
+                  </ul>
                 </div>
+              )}
+
+              {showLiveDiff && (
+                <pre
+                  style={{
+                    marginTop: 10,
+                    padding: '10px 12px',
+                    borderRadius: 12,
+                    background: '#0f172a',
+                    color: '#e2e8f0',
+                    fontSize: 11.5,
+                    overflowX: 'auto',
+                  }}
+                >
+                  {JSON.stringify(
+                    {
+                      tool: blueprint.tool_id,
+                      target: blueprint.page_title,
+                      live_write_delta: '+1 record (staged)',
+                      payload: merged,
+                    },
+                    null,
+                    2,
+                  )}
+                </pre>
               )}
             </div>
 

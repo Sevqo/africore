@@ -3,6 +3,10 @@ import { z } from 'zod';
 import { dbAll, dbGet } from '../db/adapter';
 import { audit, fail, type Access } from '../platform/auth';
 import { deriveUsername, getUserAvatarProfiles } from '../platform/profile-avatar';
+import {
+  getWorkspaceMemberOverrides,
+  resolveWorkspaceUsernames,
+} from '../platform/member-access';
 import { all, create } from '../operations/store';
 import { financialSnapshot } from '../operations/intelligence';
 import { notify } from '../operations/automation';
@@ -127,21 +131,35 @@ async function ensureDefaultChannels(a: Access) {
   return created;
 }
 
-async function loadWorkspaceMembersWithAvatars(orgId: string) {
-  const rows = await dbAll(
-    'SELECT u.id, u.email, m.role, p.display_name FROM ac_memberships m JOIN ac_users u ON u.id=m.user_id LEFT JOIN ac_profiles p ON p.user_id=u.id WHERE m.org_id=? ORDER BY u.email',
-    [orgId],
-  );
+async function loadWorkspaceMembersWithAvatars(orgId: string, agentHandle?: string) {
+  const [rows, overrides] = await Promise.all([
+    dbAll(
+      'SELECT u.id, u.email, m.role, p.display_name FROM ac_memberships m JOIN ac_users u ON u.id=m.user_id LEFT JOIN ac_profiles p ON p.user_id=u.id WHERE m.org_id=? ORDER BY u.email',
+      [orgId],
+    ),
+    getWorkspaceMemberOverrides(orgId),
+  ]);
   const avatarMap = await getUserAvatarProfiles(rows.map((r: any) => String(r.id)));
+  const usernameMap = resolveWorkspaceUsernames(
+    rows.map((r: any) => ({
+      id: String(r.id),
+      email: String(r.email || ''),
+      display_name: String(r.display_name || ''),
+    })),
+    overrides,
+    avatarMap,
+    agentHandle,
+  );
   return rows.map((r: any) => {
-    const extra = avatarMap.get(String(r.id));
+    const uid = String(r.id);
+    const extra = avatarMap.get(uid);
     const displayName = String(r.display_name || r.email?.split('@')[0] || 'Member');
     return {
-      id: String(r.id),
+      id: uid,
       email: String(r.email || ''),
       role: String(r.role || 'member'),
       display_name: displayName,
-      username: extra?.username || deriveUsername(displayName, r.email),
+      username: usernameMap.get(uid) || deriveUsername(displayName, r.email),
       avatar_url: extra?.avatar_url || '',
     };
   });
@@ -658,6 +676,7 @@ export async function postWorkChannelMessage(a: Access, channelId: string, input
               stage_in_sandbox: false,
             },
             'channel-agent-' + randomUUID(),
+            { source: 'work_discussion' },
           );
           replyText = run.summary;
           runSummaryObj = {
