@@ -7,7 +7,7 @@ import { assetBytes, currentAsset } from '../publishing/assets';
 export async function publicStoreImage(environment: string, slug: string, id: string) {
   z.string().uuid().parse(id);
   const { a, manifest } = await publishedStoreContext(environment, slug);
-  let referenced = manifest.logo_asset?.id === id;
+  let referenced = manifest.logo_asset?.id === id || manifest.banner_asset?.id === id;
   if (!referenced) {
     for (const listing of manifest.listings.filter((l: any) =>
       l.assets?.some((asset: any) => asset.id === id),

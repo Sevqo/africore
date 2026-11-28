@@ -17,9 +17,21 @@ type Props = {
   mutate: (work: () => Promise<any>) => Promise<any>;
   onExit?: () => void;
   onCloseShift?: () => void;
+  onCashAdjustment?: () => void;
+  onXReport?: () => void;
   onRegisterUpdated?: () => void;
 };
 type KeyMode = 'qty' | 'discount';
+type HeldOrder = {
+  id: string;
+  label: string;
+  tableNumber: string;
+  basket: any[];
+  discount: string;
+  notes: string;
+  customer: string;
+  savedAt: string;
+};
 export function POSCashier({
   api,
   register: r,
@@ -33,6 +45,8 @@ export function POSCashier({
   mutate,
   onExit,
   onCloseShift,
+  onCashAdjustment,
+  onXReport,
   onRegisterUpdated,
 }: Props) {
   const c = r.data,
@@ -78,7 +92,23 @@ export function POSCashier({
     [tenderedInput, setTenderedInput] = useState('');
   const [keyMode, setKeyMode] = useState<KeyMode>('qty'),
     [keyBuffer, setKeyBuffer] = useState(''),
-    [notice, setNotice] = useState('');
+    [notice, setNotice] = useState(''),
+    [heldOrders, setHeldOrders] = useState<HeldOrder[]>([]),
+    [tableNumber, setTableNumber] = useState(''),
+    [floors, setFloors] = useState<any[]>([]),
+    [loyaltyPrograms, setLoyaltyPrograms] = useState<any[]>([]),
+    [loyaltyRedeemPts, setLoyaltyRedeemPts] = useState(''),
+    [quickCustomerOpen, setQuickCustomerOpen] = useState(false),
+    [quickCustomer, setQuickCustomer] = useState({ name: '', phone: '', email: '' });
+  useEffect(() => {
+    if (!online) return;
+    api('/pos/floors')
+      .then((res) => setFloors(res?.floors || res?.data || []))
+      .catch(() => setFloors([]));
+    api('/pos/loyalty-programs')
+      .then((res) => setLoyaltyPrograms((res?.data || []).filter((p: any) => p.status === 'active')))
+      .catch(() => setLoyaltyPrograms([]));
+  }, [online]);
   useEffect(() => {
     let current = true;
     setProducts(null);
@@ -160,26 +190,156 @@ export function POSCashier({
     setBasket((values) => values.map((v) => (v.product.id === id ? { ...v, quantity } : v)));
   };
   const applyKey = () => {
+    if (!keyBuffer) return;
+    if (keyMode === 'discount') {
+      if (Number(keyBuffer) < 0) {
+        setError('Discount cannot be negative.');
+        return;
+      }
+      setError('');
+      change();
+      setDiscount(keyBuffer);
+      setKeyBuffer('');
+      return;
+    }
     if (!selected) {
-      setError('Select a basket line before using the keypad.');
+      setError('Select a basket line before setting quantity.');
       return;
     }
-    if (!keyBuffer) {
-      return;
-    }
-    if (keyMode === 'qty' && !(Number(keyBuffer) > 0)) {
+    if (!(Number(keyBuffer) > 0)) {
       setError('Quantity must be greater than zero.');
       return;
     }
-    if (keyMode === 'qty') {
-      setError('');
-      setQuantity(selected, keyBuffer);
-    } else {
-      setError('');
-      setDiscount(keyBuffer);
-    }
+    setError('');
+    setQuantity(selected, keyBuffer);
     setKeyBuffer('');
   };
+  function parkCurrentOrder() {
+    if (!basket.length) return;
+    const label = tableNumber
+      ? `Table ${tableNumber}`
+      : customers.find((cust) => cust.id === customer)?.name || `Held #${heldOrders.length + 1}`;
+    const entry: HeldOrder = {
+      id: crypto.randomUUID(),
+      label,
+      tableNumber,
+      basket,
+      discount,
+      notes,
+      customer,
+      savedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    setHeldOrders((cur) => [...cur, entry]);
+    clear();
+    setTableNumber('');
+    setNotice(`Order parked as "${label}". Tap its tab anytime to resume.`);
+  }
+  function resumeHeldOrder(order: HeldOrder) {
+    if (basket.length) parkCurrentOrder();
+    setBasket(order.basket);
+    setDiscount(order.discount);
+    setNotes(order.notes);
+    setCustomer(order.customer);
+    setTableNumber(order.tableNumber);
+    setHeldOrders((cur) => cur.filter((h) => h.id !== order.id));
+    setQuote(null);
+    setDraft(null);
+    setNotice(`Resumed "${order.label}".`);
+  }
+  function handleBarcodeOrSearchEnter() {
+    const term = query.trim().toLowerCase();
+    if (!term || !products?.data?.length) {
+      setSearchRevision((v) => v + 1);
+      return;
+    }
+    const exact = products.data.find(
+      (p: any) =>
+        String(p.barcode || '').toLowerCase() === term ||
+        String(p.sku || '').toLowerCase() === term,
+    );
+    const match = exact || (products.data.length === 1 ? products.data[0] : null);
+    if (match && canWrite) {
+      add(match);
+      setQuery('');
+      setOffset(0);
+      setNotice(`Scanned & added ${match.name}.`);
+    } else {
+      setSearchRevision((v) => v + 1);
+    }
+  }
+  async function sendBasketToKitchen() {
+    if (!basket.length) return;
+    try {
+      await mutate(() =>
+        api('/pos/kds/tickets', 'POST', {
+          order_ref: 'POS-' + (draft?.id?.slice(0, 6) || Date.now().toString().slice(-5)).toUpperCase(),
+          table_number: tableNumber || undefined,
+          station: 'main',
+          items: basket.map((item) => ({
+            name: item.product.name,
+            qty: Math.max(1, Math.round(Number(item.quantity || 1))),
+            notes: notes.trim() || undefined,
+          })),
+        }),
+      );
+      setNotice(
+        `Sent ${basket.length} item(s) to Kitchen Display (KDS)${tableNumber ? ` for Table ${tableNumber}` : ''}.`,
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  async function createQuickCustomer() {
+    if (!quickCustomer.name.trim()) return;
+    try {
+      const created = await mutate(() =>
+        api('/records/customers', 'POST', {
+          name: quickCustomer.name.trim(),
+          email: quickCustomer.email.trim() || undefined,
+          phone: quickCustomer.phone.trim() || undefined,
+          status: 'active',
+        }),
+      );
+      setCustomers((cur) => [created, ...cur]);
+      setCustomer(created.id);
+      setQuickCustomer({ name: '', phone: '', email: '' });
+      setQuickCustomerOpen(false);
+      setNotice(`Created customer "${created.name}" and attached to this order.`);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  async function applyLoyaltyRedemption() {
+    const prog = loyaltyPrograms[0];
+    const pts = Math.max(0, Math.round(Number(loyaltyRedeemPts || 0)));
+    if (!prog || !pts || !basket.length) return;
+    const basketTotalMinor = basket.reduce(
+      (sum, item) =>
+        sum + Math.round((quantityMilli(item.quantity) / 1000) * (item.product.sale_price_minor || 0)),
+      0,
+    );
+    try {
+      const calc = await api('/pos/loyalty/calculate', 'POST', {
+        order_total_minor: basketTotalMinor,
+        points_per_1000_minor: Number(prog.data?.points_per_1000_minor || 10),
+        redeem_points: pts,
+        available_points: pts,
+        minor_per_point: Number(prog.data?.minor_per_point || 100),
+      });
+      const discMinor = Number(calc.redemption_discount_minor ?? calc.discount_minor ?? 0);
+      change();
+      setDiscount(String(discMinor / factor(c.currency)));
+      setNotes((prev: string) =>
+        prev ? `${prev} | Loyalty redeemed: ${pts} pts` : `Loyalty redeemed: ${pts} pts`,
+      );
+      setLoyaltyRedeemPts('');
+      setNotice(
+        `Applied ${money(discMinor, c.currency)} loyalty discount (${pts} pts via ${prog.data?.name}).`,
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
   const press = (key: string) => {
     if (key === 'C') {
       setKeyBuffer('');
@@ -264,10 +424,10 @@ export function POSCashier({
       payment_intent: method,
       cash_amount_minor: cash,
       tendered_cash_minor: tendered,
-      handover_now: method === 'cash' || method === 'split',
+      handover_now: method === 'cash',
       acknowledge_recorded_cash: ['cash', 'split'].includes(method),
       acknowledge_sandbox_electronic: ['electronic', 'split'].includes(method),
-      acknowledge_handover: ['cash', 'split'].includes(method),
+      acknowledge_handover: method === 'cash',
     });
     clear();
     onConfirmed(value);
@@ -374,15 +534,45 @@ export function POSCashier({
               </label>
             )}
             {['cash', 'split'].includes(method) && (
-              <label className="pos-payment-input">
-                <span>Cash tendered</span>
-                <input
-                  inputMode="decimal"
-                  value={tenderedInput}
-                  onChange={(e) => setTenderedInput(e.target.value)}
-                  placeholder="0.00"
-                />
-              </label>
+              <>
+                <label className="pos-payment-input">
+                  <span>Cash tendered</span>
+                  <input
+                    inputMode="decimal"
+                    value={tenderedInput}
+                    onChange={(e) => setTenderedInput(e.target.value)}
+                    placeholder="0.00"
+                  />
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    style={{ padding: '4px 10px', fontSize: '12px' }}
+                    onClick={() => {
+                      const exact = posSuggestedCashInput(quote.amounts.total_minor, c.currency);
+                      if (method === 'split') setCashInput(exact);
+                      setTenderedInput(exact);
+                    }}
+                  >
+                    Exact
+                  </button>
+                  {[100, 500, 1000, 2000, 5000].map((bill) => (
+                    <button
+                      key={bill}
+                      type="button"
+                      className="secondary-button"
+                      style={{ padding: '4px 10px', fontSize: '12px' }}
+                      onClick={() => {
+                        const baseNum = Number(tenderedInput || 0);
+                        setTenderedInput(String(baseNum + bill));
+                      }}
+                    >
+                      +{bill.toLocaleString()}
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
             <div className="pos-keypad-small">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0, '.'].map((key) => (
@@ -526,27 +716,90 @@ export function POSCashier({
               setQuery(e.target.value);
               setOffset(0);
             }}
-            placeholder="Search products…"
-            aria-label="Search products"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleBarcodeOrSearchEnter();
+              }
+            }}
+            placeholder="Scan barcode, SKU, or search products… (Enter to quick-add)"
+            aria-label="Search products or scan barcode"
           />
-          <button type="button" onClick={() => setSearchRevision((v) => v + 1)}>
+          <button type="button" onClick={handleBarcodeOrSearchEnter}>
             Search
           </button>
         </div>
         <div className="pos-cashier-actions">
           <span className="badge">{c.currency}</span>
+          {onCashAdjustment && manager && (
+            <button
+              type="button"
+              className="quiet-button"
+              style={{ color: '#ffffff', background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.22)' }}
+              onClick={onCashAdjustment}
+            >
+              Cash In/Out
+            </button>
+          )}
+          {onXReport && (
+            <button
+              type="button"
+              className="quiet-button"
+              style={{ color: '#ffffff', background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.22)' }}
+              onClick={onXReport}
+            >
+              X-Report
+            </button>
+          )}
           {onCloseShift && manager && (
-            <button type="button" className="quiet-button" onClick={onCloseShift}>
+            <button
+              type="button"
+              className="quiet-button"
+              style={{ color: '#ffffff', background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.22)' }}
+              onClick={onCloseShift}
+            >
               Close register
             </button>
           )}
           {onExit && (
-            <button type="button" className="quiet-button" onClick={onExit}>
+            <button
+              type="button"
+              className="quiet-button"
+              style={{ color: '#ffffff', background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.22)' }}
+              onClick={onExit}
+            >
               Exit
             </button>
           )}
         </div>
       </header>
+      {heldOrders.length > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            flexWrap: 'wrap',
+            padding: '8px 14px',
+            background: '#f8fafc',
+            borderBottom: '1px solid #e2e8f0',
+            fontSize: '12.5px',
+          }}
+        >
+          <strong>Held Orders ({heldOrders.length}):</strong>
+          {heldOrders.map((held) => (
+            <button
+              key={held.id}
+              type="button"
+              className="secondary-button"
+              style={{ padding: '4px 12px', fontSize: '12px' }}
+              onClick={() => resumeHeldOrder(held)}
+            >
+              {held.label} ({held.basket.length} items · {held.savedAt})
+            </button>
+          ))}
+        </div>
+      )}
       {error && (
         <div role="alert" className="alert error" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
           <span>{error}</span>
@@ -621,14 +874,32 @@ export function POSCashier({
               <span className="eyebrow">Current order</span>
               <strong>{basket.length} lines</strong>
             </div>
-            <button
-              type="button"
-              className="quiet-button"
-              disabled={!basket.length || !canWrite}
-              onClick={clear}
-            >
-              Clear
-            </button>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="quiet-button"
+                disabled={!basket.length || !canWrite}
+                onClick={parkCurrentOrder}
+              >
+                Hold
+              </button>
+              <button
+                type="button"
+                className="quiet-button"
+                disabled={!basket.length || !canWrite}
+                onClick={() => void sendBasketToKitchen()}
+              >
+                Send KDS
+              </button>
+              <button
+                type="button"
+                className="quiet-button"
+                disabled={!basket.length || !canWrite}
+                onClick={clear}
+              >
+                Clear
+              </button>
+            </div>
           </div>
           <div className="pos-basket-lines">
             {!basket.length && (
@@ -779,8 +1050,46 @@ export function POSCashier({
           <div className="pos-cashier-customer">
             {manager ? (
               <>
-                <label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span>Customer</span>
+                  <button
+                    type="button"
+                    className="quiet-button"
+                    style={{ padding: '2px 8px', fontSize: '12px' }}
+                    onClick={() => setQuickCustomerOpen((v) => !v)}
+                  >
+                    {quickCustomerOpen ? 'Cancel' : '+ New Customer'}
+                  </button>
+                </div>
+                {quickCustomerOpen && (
+                  <div style={{ display: 'grid', gap: '6px', padding: '8px', background: '#f8fafc', borderRadius: '10px', marginBottom: '6px' }}>
+                    <input
+                      placeholder="Full name *"
+                      value={quickCustomer.name}
+                      onChange={(e) => setQuickCustomer((q) => ({ ...q, name: e.target.value }))}
+                    />
+                    <input
+                      placeholder="Phone (optional)"
+                      value={quickCustomer.phone}
+                      onChange={(e) => setQuickCustomer((q) => ({ ...q, phone: e.target.value }))}
+                    />
+                    <input
+                      placeholder="Email (optional)"
+                      type="email"
+                      value={quickCustomer.email}
+                      onChange={(e) => setQuickCustomer((q) => ({ ...q, email: e.target.value }))}
+                    />
+                    <button
+                      type="button"
+                      className="button"
+                      disabled={!quickCustomer.name.trim()}
+                      onClick={() => void createQuickCustomer()}
+                    >
+                      Save &amp; Attach Customer
+                    </button>
+                  </div>
+                )}
+                <label>
                   <input
                     value={customerQuery}
                     onChange={(e) => setCustomerQuery(e.target.value)}
@@ -807,6 +1116,46 @@ export function POSCashier({
               </>
             ) : (
               <p>Walk-in customer · {c.name}</p>
+            )}
+            {floors.length > 0 && (
+              <label>
+                <span>Dine-in Table</span>
+                <select value={tableNumber} onChange={(e) => setTableNumber(e.target.value)}>
+                  <option value="">Counter / Takeaway</option>
+                  {floors.flatMap((fl: any) =>
+                    (fl.tables || []).map((t: any) => {
+                      const num = t.table_number || t.data?.table_number;
+                      const seats = t.seats || t.data?.seats || 4;
+                      return (
+                        <option key={t.id} value={num}>
+                          {fl.name || fl.data?.name} · Table {num} ({seats} seats)
+                        </option>
+                      );
+                    }),
+                  )}
+                </select>
+              </label>
+            )}
+            {loyaltyPrograms.length > 0 && (
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                <input
+                  type="number"
+                  min="1"
+                  placeholder={`Redeem pts (${loyaltyPrograms[0].data?.name})`}
+                  value={loyaltyRedeemPts}
+                  onChange={(e) => setLoyaltyRedeemPts(e.target.value)}
+                  style={{ flex: 1 }}
+                />
+                <button
+                  type="button"
+                  className="secondary-button"
+                  style={{ padding: '5px 10px', fontSize: '12px' }}
+                  disabled={!loyaltyRedeemPts || !basket.length}
+                  onClick={() => void applyLoyaltyRedemption()}
+                >
+                  Redeem
+                </button>
+              </div>
             )}
             <label>
               <span>Discount ({c.currency})</span>
@@ -879,7 +1228,13 @@ export function POSCashier({
                     <span className="pos-product-name">{product.name}</span>
                     <small>{product.category || product.sku || 'Product'}</small>
                     <strong>{money(product.sale_price_minor, product.currency)}</strong>
-                    {product.track_inventory && <span className="pos-product-stock">Tracked</span>}
+                    {product.track_inventory && (
+                      <span className="pos-product-stock">
+                        {product.available_milli !== null && product.available_milli !== undefined
+                          ? `${displayQuantity(product.available_milli)} in stock`
+                          : 'Tracked'}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>

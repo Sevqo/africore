@@ -9,6 +9,7 @@ import { POSAppOrders } from './POSAppOrders';
 import { POSAppProducts } from './POSAppProducts';
 import { POSAppReporting } from './POSAppReporting';
 import { POSAppConfiguration } from './POSAppConfiguration';
+import { POSOperationsHub } from './POSOperationsHub';
 import { POSReceipt } from './POSReceipt';
 import { POSCashier } from './POSCashier';
 import { posAppViews, posSectionForView, type POSAppView } from './pos-app-model';
@@ -45,7 +46,21 @@ export function POSAppWorkspace({
     [error, setError] = useState(''),
     [notice, setNotice] = useState(''),
     [loading, setLoading] = useState(true),
-    [closing, setClosing] = useState(false);
+    [closing, setClosing] = useState(false),
+    [adjusting, setAdjusting] = useState(false),
+    [xReportOpen, setXReportOpen] = useState(false),
+    [denomCounts, setDenomCounts] = useState<Record<number, number>>({
+      1000: 0,
+      500: 0,
+      200: 0,
+      100: 0,
+      50: 0,
+      20: 0,
+      10: 0,
+      5: 0,
+      1: 0,
+    }),
+    [closingCountedInput, setClosingCountedInput] = useState('');
   const lock = useRef(false),
     mounted = useRef(true),
     identity = useRef('');
@@ -147,7 +162,9 @@ export function POSAppWorkspace({
         setView(requested as POSAppView);
       else
         setView(
-          ['orders', 'products', 'reporting', 'configuration'].includes(section)
+          ['orders', 'products', 'hospitality', 'loyalty', 'reporting', 'configuration'].includes(
+            section,
+          )
             ? (section as POSAppView)
             : 'dashboard',
         );
@@ -164,7 +181,7 @@ export function POSAppWorkspace({
     if (
       !receipt &&
       view !== 'cashier' &&
-      !['dashboard', 'orders', 'products', 'reporting', 'configuration'].includes(view)
+      !['dashboard', 'orders', 'products', 'hospitality', 'loyalty', 'reporting', 'configuration'].includes(view)
     )
       setView('dashboard');
   }, [view, receipt]);
@@ -287,19 +304,55 @@ export function POSAppWorkspace({
     setDirty(false);
     go('cashier', { session: sessionId, register: selectedRegister?.id });
   }
+  async function recordDrawerAdjustment(form: any) {
+    if (!shift) return;
+    await mutate(async () => {
+      const value = await api('/pos/sessions/' + sessionId + '/adjustments', 'POST', {
+        expected_session_version: shift.session.version,
+        direction: form.direction || 'in',
+        amount_minor: parseMoney(form.amount, shift.session.data.currency),
+        reason: String(form.reason || '').trim(),
+        acknowledge_physical_cash: form.ack === 'on',
+      });
+      setShift(value);
+      setAdjusting(false);
+      setRevision((v) => v + 1);
+      setNotice('Cash drawer float adjustment recorded.');
+    });
+  }
   async function closeSession(form: any) {
     if (!shift) return;
     await mutate(async () => {
+      const countedMinor = parseMoney(form.counted || closingCountedInput, shift.session.data.currency);
       const value = await api('/pos/sessions/' + sessionId + '/close', 'POST', {
         expected_version: shift.session.version,
-        counted_cash_minor: parseMoney(form.counted, shift.session.data.currency),
+        counted_cash_minor: countedMinor,
         variance_reason: form.reason || '',
         acknowledge_close: form.close === 'on',
       });
+      const denominations = Object.entries(denomCounts)
+        .filter(([, count]) => count > 0)
+        .map(([denom, count]) => ({
+          denomination_minor: Number(denom) * (['UGX', 'RWF'].includes(shift.session.data.currency) ? 1 : 100),
+          count,
+        }));
+      if (denominations.length > 0) {
+        await api('/pos/cash-counts', 'POST', {
+          session_ref: 'SHIFT-' + sessionId.slice(0, 8).toUpperCase(),
+          currency: shift.session.data.currency,
+          opening_minor: shift.session.data.opening_cash_minor || 0,
+          cash_sales_minor: Math.max(0, (shift.expected_minor || 0) - (shift.session.data.opening_cash_minor || 0)),
+          cash_in_minor: 0,
+          cash_out_minor: 0,
+          denominations,
+          notes: form.reason || 'Recorded at shift close',
+        }).catch(() => {});
+      }
       setShift(value);
       setClosing(false);
+      setClosingCountedInput('');
       setRevision((v) => v + 1);
-      setNotice('The counted shift is closed. Original counts and variance are retained.');
+      setNotice('The counted shift is closed. Z-Report & original counts are retained.');
       setView('dashboard');
       setSessionId('');
     });
@@ -428,6 +481,38 @@ export function POSAppWorkspace({
             ],
           },
           {
+            id: 'hospitality',
+            label: 'Floor & Kitchen',
+            active: view === 'hospitality',
+            children: [
+              {
+                id: 'hospitality-board',
+                label: 'Floor Plan, Tables & KDS',
+                active: view === 'hospitality',
+                onSelect: () => {
+                  setReceipt(null);
+                  go('hospitality');
+                },
+              },
+            ],
+          },
+          {
+            id: 'loyalty',
+            label: 'Loyalty & Tools',
+            active: view === 'loyalty',
+            children: [
+              {
+                id: 'loyalty-tools',
+                label: 'Loyalty, Split Bill & Cash Counts',
+                active: view === 'loyalty',
+                onSelect: () => {
+                  setReceipt(null);
+                  go('loyalty');
+                },
+              },
+            ],
+          },
+          {
             id: 'reporting',
             label: 'Reporting',
             active: view === 'reporting',
@@ -525,6 +610,15 @@ export function POSAppWorkspace({
       {view === 'products' && !receipt && (
         <POSAppProducts api={api} registers={registers} online={online} navigate={navigate} />
       )}
+      {(view === 'hospitality' || view === 'loyalty') && !receipt && (
+        <POSOperationsHub
+          api={api}
+          mode={view}
+          currency={selectedRegister?.data?.currency || 'KES'}
+          online={online}
+          mutate={mutate}
+        />
+      )}
       {view === 'reporting' && !receipt && (
         <POSAppReporting
           api={api}
@@ -567,6 +661,8 @@ export function POSAppWorkspace({
           onConfirmed={confirmed}
           mutate={mutate}
           onExit={() => go('dashboard')}
+          onCashAdjustment={() => setAdjusting(true)}
+          onXReport={() => setXReportOpen(true)}
           onCloseShift={() => setClosing(true)}
           onRegisterUpdated={() => setRevision((v) => v + 1)}
         />
@@ -619,12 +715,90 @@ export function POSAppWorkspace({
           </p>
         </div>
       )}
-      {closing && shift && (
+      {adjusting && shift && (
         <div className="pos-modal-backdrop">
           <section className="pos-modal pos-closing" role="dialog" aria-modal="true">
             <header>
               <div>
                 <span className="eyebrow">{selectedRegister?.data?.name}</span>
+                <h3>Cash Drawer Float Adjustment</h3>
+              </div>
+              <button type="button" className="quiet-button" onClick={() => setAdjusting(false)}>
+                Close
+              </button>
+            </header>
+            <p>Record cash added to the drawer (float in) or removed (safe drop / petty cash out).</p>
+            <Form disabled={busy} submit={(form) => recordDrawerAdjustment(form)}>
+              <Field label="Direction">
+                <select name="direction" defaultValue="in">
+                  <option value="in">Cash In (add float to drawer)</option>
+                  <option value="out">Cash Out (safe drop / payout)</option>
+                </select>
+              </Field>
+              <Field label={'Amount (' + shift.session.data.currency + ')'}>
+                <input name="amount" required inputMode="decimal" placeholder="1000.00" autoFocus />
+              </Field>
+              <Field label="Reason (min 8 characters)">
+                <input name="reason" required minLength={8} maxLength={1000} placeholder="Mid-shift safe drop or change replenishment" />
+              </Field>
+              <label className="checkbox-field">
+                <input name="ack" type="checkbox" required />I physically moved this cash in/out of the drawer.
+              </label>
+              <div className="pos-modal-actions">
+                <button type="submit" className="button">Record Adjustment</button>
+                <button type="button" className="secondary-button" onClick={() => setAdjusting(false)}>Cancel</button>
+              </div>
+            </Form>
+          </section>
+        </div>
+      )}
+      {xReportOpen && shift && (
+        <div className="pos-modal-backdrop">
+          <section className="pos-modal pos-closing" role="dialog" aria-modal="true">
+            <header>
+              <div>
+                <span className="eyebrow">MID-SHIFT X-REPORT · {selectedRegister?.data?.name}</span>
+                <h3>Live Shift Drawer Summary</h3>
+              </div>
+              <button type="button" className="quiet-button" onClick={() => setXReportOpen(false)}>
+                Close
+              </button>
+            </header>
+            <dl className="pos-closing-summary">
+              <div>
+                <dt>Status</dt>
+                <dd>{shift.session.status}</dd>
+              </div>
+              <div>
+                <dt>Opening float</dt>
+                <dd>{money(shift.session.data.opening_cash_minor, shift.session.data.currency)}</dd>
+              </div>
+              <div>
+                <dt>Expected cash in drawer</dt>
+                <dd>{money(shift.expected_minor, shift.session.data.currency)}</dd>
+              </div>
+              <div>
+                <dt>Drawer adjustments</dt>
+                <dd>{shift.adjustments?.length || 0}</dd>
+              </div>
+            </dl>
+            <div className="pos-modal-actions">
+              <button type="button" className="button" onClick={() => window.print()}>
+                Print X-Report
+              </button>
+              <button type="button" className="secondary-button" onClick={() => setXReportOpen(false)}>
+                Done
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+      {closing && shift && (
+        <div className="pos-modal-backdrop">
+          <section className="pos-modal pos-closing" role="dialog" aria-modal="true">
+            <header>
+              <div>
+                <span className="eyebrow">END-OF-DAY Z-REPORT · {selectedRegister?.data?.name}</span>
                 <h3>Closing register</h3>
               </div>
               <button type="button" className="quiet-button" onClick={() => setClosing(false)}>
@@ -645,6 +819,34 @@ export function POSAppWorkspace({
                 <dd>{shift.adjustments?.length || 0}</dd>
               </div>
             </dl>
+            <details style={{ margin: '10px 0', padding: '10px', background: '#f8fafc', borderRadius: '10px' }}>
+              <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: '13px' }}>
+                Cash Denomination Counter (Optional)
+              </summary>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginTop: '8px' }}>
+                {[1000, 500, 200, 100, 50, 20, 10, 5, 1].map((denom) => (
+                  <label key={denom} style={{ fontSize: '12px', display: 'grid', gap: '2px' }}>
+                    <span>{shift.session.data.currency} {denom} ×</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={denomCounts[denom] || ''}
+                      placeholder="0"
+                      onChange={(e) => {
+                        const qty = Math.max(0, Math.round(Number(e.target.value || 0)));
+                        const next = { ...denomCounts, [denom]: qty };
+                        setDenomCounts(next);
+                        const sumMajor = Object.entries(next).reduce(
+                          (acc, [d, c]) => acc + Number(d) * Number(c || 0),
+                          0,
+                        );
+                        setClosingCountedInput(sumMajor.toFixed(2));
+                      }}
+                    />
+                  </label>
+                ))}
+              </div>
+            </details>
             {!!shift.adjustments?.length && (
               <div className="pos-closing-adjustments">
                 <strong>Drawer adjustments</strong>
@@ -664,7 +866,15 @@ export function POSAppWorkspace({
             </p>
             <Form disabled={busy} submit={(form) => closeSession(form)}>
               <Field label={'Counted cash (' + shift.session.data.currency + ')'}>
-                <input name="counted" required inputMode="decimal" placeholder="0.00" autoFocus />
+                <input
+                  name="counted"
+                  required
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  value={closingCountedInput}
+                  onChange={(e) => setClosingCountedInput(e.target.value)}
+                  autoFocus
+                />
               </Field>
               <Field label="Closing note / variance explanation (required if variance is non-zero)">
                 <textarea name="reason" maxLength={1000} />
@@ -675,7 +885,14 @@ export function POSAppWorkspace({
               </label>
               <div className="pos-modal-actions">
                 <button type="submit" className="button">
-                  Close register
+                  Close register &amp; Z-Report
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => window.print()}
+                >
+                  Print Z-Report
                 </button>
                 <button
                   type="button"

@@ -369,6 +369,7 @@ import {
   calendarEvents,
   createCalendarEvent,
   editCalendarEvent,
+  deleteWebsitePage,
   editCalendarOccurrence,
   getWebsiteIdentity,
   publishWebsitePage,
@@ -2317,6 +2318,19 @@ erp.put(
         await access(req, 'operations'),
         String(req.params.id),
         req.body,
+        key(req),
+      ),
+    ),
+  ),
+);
+erp.delete(
+  '/organizations/:org/website/pages/:id',
+  route(async (req, res) =>
+    res.json(
+      await deleteWebsitePage(
+        await access(req, 'operations'),
+        String(req.params.id),
+        Number(req.body?.expected_version ?? req.query?.expected_version),
         key(req),
       ),
     ),

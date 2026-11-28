@@ -6,6 +6,7 @@ import { currentMember, read, insert, update, decode, operation, history } from 
 import { requireServices } from '../marketplace/engine';
 import { product } from '../inventory/service';
 import { listingInput, saveStoreInput, shippingOption, discountPolicy } from './contracts';
+import { syncMarketplaceStore } from './marketplace-index';
 
 export async function commerceAccess(a: Access, write = false) {
   const role = await currentMember(a);
@@ -88,11 +89,14 @@ export async function saveStore(a: Access, id: string | null, input: unknown, ke
         if (!location)
           fail(400, 'Choose a current location belonging to the fulfillment warehouse');
       }
-      if (d.store.logo_asset_id) await assetReferences(a, [d.store.logo_asset_id]);
+      const storeAssets = [d.store.logo_asset_id, d.store.banner_asset_id].filter(Boolean) as string[];
+      if (storeAssets.length) await assetReferences(a, storeAssets);
       const data = { ...(previous?.data || {}), settings: d.store };
-      return previous
-        ? update(a, previous, data)
-        : insert(a, 'commerce_store', data, { status: 'draft' });
+      const saved = previous
+        ? await update(a, previous, data)
+        : await insert(a, 'commerce_store', data, { status: 'draft' });
+      if (saved.status === 'published') await syncMarketplaceStore(a, saved.id);
+      return saved;
     },
   );
 }
@@ -213,9 +217,11 @@ export async function saveListing(
         if (Number(count.n) >= 500) fail(409, 'Store listing limit reached');
       }
       const { expected_version: _version, ...data } = d;
-      return old
-        ? update(a, old, data, { status: d.state })
-        : insert(a, 'commerce_listing', data, { root: s.id, parent: p.id, status: d.state });
+      const saved = old
+        ? await update(a, old, data, { status: d.state })
+        : await insert(a, 'commerce_listing', data, { root: s.id, parent: p.id, status: d.state });
+      if (s.status === 'published') await syncMarketplaceStore(a, s.id);
+      return saved;
     },
   );
 }

@@ -38,6 +38,9 @@ import {
 const PublicStorefront = lazy(() =>
   import('./commerce/PublicStorefront').then((m) => ({ default: m.PublicStorefront })),
 );
+const PublicMarketplace = lazy(() =>
+  import('./commerce/PublicMarketplace').then((m) => ({ default: m.PublicMarketplace })),
+);
 const PublicWebsite = lazy(() => import('./apps/PublicWebsite').then((m)=>({default:m.PublicWebsite})));
 const PublicAppointment = lazy(() => import('./apps/PublicAppointment').then((m) => ({ default: m.PublicAppointment })));
 const Checkout = lazy(() => import('./BusinessApp').then((m) => ({ default: m.Checkout })));
@@ -208,10 +211,22 @@ function Application() {
     );
   if (path === '/login') return <AuthPage mode="signin" />;
   if (path === '/forgot-password') return <AuthPage mode="recover" />;
-  if (/^\/s\/(sandbox|production)\/[a-z0-9]+(?:-[a-z0-9]+)*\/?$/.test(path)) {
-    const [, , environment, slug] = path.split('/');
+  if (path === '/marketplace' || path === '/marketplace/')
+    return <PublicMarketplace environment="production" />;
+  if (path === '/marketplace/sandbox' || path === '/marketplace/sandbox/')
+    return <PublicMarketplace environment="sandbox" />;
+  const storefrontMatch = path.match(
+    /^\/s\/(sandbox|production)\/([a-z0-9]+(?:-[a-z0-9]+)*)(?:\/p\/([a-zA-Z0-9-]+))?\/?$/,
+  );
+  if (storefrontMatch) {
+    const [, environment, slug, listingId] = storefrontMatch;
     return (
-      <PublicStorefront key={environment + '/' + slug} environment={environment} slug={slug} />
+      <PublicStorefront
+        key={environment + '/' + slug}
+        environment={environment}
+        slug={slug}
+        initialListingId={listingId}
+      />
     );
   }
   if (path.startsWith('/checkout/')) return <Checkout />;

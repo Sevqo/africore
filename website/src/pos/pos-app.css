@@ -1856,3 +1856,23 @@
     gap: 6px;
   }
 }
+
+.pos-cashier-top .pos-cashier-actions button.quiet-button {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.14) !important;
+  border: 1px solid rgba(255, 255, 255, 0.26) !important;
+}
+.pos-cashier-top .pos-cashier-actions button.quiet-button:hover {
+  background: rgba(255, 255, 255, 0.24) !important;
+}
+
+.pos-app-shell .pos-product-tile,
+button.pos-product-tile {
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+.pos-app-shell .pos-cashier-top .pos-cashier-actions button.quiet-button {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.16) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}

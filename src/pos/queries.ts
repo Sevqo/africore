@@ -7,6 +7,7 @@ import { documentBalance } from '../finance/ledger';
 import { registerAccess } from './registers';
 import { posSale } from './quotes';
 import { stockReturnChoices } from './stock';
+import { locationBalance } from '../inventory/service';
 
 const paging = z
   .object({ offset: z.coerce.number().int().min(0).max(1_000_000).default(0) })
@@ -86,9 +87,23 @@ export async function posProducts(a: Access, id: string, input: unknown = {}) {
       ",'')<>'' ORDER BY category",
     [a.org, a.environment, register.data.currency],
   );
-  return {
-    data: rows.slice(0, 25).map((row) => {
+  const data = await Promise.all(
+    rows.slice(0, 25).map(async (row) => {
       const p = JSON.parse(row.data);
+      let available_milli: number | null = null;
+      if (p.track_inventory && register.data.warehouse_id) {
+        try {
+          const bal = await locationBalance(
+            a,
+            row.id,
+            register.data.warehouse_id,
+            register.data.location_id || null,
+          );
+          available_milli = Number(bal.available_milli);
+        } catch {
+          available_milli = null;
+        }
+      }
       return {
         id: row.id,
         version: Number(row.version),
@@ -101,8 +116,12 @@ export async function posProducts(a: Access, id: string, input: unknown = {}) {
         currency: p.currency,
         sale_price_minor: p.sale_price_minor,
         track_inventory: p.track_inventory,
+        available_milli,
       };
     }),
+  );
+  return {
+    data,
     categories: categories.map((row: any) => row.category).slice(0, 100),
     has_more: rows.length > 25,
     offset: q.offset,

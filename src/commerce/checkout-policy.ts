@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { dbGet } from '../db/adapter';
+import { dbGet, dbRun } from '../db/adapter';
 import { type Access, fail } from '../platform/auth';
 import { now } from '../platform/crypto';
 import { requireServices } from '../marketplace/engine';
@@ -83,7 +83,7 @@ export async function saveCheckoutPolicy(a: Access, id: string, input: unknown, 
         if (!(s.data.shipping || []).some((r: any) => r.active))
           fail(409, 'Configure a current shipping or pickup option first');
       }
-      return update(
+      const updated = await update(
         a,
         s,
         {
@@ -100,6 +100,12 @@ export async function saveCheckoutPolicy(a: Access, id: string, input: unknown, 
         undefined,
         'checkout_policy_updated',
       );
+      const readiness = await checkoutReadiness(a, updated);
+      await dbRun(
+        'UPDATE ac_marketplace_stores SET checkout_available=?, updated_at=? WHERE store_id=? AND org_id=? AND environment=?',
+        [readiness.available ? 1 : 0, now(), id, a.org, a.environment],
+      );
+      return updated;
     },
   );
 }

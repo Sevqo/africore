@@ -4,64 +4,38 @@ import { Field, type API } from '../operations/UI';
 import { appNavigationEvent } from './AppNavigation';
 import { publicWebsiteCtaHref } from './public-website-links';
 import { moveWebsiteBlock, moveWebsiteBlockSelection } from './website-editor';
+import {
+  SITE_STARTER_KITS,
+  SINGLE_PAGE_TEMPLATES,
+  WEBSITE_THEME_PRESETS,
+  type SiteStarterKit,
+  type SinglePageTemplate,
+} from './website-templates';
 import './phase3-apps.css';
 const websiteBlockTypes = [
-  'hero', 'heading', 'text', 'image', 'gallery', 'columns', 'features', 'cta',
-  'testimonial', 'pricing', 'faq', 'contact', 'contact_form', 'footer', 'commerce_showcase',
+  'announcement', 'hero', 'heading', 'text', 'image', 'gallery', 'columns', 'features',
+  'stats', 'team', 'cta', 'testimonial', 'pricing', 'faq', 'booking', 'newsletter',
+  'contact', 'contact_form', 'footer', 'commerce_showcase',
 ] as const;
 const blockDragType = 'application/x-africore-website-block';
-const templates: any = {
-  'Blank Page': [],
-  About: [
-    { type: 'hero', title: 'About our business', body: 'A clear introduction to your work.' },
-    { type: 'text', title: 'Our story', body: 'Tell visitors what you do and why it matters.' },
-  ],
-  'Landing Page': [
-    {
-      type: 'hero',
-      title: 'A better way to work',
-      body: 'Introduce your offer and invite visitors to take the next step.',
-      button_label: 'Contact us',
-      button_url: 'https://example.com',
-    },
-    {
-      type: 'features',
-      title: 'What we offer',
-      body: 'Fast Onboarding :: Launch in minutes with clear workflows\nConnected Operations :: Keep customer inquiries and orders in sync\nTrusted Security :: Built-in review and audit trails',
-    },
-    { type: 'cta', title: 'Ready to get started?', body: 'Talk with our team.' },
-  ],
-  Services: [
-    { type: 'hero', title: 'Our services', body: 'Practical services for your business.' },
-    { type: 'columns', title: 'How we help', body: 'Describe your core capabilities.' },
-    { type: 'contact', title: 'Get in touch', body: 'Contact our team.' },
-  ],
-  Contact: [
-    { type: 'hero', title: 'Contact us', body: 'We would be happy to hear from you.' },
-    {
-      type: 'contact_form',
-      title: 'Send an inquiry',
-      body: 'Share your question and we will follow up.',
-    },
-  ],
-  Portfolio: [
-    { type: 'hero', title: 'Selected work', body: 'A selection of recent projects.' },
-    { type: 'gallery', title: 'Project gallery', body: 'Add reviewed public images.' },
-  ],
-  Pricing: [
-    { type: 'hero', title: 'Simple pricing', body: 'Choose the service that suits you.' },
-    { type: 'pricing', title: 'Plans', body: 'Describe scope and pricing clearly.' },
-  ],
-};
-const blank = (title: string, slug: string, sections: any[] = []) => ({
+const blank = (
+  title: string,
+  slug: string,
+  sections: any[] = [],
+  template = 'blank',
+  theme: any = { primary: '#087e78', width: 'standard' },
+  menus: any[] = [{ label: 'Home', url: '/', parent_index: null }],
+  meta_description = '',
+) => ({
   title,
   slug,
+  template,
   sections,
   meta_title: title,
-  meta_description: '',
+  meta_description,
   noindex: true,
-  theme: { primary: '#087e78', width: 'standard' },
-  menus: [{ label: 'Home', url: '/' }],
+  theme,
+  menus,
 });
 function renderDraftMenus(menus: any[], onNavigate: () => void, parent: number | null = null): any {
   const items = menus.flatMap((item, index) =>
@@ -87,6 +61,79 @@ function reorderMenu(items: any[], from: number, to: number) {
     return { ...item, parent_index: parent_index !== null && parent_index < newIndex ? parent_index : null };
   });
   return updated;
+}
+function StructuredItemsEditor({
+  body,
+  onBody,
+  delimiter,
+  fields,
+  addLabel,
+}: {
+  body: string;
+  onBody: (value: string) => void;
+  delimiter: '::' | '|';
+  fields: string[];
+  addLabel: string;
+}) {
+  const rows = String(body || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const parts = line.split(delimiter).map((p) => p.trim());
+      return fields.map((_, idx) =>
+        idx === fields.length - 1 ? parts.slice(idx).join(` ${delimiter} `) : parts[idx] || '',
+      );
+    });
+  const serialize = (next: string[][]) =>
+    onBody(
+      next
+        .map((row) => row.map((cell) => cell.trim()).join(` ${delimiter} `))
+        .filter((line) => line.replaceAll(delimiter, '').trim().length > 0)
+        .join('\n'),
+    );
+  return (
+    <div className="website-structured-editor" onClick={(e) => e.stopPropagation()}>
+      {rows.map((row, rowIdx) => (
+        <div key={rowIdx} className="website-structured-row">
+          {fields.map((label, colIdx) => (
+            <input
+              key={label}
+              aria-label={`${label} ${rowIdx + 1}`}
+              placeholder={label}
+              value={row[colIdx] || ''}
+              onChange={(e) => {
+                const next = rows.map((r, i) =>
+                  i === rowIdx ? r.map((c, j) => (j === colIdx ? e.target.value : c)) : r,
+                );
+                serialize(next);
+              }}
+            />
+          ))}
+          <button
+            type="button"
+            className="quiet-button"
+            onClick={() => serialize(rows.filter((_, i) => i !== rowIdx))}
+            aria-label={`Remove item ${rowIdx + 1}`}
+          >
+            ×
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        className="secondary-button"
+        onClick={() =>
+          serialize([
+            ...rows,
+            fields.map((f, idx) => (idx === 0 ? `New ${f.toLowerCase()}` : '')),
+          ])
+        }
+      >
+        + {addLabel}
+      </button>
+    </div>
+  );
 }
 function DraftBlockContent({
   block,
@@ -121,6 +168,121 @@ function DraftBlockContent({
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
+  if (block.type === 'announcement')
+    return (
+      <div className="website-announcement-bar">
+        <strong
+          contentEditable={editable}
+          suppressContentEditableWarning
+          onBlur={(e) => onTitle(e.currentTarget.textContent || '')}
+        >
+          {block.title || 'Announcement banner'}
+        </strong>
+      </div>
+    );
+  if (block.type === 'stats')
+    return (
+      <>
+        {title}
+        <div className="website-stats-grid">
+          {lines.map((line, i) => {
+            const [metric, ...label] = line.split('::').map((part) => part.trim());
+            return (
+              <article key={i} className="website-stat-item">
+                <strong>{metric}</strong>
+                {label.length > 0 && <span>{label.join('::')}</span>}
+              </article>
+            );
+          })}
+        </div>
+        {editable && (
+          <StructuredItemsEditor
+            body={block.body}
+            onBody={onBody}
+            delimiter="::"
+            fields={['Metric (e.g. 10,000+)', 'Label']}
+            addLabel="Add stat"
+          />
+        )}
+      </>
+    );
+  if (block.type === 'team')
+    return (
+      <>
+        {title}
+        <div className="website-team-grid">
+          {lines.map((line, i) => {
+            const [name, role, ...bio] = line.split('|').map((part) => part.trim());
+            return (
+              <article key={i} className="website-team-member">
+                <div className="website-team-avatar" aria-hidden="true">
+                  {(name || '?').slice(0, 2).toUpperCase()}
+                </div>
+                <h3>{name}</h3>
+                {role && <span className="website-team-role">{role}</span>}
+                {bio.length > 0 && <p>{bio.join('|')}</p>}
+              </article>
+            );
+          })}
+        </div>
+        {editable && (
+          <StructuredItemsEditor
+            body={block.body}
+            onBody={onBody}
+            delimiter="|"
+            fields={['Name', 'Role', 'Short bio']}
+            addLabel="Add team member"
+          />
+        )}
+      </>
+    );
+  if (block.type === 'booking')
+    return (
+      <div className="website-booking-block">
+        {title}
+        {body}
+        <small className="muted">
+          {block.booking_url
+            ? `Connected Calendar booking: ${block.booking_url}`
+            : 'Select a Calendar Appointment Type in Block Settings to enable online booking.'}
+        </small>
+      </div>
+    );
+  if (block.type === 'newsletter')
+    return (
+      <div className="website-newsletter-block">
+        {title}
+        {body}
+        <div className="website-newsletter-row" aria-hidden="true">
+          <input disabled placeholder="you@company.com" />
+          <span className="button">{block.button_label || 'Subscribe'}</span>
+        </div>
+      </div>
+    );
+  if (block.type === 'contact_form')
+    return (
+      <>
+        {title}
+        {body}
+        <div className="website-form-preview" aria-hidden="true">
+          <input disabled placeholder="Visitor name" />
+          <input disabled placeholder="Visitor email" />
+          <textarea disabled rows={2} placeholder="Message (flows directly into Website Forms & CRM)" />
+        </div>
+      </>
+    );
+  if (block.type === 'commerce_showcase')
+    return (
+      <>
+        {title}
+        {body}
+        <p className="muted">
+          {block.storefront_slug
+            ? `Connected Commerce Store: /s/…/${block.storefront_slug} (live catalog & prices render on publish)`
+            : 'Pick a Commerce Store in Block Settings to display live products here.'}
+        </p>
+      </>
+    );
   if (['features', 'columns'].includes(block.type))
     return (
       <>
@@ -139,9 +301,13 @@ function DraftBlockContent({
           })}
         </div>
         {editable && (
-          <Field label="Cards (one per line: title :: description)">
-            <textarea value={block.body} onChange={(e) => onBody(e.target.value)} rows={5} />
-          </Field>
+          <StructuredItemsEditor
+            body={block.body}
+            onBody={onBody}
+            delimiter="::"
+            fields={['Heading', 'Description']}
+            addLabel={block.type === 'features' ? 'Add feature' : 'Add column'}
+          />
         )}
       </>
     );
@@ -159,9 +325,13 @@ function DraftBlockContent({
           );
         })}
         {editable && (
-          <Field label="Questions (one per line: question :: answer)">
-            <textarea value={block.body} onChange={(e) => onBody(e.target.value)} rows={5} />
-          </Field>
+          <StructuredItemsEditor
+            body={block.body}
+            onBody={onBody}
+            delimiter="::"
+            fields={['Question', 'Answer']}
+            addLabel="Add FAQ"
+          />
         )}
       </>
     );
@@ -182,9 +352,13 @@ function DraftBlockContent({
           })}
         </div>
         {editable && (
-          <Field label="Plans (one per line: name | price | description)">
-            <textarea value={block.body} onChange={(e) => onBody(e.target.value)} rows={5} />
-          </Field>
+          <StructuredItemsEditor
+            body={block.body}
+            onBody={onBody}
+            delimiter="|"
+            fields={['Plan name', 'Price', 'Details']}
+            addLabel="Add plan"
+          />
         )}
       </>
     );
@@ -224,6 +398,11 @@ export function WebsiteWorkspace({
     [notice, setNotice] = useState(''),
     [busy, setBusy] = useState(false),
     [showTemplates, setShowTemplates] = useState(false),
+    [templateMode, setTemplateMode] = useState<'kits' | 'pages'>('kits'),
+    [templateCategory, setTemplateCategory] = useState<string>('All'),
+    [kitStoreSlug, setKitStoreSlug] = useState<string>(''),
+    [commerceStores, setCommerceStores] = useState<any[]>([]),
+    [appointmentTypes, setAppointmentTypes] = useState<any[]>([]),
     [preview, setPreview] = useState(false),
     [fullPreviewOpen, setFullPreviewOpen] = useState(false),
     [previewViewport, setPreviewViewport] = useState<'desktop' | 'tablet' | 'mobile'>('desktop'),
@@ -328,6 +507,16 @@ export function WebsiteWorkspace({
   useEffect(() => {
     void load();
     void loadIdentity();
+    api('/commerce/stores')
+      .then((res) => {
+        const list = res?.data || [];
+        setCommerceStores(list);
+        if (list[0]?.data?.settings?.slug) setKitStoreSlug(list[0].data.settings.slug);
+      })
+      .catch(() => setCommerceStores([]));
+    api('/calendar/appointment-types')
+      .then((res) => setAppointmentTypes(res?.data || []))
+      .catch(() => setAppointmentTypes([]));
   }, [scope]);
   useEffect(() => {
     const restorePage = () => {
@@ -368,28 +557,186 @@ export function WebsiteWorkspace({
       setBusy(false);
     }
   }
-  async function create(template: string) {
+  function uniqueSlug(baseSlug: string, taken: Set<string>) {
+    const clean =
+      baseSlug
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 52) || 'page';
+    if (!taken.has(clean)) return clean;
+    for (let i = 2; i < 100; i++) {
+      const candidate = `${clean}-${i}`;
+      if (!taken.has(candidate)) return candidate;
+    }
+    return `${clean}-${crypto.randomUUID().slice(0, 6)}`;
+  }
+  async function createFromTemplate(template: SinglePageTemplate) {
     setBusy(true);
+    setError('');
     try {
-      const slug =
-        template === 'Blank Page' ? 'new-page' : template.toLowerCase().replaceAll(' ', '-');
+      const taken = new Set(pages.map((p) => String(p.data?.slug || '')));
+      const slug = uniqueSlug(template.id === 'blank' ? 'new-page' : template.id, taken);
+      const sections = template.sections.map((s) =>
+        s.type === 'commerce_showcase' && !s.storefront_slug && kitStoreSlug
+          ? { ...s, storefront_slug: kitStoreSlug }
+          : { ...s },
+      );
       const r = await api(
         '/website/pages',
         'POST',
-        blank(template === 'Blank Page' ? 'New Page' : template, slug, templates[template]),
+        blank(
+          template.id === 'blank' ? 'New Page' : template.name,
+          slug,
+          sections,
+          template.id,
+          template.theme,
+          [{ label: 'Home', url: '/', parent_index: null }],
+          template.summary,
+        ),
         { 'Idempotency-Key': crypto.randomUUID() },
       );
       setShowTemplates(false);
-      setNotice('Draft page created.');
+      setNotice(`Draft page "${template.name}" created with ${sections.length} editable blocks.`);
       await load();
-      // Refreshing the register while the old page is still selected would
-      // overwrite the just-created page from the component's stale closure.
       selectPage(r);
       const url = new URL(location.href);
       url.searchParams.set('section', 'editor');
       if (r?.id) url.searchParams.set('page', r.id);
       history.pushState(null, '', url.pathname + url.search + url.hash);
       dispatchEvent(new Event(appNavigationEvent));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function createSiteKit(kit: SiteStarterKit) {
+    setBusy(true);
+    setError('');
+    try {
+      const taken = new Set(pages.map((p) => String(p.data?.slug || '')));
+      const planned = kit.pages.map((p) => {
+        const slug = uniqueSlug(p.slug, taken);
+        taken.add(slug);
+        return { ...p, resolvedSlug: slug };
+      });
+      const slugMap = new Map(planned.map((p) => ['/' + p.slug, '/sites/' + p.resolvedSlug]));
+      const sharedMenus = planned.map((p) => ({
+        label: p.title,
+        url: p.isDefault ? '/' : '/sites/' + p.resolvedSlug,
+        parent_index: null,
+      }));
+      let defaultPage: any = null;
+      for (const pageSpec of planned) {
+        const sections = pageSpec.sections.map((s) => {
+          const next: any = { ...s };
+          if (next.type === 'commerce_showcase' && !next.storefront_slug && kitStoreSlug) {
+            next.storefront_slug = kitStoreSlug;
+          }
+          if (next.button_url && slugMap.has(next.button_url)) {
+            next.button_url = slugMap.get(next.button_url);
+          }
+          return next;
+        });
+        const created = await api(
+          '/website/pages',
+          'POST',
+          blank(
+            pageSpec.title,
+            pageSpec.resolvedSlug,
+            sections,
+            kit.id,
+            kit.theme,
+            sharedMenus,
+            pageSpec.meta_description,
+          ),
+          { 'Idempotency-Key': crypto.randomUUID() },
+        );
+        if (pageSpec.isDefault || !defaultPage) defaultPage = created;
+      }
+      if (defaultPage && identity?.data) {
+        try {
+          const updatedId = await api(
+            '/website/settings',
+            'PUT',
+            {
+              ...identity.data,
+              brand_color: kit.theme.primary,
+              content_width: kit.theme.width,
+              default_page_id: defaultPage.id,
+              expected_version: identity.version || undefined,
+            },
+            { 'Idempotency-Key': crypto.randomUUID() },
+          );
+          setIdentity({ configured: true, version: updatedId.version, data: updatedId.data });
+        } catch {
+          // Non-admin editors still get all pages created cleanly.
+        }
+      }
+      setShowTemplates(false);
+      setNotice(
+        `Complete "${kit.name}" website created (${planned.length} linked pages with synced navigation & theme).`,
+      );
+      await load();
+      if (defaultPage) {
+        selectPage(defaultPage);
+        const url = new URL(location.href);
+        url.searchParams.set('section', 'editor');
+        url.searchParams.set('page', defaultPage.id);
+        history.pushState(null, '', url.pathname + url.search + url.hash);
+        dispatchEvent(new Event(appNavigationEvent));
+      }
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function deletePage(page: any) {
+    if (!page?.id) return;
+    if (page.data?.published_version) {
+      setError('Unpublish this page before deleting it.');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      await api(
+        `/website/pages/${page.id}?expected_version=${page.version}`,
+        'DELETE',
+        { expected_version: page.version },
+        { 'Idempotency-Key': crypto.randomUUID() },
+      );
+      if (selected?.id === page.id) setSelected(null);
+      setNotice(`Draft page "${page.data?.title || page.id}" deleted.`);
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function applyThemeAndMenusToAllPages() {
+    if (!selected || !pages.length) return;
+    setBusy(true);
+    setError('');
+    try {
+      const targetTheme = selected.data.theme;
+      const targetMenus = selected.data.menus;
+      let count = 0;
+      for (const page of pages) {
+        const { published_version, public_url, published_at, ...draft } = page.data;
+        await api(
+          `/website/pages/${page.id}`,
+          'PUT',
+          { ...draft, theme: targetTheme, menus: targetMenus, expected_version: page.version },
+          { 'Idempotency-Key': crypto.randomUUID() },
+        );
+        count++;
+      }
+      setNotice(`Applied current theme and navigation menu to all ${count} site pages.`);
+      await load();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -1001,8 +1348,41 @@ export function WebsiteWorkspace({
           )}
           {section === 'theme' && (
             <section className="panel website-management-panel">
-              <h2>Draft theme</h2>
-              <p>Theme changes are included in a public snapshot only after you publish.</p>
+              <h2>Draft theme &amp; presets</h2>
+              <p>Pick a curated preset or customize typography, spacing, and brand colors. Theme changes publish with your next snapshot.</p>
+              <div className="website-theme-preset-strip">
+                {WEBSITE_THEME_PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    className="website-theme-preset-btn"
+                    onClick={() =>
+                      setSelected({
+                        ...selected,
+                        data: {
+                          ...data,
+                          theme: {
+                            primary: preset.primary,
+                            background: preset.background,
+                            width: preset.width,
+                            typography: preset.typography,
+                            section_spacing: preset.section_spacing,
+                            header_style: preset.header_style,
+                            footer_style: preset.footer_style,
+                            button_style: preset.button_style,
+                          },
+                        },
+                      })
+                    }
+                  >
+                    <span className="website-theme-swatch" style={{ background: preset.primary }} />
+                    <span>
+                      <strong>{preset.name}</strong>
+                      <small>{preset.vibe}</small>
+                    </span>
+                  </button>
+                ))}
+              </div>
               <Field label="Primary brand color">
                 <input
                   type="color"
@@ -1065,15 +1445,40 @@ export function WebsiteWorkspace({
                   <option value="square">Square</option>
                 </select>
               </Field>
-              <button className="button" onClick={() => void save()} disabled={busy}>
-                Save theme draft
-              </button>
+              <div className="phase3-actions">
+                <button className="button" onClick={() => void save()} disabled={busy}>
+                  Save theme draft
+                </button>
+                {pages.length > 1 && (
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    disabled={busy}
+                    onClick={() => void applyThemeAndMenusToAllPages()}
+                  >
+                    Apply theme &amp; menu to all {pages.length} pages
+                  </button>
+                )}
+              </div>
             </section>
           )}
           {section === 'seo' && (
             <section className="panel website-management-panel">
               <h2>Search and sharing details</h2>
-              <Field label="Page title">
+              <div className="website-serp-preview" aria-label="Search engine preview">
+                <small className="website-serp-url">
+                  {location.origin}/sites/{data.slug || 'page'}
+                </small>
+                <strong className="website-serp-title">
+                  {data.meta_title || data.title || 'Untitled page'}
+                </strong>
+                <p className="website-serp-desc">
+                  {data.meta_description ||
+                    identity?.data?.description ||
+                    'Add a concise meta description (120–160 chars) to improve search click-through.'}
+                </p>
+              </div>
+              <Field label={`Page title (${(data.meta_title || '').length}/60 recommended)`}>
                 <input
                   value={data.meta_title || ''}
                   onChange={(e) =>
@@ -1710,7 +2115,7 @@ export function WebsiteWorkspace({
                       <option value="center">Center</option>
                     </select>
                   </Field>
-                  {['columns', 'features', 'gallery', 'pricing'].includes(data.sections[selected.editingSection].type) && (
+                  {['columns', 'features', 'gallery', 'pricing', 'stats', 'team'].includes(data.sections[selected.editingSection].type) && (
                     <Field label="Desktop columns">
                       <select value={data.sections[selected.editingSection].layout_columns || 'auto'} onChange={(event) => updateSelectedBlock('layout_columns', event.target.value)}>
                         <option value="auto">Fit to content</option>
@@ -1722,17 +2127,44 @@ export function WebsiteWorkspace({
                   {['image', 'gallery', 'hero'].includes(
                     data.sections[selected.editingSection].type,
                   ) && (
-                    <Field label="Image alt text">
-                      <input
-                        value={data.sections[selected.editingSection].alt || ''}
-                        maxLength={500}
-                        onChange={(e) => updateSelectedBlock('alt', e.target.value)}
-                      />
-                    </Field>
+                    <>
+                      <Field label="Image alt text">
+                        <input
+                          value={data.sections[selected.editingSection].alt || ''}
+                          maxLength={500}
+                          onChange={(e) => updateSelectedBlock('alt', e.target.value)}
+                        />
+                      </Field>
+                      <Field label="Attach from Media Library">
+                        <select
+                          value=""
+                          onFocus={() => {
+                            if (!media.length) void loadMedia();
+                          }}
+                          onChange={(e) => {
+                            const asset = media.find((m) => m.id === e.target.value);
+                            if (asset) void previewMedia(asset.id).then((url) => attachMedia(asset, url));
+                          }}
+                        >
+                          <option value="">
+                            {media.filter((a) => a.status === 'active').length
+                              ? 'Pick reviewed public image…'
+                              : 'Load / upload images in Media tab…'}
+                          </option>
+                          {media
+                            .filter((asset: any) => asset.status === 'active')
+                            .map((asset: any) => (
+                              <option key={asset.id} value={asset.id}>
+                                {asset.label} ({asset.width}×{asset.height})
+                              </option>
+                            ))}
+                        </select>
+                      </Field>
+                    </>
                   )}
                   {data.sections[selected.editingSection].type === 'gallery' && (
                     <div className="website-gallery-editor">
-                      <p className="muted">Choose up to 12 active, reviewed media assets in Media. Gallery images are included in the publication snapshot.</p>
+                      <p className="muted">Choose up to 12 active, reviewed media assets. Gallery images are included in the publication snapshot.</p>
                       {(data.sections[selected.editingSection].image_ids || []).map((id: string, imageIndex: number) => (
                         <div key={id} className="website-gallery-item">
                           <span>Image {imageIndex + 1}</span>
@@ -1741,7 +2173,7 @@ export function WebsiteWorkspace({
                       ))}
                     </div>
                   )}
-                  {['hero', 'cta', 'contact', 'commerce_showcase'].includes(
+                  {['announcement', 'hero', 'cta', 'contact', 'commerce_showcase', 'booking', 'newsletter'].includes(
                     data.sections[selected.editingSection].type,
                   ) && (
                     <>
@@ -1756,21 +2188,54 @@ export function WebsiteWorkspace({
                         <input
                           value={data.sections[selected.editingSection].button_url || ''}
                           maxLength={1000}
+                          placeholder="/sites/contact or /s/production/my-store"
                           onChange={(e) => updateSelectedBlock('button_url', e.target.value)}
                         />
                       </Field>
                     </>
                   )}
-                  {data.sections[selected.editingSection].type === 'commerce_showcase' && (
-                    <Field label="Published Commerce storefront slug">
+                  {data.sections[selected.editingSection].type === 'booking' && (
+                    <Field label="Connected Calendar booking URL">
                       <input
-                        value={data.sections[selected.editingSection].storefront_slug || ''}
-                        maxLength={100}
-                        pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
-                        placeholder="your-store"
-                        onChange={(e) => updateSelectedBlock('storefront_slug', e.target.value)}
+                        value={data.sections[selected.editingSection].booking_url || ''}
+                        maxLength={500}
+                        placeholder="/calendar/book/<token> or https://…"
+                        onChange={(e) => updateSelectedBlock('booking_url', e.target.value)}
                       />
+                      {appointmentTypes.length > 0 && (
+                        <small>
+                          {appointmentTypes.length} Calendar appointment type{appointmentTypes.length === 1 ? '' : 's'} active in this workspace. Copy a public booking link from Calendar → Appointments.
+                        </small>
+                      )}
                     </Field>
+                  )}
+                  {data.sections[selected.editingSection].type === 'commerce_showcase' && (
+                    <>
+                      {commerceStores.length > 0 && (
+                        <Field label="Select connected Commerce store">
+                          <select
+                            value={data.sections[selected.editingSection].storefront_slug || ''}
+                            onChange={(e) => updateSelectedBlock('storefront_slug', e.target.value)}
+                          >
+                            <option value="">Choose a workspace store…</option>
+                            {commerceStores.map((st: any) => (
+                              <option key={st.id} value={st.data?.settings?.slug || ''}>
+                                {st.data?.settings?.name} (/{st.data?.settings?.slug}) · {st.status}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                      )}
+                      <Field label="Published Commerce storefront slug">
+                        <input
+                          value={data.sections[selected.editingSection].storefront_slug || ''}
+                          maxLength={100}
+                          pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+                          placeholder="your-store"
+                          onChange={(e) => updateSelectedBlock('storefront_slug', e.target.value)}
+                        />
+                      </Field>
+                    </>
                   )}
                 </section>
               )}
@@ -1892,6 +2357,11 @@ export function WebsiteWorkspace({
                       <button className="quiet-button" disabled={busy} onClick={() => void duplicatePage(p)}>
                         Duplicate
                       </button>
+                      {!p.data.published_version && (
+                        <button className="quiet-button" disabled={busy} onClick={() => void deletePage(p)}>
+                          Delete
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -2102,16 +2572,39 @@ export function WebsiteWorkspace({
                   <article
                     key={idx}
                     className={'website-section website-block-' + s.type}
+                    data-content-width={s.content_width}
+                    data-alignment={s.alignment}
+                    data-layout-columns={s.layout_columns}
                     style={{ background: s.background || '#fff' }}
                   >
                     <div>
+                      {s.type === 'gallery' && (s.image_ids || []).length ? (
+                        <div className="website-draft-gallery">
+                          {(s.image_ids || []).map((id: string, imgIdx: number) =>
+                            mediaPreviews[id] ? (
+                              <img
+                                key={id}
+                                className="website-draft-image"
+                                src={mediaPreviews[id]}
+                                alt={s.alt || `Gallery image ${imgIdx + 1}`}
+                              />
+                            ) : null,
+                          )}
+                        </div>
+                      ) : s.image_id && mediaPreviews[s.image_id] ? (
+                        <img
+                          className="website-draft-image"
+                          src={mediaPreviews[s.image_id]}
+                          alt={s.alt || ''}
+                        />
+                      ) : null}
                       <DraftBlockContent
                         block={s}
                         editable={false}
                         onTitle={() => {}}
                         onBody={() => {}}
                       />
-                      {s.button_label && (
+                      {s.button_label && s.type !== 'newsletter' && (
                         <span className="button" style={{ marginTop: '12px', display: 'inline-block' }}>
                           {s.button_label}
                         </span>
@@ -2132,13 +2625,18 @@ export function WebsiteWorkspace({
       {showTemplates && (
         <Overlay portal onClose={() => setShowTemplates(false)}>
           <section
-            className="panel phase3-dialog template-gallery"
+            className="panel phase3-dialog template-gallery website-template-modal"
             role="dialog"
             aria-modal="true"
             aria-labelledby="website-template-title"
           >
             <header>
-              <h2 id="website-template-title">New Page · Choose a template</h2>
+              <div>
+                <h2 id="website-template-title">Website Templates &amp; Starter Kits</h2>
+                <p className="muted" style={{ margin: '2px 0 0' }}>
+                  Launch a complete multi-page website in one click, or add an individual page template.
+                </p>
+              </div>
               <button
                 className="icon-button"
                 onClick={() => setShowTemplates(false)}
@@ -2147,26 +2645,117 @@ export function WebsiteWorkspace({
                 ×
               </button>
             </header>
-            <div className="template-card-grid">
-              {Object.entries(templates).map(([name, sections]: any) => (
+            <div className="website-template-controls">
+              <div className="phase3-tabs" role="tablist" aria-label="Template scope">
                 <button
-                  key={name}
-                  className="template-card"
-                  onClick={() => void create(name)}
-                  disabled={busy}
+                  type="button"
+                  role="tab"
+                  aria-selected={templateMode === 'kits'}
+                  className={templateMode === 'kits' ? 'button' : 'secondary-button'}
+                  onClick={() => setTemplateMode('kits')}
                 >
-                  <div className="template-preview">
-                    {sections.length ? (
-                      sections.map((s: any, i: number) => <span key={i}>{s.type}</span>)
-                    ) : (
-                      <span>Blank Page</span>
-                    )}
-                  </div>
-                  <strong>{name}</strong>
-                  <small>{sections.length} editable blocks</small>
+                  Complete Multi-Page Sites ({SITE_STARTER_KITS.length})
                 </button>
-              ))}
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={templateMode === 'pages'}
+                  className={templateMode === 'pages' ? 'button' : 'secondary-button'}
+                  onClick={() => setTemplateMode('pages')}
+                >
+                  Single-Page Templates ({SINGLE_PAGE_TEMPLATES.length})
+                </button>
+              </div>
+              <div className="website-template-filters">
+                {['All', 'Commerce', 'Business', 'Hospitality', 'Services', 'Creative'].map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    className={templateCategory === cat ? 'button' : 'secondary-button'}
+                    onClick={() => setTemplateCategory(cat)}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+              {commerceStores.length > 0 && (
+                <label className="website-template-store-link">
+                  <span>Auto-link Commerce store:</span>
+                  <select
+                    value={kitStoreSlug}
+                    onChange={(e) => setKitStoreSlug(e.target.value)}
+                  >
+                    <option value="">None</option>
+                    {commerceStores.map((st: any) => (
+                      <option key={st.id} value={st.data?.settings?.slug || ''}>
+                        {st.data?.settings?.name} (/{st.data?.settings?.slug})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
             </div>
+            {templateMode === 'kits' ? (
+              <div className="template-card-grid">
+                {SITE_STARTER_KITS.filter(
+                  (kit) => templateCategory === 'All' || kit.category === templateCategory,
+                ).map((kit) => (
+                  <button
+                    key={kit.id}
+                    type="button"
+                    className="template-card website-kit-card"
+                    onClick={() => void createSiteKit(kit)}
+                    disabled={busy}
+                  >
+                    <div
+                      className="template-preview website-kit-preview"
+                      style={{ borderTop: `4px solid ${kit.accent}` }}
+                    >
+                      <div className="website-kit-pages">
+                        {kit.pages.map((p) => (
+                          <span key={p.slug}>{p.title}</span>
+                        ))}
+                      </div>
+                      <small className="website-kit-badge">{kit.badge}</small>
+                    </div>
+                    <strong>{kit.name}</strong>
+                    <small>{kit.tagline}</small>
+                    <div className="website-kit-links">
+                      {kit.connectsTo.map((link) => (
+                        <span key={link}>{link}</span>
+                      ))}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="template-card-grid">
+                {SINGLE_PAGE_TEMPLATES.filter(
+                  (tpl) => templateCategory === 'All' || tpl.category === templateCategory,
+                ).map((tpl) => (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    className="template-card"
+                    onClick={() => void createFromTemplate(tpl)}
+                    disabled={busy}
+                  >
+                    <div
+                      className="template-preview"
+                      style={{ borderTop: `4px solid ${tpl.accent}` }}
+                    >
+                      {tpl.sections.length ? (
+                        tpl.sections.slice(0, 6).map((s, i) => <span key={i}>{s.type.replaceAll('_', ' ')}</span>)
+                      ) : (
+                        <span>Blank Canvas</span>
+                      )}
+                    </div>
+                    <strong>{tpl.name}</strong>
+                    <small>{tpl.summary}</small>
+                  </button>
+                ))}
+              </div>
+            )}
             <footer>
               <button className="secondary-button" onClick={() => setShowTemplates(false)}>
                 Cancel

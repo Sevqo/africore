@@ -934,6 +934,7 @@ export async function bookCalendarAppointment(
 const block = z
   .object({
     type: z.enum([
+      'announcement',
       'hero',
       'heading',
       'text',
@@ -941,10 +942,14 @@ const block = z
       'gallery',
       'columns',
       'features',
+      'stats',
+      'team',
       'cta',
       'testimonial',
       'pricing',
       'faq',
+      'booking',
+      'newsletter',
       'contact',
       'contact_form',
       'footer',
@@ -963,6 +968,7 @@ const block = z
       .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
       .or(z.literal(''))
       .default(''),
+    booking_url: z.string().max(500).default(''),
     background: z
       .string()
       .regex(/^#[0-9a-fA-F]{6}$/)
@@ -980,7 +986,7 @@ const block = z
       ctx.addIssue({ code: 'custom', message: 'Multiple images are supported only in gallery blocks', path: ['image_ids'] });
     if (allImages.length > 12)
       ctx.addIssue({ code: 'custom', message: 'A gallery can contain at most 12 images', path: ['image_ids'] });
-    if (section.layout_columns !== 'auto' && !['columns', 'features', 'gallery', 'pricing'].includes(section.type))
+    if (section.layout_columns !== 'auto' && !['columns', 'features', 'gallery', 'pricing', 'stats', 'team', 'commerce_showcase'].includes(section.type))
       ctx.addIssue({ code: 'custom', message: 'Column count is available for grid blocks only', path: ['layout_columns'] });
   });
 const safeLink = (value: string) => /^(https:\/\/|mailto:|\/(?!\/)[^\\\r\n]*)/i.test(value);
@@ -988,7 +994,13 @@ const pageInput = z
   .object({
     title: z.string().trim().min(1).max(180),
     slug: z.string().min(1).max(100),
-    template: z.enum(['blank']).default('blank'),
+    template: z
+      .string()
+      .trim()
+      .min(1)
+      .max(60)
+      .regex(/^[a-z0-9-]+$/)
+      .default('blank'),
     sections: z.array(block).max(60),
     meta_title: z.string().max(180).default(''),
     meta_description: z.string().max(320).default(''),
@@ -1042,13 +1054,20 @@ const pageInput = z
     } catch {
       ctx.addIssue({ code: 'custom', message: 'Use a safe page slug', path: ['slug'] });
     }
-    for (const [i, s] of d.sections.entries())
+    for (const [i, s] of d.sections.entries()) {
       if (s.button_url && !safeLink(s.button_url))
         ctx.addIssue({
           code: 'custom',
           message: 'Unsafe link destination',
           path: ['sections', i, 'button_url'],
         });
+      if (s.booking_url && !safeLink(s.booking_url))
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Unsafe booking link destination',
+          path: ['sections', i, 'booking_url'],
+        });
+    }
     for (const [i, m] of d.menus.entries())
       if (m.parent_index !== null && m.parent_index >= i)
         ctx.addIssue({
@@ -1221,12 +1240,34 @@ export async function saveWebsitePage(a: Access, id: string | null, input: unkno
     { id, ...d },
     () => authorize(a, 'website', id || undefined, true),
     async () => {
-      if (!id) return insert(a, 'website_page', { ...d, template: 'blank' });
+      if (!id) return insert(a, 'website_page', { ...d });
       const old = await read(a, id, 'website_page');
       if (old.version !== d.expected_version) fail(409, 'Page changed; reload before editing');
       const { expected_version: _, ...data } = d;
       return update(a, old, { ...old.data, ...data });
     },
+  );
+}
+export async function deleteWebsitePage(a: Access, id: string, version: number, key: string) {
+  if (!Number.isSafeInteger(version) || version < 1) fail(400, 'Expected page version is required');
+  return operation(
+    a,
+    'website.delete',
+    key,
+    { id, version },
+    () => authorize(a, 'website', id, true),
+    async () => {
+      const page = await read(a, id, 'website_page');
+      if (page.version !== version) fail(409, 'Page changed; reload before deleting');
+      const pub = await dbGet(
+        "SELECT id FROM ac_publications WHERE org_id=? AND environment=? AND source_id=? AND source_kind='website' AND active=1",
+        [a.org, a.environment, id],
+      );
+      if (pub) fail(409, 'Unpublish this page before deleting it');
+      await update(a, page, { ...page.data, deleted_at: now() }, { status: 'deleted' }, 'deleted');
+      return { id, deleted: true };
+    },
+    { meter: false },
   );
 }
 const websiteRedirectId = (environment: string, slug: string) =>
@@ -1322,13 +1363,21 @@ export async function publishWebsitePage(a: Access, id: string, version: number,
         ...page.data.sections.map((section: any) => section.button_url).filter(Boolean),
       ].filter((value: string) => value.startsWith('/') && !value.startsWith('//')) as string[];
       for (const link of internalLinks) {
-        const rawPath = link.split(/[?#]/, 1)[0],
-          targetSlug =
-            rawPath === '/'
-              ? defaultPageSlug || page.data.slug
-              : rawPath.startsWith('/sites/')
-                ? rawPath.slice('/sites/'.length)
-                : rawPath.slice(1);
+        const rawPath = link.split(/[?#]/, 1)[0];
+        if (
+          rawPath === '/marketplace' ||
+          rawPath.startsWith('/marketplace/') ||
+          /^\/s\/(?:sandbox|production)\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\/p\/[a-zA-Z0-9-]+)?\/?$/.test(rawPath) ||
+          /^\/calendar\/book\/[A-Za-z0-9_-]{40,60}$/.test(rawPath)
+        ) {
+          continue;
+        }
+        const targetSlug =
+          rawPath === '/'
+            ? defaultPageSlug || page.data.slug
+            : rawPath.startsWith('/sites/')
+              ? rawPath.slice('/sites/'.length)
+              : rawPath.slice(1);
         if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(targetSlug))
           fail(400, 'Use a published page slug for same-site links');
         if (targetSlug === page.data.slug) continue;

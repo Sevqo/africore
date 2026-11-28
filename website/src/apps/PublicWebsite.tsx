@@ -363,6 +363,101 @@ export function PublicWebsite({ slug }: { slug: string }) {
                     })}
                   </div>
                 </>
+              ) : s.type === 'announcement' ? (
+                <div className="website-announcement-bar">
+                  <strong>{s.title}</strong>
+                  {s.body && <span>{s.body}</span>}
+                  {ctaHref && (
+                    <a href={ctaHref}>{s.button_label}</a>
+                  )}
+                </div>
+              ) : s.type === 'stats' ? (
+                <>
+                  {s.title && <h2>{s.title}</h2>}
+                  <div className="website-stats-grid">
+                    {lines.map((line: string, index: number) => {
+                      const [metric, ...label] = line
+                        .split('::')
+                        .map((part: string) => part.trim());
+                      return (
+                        <article key={index} className="website-stat-item">
+                          <strong>{metric}</strong>
+                          {label.length > 0 && <span>{label.join('::')}</span>}
+                        </article>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : s.type === 'team' ? (
+                <>
+                  {s.title && <h2>{s.title}</h2>}
+                  <div className="website-team-grid">
+                    {lines.map((line: string, index: number) => {
+                      const [name, role, ...bio] = line
+                        .split('|')
+                        .map((part: string) => part.trim());
+                      return (
+                        <article key={index} className="website-team-member">
+                          <div className="website-team-avatar" aria-hidden="true">
+                            {(name || '?').slice(0, 2).toUpperCase()}
+                          </div>
+                          <h3>{name}</h3>
+                          {role && <span className="website-team-role">{role}</span>}
+                          {bio.length > 0 && <p>{bio.join('|')}</p>}
+                        </article>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : s.type === 'booking' ? (
+                <div className="website-booking-block">
+                  <h2>{s.title || 'Book an Appointment'}</h2>
+                  {paragraphs}
+                  {(s.booking_url || ctaHref) && (
+                    <a
+                      className="button"
+                      href={s.booking_url || ctaHref || '#'}
+                    >
+                      {s.button_label || 'Schedule Online'}
+                    </a>
+                  )}
+                </div>
+              ) : s.type === 'newsletter' ? (
+                <div className="website-newsletter-block">
+                  <h2>{s.title || 'Stay updated'}</h2>
+                  {paragraphs}
+                  <form
+                    className="public-contact-form website-newsletter-form"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void submitForm(i, event.currentTarget);
+                    }}
+                  >
+                    <input type="hidden" name="name" value="Newsletter Subscriber" />
+                    <input type="hidden" name="message" value="Subscribed via website newsletter block." />
+                    <input type="hidden" name="company" value="" />
+                    <div className="website-newsletter-row">
+                      <input
+                        name="email"
+                        type="email"
+                        required
+                        placeholder="you@company.com"
+                        aria-label="Email address"
+                        maxLength={254}
+                      />
+                      <button className="button" type="submit" disabled={formBusy[i]}>
+                        {formBusy[i] ? 'Joining…' : s.button_label || 'Subscribe'}
+                      </button>
+                    </div>
+                    <label className="public-contact-consent">
+                      <input name="consent" type="checkbox" required /> I agree to receive occasional updates from this site.
+                    </label>
+                    <label className="public-contact-honeypot" aria-hidden="true">
+                      Website <input name="website" tabIndex={-1} autoComplete="off" />
+                    </label>
+                    {formStatus[i] && <p role="status">{formStatus[i]}</p>}
+                  </form>
+                </div>
               ) : s.type === 'testimonial' ? (
                 <>
                   <h2>{s.title}</h2>

@@ -22,6 +22,8 @@ export const publicSlug = z
         'static',
         'store',
         'sites',
+        'marketplace',
+        'shop',
       ].includes(s),
     'Choose a non-reserved publication name',
   );
@@ -77,6 +79,12 @@ export const storeSettings = z
     contact_email: z.email().max(254).optional(),
     warehouse_id: z.string().uuid().nullable().default(null),
     location_id: z.string().uuid().nullable().default(null),
+    marketplace_listed: z.boolean().default(false),
+    marketplace_category: z.string().trim().max(80).default('General'),
+    marketplace_tagline: z.string().trim().max(220).default(''),
+    marketplace_location: z.string().trim().max(120).default(''),
+    banner_asset_id: z.string().uuid().nullable().default(null),
+    announcement_bar: z.string().trim().max(240).default(''),
   })
   .strict();
 export const saveStoreInput = z
@@ -95,6 +103,8 @@ export const listingInput = z
     collection_ids: z.array(z.string().uuid()).max(30).default([]),
     minimum_quantity_milli: z.number().int().min(1).max(1e8).default(1000),
     maximum_quantity_milli: z.number().int().min(1).max(1e8).default(1000000),
+    marketplace_visible: z.boolean().default(true),
+    category: z.string().trim().max(80).default(''),
   })
   .strict()
   .refine(

@@ -26,6 +26,7 @@ for (const [suffix, service] of [
   ['GET /website/pages', 'website'],
   ['POST /website/pages', 'website'],
   ['PUT /website/pages/:id', 'website'],
+  ['DELETE /website/pages/:id', 'website'],
   ['POST /website/pages/:id/publish', 'website'],
   ['POST /website/pages/:id/unpublish', 'website'],
   ['GET /website/pages/:id/publication-history', 'website'],

@@ -10,6 +10,7 @@ import { requireServices } from '../marketplace/engine';
 import { store } from './catalog';
 import { publicSlug } from './contracts';
 import { canonical } from '../finance/service';
+import { removeMarketplaceStore, syncMarketplaceStore } from './marketplace-index';
 
 const publicationContext = (a: Pick<Access, 'org' | 'environment'>, id: string, version: number) =>
   JSON.stringify(['commerce-publication', a.org, a.environment, id, version]);
@@ -46,6 +47,7 @@ async function publicationDraft(a: Access, id: string) {
       ...new Set([
         ...rows.flatMap((row) => decode(a, row).data.asset_ids as string[]),
         ...(s.data.settings.logo_asset_id ? [s.data.settings.logo_asset_id] : []),
+        ...(s.data.settings.banner_asset_id ? [s.data.settings.banner_asset_id] : []),
       ]),
     ],
     media = new Map((await assetReferences(a, mediaIds)).map((asset) => [asset.id, asset]));
@@ -87,6 +89,12 @@ async function publicationDraft(a: Access, id: string) {
     currency: settings.currency,
     theme: settings.theme,
     logo_asset: settings.logo_asset_id ? media.get(settings.logo_asset_id) : null,
+    banner_asset: settings.banner_asset_id ? media.get(settings.banner_asset_id) : null,
+    announcement_bar: settings.announcement_bar || '',
+    marketplace_listed: !!settings.marketplace_listed,
+    marketplace_category: settings.marketplace_category || 'General',
+    marketplace_tagline: settings.marketplace_tagline || '',
+    marketplace_location: settings.marketplace_location || '',
     description: settings.description,
     brand_color: settings.brand_color,
     navigation: settings.navigation,
@@ -191,11 +199,14 @@ export async function publishStore(a: Access, id: string, input: unknown, key: s
         { status: 'published' },
         'published',
       );
+      const mp = await syncMarketplaceStore(a, id);
       return {
         id: publicationId,
         version,
         store_id: id,
         path: '/s/' + a.environment + '/' + draft.manifest.slug,
+        marketplace_indexed: mp.indexed,
+        marketplace_product_count: mp.product_count,
         published_at: at,
         disclosure: draft.disclosure,
       };
@@ -221,6 +232,7 @@ export async function unpublishStore(a: Access, id: string, input: unknown, key:
       if (!p || Number(p.version) !== d.expected_publication_version)
         fail(409, 'Published revision changed; reload');
       await dbRun('UPDATE ac_publications SET active=0 WHERE id=?', [p.id]);
+      await removeMarketplaceStore(id);
       await update(
         a,
         s,
@@ -266,6 +278,9 @@ export async function publicStore(environment: string, slug: string, input: unkn
       .object({
         q: z.string().max(100).default(''),
         collection: z.string().uuid().optional(),
+        sort: z.enum(['featured', 'price_asc', 'price_desc', 'name']).default('featured'),
+        min_price: z.coerce.number().int().min(0).optional(),
+        max_price: z.coerce.number().int().min(0).optional(),
         offset: z.coerce.number().int().min(0).max(500).default(0),
       })
       .strict()
@@ -287,6 +302,16 @@ export async function publicStore(environment: string, slug: string, input: unkn
       [a.org, environment, manifest.store_id],
     ),
     active = new Map(listed.map((l) => [l.id, decode(a, l)]));
+  const reviewAggs = await dbAll(
+    "SELECT listing_id, AVG(rating) AS avg_rating, COUNT(*) AS cnt FROM ac_commerce_reviews WHERE environment=? AND store_id=? AND status='published' GROUP BY listing_id",
+    [environment, manifest.store_id],
+  );
+  const reviewByListing = new Map(
+    reviewAggs.map((r) => [
+      r.listing_id,
+      { rating_avg: Math.round(Number(r.avg_rating || 0) * 10) / 10, review_count: Number(r.cnt || 0) },
+    ]),
+  );
   const visible = manifest.listings.flatMap((l: any) => {
     const row = byId.get(l.product_id);
     if (!row || row.status !== 'active' || !active.has(l.id)) return [];
@@ -296,11 +321,15 @@ export async function publicStore(environment: string, slug: string, input: unkn
       (q.collection && !l.collection_ids.includes(q.collection))
     )
       return [];
+    const priceMinor = Number(d.sale_price_minor);
+    if (q.min_price !== undefined && priceMinor < q.min_price) return [];
+    if (q.max_price !== undefined && priceMinor > q.max_price) return [];
     if (
       q.q &&
       ![l.title, l.description, row.name, d.sku].join(' ').toLowerCase().includes(q.q.toLowerCase())
     )
       return [];
+    const rev = reviewByListing.get(l.id) || { rating_avg: 0, review_count: 0 };
     return [
       {
         listing_id: l.id,
@@ -310,21 +339,27 @@ export async function publicStore(environment: string, slug: string, input: unkn
         description: l.description,
         sku: d.sku,
         variant: d.variant,
+        category: active.get(l.id)!.data.category || d.category || '',
         images: l.assets || [],
         compare_at_minor:
-          active.get(l.id)!.data.compare_at_minor > Number(d.sale_price_minor)
+          active.get(l.id)!.data.compare_at_minor > priceMinor
             ? active.get(l.id)!.data.compare_at_minor
             : null,
         parent_id: d.parent_id,
         unit: d.unit,
-        unit_price_minor: Number(d.sale_price_minor),
+        unit_price_minor: priceMinor,
         currency: d.currency,
         track_inventory: d.track_inventory,
         minimum_quantity_milli: active.get(l.id)!.data.minimum_quantity_milli,
         maximum_quantity_milli: active.get(l.id)!.data.maximum_quantity_milli,
+        rating_avg: rev.rating_avg,
+        review_count: rev.review_count,
       },
     ];
   });
+  if (q.sort === 'price_asc') visible.sort((x: any, y: any) => x.unit_price_minor - y.unit_price_minor);
+  else if (q.sort === 'price_desc') visible.sort((x: any, y: any) => y.unit_price_minor - x.unit_price_minor);
+  else if (q.sort === 'name') visible.sort((x: any, y: any) => x.name.localeCompare(y.name));
   const { listings: _listings, store_version: _storeVersion, ...presentation } = manifest;
   const readiness = await checkoutReadiness(a, context.store),
     shipping_options = (context.store.data.shipping || [])

@@ -1809,3 +1809,38 @@
     animation-duration: 0.01ms !important;
   }
 }
+
+/* Multi-line interactive tiles & cards use Apple HIG continuous rounded corners, never pill-clipped circles */
+:is(
+  .business-shell,
+  .business-shell[data-platform-density],
+  .focused-account,
+  .focused-account[data-platform-density],
+  body
+)
+  :is(
+    .pos-app-shell button.pos-product-tile,
+    .pos-cashier button.pos-product-tile,
+    .pos-cashier button.pos-basket-row,
+    .pos-payment-screen button.pos-payment-method,
+    .website-workspace button.template-card,
+    .website-workspace button.website-kit-card,
+    .website-workspace button.website-block-choice,
+    .template-gallery button.template-card
+  ) {
+  border-radius: var(--apple-r-md, 16px) !important;
+}
+
+/* High-contrast white pills on the dark POS cashier header bar */
+:is(.business-shell, .focused-account) .pos-cashier-top .pos-cashier-actions button.quiet-button {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.16) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+:is(.business-shell, .focused-account)
+  .pos-cashier-top
+  .pos-cashier-actions
+  button.quiet-button:hover {
+  background: rgba(255, 255, 255, 0.26) !important;
+  color: #ffffff !important;
+}

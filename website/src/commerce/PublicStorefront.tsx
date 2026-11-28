@@ -19,16 +19,22 @@ interface Product {
   description: string;
   sku: string;
   variant: string;
+  category?: string;
   unit: string;
   unit_price_minor: number;
   compare_at_minor: number | null;
   currency: string;
   minimum_quantity_milli: number;
+  rating_avg?: number;
+  review_count?: number;
   images: ImageAsset[];
 }
 interface Catalog {
   name: string;
   description: string;
+  announcement_bar?: string;
+  marketplace_listed?: boolean;
+  marketplace_location?: string;
   brand_color: string;
   theme: string;
   currency: string;
@@ -46,6 +52,7 @@ interface Catalog {
   checkout_available: boolean;
   shipping_options: DeliveryOption[];
   logo_asset: ImageAsset | null;
+  banner_asset?: ImageAsset | null;
 }
 const price = (amount: number, currency: string) =>
   new Intl.NumberFormat('en-KE', {
@@ -81,16 +88,29 @@ function StoreProductImage({
     </div>
   );
 }
-export function PublicStorefront({ environment, slug }: { environment: string; slug: string }) {
+export function PublicStorefront({
+  environment,
+  slug,
+  initialListingId = '',
+}: {
+  environment: string;
+  slug: string;
+  initialListingId?: string;
+}) {
   const [data, setData] = useState<Catalog | null>(null),
     [error, setError] = useState(''),
     [loading, setLoading] = useState(true),
     [search, setSearch] = useState(''),
     [query, setQuery] = useState(''),
     [collection, setCollection] = useState(''),
+    [sort, setSort] = useState<'featured' | 'price_asc' | 'price_desc' | 'name'>('featured'),
     [offset, setOffset] = useState(0),
     [revision, setRevision] = useState(0),
-    [expanded, setExpanded] = useState('');
+    [expanded, setExpanded] = useState(initialListingId),
+    [reviewsByListing, setReviewsByListing] = useState<Record<string, any[]>>({}),
+    [reviewDraft, setReviewDraft] = useState({ name: '', rating: 5, title: '', body: '' }),
+    [reviewBusy, setReviewBusy] = useState(false),
+    [reviewNotice, setReviewNotice] = useState('');
   const buyerCart = usePublicCart(environment, slug, data?.shipping_options || []);
   const imagePath = '/api/v1/storefronts/' + environment + '/' + slug;
   useEffect(() => {
@@ -99,6 +119,7 @@ export function PublicStorefront({ environment, slug }: { environment: string; s
     setError('');
     const parameters = new URLSearchParams({
       q: query,
+      sort,
       offset: String(offset),
       ...(collection ? { collection } : {}),
     });
@@ -124,7 +145,53 @@ export function PublicStorefront({ environment, slug }: { environment: string; s
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [environment, slug, query, collection, offset, revision]);
+  }, [environment, slug, query, collection, sort, offset, revision]);
+  useEffect(() => {
+    if (!expanded) return;
+    const controller = new AbortController();
+    apiFetch(imagePath + '/reviews?listing_id=' + encodeURIComponent(expanded), {
+      signal: controller.signal,
+    })
+      .then(readApiResponse)
+      .then((res) => {
+        if (!controller.signal.aborted) {
+          setReviewsByListing((cur) => ({ ...cur, [expanded]: res.data || [] }));
+        }
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [expanded, imagePath]);
+  async function submitProductReview(product: Product) {
+    setReviewBusy(true);
+    setReviewNotice('');
+    try {
+      const created = await readApiResponse(
+        await apiFetch(imagePath + '/reviews', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            listing_id: product.listing_id,
+            product_id: product.product_id,
+            reviewer_name: reviewDraft.name,
+            rating: Number(reviewDraft.rating),
+            title: reviewDraft.title,
+            body: reviewDraft.body,
+          }),
+        }),
+      );
+      setReviewsByListing((cur) => ({
+        ...cur,
+        [product.listing_id]: [created, ...(cur[product.listing_id] || [])],
+      }));
+      setReviewDraft({ name: '', rating: 5, title: '', body: '' });
+      setReviewNotice('Review published! Thank you for sharing your feedback.');
+      setRevision((v) => v + 1);
+    } catch (e) {
+      setReviewNotice((e as Error).message);
+    } finally {
+      setReviewBusy(false);
+    }
+  }
   useEffect(() => {
     if (!data) return;
     document.title = data.seo.title || data.name;
@@ -167,6 +234,9 @@ export function PublicStorefront({ environment, slug }: { environment: string; s
           ))}
         </nav>
         <a href="#store-cart">Cart</a>
+        <a href={environment === 'sandbox' ? '/marketplace/sandbox' : '/marketplace'}>
+          Marketplace
+        </a>
         <a className="store-platform" href="/">
           AfriCore
         </a>
@@ -199,6 +269,22 @@ export function PublicStorefront({ environment, slug }: { environment: string; s
         </div>
       </aside>
       <main className="merchant-main">
+        {data?.announcement_bar && (
+          <p
+            style={{
+              background: data.brand_color || '#047857',
+              color: '#ffffff',
+              textAlign: 'center',
+              padding: '8px 16px',
+              margin: '0 0 12px',
+              borderRadius: '10px',
+              fontSize: '13px',
+              fontWeight: 600,
+            }}
+          >
+            {data.announcement_bar}
+          </p>
+        )}
         {environment === 'sandbox' && (
           <p className="store-environment">
             Sandbox storefront · Test orders only. No real funds move.
@@ -252,6 +338,21 @@ export function PublicStorefront({ environment, slug }: { environment: string; s
                       {c.name}
                     </option>
                   ))}
+                </select>
+              </label>
+              <label>
+                Sort
+                <select
+                  value={sort}
+                  onChange={(e) => {
+                    setSort(e.target.value as any);
+                    setOffset(0);
+                  }}
+                >
+                  <option value="featured">Featured</option>
+                  <option value="price_asc">Price: Low to High</option>
+                  <option value="price_desc">Price: High to Low</option>
+                  <option value="name">Name (A–Z)</option>
                 </select>
               </label>
               <p>
@@ -317,8 +418,13 @@ export function PublicStorefront({ environment, slug }: { environment: string; s
                       name={product.name}
                     />
                     <div className="merchant-product-copy">
-                      <p className="store-eyebrow">{product.variant || product.unit}</p>
+                      <p className="store-eyebrow">{product.variant || product.category || product.unit}</p>
                       <h3>{product.name}</h3>
+                      {(product.review_count || 0) > 0 && (
+                        <p style={{ margin: '0 0 4px', fontSize: '12px', color: '#b45309', fontWeight: 600 }}>
+                          {'★'.repeat(Math.round(product.rating_avg || 0))} {(product.rating_avg || 0).toFixed(1)} ({product.review_count})
+                        </p>
+                      )}
                       <p className="merchant-price">
                         {price(product.unit_price_minor, product.currency)}{' '}
                         <small>per {product.unit}</small>
@@ -370,6 +476,53 @@ export function PublicStorefront({ environment, slug }: { environment: string; s
                               ))}
                             </div>
                           )}
+                          <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #e2e8f0' }}>
+                            <strong>Customer Reviews ({(reviewsByListing[product.listing_id] || []).length})</strong>
+                            {(reviewsByListing[product.listing_id] || []).map((rev: any) => (
+                              <div key={rev.id} style={{ padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '12.5px' }}>
+                                <strong>{rev.reviewer_name}</strong> · <span style={{ color: '#b45309' }}>{'★'.repeat(rev.rating)}</span>
+                                {rev.title && <div><em>{rev.title}</em></div>}
+                                <p style={{ margin: '2px 0 0' }}>{rev.body}</p>
+                              </div>
+                            ))}
+                            <form
+                              onSubmit={(e) => {
+                                e.preventDefault();
+                                void submitProductReview(product);
+                              }}
+                              style={{ display: 'grid', gap: '6px', marginTop: '8px' }}
+                            >
+                              <input
+                                required
+                                minLength={2}
+                                placeholder="Your name"
+                                value={reviewDraft.name}
+                                onChange={(e) => setReviewDraft((d) => ({ ...d, name: e.target.value }))}
+                              />
+                              <select
+                                value={reviewDraft.rating}
+                                onChange={(e) => setReviewDraft((d) => ({ ...d, rating: Number(e.target.value) }))}
+                              >
+                                <option value={5}>★★★★★ (5)</option>
+                                <option value={4}>★★★★☆ (4)</option>
+                                <option value={3}>★★★☆☆ (3)</option>
+                                <option value={2}>★★☆☆☆ (2)</option>
+                                <option value={1}>★☆☆☆☆ (1)</option>
+                              </select>
+                              <textarea
+                                required
+                                minLength={5}
+                                rows={2}
+                                placeholder="Write a short review…"
+                                value={reviewDraft.body}
+                                onChange={(e) => setReviewDraft((d) => ({ ...d, body: e.target.value }))}
+                              />
+                              <button type="submit" disabled={reviewBusy}>
+                                {reviewBusy ? 'Submitting…' : 'Submit review'}
+                              </button>
+                              {reviewNotice && <small role="status">{reviewNotice}</small>}
+                            </form>
+                          </div>
                         </div>
                       )}
                     </div>

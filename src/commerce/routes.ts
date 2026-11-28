@@ -28,6 +28,16 @@ import {
   previewAsset,
 } from '../publishing/assets';
 import { publicStoreImage } from './public-images';
+import {
+  listMarketplaceProducts,
+  listMarketplaceStores,
+  listPublicStoreReviews,
+  marketplaceFeatured,
+  merchantStoreReviews,
+  moderateStoreReview,
+  storeAbandonedCarts,
+  submitPublicStoreReview,
+} from './marketplace-index';
 export const commerce = Router();
 const key = (req: any) => z.string().min(8).max(200).parse(req.headers['idempotency-key']);
 const cartScope = (req: any) => {
@@ -191,6 +201,73 @@ commerce.post(
   route(async (req, res) =>
     res.json(
       await unpublishStore(await access(req, 'admin'), String(req.params.id), req.body, key(req)),
+    ),
+  ),
+);
+commerce.get(
+  '/marketplace/:environment/featured',
+  route(async (req, res) => res.json(await marketplaceFeatured(String(req.params.environment)))),
+);
+commerce.get(
+  '/marketplace/:environment/products',
+  route(async (req, res) =>
+    res.json(await listMarketplaceProducts(String(req.params.environment), req.query)),
+  ),
+);
+commerce.get(
+  '/marketplace/:environment/stores',
+  route(async (req, res) =>
+    res.json(await listMarketplaceStores(String(req.params.environment), req.query)),
+  ),
+);
+commerce.get(
+  '/storefronts/:environment/:slug/reviews',
+  route(async (req, res) =>
+    res.json(
+      await listPublicStoreReviews(
+        String(req.params.environment),
+        String(req.params.slug),
+        req.query,
+      ),
+    ),
+  ),
+);
+commerce.post(
+  '/storefronts/:environment/:slug/reviews',
+  route(async (req, res) =>
+    res
+      .status(201)
+      .json(
+        await submitPublicStoreReview(
+          String(req.params.environment),
+          String(req.params.slug),
+          req.body,
+        ),
+      ),
+  ),
+);
+commerce.get(
+  '/organizations/:org/commerce/stores/:id/abandoned-carts',
+  route(async (req, res) =>
+    res.json(await storeAbandonedCarts(await access(req, 'admin'), String(req.params.id))),
+  ),
+);
+commerce.get(
+  '/organizations/:org/commerce/stores/:id/reviews',
+  route(async (req, res) =>
+    res.json(await merchantStoreReviews(await access(req), String(req.params.id))),
+  ),
+);
+commerce.post(
+  '/organizations/:org/commerce/stores/:id/reviews/:reviewId/status',
+  route(async (req, res) =>
+    res.json(
+      await moderateStoreReview(
+        await access(req, 'admin'),
+        String(req.params.id),
+        String(req.params.reviewId),
+        req.body,
+      ),
     ),
   ),
 );

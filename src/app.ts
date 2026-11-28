@@ -328,7 +328,10 @@ export function createApp() {
     }
   });
   app.use(express.static(path.join(process.cwd(), 'website/dist')));
-  app.get(/^\/s\/(?:sandbox|production)\/[a-z0-9]+(?:-[a-z0-9]+)*\/?$/, (_req, res) =>
+  app.get(/^\/s\/(?:sandbox|production)\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\/p\/[a-zA-Z0-9-]+)?\/?$/, (_req, res) =>
+    res.sendFile('index.html', { root: path.join(process.cwd(), 'website/dist') }),
+  );
+  app.get(['/marketplace', '/marketplace/{*path}'], (_req, res) =>
     res.sendFile('index.html', { root: path.join(process.cwd(), 'website/dist') }),
   );
   app.get(

@@ -6,16 +6,16 @@ for (const route of [
   'POST /organizations/:org/commerce/assets/:id/withdraw',
   'GET /organizations/:org/commerce/assets/:id/content',
 ]) {
-  commerceRouteKinds[route] = ['business'];
+  commerceRouteKinds[route] = ['business', 'personal'];
   commercePolicies[route] = { services: ['commerce', 'website'] };
 }
 commercePolicies['POST /organizations/:org/commerce/assets/:id/withdraw'] = {
   services: ['commerce', 'website'],
 };
 commercePolicies['GET /organizations/:org/commerce/assets/:id/content'] = {
-  services: ['commerce'],
+  services: ['commerce', 'website'],
 };
-commerceRouteKinds['GET /organizations/:org/commerce/assets/:id/preview'] = ['business'];
+commerceRouteKinds['GET /organizations/:org/commerce/assets/:id/preview'] = ['business', 'personal'];
 commercePolicies['GET /organizations/:org/commerce/assets/:id/preview'] = {
   services: ['commerce', 'website'],
 };
@@ -41,6 +41,9 @@ for (const suffix of [
   'PUT /stores/:id/listings/:listing',
   'POST /stores/:id/collections',
   'PUT /stores/:id/collections/:collection',
+  'GET /stores/:id/abandoned-carts',
+  'GET /stores/:id/reviews',
+  'POST /stores/:id/reviews/:reviewId/status',
 ]) {
   const [method, path] = suffix.split(' '),
     key = method + ' /organizations/:org/commerce' + path;

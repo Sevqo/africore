@@ -79,6 +79,9 @@ export function CommerceMerchantWorkspace({
     [configuration, setConfiguration] = useState<any>(null),
     [listings, setListings] = useState<any>(null),
     [orders, setOrders] = useState<any>(null),
+    [abandonedCarts, setAbandonedCarts] = useState<any>(null),
+    [storeReviews, setStoreReviews] = useState<any[]>([]),
+    [warehouses, setWarehouses] = useState<any[]>([]),
     [products, setProducts] = useState<any[]>([]);
   const [view, setView] = useState(section),
     [listingQuery, setListingQuery] = useState(''),
@@ -99,22 +102,60 @@ export function CommerceMerchantWorkspace({
     [previewCart, setPreviewCart] = useState<Record<string, number>>({}),
     [publicationPreview, setPublicationPreview] = useState<any>(null),
     [busy, setBusy] = useState(false),
-    [form, setForm] = useState({ name: '', slug: '', currency: 'KES', theme: 'market' }),
+    [form, setForm] = useState({
+      name: '',
+      slug: '',
+      currency: 'KES',
+      theme: 'market',
+      marketplace_listed: true,
+      marketplace_category: 'General',
+      marketplace_location: 'Nairobi, Kenya',
+      marketplace_tagline: '',
+      enable_default_shipping: true,
+      enable_sandbox_checkout: true,
+    }),
     [listingForm, setListingForm] = useState({
       mode: 'new' as 'new' | 'existing',
       productId: '',
       sku: '',
       name: '',
       price: '2500',
+      compareAt: '',
+      category: '',
+      collectionId: '',
+      marketplaceVisible: true,
       description: '',
       state: 'active' as 'active' | 'draft',
+    }),
+    [collectionForm, setCollectionForm] = useState({ name: '', description: '' }),
+    [discountForm, setDiscountForm] = useState({
+      code: '',
+      kind: 'percentage' as 'percentage' | 'fixed',
+      value: '10',
+      minimumSubtotal: '0',
+      daysValid: '90',
+    }),
+    [shippingForm, setShippingForm] = useState({
+      name: 'Standard Delivery',
+      kind: 'shipping' as 'shipping' | 'pickup',
+      countries: 'KE',
+      rate: '350',
+      freeAbove: '5000',
     }),
     [settingsDraft, setSettingsDraft] = useState({
       name: '',
       description: '',
-      brand_color: '#78a800',
+      brand_color: '#047857',
       theme: 'market',
       contact_email: '',
+      tax_percent: '0',
+      tax_label: 'VAT',
+      announcement_bar: '',
+      warehouse_id: '',
+      marketplace_listed: false,
+      marketplace_category: 'General',
+      marketplace_tagline: '',
+      marketplace_location: '',
     });
 
   const store = stores?.data?.find((item: any) => item.id === selected) || stores?.data?.[0],
@@ -131,9 +172,17 @@ export function CommerceMerchantWorkspace({
       setSettingsDraft({
         name: s.name || '',
         description: s.description || '',
-        brand_color: s.brand_color || '#78a800',
+        brand_color: s.brand_color || '#047857',
         theme: s.theme || 'market',
         contact_email: s.contact_email || '',
+        tax_percent: String((Number(s.tax_bps || 0) / 100).toFixed(2)).replace(/\.00$/, ''),
+        tax_label: s.tax_label || 'Configured tax',
+        announcement_bar: s.announcement_bar || '',
+        warehouse_id: s.warehouse_id || '',
+        marketplace_listed: !!s.marketplace_listed,
+        marketplace_category: s.marketplace_category || 'General',
+        marketplace_tagline: s.marketplace_tagline || '',
+        marketplace_location: s.marketplace_location || '',
       });
     }
   }, [store?.id, store?.version]);
@@ -170,12 +219,18 @@ export function CommerceMerchantWorkspace({
       api(storePath + '/configuration'),
       api(storePath + '/listings?' + params),
       api('/products?limit=100'),
-    ]).then(([configResult, listingResult, productResult]) => {
+      api('/inventory/warehouses'),
+      api(storePath + '/reviews'),
+      ...(manager ? [api(storePath + '/abandoned-carts')] : []),
+    ]).then(([configResult, listingResult, productResult, whResult, reviewResult, cartResult]) => {
       if (!current) return;
       if (configResult.status === 'fulfilled') setConfiguration(configResult.value);
       if (listingResult.status === 'fulfilled') setListings(listingResult.value);
       else setListings(null);
       if (productResult.status === 'fulfilled') setProducts(productResult.value?.data || []);
+      if (whResult.status === 'fulfilled') setWarehouses(whResult.value?.data || []);
+      if (reviewResult.status === 'fulfilled') setStoreReviews(reviewResult.value?.data || []);
+      if (cartResult && cartResult.status === 'fulfilled') setAbandonedCarts(cartResult.value);
       const failures = [configResult, listingResult]
         .filter((item) => item.status === 'rejected')
         .map((item) => (item as PromiseRejectedResult).reason)
@@ -223,17 +278,96 @@ export function CommerceMerchantWorkspace({
     setError('');
     setNotice('');
     try {
-      const created = await api(
+      const storePayload = {
+        name: form.name.trim(),
+        slug: form.slug.trim(),
+        currency: form.currency,
+        theme: form.theme,
+        marketplace_listed: form.marketplace_listed,
+        marketplace_category: form.marketplace_category || 'General',
+        marketplace_location: form.marketplace_location.trim(),
+        marketplace_tagline: form.marketplace_tagline.trim(),
+      };
+      let created = await api(
         base,
         'POST',
-        { expected_version: 0, store: form },
+        { expected_version: 0, store: storePayload },
         { 'Idempotency-Key': crypto.randomUUID() },
       );
+      let currentVersion = Number(created?.version || 1);
+      if (created?.id && form.enable_default_shipping) {
+        try {
+          const rulesRes = await api(
+            `${base}/${created.id}/rules`,
+            'PUT',
+            {
+              expected_version: currentVersion,
+              shipping: [
+                {
+                  id: crypto.randomUUID(),
+                  name: 'Standard Local Delivery',
+                  kind: 'shipping',
+                  countries: ['KE'],
+                  rate_minor: 0,
+                  free_above_minor: null,
+                  active: true,
+                },
+                {
+                  id: crypto.randomUUID(),
+                  name: 'Store Pickup',
+                  kind: 'pickup',
+                  countries: ['KE'],
+                  rate_minor: 0,
+                  free_above_minor: null,
+                  active: true,
+                },
+              ],
+              discounts: [],
+            },
+            { 'Idempotency-Key': crypto.randomUUID() },
+          );
+          if (rulesRes?.version) currentVersion = Number(rulesRes.version);
+        } catch {
+          // Merchant can adjust shipping later in Settings.
+        }
+      }
+      if (created?.id && form.enable_sandbox_checkout && env === 'sandbox') {
+        try {
+          await api(
+            `${base}/${created.id}/checkout-policy`,
+            'PUT',
+            {
+              expected_version: currentVersion,
+              enabled: true,
+              consent_notice_version: 'v1',
+              acknowledge_automated_invoicing: true,
+              acknowledge_sandbox_only: true,
+            },
+            { 'Idempotency-Key': crypto.randomUUID() },
+          );
+        } catch {
+          // Optional if dependent checkout services aren't active yet.
+        }
+      }
       setCreating(false);
-      setForm({ name: '', slug: '', currency: 'KES', theme: 'market' });
+      setForm({
+        name: '',
+        slug: '',
+        currency: 'KES',
+        theme: 'market',
+        marketplace_listed: true,
+        marketplace_category: 'General',
+        marketplace_location: 'Nairobi, Kenya',
+        marketplace_tagline: '',
+        enable_default_shipping: true,
+        enable_sandbox_checkout: true,
+      });
       setRevision((value) => value + 1);
       if (created?.id) setSelected(created.id);
-      setNotice('Store created. Add listings and preview your storefront before publishing.');
+      setNotice(
+        'Store launched with delivery options & checkout policy! Add your first product and click Publish to go live' +
+          (storePayload.marketplace_listed ? ' on both your storefront and AfriCore Marketplace.' : '.'),
+      );
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -279,6 +413,10 @@ export function CommerceMerchantWorkspace({
         );
       }
 
+      const compareAtMinor =
+        listingForm.compareAt.trim() && Number(listingForm.compareAt) > 0
+          ? Math.round(Number(listingForm.compareAt) * factor)
+          : null;
       await api(
         `${storePath}/listings`,
         'POST',
@@ -289,11 +427,13 @@ export function CommerceMerchantWorkspace({
           title: (listingForm.mode === 'new' ? listingForm.name : targetProduct.name).trim(),
           description: listingForm.description.trim() || targetProduct.description || '',
           state: listingForm.state,
-          compare_at_minor: null,
+          compare_at_minor: compareAtMinor,
           asset_ids: [],
-          collection_ids: [],
+          collection_ids: listingForm.collectionId ? [listingForm.collectionId] : [],
           minimum_quantity_milli: 1000,
           maximum_quantity_milli: 1000000,
+          marketplace_visible: listingForm.marketplaceVisible,
+          category: listingForm.category.trim(),
         },
         { 'Idempotency-Key': crypto.randomUUID() },
       );
@@ -305,6 +445,10 @@ export function CommerceMerchantWorkspace({
         sku: '',
         name: '',
         price: '2500',
+        compareAt: '',
+        category: '',
+        collectionId: '',
+        marketplaceVisible: true,
         description: '',
         state: 'active',
       });
@@ -395,14 +539,24 @@ export function CommerceMerchantWorkspace({
     setError('');
     try {
       const current = store.data.settings;
-      const payload = {
+      const taxBps = Math.max(0, Math.min(10000, Math.round(Number(settingsDraft.tax_percent || 0) * 100)));
+      const payload: any = {
         ...current,
         name: settingsDraft.name.trim() || current.name,
         description: settingsDraft.description,
         brand_color: /^#[a-fA-F0-9]{6}$/.test(settingsDraft.brand_color)
           ? settingsDraft.brand_color
-          : '#78a800',
+          : '#047857',
         theme: settingsDraft.theme,
+        tax_bps: taxBps,
+        tax_label: settingsDraft.tax_label.trim() || 'Configured tax',
+        announcement_bar: settingsDraft.announcement_bar.trim(),
+        warehouse_id: settingsDraft.warehouse_id || null,
+        location_id: settingsDraft.warehouse_id === current.warehouse_id ? current.location_id : null,
+        marketplace_listed: settingsDraft.marketplace_listed,
+        marketplace_category: settingsDraft.marketplace_category || 'General',
+        marketplace_tagline: settingsDraft.marketplace_tagline.trim(),
+        marketplace_location: settingsDraft.marketplace_location.trim(),
         ...(settingsDraft.contact_email.trim()
           ? { contact_email: settingsDraft.contact_email.trim() }
           : {}),
@@ -415,7 +569,236 @@ export function CommerceMerchantWorkspace({
         { 'Idempotency-Key': crypto.randomUUID() },
       );
       setRevision((v) => v + 1);
-      setNotice('Store presentation settings saved. Open Preview Storefront to inspect your changes.');
+      setNotice(
+        payload.marketplace_listed
+          ? 'Store & AfriCore Marketplace settings saved! Your published products are synced to the Marketplace.'
+          : 'Store settings saved. Open Preview Storefront to inspect your changes.',
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function createCollection(event: FormEvent) {
+    event.preventDefault();
+    if (!storePath || !collectionForm.name.trim()) return;
+    setBusy(true);
+    setError('');
+    try {
+      await api(
+        `${storePath}/collections`,
+        'POST',
+        {
+          expected_version: 0,
+          name: collectionForm.name.trim(),
+          description: collectionForm.description.trim(),
+          active: true,
+        },
+        { 'Idempotency-Key': crypto.randomUUID() },
+      );
+      setCollectionForm({ name: '', description: '' });
+      setRevision((v) => v + 1);
+      setNotice('Collection created.');
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function addDiscountRule(event: FormEvent) {
+    event.preventDefault();
+    if (!store || !discountForm.code.trim()) return;
+    setBusy(true);
+    setError('');
+    try {
+      const currFactor = ['UGX', 'RWF'].includes(currency) ? 1 : 100;
+      const code = discountForm.code.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+      const startsAt = new Date(Date.now() - 60_000).toISOString();
+      const endsAt = new Date(
+        Date.now() + Math.max(1, Number(discountForm.daysValid || 90)) * 86_400_000,
+      ).toISOString();
+      const nextRule = {
+        code,
+        kind: discountForm.kind,
+        value:
+          discountForm.kind === 'percentage'
+            ? Math.max(1, Math.min(10000, Math.round(Number(discountForm.value || 10) * 100)))
+            : Math.max(1, Math.round(Number(discountForm.value || 100) * currFactor)),
+        minimum_subtotal_minor: Math.max(0, Math.round(Number(discountForm.minimumSubtotal || 0) * currFactor)),
+        maximum_discount_minor: null,
+        starts_at: startsAt,
+        ends_at: endsAt,
+        active: true,
+      };
+      const existingDiscounts = (configuration?.discounts || []).filter((r: any) => r.code !== code);
+      await api(
+        `${storePath}/rules`,
+        'PUT',
+        {
+          expected_version: store.version,
+          shipping: configuration?.shipping || [],
+          discounts: [...existingDiscounts, nextRule],
+        },
+        { 'Idempotency-Key': crypto.randomUUID() },
+      );
+      setDiscountForm({ code: '', kind: 'percentage', value: '10', minimumSubtotal: '0', daysValid: '90' });
+      setRevision((v) => v + 1);
+      setNotice(`Coupon code "${code}" saved and active at checkout.`);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function removeDiscountRule(code: string) {
+    if (!store) return;
+    setBusy(true);
+    setError('');
+    try {
+      await api(
+        `${storePath}/rules`,
+        'PUT',
+        {
+          expected_version: store.version,
+          shipping: configuration?.shipping || [],
+          discounts: (configuration?.discounts || []).filter((r: any) => r.code !== code),
+        },
+        { 'Idempotency-Key': crypto.randomUUID() },
+      );
+      setRevision((v) => v + 1);
+      setNotice(`Removed coupon code "${code}".`);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function addShippingOption(event: FormEvent) {
+    event.preventDefault();
+    if (!store || !shippingForm.name.trim()) return;
+    setBusy(true);
+    setError('');
+    try {
+      const currFactor = ['UGX', 'RWF'].includes(currency) ? 1 : 100;
+      const countries = shippingForm.countries
+        .split(',')
+        .map((c) => c.trim().toUpperCase())
+        .filter((c) => /^[A-Z]{2}$/.test(c));
+      const option = {
+        id: crypto.randomUUID(),
+        name: shippingForm.name.trim(),
+        kind: shippingForm.kind,
+        countries: countries.length ? countries : ['KE'],
+        rate_minor: Math.max(0, Math.round(Number(shippingForm.rate || 0) * currFactor)),
+        free_above_minor:
+          shippingForm.freeAbove.trim() && Number(shippingForm.freeAbove) > 0
+            ? Math.round(Number(shippingForm.freeAbove) * currFactor)
+            : null,
+        active: true,
+      };
+      await api(
+        `${storePath}/rules`,
+        'PUT',
+        {
+          expected_version: store.version,
+          shipping: [...(configuration?.shipping || []), option],
+          discounts: configuration?.discounts || [],
+        },
+        { 'Idempotency-Key': crypto.randomUUID() },
+      );
+      setRevision((v) => v + 1);
+      setNotice(`Added "${option.name}" delivery option.`);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function removeShippingOption(optionId: string) {
+    if (!store) return;
+    setBusy(true);
+    setError('');
+    try {
+      await api(
+        `${storePath}/rules`,
+        'PUT',
+        {
+          expected_version: store.version,
+          shipping: (configuration?.shipping || []).filter((o: any) => o.id !== optionId),
+          discounts: configuration?.discounts || [],
+        },
+        { 'Idempotency-Key': crypto.randomUUID() },
+      );
+      setRevision((v) => v + 1);
+      setNotice('Delivery option removed.');
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function toggleCheckoutPolicy(enable: boolean) {
+    if (!store) return;
+    setBusy(true);
+    setError('');
+    try {
+      await api(
+        `${storePath}/checkout-policy`,
+        'PUT',
+        {
+          expected_version: store.version,
+          enabled: enable,
+          consent_notice_version: store.data.checkout_policy?.consent_notice_version || 'v1',
+          acknowledge_automated_invoicing: true,
+          acknowledge_sandbox_only: true,
+        },
+        { 'Idempotency-Key': crypto.randomUUID() },
+      );
+      setRevision((v) => v + 1);
+      setNotice(enable ? 'Online sandbox checkout authorized!' : 'Online checkout paused.');
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function toggleMarketplaceListing() {
+    if (!store) return;
+    setBusy(true);
+    setError('');
+    try {
+      const current = store.data.settings;
+      const nextListed = !current.marketplace_listed;
+      await api(
+        storePath,
+        'PUT',
+        {
+          expected_version: store.version,
+          store: { ...current, marketplace_listed: nextListed },
+        },
+        { 'Idempotency-Key': crypto.randomUUID() },
+      );
+      setRevision((v) => v + 1);
+      setNotice(
+        nextListed
+          ? 'Store opted into AfriCore Marketplace! Published listings are now discoverable by buyers.'
+          : 'Store removed from AfriCore Marketplace. Your direct storefront link remains active.',
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function moderateReview(reviewId: string, nextStatus: 'published' | 'hidden') {
+    if (!storePath) return;
+    setBusy(true);
+    setError('');
+    try {
+      await api(`${storePath}/reviews/${reviewId}/status`, 'POST', { status: nextStatus });
+      setRevision((v) => v + 1);
+      setNotice(`Review marked ${nextStatus}.`);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -525,9 +908,82 @@ export function CommerceMerchantWorkspace({
                   ))}
                 </select>
               </Field>
+              <Field label="Marketplace department">
+                <select
+                  value={form.marketplace_category}
+                  onChange={(e) =>
+                    setForm((value) => ({ ...value, marketplace_category: e.target.value }))
+                  }
+                >
+                  {[
+                    'Electronics',
+                    'Fashion & Apparel',
+                    'Home & Living',
+                    'Food & Beverages',
+                    'Health & Beauty',
+                    'Office & Stationery',
+                    'Hardware & Tools',
+                    'Agriculture & Fresh',
+                    'Services & Digital',
+                    'General',
+                  ].map((cat) => (
+                    <option key={cat}>{cat}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Store city / location">
+                <input
+                  placeholder="Nairobi, Kenya"
+                  value={form.marketplace_location}
+                  onChange={(e) =>
+                    setForm((value) => ({ ...value, marketplace_location: e.target.value }))
+                  }
+                />
+              </Field>
+              <Field label="Store tagline (shown on Marketplace)">
+                <input
+                  placeholder="Fresh farm-direct coffee & specialty pantry essentials"
+                  value={form.marketplace_tagline}
+                  onChange={(e) =>
+                    setForm((value) => ({ ...value, marketplace_tagline: e.target.value }))
+                  }
+                />
+              </Field>
+              <label className="checkbox-field">
+                <input
+                  type="checkbox"
+                  checked={form.marketplace_listed}
+                  onChange={(e) =>
+                    setForm((value) => ({ ...value, marketplace_listed: e.target.checked }))
+                  }
+                />
+                List my store &amp; products on AfriCore Marketplace (you own 100% of products &amp; orders; we help buyers discover your store)
+              </label>
+              <label className="checkbox-field">
+                <input
+                  type="checkbox"
+                  checked={form.enable_default_shipping}
+                  onChange={(e) =>
+                    setForm((value) => ({ ...value, enable_default_shipping: e.target.checked }))
+                  }
+                />
+                Auto-configure Standard Delivery &amp; Store Pickup options
+              </label>
+              {env === 'sandbox' && (
+                <label className="checkbox-field">
+                  <input
+                    type="checkbox"
+                    checked={form.enable_sandbox_checkout}
+                    onChange={(e) =>
+                      setForm((value) => ({ ...value, enable_sandbox_checkout: e.target.checked }))
+                    }
+                  />
+                  Enable Sandbox Online Checkout automatically so buyers can place test orders right away
+                </label>
+              )}
               <div className="form-actions">
                 <button className="button" disabled={busy}>
-                  {busy ? 'Creating…' : 'Create store'}
+                  {busy ? 'Creating store…' : 'Launch store'}
                 </button>
                 <button
                   type="button"
@@ -614,6 +1070,14 @@ export function CommerceMerchantWorkspace({
               New store
             </button>
           )}
+          <a
+            className="secondary-button"
+            href={env === 'sandbox' ? '/marketplace/sandbox' : '/marketplace'}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Marketplace ↗
+          </a>
         </div>
       </div>
 
@@ -625,7 +1089,19 @@ export function CommerceMerchantWorkspace({
               minLength={2}
               maxLength={120}
               value={form.name}
-              onChange={(e) => setForm((value) => ({ ...value, name: e.target.value }))}
+              onChange={(e) =>
+                setForm((value) => ({
+                  ...value,
+                  name: e.target.value,
+                  slug:
+                    value.slug ||
+                    e.target.value
+                      .toLowerCase()
+                      .replace(/[^a-z0-9]+/g, '-')
+                      .replace(/^-|-$/g, '')
+                      .slice(0, 63),
+                }))
+              }
             />
           </Field>
           <Field label="Storefront address">
@@ -648,9 +1124,42 @@ export function CommerceMerchantWorkspace({
               ))}
             </select>
           </Field>
+          <Field label="Department">
+            <select
+              value={form.marketplace_category}
+              onChange={(e) =>
+                setForm((value) => ({ ...value, marketplace_category: e.target.value }))
+              }
+            >
+              {[
+                'Electronics',
+                'Fashion & Apparel',
+                'Home & Living',
+                'Food & Beverages',
+                'Health & Beauty',
+                'Office & Stationery',
+                'Hardware & Tools',
+                'Agriculture & Fresh',
+                'Services & Digital',
+                'General',
+              ].map((cat) => (
+                <option key={cat}>{cat}</option>
+              ))}
+            </select>
+          </Field>
+          <label className="checkbox-field">
+            <input
+              type="checkbox"
+              checked={form.marketplace_listed}
+              onChange={(e) =>
+                setForm((value) => ({ ...value, marketplace_listed: e.target.checked }))
+              }
+            />
+            List on AfriCore Marketplace (direct-to-merchant discovery)
+          </label>
           <div className="form-actions">
             <button className="button" disabled={busy}>
-              {busy ? 'Creating…' : 'Create store'}
+              {busy ? 'Launching…' : 'Launch store'}
             </button>
             <button type="button" className="secondary-button" onClick={() => setCreating(false)}>
               Cancel
@@ -930,7 +1439,53 @@ export function CommerceMerchantWorkspace({
                     </Field>
                   </>
                 )}
+                <Field label={`Compare-at price (${currency}, optional deal badge)`}>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="e.g. 3200"
+                    value={listingForm.compareAt}
+                    onChange={(e) => setListingForm((f) => ({ ...f, compareAt: e.target.value }))}
+                  />
+                </Field>
+                <Field label="Marketplace category (optional)">
+                  <input
+                    placeholder={settings?.marketplace_category || 'General'}
+                    value={listingForm.category}
+                    onChange={(e) => setListingForm((f) => ({ ...f, category: e.target.value }))}
+                  />
+                </Field>
+                {(configuration?.collections || []).length > 0 && (
+                  <Field label="Collection">
+                    <select
+                      value={listingForm.collectionId}
+                      onChange={(e) =>
+                        setListingForm((f) => ({ ...f, collectionId: e.target.value }))
+                      }
+                    >
+                      <option value="">No collection</option>
+                      {(configuration?.collections || [])
+                        .filter((c: any) => c.status === 'active')
+                        .map((c: any) => (
+                          <option key={c.id} value={c.id}>
+                            {c.data?.name || c.name}
+                          </option>
+                        ))}
+                    </select>
+                  </Field>
+                )}
               </div>
+              <label className="checkbox-field">
+                <input
+                  type="checkbox"
+                  checked={listingForm.marketplaceVisible}
+                  onChange={(e) =>
+                    setListingForm((f) => ({ ...f, marketplaceVisible: e.target.checked }))
+                  }
+                />
+                Show this product in AfriCore Marketplace when store is listed
+              </label>
               <Field label="Storefront description">
                 <textarea
                   rows={2}
@@ -1148,6 +1703,46 @@ export function CommerceMerchantWorkspace({
               Open catalogue editor
             </button>
           </div>
+          {canWrite && (
+            <section className="panel">
+              <div className="section-heading">
+                <h3>Store Collections ({configuration?.collections?.length || 0})</h3>
+              </div>
+              <form className="compact-form" onSubmit={createCollection}>
+                <div className="form-grid">
+                  <Field label="Collection name">
+                    <input
+                      required
+                      placeholder="New Arrivals"
+                      value={collectionForm.name}
+                      onChange={(e) => setCollectionForm((f) => ({ ...f, name: e.target.value }))}
+                    />
+                  </Field>
+                  <Field label="Description">
+                    <input
+                      placeholder="Curated highlights"
+                      value={collectionForm.description}
+                      onChange={(e) =>
+                        setCollectionForm((f) => ({ ...f, description: e.target.value }))
+                      }
+                    />
+                  </Field>
+                </div>
+                <button className="secondary-button" disabled={busy}>
+                  + Create collection
+                </button>
+              </form>
+              {!!configuration?.collections?.length && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
+                  {configuration.collections.map((col: any) => (
+                    <span key={col.id} className="badge">
+                      {col.data?.name || col.name} · {col.status}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
         </div>
       )}
 
@@ -1230,6 +1825,43 @@ export function CommerceMerchantWorkspace({
             </>
           ) : (
             <p>Order visibility requires current merchant access.</p>
+          )}
+          {abandonedCarts && (
+            <section className="panel">
+              <div className="section-heading">
+                <h3>Open / Abandoned Carts</h3>
+                <span className="badge">{abandonedCarts.total}</span>
+              </div>
+              <p className="muted">{abandonedCarts.coverage}</p>
+              {abandonedCarts.data?.length ? (
+                <DataTable>
+                  <thead>
+                    <tr>
+                      <th>Cart</th>
+                      <th>Items</th>
+                      <th>Estimated total</th>
+                      <th>Coupon</th>
+                      <th>Last updated</th>
+                      <th>Expires</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {abandonedCarts.data.map((cart: any) => (
+                      <tr key={cart.id}>
+                        <td>{cart.id.slice(0, 8).toUpperCase()}</td>
+                        <td>{cart.item_count}</td>
+                        <td>{cart.currency ? money(cart.total_minor, cart.currency) : '—'}</td>
+                        <td>{cart.discount_code || '—'}</td>
+                        <td>{date(cart.updated_at)}</td>
+                        <td>{date(cart.expires_at)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </DataTable>
+              ) : (
+                <p>No unconverted open carts right now.</p>
+              )}
+            </section>
           )}
         </div>
       )}
@@ -1570,8 +2202,42 @@ export function CommerceMerchantWorkspace({
                   <dt>Checkout</dt>
                   <dd>{checkout.label}</dd>
                 </div>
+                <div>
+                  <dt>AfriCore Marketplace</dt>
+                  <dd>
+                    <span className="badge">
+                      {settings?.marketplace_listed
+                        ? published
+                          ? 'Listed on Marketplace'
+                          : 'Opted in (publish to list)'
+                        : 'Direct storefront only'}
+                    </span>
+                  </dd>
+                </div>
               </dl>
               <p className="muted">{checkout.detail}</p>
+              {canWrite && (
+                <div className="form-actions">
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    disabled={busy}
+                    onClick={() => void toggleMarketplaceListing()}
+                  >
+                    {settings?.marketplace_listed
+                      ? 'Unlist from Marketplace'
+                      : 'List on AfriCore Marketplace'}
+                  </button>
+                  <a
+                    className="secondary-button"
+                    href={store.environment === 'sandbox' ? '/marketplace/sandbox' : '/marketplace'}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Browse Marketplace ↗
+                  </a>
+                </div>
+              )}
             </section>
             <section className="panel">
               <h3>Presentation and delivery</h3>
@@ -1747,16 +2413,79 @@ export function CommerceMerchantWorkspace({
         <div className="commerce-merchant-section">
           <div className="section-heading">
             <div>
-              <h2>Promotion rules</h2>
+              <h2>Promotion &amp; Coupon Codes</h2>
               <p>
-                These are the current store discount policies used by the server quote. Eligibility
-                is recalculated at checkout.
+                Create discount codes validated automatically by the server quote at storefront and
+                Marketplace checkout.
               </p>
             </div>
-            <button className="button" type="button" onClick={() => navigate('Commerce')}>
+            <button className="secondary-button" type="button" onClick={() => navigate('Commerce')}>
               Manage discount rules
             </button>
           </div>
+          {canWrite && (
+            <form className="panel compact-form" onSubmit={addDiscountRule}>
+              <h3>Create Coupon Code</h3>
+              <div className="form-grid">
+                <Field label="Coupon code">
+                  <input
+                    required
+                    minLength={3}
+                    maxLength={40}
+                    placeholder="WELCOME10"
+                    value={discountForm.code}
+                    onChange={(e) => setDiscountForm((f) => ({ ...f, code: e.target.value }))}
+                  />
+                </Field>
+                <Field label="Discount type">
+                  <select
+                    value={discountForm.kind}
+                    onChange={(e) =>
+                      setDiscountForm((f) => ({ ...f, kind: e.target.value as 'percentage' | 'fixed' }))
+                    }
+                  >
+                    <option value="percentage">Percentage off (%)</option>
+                    <option value="fixed">Fixed amount off ({currency})</option>
+                  </select>
+                </Field>
+                <Field
+                  label={discountForm.kind === 'percentage' ? 'Percent off (%)' : `Amount off (${currency})`}
+                >
+                  <input
+                    required
+                    type="number"
+                    min="1"
+                    step="0.01"
+                    value={discountForm.value}
+                    onChange={(e) => setDiscountForm((f) => ({ ...f, value: e.target.value }))}
+                  />
+                </Field>
+                <Field label={`Minimum order (${currency})`}>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={discountForm.minimumSubtotal}
+                    onChange={(e) =>
+                      setDiscountForm((f) => ({ ...f, minimumSubtotal: e.target.value }))
+                    }
+                  />
+                </Field>
+                <Field label="Valid for (days)">
+                  <input
+                    type="number"
+                    min="1"
+                    max="3650"
+                    value={discountForm.daysValid}
+                    onChange={(e) => setDiscountForm((f) => ({ ...f, daysValid: e.target.value }))}
+                  />
+                </Field>
+              </div>
+              <button className="button" disabled={busy}>
+                {busy ? 'Saving…' : '+ Save coupon code'}
+              </button>
+            </form>
+          )}
           <p className="muted">
             {configuration?.discounts?.length ?? '—'} configured rule(s) · inactive, expired and
             minimum-order rules are still listed as configured policy.
@@ -1771,12 +2500,13 @@ export function CommerceMerchantWorkspace({
                 <th>Valid from</th>
                 <th>Valid until</th>
                 <th>State</th>
+                {canWrite && <th>Action</th>}
               </tr>
             </thead>
             <tbody>
               {(configuration?.discounts || []).map((rule: any) => (
                 <tr key={rule.code}>
-                  <td>{rule.code}</td>
+                  <td><strong>{rule.code}</strong></td>
                   <td>
                     {rule.kind === 'percentage'
                       ? `${(rule.value / 100).toFixed(2)}%`
@@ -1793,6 +2523,18 @@ export function CommerceMerchantWorkspace({
                   <td>
                     <span className="badge">{rule.active ? 'Enabled policy' : 'Disabled'}</span>
                   </td>
+                  {canWrite && (
+                    <td>
+                      <button
+                        type="button"
+                        className="quiet-button"
+                        disabled={busy}
+                        onClick={() => void removeDiscountRule(rule.code)}
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -1802,8 +2544,7 @@ export function CommerceMerchantWorkspace({
           )}
           <p className="commerce-capability-note">
             Codes are validated by the canonical server quote, including date window, minimum
-            subtotal, percentage limits and discount cap. This register does not claim campaign
-            attribution or customer usage analytics.
+            subtotal, percentage limits and discount cap.
           </p>
         </div>
       )}
@@ -1886,6 +2627,56 @@ export function CommerceMerchantWorkspace({
               separate.
             </p>
           </section>
+          <section className="panel">
+            <div className="section-heading">
+              <h3>Customer Reviews &amp; Ratings ({storeReviews.length})</h3>
+            </div>
+            {storeReviews.length ? (
+              <DataTable>
+                <thead>
+                  <tr>
+                    <th>Reviewer</th>
+                    <th>Rating</th>
+                    <th>Review</th>
+                    <th>Status</th>
+                    {canWrite && <th>Action</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {storeReviews.map((rev: any) => (
+                    <tr key={rev.id}>
+                      <td>{rev.reviewer_name}</td>
+                      <td>{'★'.repeat(rev.rating)} ({rev.rating}/5)</td>
+                      <td>
+                        {rev.title ? <strong>{rev.title} — </strong> : null}
+                        {rev.body}
+                      </td>
+                      <td><span className="badge">{rev.status}</span></td>
+                      {canWrite && (
+                        <td>
+                          <button
+                            type="button"
+                            className="quiet-button"
+                            disabled={busy}
+                            onClick={() =>
+                              void moderateReview(
+                                rev.id,
+                                rev.status === 'published' ? 'hidden' : 'published',
+                              )
+                            }
+                          >
+                            {rev.status === 'published' ? 'Hide' : 'Publish'}
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </DataTable>
+            ) : (
+              <p>No customer reviews yet. Buyers can submit ratings directly on your storefront or AfriCore Marketplace.</p>
+            )}
+          </section>
         </div>
       )}
 
@@ -1946,9 +2737,112 @@ export function CommerceMerchantWorkspace({
                   onChange={(e) => setSettingsDraft((d) => ({ ...d, description: e.target.value }))}
                 />
               </Field>
+              <Field label="Announcement banner (optional)">
+                <input
+                  placeholder="Free delivery on orders above KES 5,000"
+                  value={settingsDraft.announcement_bar}
+                  onChange={(e) =>
+                    setSettingsDraft((d) => ({ ...d, announcement_bar: e.target.value }))
+                  }
+                />
+              </Field>
+              <div className="form-grid">
+                <Field label="Tax rate (%)">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={settingsDraft.tax_percent}
+                    onChange={(e) =>
+                      setSettingsDraft((d) => ({ ...d, tax_percent: e.target.value }))
+                    }
+                  />
+                </Field>
+                <Field label="Tax label">
+                  <input
+                    value={settingsDraft.tax_label}
+                    onChange={(e) => setSettingsDraft((d) => ({ ...d, tax_label: e.target.value }))}
+                  />
+                </Field>
+              </div>
+              {warehouses.length > 0 && (
+                <Field label="Fulfillment warehouse">
+                  <select
+                    value={settingsDraft.warehouse_id}
+                    onChange={(e) =>
+                      setSettingsDraft((d) => ({ ...d, warehouse_id: e.target.value }))
+                    }
+                  >
+                    <option value="">No warehouse linked</option>
+                    {warehouses
+                      .filter((w: any) => w.status === 'active')
+                      .map((w: any) => (
+                        <option key={w.id} value={w.id}>
+                          {w.name} ({w.code})
+                        </option>
+                      ))}
+                  </select>
+                </Field>
+              )}
+              <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '12px 0' }} />
+              <h4 style={{ margin: '0 0 6px' }}>AfriCore Marketplace Discovery</h4>
+              <label className="checkbox-field">
+                <input
+                  type="checkbox"
+                  checked={settingsDraft.marketplace_listed}
+                  onChange={(e) =>
+                    setSettingsDraft((d) => ({ ...d, marketplace_listed: e.target.checked }))
+                  }
+                />
+                List my published store &amp; products on AfriCore Marketplace (direct merchant checkout)
+              </label>
+              <div className="form-grid">
+                <Field label="Marketplace department">
+                  <select
+                    value={settingsDraft.marketplace_category}
+                    onChange={(e) =>
+                      setSettingsDraft((d) => ({ ...d, marketplace_category: e.target.value }))
+                    }
+                  >
+                    {[
+                      'Electronics',
+                      'Fashion & Apparel',
+                      'Home & Living',
+                      'Food & Beverages',
+                      'Health & Beauty',
+                      'Office & Stationery',
+                      'Hardware & Tools',
+                      'Agriculture & Fresh',
+                      'Services & Digital',
+                      'General',
+                    ].map((cat) => (
+                      <option key={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Location (city/country)">
+                  <input
+                    placeholder="Nairobi, Kenya"
+                    value={settingsDraft.marketplace_location}
+                    onChange={(e) =>
+                      setSettingsDraft((d) => ({ ...d, marketplace_location: e.target.value }))
+                    }
+                  />
+                </Field>
+              </div>
+              <Field label="Marketplace tagline">
+                <input
+                  placeholder="Short pitch shown on your Marketplace seller card"
+                  value={settingsDraft.marketplace_tagline}
+                  onChange={(e) =>
+                    setSettingsDraft((d) => ({ ...d, marketplace_tagline: e.target.value }))
+                  }
+                />
+              </Field>
               <div className="form-actions">
                 <button className="button" disabled={busy || !canWrite}>
-                  {busy ? 'Saving…' : 'Save presentation'}
+                  {busy ? 'Saving…' : 'Save settings'}
                 </button>
                 <button
                   type="button"
@@ -1960,7 +2854,7 @@ export function CommerceMerchantWorkspace({
               </div>
             </form>
             <section className="panel">
-              <h3>Checkout and publication</h3>
+              <h3>Checkout, Shipping &amp; Delivery</h3>
               <dl className="commerce-merchant-facts">
                 <div>
                   <dt>Address</dt>
@@ -1973,10 +2867,6 @@ export function CommerceMerchantWorkspace({
                 <div>
                   <dt>Checkout policy</dt>
                   <dd>{checkout.label}</dd>
-                </div>
-                <div>
-                  <dt>Consent notice</dt>
-                  <dd>{store.data.checkout_policy?.consent_notice_version || 'None'}</dd>
                 </div>
                 <div>
                   <dt>Publication</dt>
@@ -1992,9 +2882,94 @@ export function CommerceMerchantWorkspace({
                 </div>
               </dl>
               <p className="muted">{checkout.detail}</p>
-              <button className="secondary-button" onClick={() => navigate('Commerce')}>
-                Review authorization
-              </button>
+              {canWrite && env === 'sandbox' && (
+                <div className="form-actions" style={{ marginBottom: '14px' }}>
+                  <button
+                    type="button"
+                    className={store.data.checkout_policy?.enabled ? 'secondary-button' : 'button'}
+                    disabled={busy}
+                    onClick={() => void toggleCheckoutPolicy(!store.data.checkout_policy?.enabled)}
+                  >
+                    {store.data.checkout_policy?.enabled
+                      ? 'Pause Sandbox Checkout'
+                      : 'Authorize Sandbox Checkout'}
+                  </button>
+                </div>
+              )}
+              <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '12px 0' }} />
+              <h4 style={{ margin: '0 0 8px' }}>Delivery &amp; Pickup Methods</h4>
+              {(configuration?.shipping || []).map((opt: any) => (
+                <div
+                  key={opt.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '6px 0',
+                    borderBottom: '1px solid #f1f5f9',
+                    fontSize: '13px',
+                  }}
+                >
+                  <span>
+                    <strong>{opt.name}</strong> ({opt.kind}) · {money(opt.rate_minor, currency)} ·{' '}
+                    {(opt.countries || []).join(', ')}
+                  </span>
+                  {canWrite && (
+                    <button
+                      type="button"
+                      className="quiet-button"
+                      disabled={busy}
+                      onClick={() => void removeShippingOption(opt.id)}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+              {canWrite && (
+                <form className="compact-form" onSubmit={addShippingOption} style={{ marginTop: '10px' }}>
+                  <div className="form-grid">
+                    <Field label="Method name">
+                      <input
+                        required
+                        value={shippingForm.name}
+                        onChange={(e) => setShippingForm((f) => ({ ...f, name: e.target.value }))}
+                      />
+                    </Field>
+                    <Field label="Kind">
+                      <select
+                        value={shippingForm.kind}
+                        onChange={(e) =>
+                          setShippingForm((f) => ({ ...f, kind: e.target.value as 'shipping' | 'pickup' }))
+                        }
+                      >
+                        <option value="shipping">Delivery / Shipping</option>
+                        <option value="pickup">Store Pickup</option>
+                      </select>
+                    </Field>
+                    <Field label={`Rate (${currency})`}>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={shippingForm.rate}
+                        onChange={(e) => setShippingForm((f) => ({ ...f, rate: e.target.value }))}
+                      />
+                    </Field>
+                    <Field label="Countries (ISO, e.g. KE,UG)">
+                      <input
+                        value={shippingForm.countries}
+                        onChange={(e) =>
+                          setShippingForm((f) => ({ ...f, countries: e.target.value }))
+                        }
+                      />
+                    </Field>
+                  </div>
+                  <button className="secondary-button" disabled={busy}>
+                    + Add delivery option
+                  </button>
+                </form>
+              )}
             </section>
           </div>
           <p className="commerce-capability-note">

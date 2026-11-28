@@ -107,6 +107,9 @@ export function Header() {
             }
           </div>
         ))}
+        <a className="support-link" href="/marketplace">
+          Marketplace
+        </a>
         <a className="support-link" href="/support">
           Support
         </a>

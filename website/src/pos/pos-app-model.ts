@@ -1,5 +1,5 @@
 export type POSAppSection = 'dashboard' | 'orders' | 'products' | 'reporting' | 'configuration';
-export type POSAppView = POSAppSection | 'cashier';
+export type POSAppView = POSAppSection | 'cashier' | 'hospitality' | 'loyalty';
 export const posAppSections: { section: POSAppSection; label: string }[] = [
   { section: 'dashboard', label: 'Dashboard' },
   { section: 'orders', label: 'Orders' },
@@ -12,6 +12,8 @@ export const posAppViews: POSAppView[] = [
   'cashier',
   'orders',
   'products',
+  'hospitality',
+  'loyalty',
   'reporting',
   'configuration',
 ];
@@ -46,7 +48,13 @@ export function posReportMeasureForGroup(groupBy: string, measure: POSReportMeas
     : 'product_subtotal_minor';
 }
 export const posSectionForView = (view: POSAppView): POSAppSection =>
-  view === 'cashier' ? 'dashboard' : view;
+  view === 'cashier'
+    ? 'dashboard'
+    : view === 'hospitality'
+      ? 'orders'
+      : view === 'loyalty'
+        ? 'configuration'
+        : view;
 export function posRegisterState(register: any, overview: any) {
   if (!register) return { id: 'none', label: 'No register', tone: 'quiet' };
   if (register.status !== 'active') return { id: 'inactive', label: 'Inactive', tone: 'quiet' };
